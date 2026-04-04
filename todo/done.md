@@ -44,4 +44,5 @@
 [x] - Cats shown in assigned rooms on guildhall overview
 [x] - Shorter days (3 minutes, down from 5)
 [x] - Rat plague indicator on Town view (red warning banner)
+[x] - Generate Suno Sound prompts for cat sounds (see todo/suno-prompts.md)
 [x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview
