@@ -117,7 +117,7 @@ function showDayTransition(day: number, recap?: { foodCost: number; stationedEar
   let recapHtml = '';
   if (recap) {
     const lines: string[] = [];
-    if (recap.foodCost > 0) lines.push(`Food: -${recap.foodCost} fish`);
+    if (recap.foodCost > 0) lines.push(`Upkeep: -${recap.foodCost} fish`);
     if (recap.stationedEarned > 0) lines.push(`Stationed: +${recap.stationedEarned} fish`);
     for (const e of recap.events) lines.push(e);
     if (lines.length > 0) {
@@ -665,8 +665,9 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
   resetDayTimer();
   catsWorkedToday.clear();
 
-  // Daily food upkeep: 2 fish per cat
-  const foodCost = gameState.cats.length * 2;
+  // Daily upkeep: 2 fish per cat + 1 per unlocked room (guild maintenance)
+  const unlockedRooms = gameState.rooms.filter((r) => r.unlocked).length;
+  const foodCost = gameState.cats.length * 2 + unlockedRooms;
   if (gameState.fish >= foodCost) {
     gameState.fish -= foodCost;
     // Well-fed cats recover mood
@@ -692,7 +693,7 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
 
   // Build day summary
   const parts: string[] = [];
-  parts.push(`Food: -${foodCost} fish`);
+  parts.push(`Upkeep: -${foodCost} fish`);
   if (stationedTotal > 0) {
     parts.push(`Stationed: +${stationedTotal} fish`);
   }
@@ -1037,8 +1038,13 @@ function showMenuPanel(): void {
       Chapter ${gameState.chapter}: ${chapterName}<br>
       Day ${gameState.day} | ${gameState.cats.length} cats | ${gameState.totalJobsCompleted} jobs done
     </div>
-    ${progressHint ? `<div style="margin-bottom:16px;color:#6b8ea6;font-size:12px;font-style:italic">${progressHint}</div>` : ''}
-
+    ${progressHint ? `<div style="margin-bottom:12px;color:#6b8ea6;font-size:12px;font-style:italic">${progressHint}</div>` : ''}
+    <div style="margin-bottom:16px;padding:8px 12px;background:rgba(42,37,32,0.6);border-radius:4px;font-size:12px;color:#8b7355">
+      <div style="margin-bottom:4px;color:#c4956a">Daily Costs:</div>
+      <div>Cat food: ${gameState.cats.length} cats x 2 = ${gameState.cats.length * 2} fish</div>
+      <div>Guild upkeep: ${gameState.rooms.filter(r => r.unlocked).length} rooms = ${gameState.rooms.filter(r => r.unlocked).length} fish</div>
+      <div style="margin-top:4px;color:#c4956a">Total: ${gameState.cats.length * 2 + gameState.rooms.filter(r => r.unlocked).length} fish/day</div>
+    </div>
     <button class="menu-btn" id="menu-save">Save Game</button>
     <button class="menu-btn" id="menu-furniture">Furniture Shop</button>
     <button class="menu-btn" id="menu-mute">${isMuted() ? 'Unmute Music' : 'Mute Music'}</button>

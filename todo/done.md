@@ -45,4 +45,5 @@
 [x] - Shorter days (3 minutes, down from 5)
 [x] - Rat plague indicator on Town view (red warning banner)
 [x] - Generate Suno Sound prompts for cat sounds (see todo/suno-prompts.md)
+[x] - Scaling upkeep costs (2 fish/cat + 1 fish/room, shown in menu Daily Costs panel)
 [x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview
