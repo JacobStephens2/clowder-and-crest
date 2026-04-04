@@ -871,6 +871,15 @@ function showCatPanel(): void {
         </div>
       </div>
       ${stationedJob ? `<div class="stationed-badge">Stationed: ${stationedJob.name} (since day ${stationed!.dayStarted})<button class="recall-btn" data-cat-id="${cat.id}">Recall</button></div>` : ''}
+      <div style="font-size:11px;margin-bottom:4px">
+        <label style="color:#6b5b3e">Room: </label>
+        <select class="room-select" data-cat-id="${cat.id}" style="background:#2a2520;color:#c4956a;border:1px solid #3a3530;padding:2px 4px;font-size:11px;font-family:Georgia,serif">
+          ${gameState!.rooms.filter(r => r.unlocked).map(r => {
+            const roomLabel = r.id === 'sleeping' ? 'Sleeping Quarters' : r.id === 'kitchen' ? 'Kitchen' : 'Operations';
+            return `<option value="${r.id}" ${cat.assignedRoom === r.id ? 'selected' : ''}>${roomLabel}</option>`;
+          }).join('')}
+        </select>
+      </div>
       <div style="font-size:12px;color:#8b7355;margin-bottom:4px">${cat.traits.map((t: string) => {
         const effects: Record<string, string> = {
           Brave: '+10% hard jobs', Lazy: '-8% all jobs', Curious: '+8% courier',
@@ -934,6 +943,18 @@ function showCatPanel(): void {
       showToast(`${cat?.name ?? 'Cat'} recalled from duty`);
       panel.remove();
       showCatPanel();
+    });
+  });
+
+  panel.querySelectorAll('.room-select').forEach((sel) => {
+    sel.addEventListener('change', () => {
+      const catId = sel.getAttribute('data-cat-id')!;
+      const cat = gameState!.cats.find((c) => c.id === catId);
+      if (cat) {
+        cat.assignedRoom = (sel as HTMLSelectElement).value;
+        saveGame(gameState!);
+        showToast(`${cat.name} moved to ${(sel as HTMLSelectElement).value === 'sleeping' ? 'Sleeping Quarters' : (sel as HTMLSelectElement).value === 'kitchen' ? 'Kitchen' : 'Operations'}`);
+      }
     });
   });
 }

@@ -9,4 +9,6 @@
 [] - make the art for the town different during the rat plague
 [x] - modify the art for the straw bed so it doesn't have a cat in it (regenerated empty bed)
 [x] - show furniture art in the furniture shop (sprite previews in shop cards)
-[] - let the player place cats into particular rooms of the guild hall
+[x] - let the player place cats into particular rooms of the guild hall (room dropdown in Cats panel)
+[] - ensure the player can scroll through the furniture shop on web / desktop
+[] - when the player buys something, let them choose which room it should go into, then in that room, let them choose where to place it

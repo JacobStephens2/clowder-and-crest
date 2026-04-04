@@ -272,7 +272,11 @@ export class RoomScene extends Phaser.Scene {
   }
 
   private drawCats(save: SaveData): void {
-    const cats = save.cats;
+    // Show cats assigned to this room (or all cats if none have room assignments yet)
+    const anyAssigned = save.cats.some((c) => c.assignedRoom);
+    const cats = anyAssigned
+      ? save.cats.filter((c) => c.assignedRoom === this.roomId || (!c.assignedRoom && this.roomId === 'sleeping'))
+      : save.cats;
     if (cats.length === 0) return;
 
     this.buildOpenTiles(save);

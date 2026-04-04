@@ -10,6 +10,7 @@ export interface CatSaveData {
   traits: string[];
   stats: Record<StatName, number>;
   isPlayer: boolean;
+  assignedRoom?: string;
 }
 
 export interface BondSaveData {
