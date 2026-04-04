@@ -104,6 +104,14 @@ export class RoomScene extends Phaser.Scene {
   }
 
   private drawRoom(): void {
+    // Background room art
+    if (this.textures.exists('scene_room')) {
+      const roomBg = this.add.sprite(GAME_WIDTH / 2, GRID_TOP + (GRID_ROWS * TILE_SIZE) / 2, 'scene_room');
+      roomBg.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      roomBg.setScale(GRID_COLS * TILE_SIZE / roomBg.width);
+      roomBg.setAlpha(0.25);
+    }
+
     const gfx = this.add.graphics();
     const gridW = GRID_COLS * TILE_SIZE;
     const gridH = GRID_ROWS * TILE_SIZE;

@@ -1,8 +1,8 @@
-# Clowder & Crest — MVP Design Document v4
+# Clowder & Crest — Design Document v5
 
 A cat guild management game set in a medieval fantasy world. Built with Phaser 3 + TypeScript + Capacitor for Android and web.
 
-**What changed from v3:** All 5 cat breeds now have PixelLab-generated pixel art sprites (idle + walk animations). Added procedural puzzle generation (BFS-validated), daily food upkeep as a fish sink, mechanical traits and mood affecting job performance, save export/import, and 8 music tracks (up from 4).
+**What changed from v4:** Added 3 minigame types (Rush Hour, Sokoban, Chase), removed auto-resolve, 15 job templates, cat room assignments, furniture drag-to-rearrange and room transfer, interactive furniture with animations, cat interaction (click to bond), fish crisis mechanic, pause button, ElevenLabs sound effects, job fit details, daily cost warnings, and comprehensive pixel art for all cats, furniture, and scenes.
 
 ---
 
@@ -58,16 +58,19 @@ A cat guild management game set in a medieval fantasy world. Built with Phaser 3
 - Cat detail/profile panel with rename and recall buttons
 - Conversation dialog (portraits with breed subtitles + text box)
 - Menus (save, furniture shop, mute music, delete save)
-- Job assignment overlay, choice overlay (Puzzle / Auto-Resolve / Station)
+- Job assignment overlay with stat details, choice overlay (Take Job / Station)
 - Result screens, name prompts, toasts
+- Pause button in status bar
 
 **Phaser canvas responsibilities:**
 - Guildhall room overview with cat sprites and furniture
-- Top-down room interior view (7x7 grid with wandering cats)
+- Top-down room interior view (7x7 grid with wandering cats, interactive furniture)
 - Town silhouette/skyline background
 - Rush Hour puzzle grid (drag interactions)
+- Sokoban crate-pushing puzzle (WASD/arrow/tap)
+- Chase minigame (cat hunts rat in procedural maze)
 - Title screen (rain particles, pixel art cat on stone wall)
-- Cat sprites and walk animations
+- Cat sprites, walk animations, and interaction animations (scratch, sit, eat)
 
 Communication between layers uses a shared `GameEventBus` singleton (`src/utils/events.ts`).
 
@@ -123,16 +126,21 @@ src/
 │   ├── GuildhallScene.ts    # Room overview — cat sprites (pixel art or fallback), furniture, lanterns
 │   ├── RoomScene.ts         # Top-down room interior — 7x7 grid, wandering cats, furniture, ambience
 │   ├── TownScene.ts         # Phaser townscape background only — UI is HTML overlay
-│   └── PuzzleScene.ts       # 6x6 Rush Hour grid — drag controls, undo, reset, win detection
+│   ├── PuzzleScene.ts       # 6x6 Rush Hour grid — drag controls, undo, reset, win detection
+│   ├── SokobanScene.ts      # 7x7 Sokoban crate-pushing puzzle with procedural generation
+│   └── ChaseScene.ts        # 13x13 Pac-Man style rat chase in procedural maze
 ├── systems/
-│   ├── SaveManager.ts       # Save/load to localStorage, SaveData interface, stationedCats migration
+│   ├── SaveManager.ts       # Save/load to localStorage, SaveData interface, room assignments
 │   ├── CatManager.ts        # Breed definitions, cat creation with variance, XP/leveling
-│   ├── JobBoard.ts          # Job templates, daily generation (chapter-gated), stat matching
-│   ├── Economy.ts           # Fish earn/spend, reward calculation, stationed earnings, isCatStationed
-│   ├── PuzzleGenerator.ts   # Puzzle configs from JSON, BFS solver for validation
+│   ├── JobBoard.ts          # 15 job templates, daily generation, stat matching with trait/mood modifiers
+│   ├── Economy.ts           # Fish earn/spend, stationed earnings with diminishing returns, station events
+│   ├── PuzzleGenerator.ts   # Procedural Rush Hour generation + BFS solver
 │   ├── BondSystem.ts        # Bond pairs, point accumulation, conversation unlock tracking
-│   ├── ProgressionManager.ts # 5-chapter gates, rat plague start/resolution checks
-│   └── OtaUpdater.ts        # Capacitor OTA update checker (manual mode, set() for immediate apply)
+│   ├── ProgressionManager.ts # 5-chapter gates, progression hints, rat plague
+│   ├── MusicManager.ts      # 8 BGM tracks + 2 puzzle tracks, pause/resume, mode switching
+│   ├── DayTimer.ts          # 3-minute days, phase display, pause support
+│   ├── SfxManager.ts        # ElevenLabs sound effects (8 SFX)
+│   └── OtaUpdater.ts        # Capacitor OTA update checker
 ├── ui/
 │   └── overlay.css          # All HTML overlay styles
 ├── data/
@@ -251,41 +259,58 @@ Hunting, Stealth, Intelligence, Endurance, Charm, Senses
 
 ## The Job System
 
-### Job Categories (MVP: 2)
+### Job Categories (2 categories, 15 templates)
 
-**Pest Control** (5 jobs): Mill Mousing, Granary Patrol, Cathedral Mousing, Warehouse Clearing, Ship Hold
-**Courier** (3 jobs): Market Letter, Monastery Dispatch, Noble's Sealed Letter
+**Pest Control** (9 jobs): Mill Mousing, Granary Patrol, Cathedral Mousing, Warehouse Clearing, Ship Hold, Tavern Cellar, Dockside Patrol, Bakery Guard, Castle Ratcatcher
+**Courier** (6 jobs): Market Letter, Monastery Dispatch, Noble's Sealed Letter, Bell Tower Dispatch, Herbalist Delivery, Night Courier
 
-Each job has: category, difficulty (easy/medium/hard), key stats, base/max reward, puzzle skin, description.
+Each job has: category, difficulty (easy/medium/hard), key stats, base/max reward, description. Assignment overlay shows key stats, individual cat stat values, trait/mood modifiers, and color-coded match percentage.
 
 ### Job Resolution
 
 When a cat is assigned to a job, the player chooses:
-1. **Solve Puzzle** — Rush Hour puzzle. Stars (1-3) determine reward multiplier (1x, 1.5x, 2x). Best rewards + XP.
-2. **Auto-Resolve** — Outcome based on stat match + RNG. Quick, lower reward.
-3. **Station Here** — Cat stays permanently at the job, earning passive daily income. Cat is unavailable for other work until recalled.
+1. **Take the Job** — Randomly selects one of 3 minigame types: Rush Hour (sliding blocks), Sokoban (crate pushing), or Chase (rat hunt in maze). Pest control jobs can get all 3; courier jobs get Rush Hour or Sokoban. Stars (1-3) determine reward multiplier.
+2. **Station Here** (level 2+ only) — Cat earns passive daily income. Diminishing returns after 5 days. Random station events (~20% chance per day).
+
+### Job Failure
+
+Quitting a puzzle costs 30% of the job's base reward in fish, drops the cat's mood, and marks the cat as worked for the day. Chase minigame timeout also triggers failure.
 
 ### One Job Per Cat Per Day
 
-- After completing a job (puzzle or auto-resolve), the cat is marked as worked for the day
-- Worked cats are filtered from the assignment list
+- After completing or failing a job, the cat is marked as worked for the day
+- Worked cats are filtered from the assignment list; town view shows availability
 - List resets when the day advances
-- Stationed cats are always unavailable regardless
+- When all cats are busy, game suggests ending the day
 
 ---
 
-## The Puzzle System: Rush Hour Sliding Blocks
+## Minigame System (3 Types)
 
-6x6 grid, axis-constrained blocks. Slide the cat token to the exit. Touch-native drag controls.
+### Rush Hour Sliding Blocks
+6x6 grid, axis-constrained blocks. Slide the cat token to the exit. Touch-native drag controls. Cat breed sprite shown on the target block.
 
-- **Procedural generation**: puzzles are randomly generated per difficulty tier, BFS-validated for solvability and minimum move count
-  - Easy: 4-6 blocks, 3-8 min moves
-  - Medium: 6-9 blocks, 6-15 min moves
-  - Hard: 8-12 blocks, 10-30 min moves
-- **5 hand-designed fallback puzzles** used if generation fails within 50 attempts
-- Star rating: 1 star (completed), 2 stars (<= 2x min moves), 3 stars (min moves)
+- **Procedural generation** with BFS validation (easy: 4-6 blocks, medium: 6-9, hard: 8-12)
+- 5 hand-designed fallback puzzles
+- Star rating: 3 stars (min moves), 2 stars (≤2x), 1 star (completed)
 - Undo, Reset, Quit buttons
-- Move counter + target moves displayed
+
+### Sokoban Crate Pushing
+7x7 grid. Push crates onto target positions. WASD/arrow/tap controls.
+
+- **Procedural generation** via reverse-play with BFS verification + deadlock detection
+- 8 hand-crafted fallback levels (easy: 2 crates, medium: 3, hard: 4)
+- Star rating based on move efficiency
+
+### Chase Minigame
+13x13 procedurally generated maze. Cat chases a rat with simple flee AI. Collect fish dots along the way.
+
+- Timer: 60s easy, 55s medium, 45s hard. Rat speed scales with difficulty.
+- Stars based on time remaining + dots collected
+- Timeout = failure penalty
+- Pest control jobs only (~33% chance)
+
+All minigames show the job name and assigned cat's sprite. Quitting triggers failure penalty.
 
 ---
 
@@ -510,12 +535,15 @@ Repository: `https://github.com/JacobStephens2/clowder` (private)
 - 1 playable starter cat (Wildcat) + 4 recruitable cats (5 breeds total)
 - Player is the founding Wildcat — names their cat at game start, can rename any cat
 - 6 cat stats, traits, mood, levels (cap 5)
-- Job board with 2 categories (Pest Control, Courier), 8 job templates
-- Rush Hour sliding block puzzle (5 hand-designed, BFS-validated)
-- Auto-resolve option for all jobs
-- **Stationed jobs** — assign cats for passive daily fish income
-- **One job per cat per day** — prevents spamming the same cat
-- **Real-time day timer** — 5-minute days with Dawn→Night phases, auto-advance
+- Job board with 2 categories (Pest Control, Courier), **15 job templates**
+- **3 minigame types**: Rush Hour (procedural), Sokoban (procedural + 8 fallback), Chase (procedural maze)
+- **No auto-resolve** — all jobs require active gameplay
+- **Job failure penalty** — fish loss, mood drop, cat used for the day
+- **Job fit details** — key stats, trait/mood modifiers, color-coded match shown when assigning
+- **Stationed jobs** — level 2+ requirement, diminishing returns after 5 days, random station events
+- **One job per cat per day** — "All Cats Busy" prompt to end day when everyone has worked
+- **Real-time day timer** — 3-minute days with Dawn→Night phases, auto-advance, pause button
+- **Fish crisis** — 2 consecutive days broke causes unhappy cat to leave; warning on load/town view
 - **End Day button** for manual day advancement
 - Guildhall with 3 rooms (sleeping, kitchen, operations)
 - **Clickable rooms** — tap to enter top-down detail view

@@ -65,4 +65,11 @@
 [x] - README.md created with full feature list
 [x] - GitHub repo description and topics updated
 [x] - Pause button in status bar (pauses timer + mutes music, play button to resume)
+[x] - New pixel art for town (PixelLab medieval street at night, replaces Phaser-drawn buildings)
+[x] - New pixel art for rooms (PixelLab stone room interior, background layer)
+[x] - Straw bed art replaced (empty bed, no cat)
+[x] - Job fit details shown (key stats, individual values, trait/mood modifiers, color-coded match)
+[x] - Fish warning on game load (toast if can't afford upkeep)
+[x] - Design document updated to v5 (matches current game state)
+[x] - Cat art on assign screen (breed sprites replace colored circles)
 [x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview

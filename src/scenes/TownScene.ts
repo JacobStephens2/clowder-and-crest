@@ -15,8 +15,16 @@ export class TownScene extends Phaser.Scene {
     eventBus.emit('show-ui');
     eventBus.emit('set-active-tab', 'town');
 
-    // Townscape background (Phaser canvas)
-    this.drawTownscape();
+    // Townscape background — use pixel art if available, fallback to Phaser-drawn
+    if (this.textures.exists('scene_town')) {
+      const townBg = this.add.sprite(GAME_WIDTH / 2, 130, 'scene_town');
+      townBg.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      // Scale to fit width
+      const scale = GAME_WIDTH / townBg.width;
+      townBg.setScale(scale);
+    } else {
+      this.drawTownscape();
+    }
 
     // Town UI is rendered as HTML overlay
     eventBus.emit('show-town-overlay');
