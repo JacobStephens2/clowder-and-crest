@@ -16,7 +16,7 @@
 [x] add an end day button at the bottom of the guild view
 [x] show wishes at the top of the guild view
 [x] remove the undo button from the sokobond / crate pushing game, as it removes consequences of actions, remove the reset button too for the same reason
-[] put full screen art in the dialogues, either of the cat talking, or of the game's setting / an unlocked location in the game
+[x] put full screen art in the dialogues, either of the cat talking, or of the game's setting / an unlocked location in the game
 [x] add a threat to the pac-man style game, something the cats have to avoid that can chase them, this can make failure more possible in this mini-game, something thematically that could injure the cat, like a dog or some or thing that could be antithetical to a cat
 [x] my wildcat wished for a nap in a warm spot, this cost 5 fish, but this wish could have required the user has a bed / some fitting furniture to fulfill the request
 [x] Playtest with real users

@@ -1881,7 +1881,7 @@ function showGroupConversation(key: string): void {
   }).join('');
 
   overlay.innerHTML = `
-    <img src="assets/sprites/dialogues/guildhall.png" style="position:absolute;top:15%;left:50%;transform:translateX(-50%);width:200px;height:120px;image-rendering:pixelated;opacity:0.15;pointer-events:none" />
+    <img src="assets/sprites/dialogues/guildhall.png" style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:420px;image-rendering:pixelated;opacity:0.25;pointer-events:none" />
     <div class="conversation-portraits" style="justify-content:center;gap:8px;flex-wrap:wrap">${portraitsHtml}</div>
     <div class="conversation-textbox">
       <div style="color:#c4956a;font-size:12px;margin-bottom:4px">${convo.title}</div>
@@ -1946,9 +1946,8 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
   const overlay = document.createElement('div');
   overlay.className = 'conversation-overlay';
 
-  // Add scene art background based on conversation rank
+  // Full-screen scene art background based on conversation rank
   const sceneArt = rank === 'A' ? 'rooftop' : rank === 'B' ? 'granary' : 'guildhall';
-  overlay.innerHTML = `<img src="assets/sprites/dialogues/${sceneArt}.png" style="position:absolute;top:15%;left:50%;transform:translateX(-50%);width:200px;height:120px;image-rendering:pixelated;opacity:0.15;pointer-events:none" />`;
 
   const catA = gameState!.cats.find((c) => c.breed === breedA);
   const catB = gameState!.cats.find((c) => c.breed === breedB);
@@ -1963,6 +1962,7 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
   const portraitImgB = `<img src="assets/sprites/${breedB}/south.png" style="width:72px;height:72px;image-rendering:pixelated;margin-bottom:4px" />`;
 
   overlay.innerHTML = `
+    <img src="assets/sprites/dialogues/${sceneArt}.png" style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:420px;image-rendering:pixelated;opacity:0.25;pointer-events:none" />
     <div class="conversation-portraits">
       <div class="conversation-portrait" id="portrait-left" style="background:${colorA}">
         ${portraitImgA}
