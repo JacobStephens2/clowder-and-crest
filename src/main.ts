@@ -1116,7 +1116,7 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
     <div class="assign-choice" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center">
       <button class="btn-puzzle minigame-btn" data-game="puzzle" style="flex:1;min-width:140px">\u{1F9E9} Slide Blocks</button>
       <button class="btn-puzzle minigame-btn" data-game="sokoban" style="flex:1;min-width:140px">\u{1F4E6} Push Crates</button>
-      <button class="btn-puzzle minigame-btn" data-game="fishing" style="flex:1;min-width:140px">\u{1F3A3} Fish</button>
+      ${['courier', 'guard'].includes(job.category) ? '<button class="btn-puzzle minigame-btn" data-game="fishing" style="flex:1;min-width:140px">\u{1F3A3} Fish</button>' : ''}
       ${['pest_control', 'detection', 'shadow'].includes(job.category) ? '<button class="btn-puzzle minigame-btn" data-game="chase" style="flex:1;min-width:140px">\u{1F400} Chase</button>' : ''}
     </div>
     <div style="margin-top:16px;padding-top:12px;border-top:1px solid #3a3530">
