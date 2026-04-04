@@ -56,6 +56,7 @@ export interface SaveData {
   flags: Record<string, boolean>;
   availableRecruits: string[];
   stationedCats: StationedJob[];
+  lastPlayedTimestamp?: number;
 }
 
 const SAVE_KEY = 'clowder_and_crest_save';
@@ -101,6 +102,7 @@ export function createDefaultSave(playerCatName: string): SaveData {
 
 export function saveGame(data: SaveData): void {
   try {
+    data.lastPlayedTimestamp = Date.now();
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
   } catch (e) {
     console.error('Failed to save game:', e);

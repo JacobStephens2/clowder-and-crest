@@ -203,10 +203,25 @@ function showDayTransition(day: number, recap?: { foodCost: number; stationedEar
       recapHtml = `<div style="color:#8b7355;font-family:Georgia,serif;font-size:11px;margin-top:12px;text-align:center;max-width:280px">${lines.join('<br>')}</div>`;
     }
   }
+  // Tomorrow's job preview — teaser for what's coming
+  let previewHtml = '';
+  if (gameState) {
+    const previewJobs = generateDailyJobs(gameState);
+    if (previewJobs.length > 0) {
+      const teaser = previewJobs[Math.floor(Math.random() * previewJobs.length)];
+      previewHtml = `<div style="color:#6b8ea6;font-family:Georgia,serif;font-size:10px;margin-top:12px;font-style:italic">"${teaser.name}" appears on the job board...</div>`;
+    }
+    const festival = getCurrentFestival(day);
+    if (festival) {
+      previewHtml += `<div style="color:#dda055;font-family:Georgia,serif;font-size:10px;margin-top:4px">\u{1F389} ${festival.name} today!</div>`;
+    }
+  }
+
   overlay.innerHTML = `
     <div style="color:#c4956a;font-family:Georgia,serif;font-size:28px;margin-bottom:4px">Day ${day}</div>
     <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:14px">A new day dawns...</div>
     ${recapHtml}
+    ${previewHtml}
   `;
   document.body.appendChild(overlay);
   requestAnimationFrame(() => { overlay.style.opacity = '1'; });
@@ -469,8 +484,31 @@ eventBus.on('game-loaded', (save: SaveData) => {
   startBgm();
   startDayTimer();
 
+  // Offline stationed earnings (capped at 5 days)
+  if (save.lastPlayedTimestamp && save.stationedCats.length > 0) {
+    const hoursAway = (Date.now() - save.lastPlayedTimestamp) / (1000 * 60 * 60);
+    const daysAway = Math.min(5, Math.floor(hoursAway / 1)); // 1 real hour = 1 game day offline
+    if (daysAway >= 1) {
+      let offlineEarnings = 0;
+      for (const stationed of save.stationedCats) {
+        const job = getJob(stationed.jobId);
+        if (!job) continue;
+        const cat = save.cats.find((c) => c.id === stationed.catId);
+        if (!cat) continue;
+        const match = getStatMatchScore(cat, job);
+        const dailyEarn = Math.max(1, Math.floor(job.baseReward * 0.3 + job.baseReward * match * 0.3));
+        offlineEarnings += dailyEarn * daysAway;
+      }
+      if (offlineEarnings > 0) {
+        earnFish(save, offlineEarnings);
+        saveGame(save);
+        setTimeout(() => showToast(`Your stationed cats earned ${offlineEarnings} fish while you were away! (${daysAway} day${daysAway > 1 ? 's' : ''})`), 500);
+      }
+    }
+  }
+
   // Welcome back message
-  if (save.totalJobsCompleted > 0) {
+  if (save.totalJobsCompleted > 0 && !save.lastPlayedTimestamp) {
     const catNames = save.cats.slice(0, 3).map((c) => c.name).join(', ');
     setTimeout(() => showToast(`Welcome back! ${catNames}${save.cats.length > 3 ? ` and ${save.cats.length - 3} others` : ''} await your orders.`), 500);
   }
@@ -1589,7 +1627,16 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
       overlay.remove();
       markConversationViewed(gameState!, breedA, breedB, rank);
       saveGame(gameState!);
-      showToast(`Bond deepened: ${nameA} & ${nameB}`);
+
+      // Cliffhanger for C and B rank conversations
+      if (rank === 'C') {
+        showToast(`${nameA} & ${nameB} are getting to know each other... (keep building their bond)`);
+      } else if (rank === 'B') {
+        showToast(`${nameA} & ${nameB} have more to say... something important is on their mind.`);
+      } else {
+        showToast(`${nameA} & ${nameB} have reached their deepest bond.`);
+      }
+
       switchScene('TownScene');
       return;
     }
