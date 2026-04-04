@@ -1,8 +1,8 @@
-# Clowder & Crest — Design Document v5
+# Clowder & Crest — Design Document v6
 
 A cat guild management game set in a medieval fantasy world. Built with Phaser 3 + TypeScript + Capacitor for Android and web.
 
-**What changed from v4:** Added 4 minigame types (Rush Hour, Sokoban, Chase, Fishing), removed auto-resolve, 24 job templates across 5 categories (pest control, courier, guard, sacred, detection), cat room assignments, furniture drag-to-rearrange and room transfer, interactive furniture with sleep animations, cat interaction (click to bond), fish crisis mechanic, pause button, ElevenLabs sound effects, job fit details, daily cost warnings, traveling merchant NPC, station crisis events, reputation system (Crest/Shadow), multi-cat group conversations, time-of-day town art, themed puzzle blocks, and comprehensive pixel art for all cats, furniture, and scenes.
+**What changed from v5:** 30 total jobs across 5 balanced categories. All 10 breed pairings track bonds. Introductory story sequence. Job combo chains, daily cat wishes, reputation tier bonuses with recruit cost modifiers, bond milestone celebrations. Welcome-back message on load. Cat sprites in recruitment area. Tab navigation sounds. Room entry cat reactions. New player guidance text. Responsive mobile layout. Restart game option. 14 sound effects. Comprehensive meta tags for SEO/sharing.
 
 ---
 
@@ -524,7 +524,7 @@ Bump `versionCode` in `android/app/build.gradle` for each APK upload. OTA update
 
 ### GitHub
 
-Repository: `https://github.com/JacobStephens2/clowder` (private)
+Repository: `https://github.com/JacobStephens2/clowder-and-crest`
 
 ---
 
@@ -535,15 +535,20 @@ Repository: `https://github.com/JacobStephens2/clowder` (private)
 - 1 playable starter cat (Wildcat) + 4 recruitable cats (5 breeds total)
 - Player is the founding Wildcat — names their cat at game start, can rename any cat
 - 6 cat stats, traits, mood, levels (cap 5)
-- Job board with 2 categories (Pest Control, Courier), **15 job templates**
-- **3 minigame types**: Rush Hour (procedural), Sokoban (procedural + 8 fallback), Chase (procedural maze)
+- Job board with 5 categories (Pest Control, Courier, Guard, Sacred, Detection), **30 job templates**
+- **4 minigame types**: Rush Hour (procedural), Sokoban (procedural + 8 fallback), Chase (procedural maze), Fishing (reel-in mechanic)
 - **No auto-resolve** — all jobs require active gameplay
 - **Job failure penalty** — fish loss, mood drop, cat used for the day
 - **Job fit details** — key stats, trait/mood modifiers, color-coded match shown when assigning
+- **Job combo chains** — same cat + same category on consecutive days = up to +25% reward
+- **Completed jobs removed** from daily board (cached per day)
 - **Stationed jobs** — level 2+ requirement, diminishing returns after 5 days, random station events
+- **Station crisis events** — ~10% daily chance requiring player intervention (Chapter 3+)
 - **One job per cat per day** — "All Cats Busy" prompt to end day when everyone has worked
 - **Real-time day timer** — 3-minute days with Dawn→Night phases, auto-advance, pause button
 - **Fish crisis** — 2 consecutive days broke causes unhappy cat to leave; warning on load/town view
+- **Traveling merchant** — appears every 3rd day with special items (Catnip Elixir, Lucky Fishbone, Training Scroll, Saint's Blessing)
+- **Reputation system** (Crest/Shadow) — Sacred/Guard shift noble, Detection shifts shadow. Affects recruit costs and daily income bonuses
 - **End Day button** for manual day advancement
 - Guildhall with 3 rooms (sleeping, kitchen, operations)
 - **Clickable rooms** — tap to enter top-down detail view
@@ -551,10 +556,10 @@ Repository: `https://github.com/JacobStephens2/clowder` (private)
 - 15 furniture items with auto-placement on purchase
 - Fish economy with balanced income/costs
 - 5-chapter progression with Rat Plague as central crisis
-- 3 bond pairs with 9 conversation scripts
+- **All 10 bond pairings** tracked with 30 pair conversations + 3 group conversations (33 total)
 - **Breed subtitles** in conversation portrait circles and speaker labels
 - **Cat renaming** from the Cats panel
-- **Background music** — 4 tracks rotating randomly, mute toggle in menu
+- **Background music** — 10 ambient + 2 puzzle tracks, separate music/SFX mute toggles
 - **Pixel art sprites** — all 5 breeds have idle (4 directions) + walk (4 directions x 6 frames)
 - Pixel art on title screen, guildhall overview, and room detail view
 - **Procedural puzzle generation** — BFS-validated random puzzles per difficulty tier
@@ -566,9 +571,14 @@ Repository: `https://github.com/JacobStephens2/clowder` (private)
 - **Stationed job improvements** — level 2+ requirement, diminishing returns after 5 days
 - **Progression hints** — menu shows next chapter requirements
 - **Extracted MusicManager and DayTimer** — reduced main.ts god-file
-- **All 10 conversation pairings** — 30 scripts total (up from 9)
-- **Station events** — random daily events affect stationed cat earnings and mood
-- **Interactive furniture** — click scratching post, catnip, beds, etc. to send player cat
+- **Interactive furniture** — click scratching post, catnip, beds to send player cat; sleep animations for all breeds on beds
+- **Cat interaction** — click cats in rooms to walk over, bond (+1 point), hear purr, see heart animation
+- **Daily cat wishes** — one random cat per day has a wish; fulfill for mood/bond/stat rewards
+- **Bond milestone celebrations** — fanfare + heart toast when bond rank increases
+- **14 sound effects** (ElevenLabs) — victory, recruit, furniture, rat caught, fish splash, fail, purr, hiss, bell, quill, fanfare, tap, block slide, fish earn
+- **Introductory story sequence** — 6-panel narrative intro for new games with scene art
+- **Welcome back message** on game load with cat names
+- **New player guidance** — contextual hints for first jobs, recruitment, bonds
 - **Day transition overlay** — full-screen "Day N" indicator on day change
 - **Continuous key movement** — holding WASD moves cat continuously
 - **Trait tooltips** — hover shows mechanical effects in cat panel
@@ -581,15 +591,14 @@ Repository: `https://github.com/JacobStephens2/clowder` (private)
 - Web build served at `https://clowder.stephens.page`
 - Portrait orientation, thumb-zone UI
 
-### Not in MVP v1 (Designed, Deferred)
+### Not Yet Implemented (Designed, Deferred)
 
-- Crest/Shadow moral reputation system (architecture placeholder in SaveData)
-- Sacred, Shadow, Guard, Detection, Healing job categories
 - Big cats (Lynx, Lion, Leopard) and additional breeds
-- Nonogram and other puzzle types
-- Furniture drag-to-place (currently auto-placed on purchase)
-- Town map exploration
-- Individual cat rooms
+- Nonogram and light-path puzzle types
+- Town map exploration (isometric overworld)
+- Individual cat rooms (personal decoration per cat)
+- Shadow job categories (thievery, espionage)
+- Healing job category (herbalist, sickbed companion)
 - Cat stat effects on puzzles (Intelligence highlights, etc.)
 - Sound effects (SFX)
 - Signed release APK (currently debug builds)

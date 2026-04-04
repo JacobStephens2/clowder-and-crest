@@ -6,15 +6,23 @@ A cozy medieval cat guild management game. Recruit cats, take jobs, solve puzzle
 
 ## Features
 
-- **5 cat breeds** with pixel art sprites and walk animations (Wildcat, Russian Blue, Tuxedo, Maine Coon, Siamese)
-- **3 puzzle/minigame types** per job: Rush Hour sliding blocks, Sokoban crate pushing, and Pac-Man style rat chase
-- **15 job templates** across pest control and courier categories
-- **Guildhall with 3 rooms** — place furniture, assign cats to rooms, drag to rearrange
-- **Bond system** with 30 conversation scripts across all 10 cat pairings
-- **Real-time day cycle** (3-minute days) with Dawn-to-Night phases
-- **Economy** with daily food upkeep, stationed passive income, and fish crisis mechanics
-- **8 background music tracks** + ElevenLabs-generated sound effects
+- **5 cat breeds** with pixel art sprites, walk animations, and sleeping poses (Wildcat, Russian Blue, Tuxedo, Maine Coon, Siamese)
+- **4 minigame types**: Rush Hour sliding blocks, Sokoban crate pushing, Pac-Man style rat chase, and fishing
+- **30 jobs** across 5 categories: Pest Control, Courier, Guard, Sacred, Detection
+- **Guildhall with 3 rooms** — 15 furniture items with pixel art, drag to rearrange, move between rooms
+- **Bond system** with 33 conversation scripts (30 pair + 3 group) across all 10 cat pairings
+- **Reputation system** (Crest/Shadow) — affects recruit costs and daily income
+- **Traveling merchant** with special items (Catnip Elixir, Lucky Fishbone, Training Scroll, Saint's Blessing)
+- **Station crisis events** requiring player intervention
+- **Job combo chains** for consecutive same-category work
+- **Daily cat wishes** for micro-goals and bonding
+- **Real-time day cycle** (3-minute days) with Dawn-to-Night phases and time-of-day town art
+- **Economy** with scaling upkeep, stationed passive income, fish crisis mechanics, and reputation bonuses
+- **Introductory story sequence** setting up the Rags to Riches narrative
+- **12 music tracks** (8 ambient + 2 puzzle + 2 cat sounds) + 14 ElevenLabs sound effects
 - **Procedural puzzle generation** with BFS validation
+- **Pause system** that halts timer and mutes audio
+- **Save export/import** to protect against data loss
 - **OTA updates** for the Android APK via Capacitor
 
 ## Tech Stack
@@ -40,4 +48,4 @@ See [CLAUDE.md](CLAUDE.md) for full project structure and design decisions.
 
 ## License
 
-All rights reserved.
+CC BY-NC-SA 4.0 — See [LICENSE](LICENSE) for details.
