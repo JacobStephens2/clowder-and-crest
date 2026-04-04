@@ -57,4 +57,5 @@
 [x] - Room detail view matches guildhall overview (same cats per room, player cat always present)
 [x] - Stationed cats hidden in room views (no more faded "away" ghosts)
 [x] - Wildcat chirp sound added (50/50 with meow when idle in room)
+[x] - Click cat in room to interact (player walks over, heart animation, +1 bond points, purr sound)
 [x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview

@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
 import { eventBus } from '../utils/events';
-import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS } from '../utils/constants';
+import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS, BREED_NAMES } from '../utils/constants';
 import { getGameState } from '../main';
 import type { SaveData } from '../systems/SaveManager';
 import { saveGame } from '../systems/SaveManager';
 import { isCatStationed } from '../systems/Economy';
+import { addBondPoints } from '../systems/BondSystem';
 
 const BREEDS_WITH_SPRITES = new Set(['wildcat', 'russian_blue', 'tuxedo', 'maine_coon', 'siamese']);
 
@@ -632,6 +633,52 @@ export class RoomScene extends Phaser.Scene {
 
     let currentTile = { ...startTile };
 
+    // Clickable hitbox — click to interact with this cat
+    const hitBox = this.add.rectangle(x, y, TILE_SIZE, TILE_SIZE, 0x000000, 0)
+      .setInteractive({ useHandCursor: true });
+    hitBox.on('pointerdown', () => {
+      if (!this.playerMoveTo) return;
+      // Find adjacent open tile to this cat
+      const neighbors = [
+        { col: currentTile.col - 1, row: currentTile.row },
+        { col: currentTile.col + 1, row: currentTile.row },
+        { col: currentTile.col, row: currentTile.row - 1 },
+        { col: currentTile.col, row: currentTile.row + 1 },
+      ].filter((t) => this.openTileSet.has(`${t.col},${t.row}`));
+      const target = neighbors[0];
+      if (!target) return;
+
+      this.playerMoveTo(target.col, target.row, () => {
+        // Play purr sound
+        if (this.cache.audio.exists('sfx_purr')) {
+          this.sound.play('sfx_purr', { volume: 0.4 });
+        }
+        // Show heart above both cats
+        const catWorld = toWorld(currentTile.col, currentTile.row);
+        const heart = this.add.text(catWorld.x, catWorld.y - 30, '\u2764', {
+          fontSize: '16px',
+        }).setOrigin(0.5);
+        this.tweens.add({
+          targets: heart, y: heart.y - 20, alpha: 0, duration: 1200,
+          onComplete: () => heart.destroy(),
+        });
+        // Bond points + toast
+        const save = getGameState();
+        if (save) {
+          const playerCat = save.cats.find((c) => c.id === 'player_wildcat');
+          if (playerCat) {
+            addBondPoints(save, playerCat.breed, cat.breed, 1);
+            saveGame(save);
+          }
+        }
+        const actionText = document.createElement('div');
+        actionText.className = 'toast';
+        actionText.textContent = `${cat.name} and your wildcat share a moment.`;
+        document.getElementById('overlay-layer')?.appendChild(actionText);
+        setTimeout(() => actionText.remove(), 2500);
+      });
+    });
+
     const wanderToNext = () => {
       const idleTime = 2000 + Math.random() * 3000;
 
@@ -659,6 +706,7 @@ export class RoomScene extends Phaser.Scene {
           this.tweens.add({ targets: fallbackGfx, x: dest.x, y: dest.y, duration, ease: 'Linear' });
         }
         this.tweens.add({ targets: shadow, x: dest.x, y: dest.y + 12, duration, ease: 'Linear' });
+        this.tweens.add({ targets: hitBox, x: dest.x, y: dest.y, duration, ease: 'Linear' });
         this.tweens.add({
           targets: nameTag, x: dest.x, y: dest.y + 18, duration, ease: 'Linear',
           onComplete: () => { currentTile = { ...nextTile }; wanderToNext(); },
