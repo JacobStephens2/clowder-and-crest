@@ -58,4 +58,8 @@
 [x] - Stationed cats hidden in room views (no more faded "away" ghosts)
 [x] - Wildcat chirp sound added (50/50 with meow when idle in room)
 [x] - Click cat in room to interact (player walks over, heart animation, +1 bond points, purr sound)
+[x] - Cat artwork in cat list (breed sprite replaces colored circle)
+[x] - Cat artwork in dialogue portraits (breed sprite in conversation)
+[x] - Daily costs visible on town view (upkeep breakdown + fish warning)
+[x] - Fish crisis: cat leaves guild after 2 consecutive days broke + warning on town view
 [x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview

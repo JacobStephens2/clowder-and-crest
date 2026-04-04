@@ -438,6 +438,15 @@ eventBus.on('show-town-overlay', () => {
   }
   html += `</div></div>`;
 
+  // Daily costs summary
+  const unlockedRoomCount = gameState.rooms.filter((r) => r.unlocked).length;
+  const dailyCost = gameState.cats.length * 2 + unlockedRoomCount;
+  const canAffordUpkeep = gameState.fish >= dailyCost;
+  html += `<div style="padding:4px 12px 8px;font-size:11px;color:${canAffordUpkeep ? '#8b7355' : '#cc6666'};font-family:Georgia,serif">
+    Daily upkeep: ${dailyCost} fish (${gameState.cats.length} cats + ${unlockedRoomCount} rooms) | Fish: ${gameState.fish}
+    ${!canAffordUpkeep ? '<br><strong>Warning: Cannot afford upkeep! A cat may leave the guild.</strong>' : ''}
+  </div>`;
+
   // End Day button
   html += `
     <div class="town-section-divider"></div>
@@ -741,13 +750,29 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
     }
   } else {
     // Can't afford full food — cats go hungry, mood drops
+    const wasAlreadyBroke = gameState.fish === 0;
     gameState.fish = 0;
     for (const cat of gameState.cats) {
       if (cat.mood === 'happy') cat.mood = 'content';
       else if (cat.mood === 'content') cat.mood = 'tired';
       else cat.mood = 'unhappy';
     }
-    showToast(`Not enough fish to feed ${gameState.cats.length} cats!`);
+
+    // If broke two days in a row, an unhappy non-player cat may leave
+    if (wasAlreadyBroke && gameState.cats.length > 1) {
+      const unhappyCats = gameState.cats.filter((c) => c.mood === 'unhappy' && c.id !== 'player_wildcat');
+      if (unhappyCats.length > 0) {
+        const leaver = unhappyCats[Math.floor(Math.random() * unhappyCats.length)];
+        gameState.cats = gameState.cats.filter((c) => c.id !== leaver.id);
+        gameState.stationedCats = gameState.stationedCats.filter((s) => s.catId !== leaver.id);
+        showToast(`${leaver.name} the ${BREED_NAMES[leaver.breed] ?? leaver.breed} left the guild — too hungry to stay.`);
+        playSfx('hiss');
+      } else {
+        showToast(`Not enough fish! Cats may leave if this continues.`);
+      }
+    } else {
+      showToast(`Not enough fish to feed ${gameState.cats.length} cats! Cats may leave soon.`);
+    }
   }
 
   // Collect stationed earnings
@@ -914,13 +939,18 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
   const breedNameA = BREED_NAMES[breedA] ?? breedA;
   const breedNameB = BREED_NAMES[breedB] ?? breedB;
 
+  const portraitImgA = `<img src="assets/sprites/${breedA}/south.png" style="width:48px;height:48px;image-rendering:pixelated;margin-bottom:4px" />`;
+  const portraitImgB = `<img src="assets/sprites/${breedB}/south.png" style="width:48px;height:48px;image-rendering:pixelated;margin-bottom:4px" />`;
+
   overlay.innerHTML = `
     <div class="conversation-portraits">
       <div class="conversation-portrait" id="portrait-left" style="background:${colorA}">
+        ${portraitImgA}
         <div class="portrait-name">${nameA}</div>
         <div class="portrait-breed">${breedNameA}</div>
       </div>
       <div class="conversation-portrait" id="portrait-right" style="background:${colorB}">
+        ${portraitImgB}
         <div class="portrait-name">${nameB}</div>
         <div class="portrait-breed">${breedNameB}</div>
       </div>
@@ -989,9 +1019,14 @@ function showCatPanel(): void {
     const stationed = gameState!.stationedCats.find((s) => s.catId === cat.id);
     const stationedJob = stationed ? getJob(stationed.jobId) : undefined;
 
+    const spriteExists = ['wildcat', 'russian_blue', 'tuxedo', 'maine_coon', 'siamese'].includes(cat.breed);
+    const avatarHtml = spriteExists
+      ? `<img src="assets/sprites/${cat.breed}/south.png" style="width:40px;height:40px;image-rendering:pixelated;border-radius:50%;background:${color}" />`
+      : `<div class="cat-avatar" style="background:${color}"></div>`;
+
     html += `<div class="cat-card">
       <div class="cat-card-header">
-        <div class="cat-avatar" style="background:${color}"></div>
+        ${avatarHtml}
         <div style="flex:1">
           <div class="cat-card-name">${cat.name}${cat.isPlayer ? ' (You)' : ''} <button class="rename-btn" data-cat-id="${cat.id}">Rename</button></div>
           <div class="cat-card-breed">${breedName} | Lv.${cat.level} | ${cat.mood}</div>
