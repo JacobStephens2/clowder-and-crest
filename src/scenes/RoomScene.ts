@@ -29,11 +29,11 @@ function worldToGrid(wx: number, wy: number): { col: number; row: number } {
 }
 
 // Interactive furniture: cats can walk to these and perform an action
-const INTERACTIVE_FURNITURE: Record<string, { action: string; duration: number }> = {
-  scratching_post: { action: 'scratching', duration: 2000 },
-  potted_catnip: { action: 'sniffing catnip', duration: 1500 },
-  cushioned_basket: { action: 'curling up', duration: 2500 },
-  straw_bed: { action: 'lying down', duration: 2500 },
+const INTERACTIVE_FURNITURE: Record<string, { action: string; duration: number; anim?: string }> = {
+  scratching_post: { action: 'scratching', duration: 2000, anim: 'scratch' },
+  potted_catnip: { action: 'sniffing catnip', duration: 1500, anim: 'eat' },
+  cushioned_basket: { action: 'curling up', duration: 2500, anim: 'sit' },
+  straw_bed: { action: 'lying down', duration: 2500, anim: 'sit' },
   bookshelf: { action: 'investigating', duration: 1500 },
 };
 
@@ -42,6 +42,8 @@ export class RoomScene extends Phaser.Scene {
   private openTiles: { col: number; row: number }[] = [];
   private openTileSet = new Set<string>();
   private playerMoveTo: ((col: number, row: number, onArrive?: () => void) => void) | null = null;
+  private playerSprite: Phaser.GameObjects.Sprite | null = null;
+  private playerBreed = 'wildcat';
 
   constructor() {
     super({ key: 'RoomScene' });
@@ -209,6 +211,15 @@ export class RoomScene extends Phaser.Scene {
 
           if (target && this.playerMoveTo) {
             this.playerMoveTo(target.col, target.row, () => {
+              // Play interaction animation if available
+              const animKey = interaction.anim ? `${this.playerBreed}_${interaction.anim}` : null;
+              if (animKey && this.playerSprite && this.anims.exists(animKey)) {
+                this.playerSprite.play(animKey);
+                this.playerSprite.once('animationcomplete', () => {
+                  this.playerSprite?.setTexture(`${this.playerBreed}_idle_south`);
+                  this.playerSprite?.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+                });
+              }
               // Show interaction toast
               const actionText = document.createElement('div');
               actionText.className = 'toast';
@@ -336,6 +347,8 @@ export class RoomScene extends Phaser.Scene {
       sprite = this.add.sprite(x, y - 4, `${cat.breed}_idle_south`);
       sprite.setScale(1.2);
       sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      this.playerSprite = sprite;
+      this.playerBreed = cat.breed;
     } else {
       const color = parseInt((BREED_COLORS[cat.breed] ?? '#8b7355').replace('#', ''), 16);
       fallbackGfx = this.add.graphics();
