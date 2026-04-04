@@ -172,7 +172,9 @@ export class ChaseScene extends Phaser.Scene {
     this.caught = false;
     this.moveCount = 0;
     this.dotsCollected = 0;
-    this.timeLeft = this.difficulty === 'hard' ? 45 : this.difficulty === 'medium' ? 55 : 60;
+    // Base time + bonus from cat's hunting stat
+    const huntingBonus = cat ? Math.floor(cat.stats.hunting * 1.5) : 0;
+    this.timeLeft = (this.difficulty === 'hard' ? 45 : this.difficulty === 'medium' ? 55 : 60) + huntingBonus;
   }
 
   create(): void {
@@ -203,7 +205,10 @@ export class ChaseScene extends Phaser.Scene {
       }).setOrigin(0.5);
     }
 
-    this.add.text(GAME_WIDTH / 2, 48, 'Catch the rat! Collect fish along the way.', {
+    const gameSave = getGameState();
+    const huntStat = gameSave?.cats.find((c: any) => c.id === this.catId)?.stats.hunting ?? 0;
+    const bonusText = huntStat >= 5 ? ` (+${Math.floor(huntStat * 1.5)}s from Hunting)` : '';
+    this.add.text(GAME_WIDTH / 2, 48, `Catch the rat!${bonusText}`, {
       fontFamily: 'Georgia, serif', fontSize: '10px', color: '#6b5b3e',
     }).setOrigin(0.5);
 

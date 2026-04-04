@@ -1083,9 +1083,11 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
   const prev = gameState.puzzlesCompleted[puzzleId] ?? 0;
   if (stars > prev) gameState.puzzlesCompleted[puzzleId] = stars;
 
-  // XP (bonus for puzzle)
+  // XP (bonus for puzzle, modified by reputation)
   const xpMap: Record<string, number> = { easy: 30, medium: 55, hard: 90 };
-  const xp = xpMap[job.difficulty] ?? 30;
+  let xp = xpMap[job.difficulty] ?? 30;
+  const repXpBonus = getReputationBonuses(gameState.reputationScore).xpBonus;
+  if (repXpBonus !== 0) xp = Math.max(1, Math.floor(xp * (1 + repXpBonus)));
   const leveled = addXp(cat, xp);
 
   // Bond points (with rank-up celebration)
@@ -1180,9 +1182,11 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
   jobsCompletedToday.clear();
   cachedDailyJobs = null;
 
-  // Daily upkeep: 2 fish per cat + 1 per unlocked room (guild maintenance)
+  // Daily upkeep scales with chapter: base 2/cat + 1/room + chapter bonus
+  // This prevents runaway profit as the guild grows
   const unlockedRooms = gameState.rooms.filter((r) => r.unlocked).length;
-  const foodCost = gameState.cats.length * 2 + unlockedRooms;
+  const chapterUpkeep = Math.max(0, gameState.chapter - 1) * 2; // +2 per chapter beyond 1
+  const foodCost = gameState.cats.length * 2 + unlockedRooms + chapterUpkeep;
   if (gameState.fish >= foodCost) {
     gameState.fish -= foodCost;
     // Well-fed cats recover mood
@@ -1302,6 +1306,15 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
   }
 
   processDailyBonds(gameState);
+
+  // Reputation bond bonus/penalty applied daily
+  const repBondBonus = getReputationBonuses(gameState.reputationScore).bondBonus;
+  if (repBondBonus !== 0) {
+    for (const bond of gameState.bonds) {
+      bond.points = Math.max(0, bond.points + repBondBonus);
+    }
+  }
+
   checkRatPlagueResolution(gameState);
   checkChapterAdvance(gameState);
   saveGame(gameState);
@@ -1796,6 +1809,9 @@ function showMenuPanel(): void {
       Chapter ${gameState.chapter}: ${chapterName}<br>
       Day ${gameState.day} | ${gameState.cats.length} cats | ${gameState.totalJobsCompleted} jobs done<br>
       Reputation: ${getReputationLabel(gameState.reputationScore)} (${gameState.reputationScore > 0 ? '+' : ''}${gameState.reputationScore})
+    </div>
+    <div style="margin-bottom:8px;padding:6px 12px;background:rgba(42,37,32,0.4);border-radius:4px;font-size:11px;color:#8b7355;font-style:italic">
+      ${getReputationBonuses(gameState.reputationScore).description}
     </div>
     ${progressHint ? `<div style="margin-bottom:12px;color:#6b8ea6;font-size:12px;font-style:italic">${progressHint}</div>` : ''}
     <div style="margin-bottom:16px;padding:8px 12px;background:rgba(42,37,32,0.6);border-radius:4px;font-size:12px;color:#8b7355">
