@@ -393,6 +393,11 @@ function showIntroStory(catName: string, onComplete: () => void): void {
     if (panelIndex >= panels.length) {
       overlay.style.transition = 'opacity 0.5s';
       overlay.style.opacity = '0';
+      // Fade out intro music
+      const fadeOut = setInterval(() => {
+        if (introMusic.volume > 0.05) { introMusic.volume -= 0.05; }
+        else { introMusic.pause(); clearInterval(fadeOut); }
+      }, 100);
       setTimeout(() => { overlay.remove(); onComplete(); }, 500);
       return;
     }
@@ -427,8 +432,15 @@ function showIntroStory(catName: string, onComplete: () => void): void {
   skipBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     overlay.remove();
+    introMusic.pause();
     onComplete();
   });
+
+  // Play intro music
+  const introMusic = new Audio('assets/audio/intro.mp3');
+  introMusic.volume = 0.4;
+  introMusic.loop = false;
+  introMusic.play().catch(() => {});
 
   document.body.appendChild(overlay);
 }
