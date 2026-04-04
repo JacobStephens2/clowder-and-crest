@@ -756,12 +756,13 @@ eventBus.on('show-town-overlay', () => {
   }
   html += `</div></div>`;
 
-  // Daily costs summary
+  // Daily costs summary (must match advanceDay calculation)
   const unlockedRoomCount = gameState.rooms.filter((r) => r.unlocked).length;
-  const dailyCost = gameState.cats.length * 2 + unlockedRoomCount;
+  const chapterUpkeep = Math.max(0, gameState.chapter - 1) * 2;
+  const dailyCost = gameState.cats.length * 2 + unlockedRoomCount + chapterUpkeep;
   const canAffordUpkeep = gameState.fish >= dailyCost;
   html += `<div style="padding:4px 12px 8px;font-size:11px;color:${canAffordUpkeep ? '#8b7355' : '#cc6666'};font-family:Georgia,serif">
-    Daily upkeep: ${dailyCost} fish (${gameState.cats.length} cats + ${unlockedRoomCount} rooms) | Fish: ${gameState.fish}
+    Daily upkeep: ${dailyCost} fish (${gameState.cats.length} cats + ${unlockedRoomCount} rooms${chapterUpkeep > 0 ? ` + ${chapterUpkeep} guild costs` : ''}) | Fish: ${gameState.fish}
     ${!canAffordUpkeep ? '<br><strong>Warning: Cannot afford upkeep! A cat may leave the guild.</strong>' : ''}
   </div>`;
 
@@ -1952,7 +1953,8 @@ function showMenuPanel(): void {
       <div style="margin-bottom:4px;color:#c4956a">Daily Costs:</div>
       <div>Cat food: ${gameState.cats.length} cats x 2 = ${gameState.cats.length * 2} fish</div>
       <div>Guild upkeep: ${gameState.rooms.filter(r => r.unlocked).length} rooms = ${gameState.rooms.filter(r => r.unlocked).length} fish</div>
-      <div style="margin-top:4px;color:#c4956a">Total: ${gameState.cats.length * 2 + gameState.rooms.filter(r => r.unlocked).length} fish/day</div>
+      ${Math.max(0, gameState.chapter - 1) > 0 ? `<div>Guild costs: Chapter ${gameState.chapter} = ${Math.max(0, gameState.chapter - 1) * 2} fish</div>` : ''}
+      <div style="margin-top:4px;color:#c4956a">Total: ${gameState.cats.length * 2 + gameState.rooms.filter(r => r.unlocked).length + Math.max(0, gameState.chapter - 1) * 2} fish/day</div>
     </div>
     <button class="menu-btn" id="menu-save">Save Game</button>
     <button class="menu-btn" id="menu-furniture">Furniture Shop</button>

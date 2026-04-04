@@ -182,6 +182,24 @@ export class ChaseScene extends Phaser.Scene {
     this.cameras.main.setZoom(DPR);
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
+    // Tutorial on first play
+    if (!localStorage.getItem('clowder_chase_tutorial')) {
+      localStorage.setItem('clowder_chase_tutorial', '1');
+      const t = document.createElement('div');
+      t.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
+      t.innerHTML = `
+        <div style="color:#c4956a;font-family:Georgia,serif;font-size:22px;margin-bottom:12px">Chase the Rat!</div>
+        <div style="color:#8b7355;font-family:Georgia,serif;font-size:14px;text-align:center;max-width:280px;line-height:1.6">
+          Navigate the maze to <strong>catch the rat</strong> before time runs out.<br><br>
+          Use the <strong>d-pad buttons</strong>, <strong>swipe</strong>, or <strong>WASD/arrows</strong> to move.<br><br>
+          Collect <strong style="color:#dda055">fish dots</strong> along the way for bonus rewards!
+        </div>
+        <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:12px;margin-top:20px">Tap to start</div>
+      `;
+      t.addEventListener('click', () => t.remove());
+      document.body.appendChild(t);
+    }
+
     // Generate maze
     this.grid = generateMaze();
 
