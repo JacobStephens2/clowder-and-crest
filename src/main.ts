@@ -101,6 +101,10 @@ const BGM_TRACKS = [
   'assets/audio/castle_halls.mp3',
   'assets/audio/dawn_parapets.mp3',
   'assets/audio/market_stalls.mp3',
+  'assets/audio/guildhall_2.mp3',
+  'assets/audio/castle_halls_2.mp3',
+  'assets/audio/dawn_parapets_2.mp3',
+  'assets/audio/market_stalls_2.mp3',
 ];
 let bgmAudio: HTMLAudioElement | null = null;
 let bgmMuted = localStorage.getItem('clowder_bgm_muted') === '1';
@@ -1001,6 +1005,8 @@ function showMenuPanel(): void {
     <button class="menu-btn" id="menu-save">Save Game</button>
     <button class="menu-btn" id="menu-furniture">Furniture Shop</button>
     <button class="menu-btn" id="menu-mute">${bgmMuted ? 'Unmute Music' : 'Mute Music'}</button>
+    <button class="menu-btn" id="menu-export">Export Save</button>
+    <button class="menu-btn" id="menu-import">Import Save</button>
     <button class="menu-btn danger" id="menu-delete">Delete Save</button>
   `;
 
@@ -1027,6 +1033,48 @@ function showMenuPanel(): void {
     panel.remove();
     showMenuPanel();
     showToast(bgmMuted ? 'Music muted' : 'Music unmuted');
+  });
+
+  document.getElementById('menu-export')!.addEventListener('click', () => {
+    saveGame(gameState!);
+    const json = localStorage.getItem('clowder_save');
+    if (!json) { showToast('No save to export'); return; }
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `clowder-save-day${gameState!.day}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Save exported!');
+  });
+
+  document.getElementById('menu-import')!.addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result as string);
+          if (!data.cats || !data.day) throw new Error('Invalid save');
+          localStorage.setItem('clowder_save', JSON.stringify(data));
+          const save = loadGame()!;
+          gameState = save;
+          eventBus.emit('game-loaded', save);
+          panel.remove();
+          switchScene('GuildhallScene');
+          showToast('Save imported!');
+        } catch {
+          showToast('Invalid save file');
+        }
+      };
+      reader.readAsText(file);
+    });
+    input.click();
   });
 
   document.getElementById('menu-delete')!.addEventListener('click', () => {
