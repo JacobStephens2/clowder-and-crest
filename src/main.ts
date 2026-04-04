@@ -230,6 +230,8 @@ setOnDayEnd(() => {
 
 // Hide/show UI
 eventBus.on('navigate', (target: string) => {
+  // Clean up any stale overlays before navigating
+  overlayLayer.querySelectorAll('.assign-overlay, .result-overlay, .conversation-overlay').forEach((el) => el.remove());
   switchScene(target);
 });
 
@@ -612,7 +614,7 @@ eventBus.on('show-town-overlay', () => {
       const jobId = btn.getAttribute('data-job-id')!;
       const job = dailyJobs.find((j) => j.id === jobId);
       if (job) {
-        overlay.remove();
+        // Don't remove town overlay — layer assign overlay on top
         eventBus.emit('job-accept', { job });
       }
     });
@@ -773,7 +775,13 @@ function showAssignOverlay(job: JobDef): void {
   overlay.innerHTML = html;
   overlayLayer.appendChild(overlay);
 
-  document.getElementById('assign-close')!.addEventListener('click', () => overlay.remove());
+  document.getElementById('assign-close')!.addEventListener('click', () => {
+    overlay.remove();
+    // Refresh town overlay if we're on TownScene
+    if (!overlayLayer.querySelector('.town-overlay')) {
+      eventBus.emit('show-town-overlay');
+    }
+  });
 
   overlay.querySelectorAll('.assign-cat-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -809,7 +817,12 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
 
   overlayLayer.appendChild(overlay);
 
-  document.getElementById('choice-close')!.addEventListener('click', () => overlay.remove());
+  document.getElementById('choice-close')!.addEventListener('click', () => {
+    overlay.remove();
+    if (!overlayLayer.querySelector('.town-overlay')) {
+      eventBus.emit('show-town-overlay');
+    }
+  });
 
   document.getElementById('btn-do-puzzle')!.addEventListener('click', () => {
     overlay.remove();
@@ -1372,7 +1385,7 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
       markConversationViewed(gameState!, breedA, breedB, rank);
       saveGame(gameState!);
       showToast(`Bond deepened: ${nameA} & ${nameB}`);
-      switchScene('GuildhallScene');
+      switchScene('TownScene');
       return;
     }
 
