@@ -58,7 +58,17 @@ export function generateDailyJobs(save: SaveData): JobDef[] {
   }
 
   const count = Math.min(3 + Math.floor(save.chapter / 2), available.length);
-  return shuffled(available).slice(0, count);
+  const jobs = shuffled(available).slice(0, count);
+
+  // Chapter 6+: Mark 1-2 jobs as contested by the Silver Paws rival guild
+  if (save.chapter >= 6) {
+    const contestCount = Math.min(2, Math.floor(jobs.length / 2));
+    for (let i = 0; i < contestCount; i++) {
+      (jobs[i] as any).contested = true;
+    }
+  }
+
+  return jobs;
 }
 
 export function getStatMatchScore(cat: CatSaveData, job: JobDef): number {

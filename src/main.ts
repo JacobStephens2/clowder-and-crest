@@ -670,13 +670,15 @@ eventBus.on('show-town-overlay', () => {
     const catIcon = categoryIcons[job.category] ?? '\u{1F43E}';
     const artFile = jobArtMap[job.puzzleSkin] ?? '';
     const artImg = artFile ? `<img src="assets/sprites/jobs/${artFile}.png" style="width:48px;height:48px;image-rendering:pixelated;border-radius:4px;margin-right:8px;flex-shrink:0" />` : '';
+    const isContested = (job as any).contested;
     html += `
-      <div class="town-job-card" style="display:flex;gap:8px;align-items:center">
+      <div class="town-job-card" style="display:flex;gap:8px;align-items:center;${isContested ? 'border-left:3px solid #cc6666' : ''}">
         ${artImg}
         <div style="flex:1">
         <div class="town-job-top">
           <span class="town-job-icon">${catIcon}</span>
           <span class="town-job-name">${job.name}</span>
+          ${isContested ? '<span style="font-size:9px;color:#cc6666;margin-left:4px">\u2694 CONTESTED</span>' : ''}
           <span class="town-job-diff ${diffClass}">${job.difficulty}</span>
         </div>
         <div class="town-job-desc">${job.description}</div>
@@ -2175,6 +2177,42 @@ eventBus.on('chapter-advance', (chapter: number) => {
   playSfx('chapter');
   const name = getChapterName(chapter);
   showToast(`Chapter ${chapter}: ${name}`);
+
+  // Chapter 6: The Rival — narrative scene
+  if (chapter === 6) {
+    setTimeout(() => {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:#0a0908;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:30px;';
+      const scenes = [
+        'Word arrived at dawn. A second guild had entered the town.',
+        'They called themselves the Silver Paws — sleek, well-funded, and hungry for work.',
+        'Their agents were already at the job board, undercutting prices and charming merchants.',
+        `${gameState?.playerCatName ?? 'The wildcat'} watched from across the square. This was no longer about survival. This was about legacy.`,
+        'Contested jobs will appear on the board. Complete them before the Silver Paws do — or risk losing everything you\'ve built.',
+      ];
+      let idx = 0;
+      const img = document.createElement('img');
+      img.src = 'assets/sprites/scenes/town_day.png';
+      img.style.cssText = 'width:280px;max-height:160px;image-rendering:pixelated;margin-bottom:16px;border-radius:4px;opacity:0.5;';
+      overlay.appendChild(img);
+      const text = document.createElement('div');
+      text.style.cssText = 'color:#c4956a;font-family:Georgia,serif;font-size:15px;text-align:center;max-width:320px;line-height:1.7;';
+      overlay.appendChild(text);
+      const hint = document.createElement('div');
+      hint.style.cssText = 'color:#555;font-size:11px;margin-top:16px;font-family:Georgia,serif;';
+      hint.textContent = 'Tap to continue';
+      overlay.appendChild(hint);
+      const show = () => {
+        if (idx >= scenes.length) { overlay.style.transition = 'opacity 0.5s'; overlay.style.opacity = '0'; setTimeout(() => overlay.remove(), 500); return; }
+        text.style.opacity = '0'; text.textContent = scenes[idx];
+        setTimeout(() => { text.style.transition = 'opacity 0.5s'; text.style.opacity = '1'; }, 50);
+        idx++;
+      };
+      show();
+      overlay.addEventListener('click', show);
+      document.body.appendChild(overlay);
+    }, 1000);
+  }
 });
 
 eventBus.on('rat-plague-start', () => {

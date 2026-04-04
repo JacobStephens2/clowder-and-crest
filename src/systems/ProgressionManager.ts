@@ -59,12 +59,13 @@ export function getChapterName(chapter: number): string {
     case 3: return 'The Rat Plague';
     case 4: return 'The Name';
     case 5: return 'Established';
+    case 6: return 'The Rival';
     default: return '';
   }
 }
 
 export function getNextChapterHint(save: SaveData): string | null {
-  if (save.chapter >= 5) return null;
+  if (save.chapter >= 6) return null;
   const next = CHAPTER_TRIGGERS[save.chapter];
   if (!next) return null;
 
