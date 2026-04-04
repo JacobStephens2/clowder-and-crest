@@ -1636,6 +1636,7 @@ function showMenuPanel(): void {
     <button class="menu-btn" id="menu-mute-sfx">${isSfxMuted() ? 'Unmute Sound Effects' : 'Mute Sound Effects'}</button>
     <button class="menu-btn" id="menu-export">Export Save</button>
     <button class="menu-btn" id="menu-import">Import Save</button>
+    <button class="menu-btn danger" id="menu-restart">Restart Game</button>
     <button class="menu-btn danger" id="menu-delete">Delete Save</button>
   `;
 
@@ -1707,6 +1708,16 @@ function showMenuPanel(): void {
       reader.readAsText(file);
     });
     input.click();
+  });
+
+  document.getElementById('menu-restart')!.addEventListener('click', () => {
+    if (confirm('Restart the game? Your current save will be deleted and you will start fresh.')) {
+      deleteSave();
+      gameState = null;
+      stopDayTimer();
+      overlayLayer.querySelectorAll('.menu-overlay, .town-overlay, .assign-overlay').forEach((el) => el.remove());
+      eventBus.emit('show-name-prompt');
+    }
   });
 
   document.getElementById('menu-delete')!.addEventListener('click', () => {
