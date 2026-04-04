@@ -3,6 +3,7 @@ import { type PuzzleConfig, type PuzzleBlock } from '../systems/PuzzleGenerator'
 import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, GRID_SIZE, TILE_SIZE, PUZZLE_OFFSET_X, PUZZLE_OFFSET_Y } from '../utils/constants';
 import { getGameState } from '../main';
+import { getJob } from '../systems/JobBoard';
 
 const GRID_COLOR = 0x2a2520;
 const GRID_LINE_COLOR = 0x3a3530;
@@ -140,15 +141,25 @@ export class PuzzleScene extends Phaser.Scene {
       });
     });
 
+    // Job name
+    const job = getJob(this.jobId);
+    if (job) {
+      this.add.text(GAME_WIDTH / 2, 42, job.name, {
+        fontFamily: 'Georgia, serif',
+        fontSize: '14px',
+        color: '#8b7355',
+      }).setOrigin(0.5);
+    }
+
     // Move counter text (below status bar)
-    this.add.text(GAME_WIDTH / 2, 55, 'Moves: 0', {
+    this.add.text(GAME_WIDTH / 2, 58, 'Moves: 0', {
       fontFamily: 'Georgia, serif',
       fontSize: '18px',
       color: '#c4956a',
     }).setOrigin(0.5).setName('moveText');
 
     // Min moves display
-    this.add.text(GAME_WIDTH / 2, 77, `Target: ${this.config.minMoves} moves`, {
+    this.add.text(GAME_WIDTH / 2, 78, `Target: ${this.config.minMoves} moves`, {
       fontFamily: 'Georgia, serif',
       fontSize: '13px',
       color: '#6b5b3e',
@@ -160,8 +171,8 @@ export class PuzzleScene extends Phaser.Scene {
     this.createButton(GAME_WIDTH - 60, offsetY + gridPx + 50, 'Reset', () => this.resetPuzzle());
     // Back button
     this.createButton(GAME_WIDTH / 2, offsetY + gridPx + 50, 'Quit', () => {
-      eventBus.emit('puzzle-quit');
-      eventBus.emit('navigate', 'GuildhallScene');
+      eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
+      eventBus.emit('navigate', 'TownScene');
     });
 
     eventBus.emit('show-ui');

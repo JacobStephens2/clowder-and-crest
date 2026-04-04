@@ -659,8 +659,35 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
   });
 });
 
-eventBus.on('puzzle-quit', () => {
+eventBus.on('puzzle-quit', ({ jobId, catId }: any = {}) => {
   switchToNormalMusic();
+  if (!gameState) return;
+
+  const cat = gameState.cats.find((c) => c.id === catId);
+  const job = getJob(jobId);
+
+  // Failure penalty: cat is used for the day, mood drops, lose some fish
+  if (cat) {
+    catsWorkedToday.add(cat.id);
+    if (cat.mood === 'happy') cat.mood = 'content';
+    else if (cat.mood === 'content') cat.mood = 'tired';
+    else cat.mood = 'unhappy';
+  }
+
+  // Lose a small amount of fish (wasted time/resources)
+  const penalty = job ? Math.floor(job.baseReward * 0.3) : 2;
+  if (gameState.fish >= penalty) {
+    gameState.fish -= penalty;
+  } else {
+    gameState.fish = 0;
+  }
+
+  saveGame(gameState);
+  updateStatusBar();
+
+  const catName = cat?.name ?? 'Your cat';
+  const jobName = job?.name ?? 'the job';
+  showToast(`${catName} failed ${jobName}. Lost ${penalty} fish and can't work again today.`);
 });
 
 function advanceDay(): { foodCost: number; stationedEarned: number; events: string[] } {

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getGameState } from '../main';
+import { getJob } from '../systems/JobBoard';
 
 // ──── Constants ────
 const SOKOBAN_GRID = 7;
@@ -659,8 +660,18 @@ export class SokobanScene extends Phaser.Scene {
     // Draw player cat
     this.createPlayerSprite();
 
+    // Job name
+    const job = getJob(this.jobId);
+    if (job) {
+      this.add.text(GAME_WIDTH / 2, 42, job.name, {
+        fontFamily: 'Georgia, serif',
+        fontSize: '14px',
+        color: '#8b7355',
+      }).setOrigin(0.5);
+    }
+
     // Move counter
-    this.add.text(GAME_WIDTH / 2, 55, 'Moves: 0', {
+    this.add.text(GAME_WIDTH / 2, 58, 'Moves: 0', {
       fontFamily: 'Georgia, serif',
       fontSize: '18px',
       color: '#c4956a',
@@ -677,8 +688,8 @@ export class SokobanScene extends Phaser.Scene {
     const btnY = OFFSET_Y + GRID_PX + 50;
     this.createButton(60, btnY, 'Undo', () => this.undo());
     this.createButton(GAME_WIDTH / 2, btnY, 'Quit', () => {
-      eventBus.emit('puzzle-quit');
-      eventBus.emit('navigate', 'GuildhallScene');
+      eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
+      eventBus.emit('navigate', 'TownScene');
     });
     this.createButton(GAME_WIDTH - 60, btnY, 'Reset', () => this.resetPuzzle());
 
