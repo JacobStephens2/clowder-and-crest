@@ -28,12 +28,8 @@ import { startBgm, toggleMute, isMuted, switchToPuzzleMusic, switchToNormalMusic
 import { playSfx, toggleSfxMute, isSfxMuted } from './systems/SfxManager';
 import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDayEnd, pauseDayTimer, resumeDayTimer, isPaused } from './systems/DayTimer';
 import { applyReputationShift, getReputationLabel, getReputationRecruitModifier, getReputationBonuses } from './systems/ReputationSystem';
+import { getComboMultiplier, updateCombo, getDailyWish, getCurrentFestival, trackEvent } from './systems/GameSystems';
 import conversationsData from './data/conversations.json';
-
-// ──── Analytics ────
-function trackEvent(name: string, params?: Record<string, any>): void {
-  try { (window as any).gtag?.('event', name, params); } catch { /* ignore */ }
-}
 
 // ──── Game State ────
 let gameState: SaveData | null = null;
@@ -41,43 +37,6 @@ const catsWorkedToday = new Set<string>();
 const jobsCompletedToday = new Set<string>();
 let cachedDailyJobs: ReturnType<typeof generateDailyJobs> | null = null;
 let cachedJobDay = -1;
-
-// ── Job combo tracking ──
-const jobCombos = new Map<string, { category: string; count: number; lastDay: number }>();
-
-function getComboMultiplier(catId: string, category: string, day: number): number {
-  const combo = jobCombos.get(catId);
-  if (combo && combo.category === category && combo.lastDay === day - 1) {
-    return 1 + Math.min(combo.count, 5) * 0.05; // up to 1.25x at 5-streak
-  }
-  return 1;
-}
-
-function updateCombo(catId: string, category: string, day: number): number {
-  const combo = jobCombos.get(catId);
-  let count = 1;
-  if (combo && combo.category === category && combo.lastDay === day - 1) {
-    count = combo.count + 1;
-  }
-  jobCombos.set(catId, { category, count, lastDay: day });
-  return count;
-}
-
-// ── Daily cat wish system ──
-function getDailyWish(day: number, cats: { id: string; name: string }[]): { catId: string; catName: string; wish: string; reward: string } | null {
-  if (cats.length < 2) return null;
-  const rng = (day * 7919) % cats.length; // deterministic per day
-  const cat = cats[rng];
-  const wishes = [
-    { wish: 'wants a fish treat', reward: '+5 mood' },
-    { wish: 'wants to explore a room', reward: '+2 bond' },
-    { wish: 'wants to scratch something', reward: '+1 agility' },
-    { wish: 'wants to nap in a warm spot', reward: '+3 mood' },
-    { wish: 'wants to play with a friend', reward: '+3 bond' },
-  ];
-  const pick = wishes[(day * 1013) % wishes.length];
-  return { catId: cat.id, catName: cat.name, ...pick };
-}
 
 export function getGameState(): SaveData | null {
   return gameState;
@@ -1255,22 +1214,6 @@ eventBus.on('puzzle-quit', ({ jobId, catId }: any = {}) => {
 
   setTimeout(() => suggestEndDay(), 1500);
 });
-
-// Festival system — every 7 days
-const FESTIVALS = [
-  { name: 'Feast of St. Gertrude', bonus: 'All pest control jobs pay double today.', category: 'pest_control', multiplier: 2 },
-  { name: 'Market Festival', bonus: 'All courier jobs pay double today.', category: 'courier', multiplier: 2 },
-  { name: 'Night of the Watch', bonus: 'All guard jobs pay double today.', category: 'guard', multiplier: 2 },
-  { name: 'Festival of Lights', bonus: 'All sacred jobs pay double today.', category: 'sacred', multiplier: 2 },
-  { name: 'Day of Mysteries', bonus: 'All detection jobs pay double today.', category: 'detection', multiplier: 2 },
-  { name: 'Fisherman\'s Bounty', bonus: 'Fishing minigames give triple fish!', category: 'all', multiplier: 1.5 },
-  { name: 'Guild Anniversary', bonus: 'All jobs pay +50%. Celebrate!', category: 'all', multiplier: 1.5 },
-];
-
-function getCurrentFestival(day: number): typeof FESTIVALS[number] | null {
-  if (day % 7 !== 0 || day === 0) return null;
-  return FESTIVALS[(day / 7) % FESTIVALS.length];
-}
 
 function advanceDay(): { foodCost: number; stationedEarned: number; events: string[]; fishRemaining: number } {
   if (!gameState) return { foodCost: 0, stationedEarned: 0, events: [], fishRemaining: 0 };

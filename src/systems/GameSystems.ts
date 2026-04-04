@@ -1,0 +1,57 @@
+// ── Job combo tracking ──
+const jobCombos = new Map<string, { category: string; count: number; lastDay: number }>();
+
+export function getComboMultiplier(catId: string, category: string, day: number): number {
+  const combo = jobCombos.get(catId);
+  if (combo && combo.category === category && combo.lastDay === day - 1) {
+    return 1 + Math.min(combo.count, 5) * 0.05;
+  }
+  return 1;
+}
+
+export function updateCombo(catId: string, category: string, day: number): number {
+  const combo = jobCombos.get(catId);
+  let count = 1;
+  if (combo && combo.category === category && combo.lastDay === day - 1) {
+    count = combo.count + 1;
+  }
+  jobCombos.set(catId, { category, count, lastDay: day });
+  return count;
+}
+
+// ── Daily cat wish system ──
+export function getDailyWish(day: number, cats: { id: string; name: string }[]): { catId: string; catName: string; wish: string; reward: string } | null {
+  if (cats.length < 2) return null;
+  const rng = (day * 7919) % cats.length;
+  const cat = cats[rng];
+  const wishes = [
+    { wish: 'wants a fish treat', reward: '+5 mood' },
+    { wish: 'wants to explore a room', reward: '+2 bond' },
+    { wish: 'wants to scratch something', reward: '+1 agility' },
+    { wish: 'wants to nap in a warm spot', reward: '+3 mood' },
+    { wish: 'wants to play with a friend', reward: '+3 bond' },
+  ];
+  const pick = wishes[(day * 1013) % wishes.length];
+  return { catId: cat.id, catName: cat.name, ...pick };
+}
+
+// ── Festival system ──
+const FESTIVALS = [
+  { name: 'Feast of St. Gertrude', bonus: 'All pest control jobs pay double today.', category: 'pest_control', multiplier: 2 },
+  { name: 'Market Festival', bonus: 'All courier jobs pay double today.', category: 'courier', multiplier: 2 },
+  { name: 'Night of the Watch', bonus: 'All guard jobs pay double today.', category: 'guard', multiplier: 2 },
+  { name: 'Festival of Lights', bonus: 'All sacred jobs pay double today.', category: 'sacred', multiplier: 2 },
+  { name: 'Day of Mysteries', bonus: 'All detection jobs pay double today.', category: 'detection', multiplier: 2 },
+  { name: 'Fisherman\'s Bounty', bonus: 'Fishing minigames give triple fish!', category: 'all', multiplier: 1.5 },
+  { name: 'Guild Anniversary', bonus: 'All jobs pay +50%. Celebrate!', category: 'all', multiplier: 1.5 },
+];
+
+export function getCurrentFestival(day: number): typeof FESTIVALS[number] | null {
+  if (day % 7 !== 0 || day === 0) return null;
+  return FESTIVALS[(day / 7) % FESTIVALS.length];
+}
+
+// ── Analytics ──
+export function trackEvent(name: string, params?: Record<string, any>): void {
+  try { (window as any).gtag?.('event', name, params); } catch { /* ignore */ }
+}
