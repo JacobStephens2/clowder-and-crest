@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-const BREEDS_WITH_SPRITES = ['wildcat'];
+const BREEDS_WITH_SPRITES = ['wildcat', 'russian_blue', 'tuxedo', 'maine_coon', 'siamese'];
 const DIRECTIONS = ['south', 'north', 'east', 'west'];
 const WALK_FRAMES = 6;
 

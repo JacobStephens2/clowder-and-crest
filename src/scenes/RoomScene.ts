@@ -5,7 +5,7 @@ import { getGameState } from '../main';
 import type { SaveData } from '../systems/SaveManager';
 import { isCatStationed } from '../systems/Economy';
 
-const BREEDS_WITH_SPRITES = new Set(['wildcat']);
+const BREEDS_WITH_SPRITES = new Set(['wildcat', 'russian_blue', 'tuxedo', 'maine_coon', 'siamese']);
 
 // Top-down grid
 const GRID_COLS = 7;

@@ -5,7 +5,7 @@ import { getGameState } from '../main';
 import type { SaveData } from '../systems/SaveManager';
 import { getChapterName } from '../systems/ProgressionManager';
 
-const BREEDS_WITH_SPRITES = new Set(['wildcat']);
+const BREEDS_WITH_SPRITES = new Set(['wildcat', 'russian_blue', 'tuxedo', 'maine_coon', 'siamese']);
 const ROOM_WIDTH = 340;
 const ROOM_HEIGHT = 180;
 const ROOM_GAP = 16;
