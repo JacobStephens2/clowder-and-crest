@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { type PuzzleConfig, type PuzzleBlock } from '../systems/PuzzleGenerator';
 import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, GRID_SIZE, TILE_SIZE, PUZZLE_OFFSET_X, PUZZLE_OFFSET_Y } from '../utils/constants';
+import { getGameState } from '../main';
 
 const GRID_COLOR = 0x2a2520;
 const GRID_LINE_COLOR = 0x3a3530;
@@ -28,6 +29,7 @@ export class PuzzleScene extends Phaser.Scene {
   private solved = false;
   private jobId: string = '';
   private catId: string = '';
+  private catBreed: string = 'wildcat';
 
   constructor() {
     super({ key: 'PuzzleScene' });
@@ -37,6 +39,9 @@ export class PuzzleScene extends Phaser.Scene {
     this.config = JSON.parse(JSON.stringify(data.puzzle)); // deep clone
     this.jobId = data.jobId ?? '';
     this.catId = data.catId ?? '';
+    const save = getGameState();
+    const cat = save?.cats.find((c) => c.id === this.catId);
+    this.catBreed = cat?.breed ?? 'wildcat';
     this.moveCount = 0;
     this.moveHistory = [];
     this.blockSprites = [];
@@ -92,6 +97,23 @@ export class PuzzleScene extends Phaser.Scene {
         fontSize: '11px',
         color: '#fff',
       }).setOrigin(0.5);
+
+      // Show cat sprite on the target block
+      if (block.isTarget && this.catId) {
+        const catBreed = this.catBreed;
+        const idleKey = `${catBreed}_idle_east`;
+        if (this.textures.exists(idleKey)) {
+          const catSprite = this.add.sprite(px, py, idleKey);
+          catSprite.setScale(0.8);
+          catSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+          catSprite.setDepth(1);
+          label.setVisible(false);
+          // Move with drag
+          rect.on('drag', () => {
+            catSprite.setPosition(rect.x, rect.y);
+          });
+        }
+      }
 
       const sprite: BlockSprite = { block, rect, label, startX: block.x, startY: block.y };
       this.blockSprites.push(sprite);

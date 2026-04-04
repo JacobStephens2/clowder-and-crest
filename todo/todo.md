@@ -13,4 +13,5 @@
 [x] - ensure the player can scroll through the furniture shop on web / desktop (overflow-y: auto)
 [x] - when the player buys something from the furniture shop, let them choose which room (room picker overlay)
 [x] - prevent the number of moves noted when a player is solving a puzzle from being obscured by the header
-[] - put an image of the cat on a job on the cat block in the rush hour puzzle if that job is a rush hour puzzle
+[x] - put an image of the cat on the cat block in the rush hour puzzle (breed sprite on target block)
+[] - let the player rearrange furniture in rooms
