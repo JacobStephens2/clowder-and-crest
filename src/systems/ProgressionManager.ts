@@ -63,6 +63,21 @@ export function getChapterName(chapter: number): string {
   }
 }
 
+export function getNextChapterHint(save: SaveData): string | null {
+  if (save.chapter >= 5) return null;
+  const next = CHAPTER_TRIGGERS[save.chapter];
+  if (!next) return null;
+
+  const needs: string[] = [];
+  if (save.cats.length < next.cats) needs.push(`${next.cats} cats (have ${save.cats.length})`);
+  if (save.totalJobsCompleted < next.jobs) needs.push(`${next.jobs} jobs done (have ${save.totalJobsCompleted})`);
+  if (save.totalFishEarned < next.fish) needs.push(`${next.fish} total fish earned (have ${save.totalFishEarned})`);
+  if (next.chapter === 4 && !save.flags.ratPlagueResolved) needs.push('resolve the Rat Plague');
+
+  if (needs.length === 0) return 'Chapter advancing soon...';
+  return `Next chapter needs: ${needs.join(', ')}`;
+}
+
 export function getChapterDescription(chapter: number): string {
   switch (chapter) {
     case 1: return 'A lone wildcat arrives at a crumbling settlement in a storm.';

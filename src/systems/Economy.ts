@@ -41,7 +41,14 @@ export function collectStationedEarnings(save: SaveData): { catName: string; job
 
     const match = getStatMatchScore(cat, job);
     // Stationed earnings: lower than one-off jobs but guaranteed daily income
-    const earned = Math.max(1, Math.floor(job.baseReward * 0.5 + job.baseReward * match * 0.5));
+    let earned = Math.max(1, Math.floor(job.baseReward * 0.5 + job.baseReward * match * 0.5));
+
+    // Diminishing returns after 5 days at the same station
+    const daysStationed = save.day - (stationed.dayStarted ?? save.day);
+    if (daysStationed > 5) {
+      const decay = Math.max(0.3, 1 - (daysStationed - 5) * 0.1);
+      earned = Math.max(1, Math.floor(earned * decay));
+    }
     earnFish(save, earned);
     results.push({ catName: cat.name, jobName: job.name, earned });
   }

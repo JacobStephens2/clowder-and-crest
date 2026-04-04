@@ -20,7 +20,7 @@ import { earnFish, spendFish, calculateReward, calculateAutoResolveReward, colle
 import { getJob, getStatMatchScore, generateDailyJobs, type JobDef } from './systems/JobBoard';
 import { getPuzzleByDifficulty, generatePuzzle } from './systems/PuzzleGenerator';
 import { addBondPoints, processDailyBonds, getAvailableConversation, markConversationViewed, getBondRank, getBondPairs } from './systems/BondSystem';
-import { checkChapterAdvance, checkRatPlagueResolution, getChapterName } from './systems/ProgressionManager';
+import { checkChapterAdvance, checkRatPlagueResolution, getChapterName, getNextChapterHint } from './systems/ProgressionManager';
 import { startBgm, toggleMute, isMuted } from './systems/MusicManager';
 import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDayEnd } from './systems/DayTimer';
 import conversationsData from './data/conversations.json';
@@ -485,8 +485,11 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
       <button class="btn-auto" id="btn-do-auto">Auto-Resolve</button>
     </div>
     <div style="margin-top:16px;padding-top:12px;border-top:1px solid #3a3530">
-      <button class="btn-station" id="btn-do-station">Station Here (~${dailyEarning} fish/day)</button>
-      <div style="font-size:11px;color:#6b5b3e;margin-top:6px;text-align:center">Cat earns fish daily but can't do other jobs while stationed.</div>
+      ${cat.level >= 2
+        ? `<button class="btn-station" id="btn-do-station">Station Here (~${dailyEarning} fish/day)</button>
+           <div style="font-size:11px;color:#6b5b3e;margin-top:6px;text-align:center">Cat earns fish daily but can't do other jobs. Earnings drop after 5 days — rotate for best results.</div>`
+        : `<div style="font-size:12px;color:#555;text-align:center;padding:8px 0">Stationing unlocked at level 2</div>`
+      }
     </div>
   `;
 
@@ -509,7 +512,7 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
     doAutoResolve(job, cat);
   });
 
-  document.getElementById('btn-do-station')!.addEventListener('click', () => {
+  document.getElementById('btn-do-station')?.addEventListener('click', () => {
     overlay.remove();
     gameState!.stationedCats.push({ catId: cat.id, jobId: job.id, dayStarted: gameState!.day });
     saveGame(gameState!);
@@ -942,14 +945,17 @@ function showMenuPanel(): void {
   panel.className = 'menu-overlay';
 
   const chapterName = getChapterName(gameState.chapter);
+  const progressHint = getNextChapterHint(gameState);
 
   panel.innerHTML = `
     <button class="panel-close" id="menu-close">&times;</button>
     <h2>Menu</h2>
-    <div style="margin-bottom:20px;color:#8b7355;font-size:14px">
+    <div style="margin-bottom:12px;color:#8b7355;font-size:14px">
       Chapter ${gameState.chapter}: ${chapterName}<br>
       Day ${gameState.day} | ${gameState.cats.length} cats | ${gameState.totalJobsCompleted} jobs done
     </div>
+    ${progressHint ? `<div style="margin-bottom:16px;color:#6b8ea6;font-size:12px;font-style:italic">${progressHint}</div>` : ''}
+
     <button class="menu-btn" id="menu-save">Save Game</button>
     <button class="menu-btn" id="menu-furniture">Furniture Shop</button>
     <button class="menu-btn" id="menu-mute">${isMuted() ? 'Unmute Music' : 'Mute Music'}</button>
