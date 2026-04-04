@@ -25,7 +25,7 @@ for (let row = 0; row < 3; row++) {
 
 interface ActiveRat {
   holeIndex: number;
-  gfx: Phaser.GameObjects.Graphics;
+  gfx: Phaser.GameObjects.Graphics | Phaser.GameObjects.Sprite;
   hitZone: Phaser.GameObjects.Zone;
   timer: Phaser.Time.TimerEvent;
   caught: boolean;
@@ -196,9 +196,18 @@ export class HuntScene extends Phaser.Scene {
     const hole = HOLES[holeIndex];
     this.totalSpawned++;
 
-    // Draw rat
-    const gfx = this.add.graphics();
-    this.drawRat(gfx, hole.x, hole.y - 10);
+    // Draw rat (sprite if available, otherwise graphics fallback)
+    let gfx: Phaser.GameObjects.Graphics | Phaser.GameObjects.Sprite;
+    if (this.textures.exists('rat')) {
+      const ratSprite = this.add.sprite(hole.x, hole.y - 10, 'rat');
+      ratSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      ratSprite.setScale(1.0);
+      gfx = ratSprite;
+    } else {
+      const ratGfx = this.add.graphics();
+      this.drawRat(ratGfx, hole.x, hole.y - 10);
+      gfx = ratGfx;
+    }
 
     // Hit zone
     const hitZone = this.add.zone(hole.x, hole.y - 10, HOLE_RADIUS * 2.5, HOLE_RADIUS * 2.5);
@@ -221,7 +230,7 @@ export class HuntScene extends Phaser.Scene {
       playSfx('rat_caught');
 
       // Pop effect
-      gfx.clear();
+      gfx.destroy();
       const sparkle = this.add.text(hole.x, hole.y - 20, '+1', {
         fontFamily: 'Georgia, serif', fontSize: '16px', color: '#4a8a4a',
       }).setOrigin(0.5);
@@ -242,7 +251,7 @@ export class HuntScene extends Phaser.Scene {
       this.missed++;
       this.missText.setText(`Missed: ${this.missed}/${this.maxMisses}`);
 
-      gfx.clear();
+      gfx.destroy();
       hitZone.destroy();
       this.activeRats = this.activeRats.filter((r) => r !== rat);
 

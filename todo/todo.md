@@ -8,7 +8,7 @@
 [x] Chapter 7: The Inquisition (from vision doc)
 [x] New breed: Bengal (Chapter 6 rivalry recruit)
 [] Develop the artwork for the rooms. Right now they look like chessboards, not pixel art places in this world
-[] create art for the rats in the pacman minigame
+[x] create art for the rats in the pacman minigame
 [x] prevent fishing from starting while the user is still reading the tutorial introduction (and so then them failing it in the background while still reading the intro text)
 [x] limit the approaches to jobs, as some approaches don't make sense, like fishing to complete the mill mousing job doesn't thematically fit for example
 [x] add a hunting mini game for jobs that are about hunting rodents

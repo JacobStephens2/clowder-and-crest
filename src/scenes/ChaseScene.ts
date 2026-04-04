@@ -144,7 +144,7 @@ export class ChaseScene extends Phaser.Scene {
   private totalDots = 0;
   private catSprite: Phaser.GameObjects.Sprite | null = null;
   private catFallback: Phaser.GameObjects.Arc | null = null;
-  private ratGfx!: Phaser.GameObjects.Arc;
+  private ratGfx!: Phaser.GameObjects.Arc | Phaser.GameObjects.Sprite;
   private ratEyes!: Phaser.GameObjects.Graphics;
   private jobId = '';
   private catId = '';
@@ -255,9 +255,16 @@ export class ChaseScene extends Phaser.Scene {
 
     // Draw rat
     const ratWorld = this.cellToWorld(this.ratPos.r, this.ratPos.c);
-    this.ratGfx = this.add.circle(ratWorld.x, ratWorld.y, CELL / 2 - 3, RAT_COLOR);
+    if (this.textures.exists('rat')) {
+      const ratSprite = this.add.sprite(ratWorld.x, ratWorld.y, 'rat');
+      ratSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      ratSprite.setScale(0.85);
+      this.ratGfx = ratSprite;
+    } else {
+      this.ratGfx = this.add.circle(ratWorld.x, ratWorld.y, CELL / 2 - 3, RAT_COLOR);
+    }
     this.ratEyes = this.add.graphics();
-    this.drawRatEyes(ratWorld.x, ratWorld.y);
+    if (!this.textures.exists('rat')) this.drawRatEyes(ratWorld.x, ratWorld.y);
 
     // Draw cat
     this.createCatSprite();
@@ -484,10 +491,12 @@ export class ChaseScene extends Phaser.Scene {
 
     const dest = this.cellToWorld(nr, nc);
     this.tweens.add({ targets: this.ratGfx, x: dest.x, y: dest.y, duration: 150, ease: 'Linear' });
-    this.tweens.add({
-      targets: this.ratEyes, x: 0, y: 0, duration: 0,
-      onComplete: () => this.drawRatEyes(dest.x, dest.y),
-    });
+    if (!this.textures.exists('rat')) {
+      this.tweens.add({
+        targets: this.ratEyes, x: 0, y: 0, duration: 0,
+        onComplete: () => this.drawRatEyes(dest.x, dest.y),
+      });
+    }
   }
 
   private catCaughtRat(): void {
