@@ -28,10 +28,20 @@ function worldToGrid(wx: number, wy: number): { col: number; row: number } {
   };
 }
 
+// Interactive furniture: cats can walk to these and perform an action
+const INTERACTIVE_FURNITURE: Record<string, { action: string; duration: number }> = {
+  scratching_post: { action: 'scratching', duration: 2000 },
+  potted_catnip: { action: 'sniffing catnip', duration: 1500 },
+  cushioned_basket: { action: 'curling up', duration: 2500 },
+  straw_bed: { action: 'lying down', duration: 2500 },
+  bookshelf: { action: 'investigating', duration: 1500 },
+};
+
 export class RoomScene extends Phaser.Scene {
   private roomId = 'sleeping';
   private openTiles: { col: number; row: number }[] = [];
   private openTileSet = new Set<string>();
+  private playerMoveTo: ((col: number, row: number, onArrive?: () => void) => void) | null = null;
 
   constructor() {
     super({ key: 'RoomScene' });
@@ -171,6 +181,38 @@ export class RoomScene extends Phaser.Scene {
         align: 'center', wordWrap: { width: size - 4 },
       }).setOrigin(0.5);
 
+      // Make interactive furniture clickable
+      const interaction = INTERACTIVE_FURNITURE[f.furnitureId];
+      if (interaction) {
+        const hitArea = this.add.rectangle(x, y, size, size, 0x000000, 0)
+          .setInteractive({ useHandCursor: true });
+        hitArea.on('pointerdown', () => {
+          // Find nearest walkable tile adjacent to this furniture
+          const fCol = col;
+          const fRow = row;
+          const neighbors = [
+            { col: fCol - 1, row: fRow }, { col: fCol + 1, row: fRow },
+            { col: fCol, row: fRow - 1 }, { col: fCol, row: fRow + 1 },
+          ].filter((t) => this.openTileSet.has(`${t.col},${t.row}`));
+
+          // If furniture is walkable, go directly on it
+          const target = this.openTileSet.has(`${fCol},${fRow}`)
+            ? { col: fCol, row: fRow }
+            : neighbors[0];
+
+          if (target && this.playerMoveTo) {
+            this.playerMoveTo(target.col, target.row, () => {
+              // Show interaction toast
+              const actionText = document.createElement('div');
+              actionText.className = 'toast';
+              actionText.textContent = `*${interaction.action}*`;
+              document.getElementById('overlay-layer')?.appendChild(actionText);
+              setTimeout(() => actionText.remove(), interaction.duration);
+            });
+          }
+        });
+      }
+
       if (f.furnitureId === 'lantern' || f.furnitureId === 'candle_stand') {
         const glow = this.add.circle(x, y, 24, 0xdda055, 0.05);
         this.tweens.add({
@@ -306,13 +348,19 @@ export class RoomScene extends Phaser.Scene {
     let currentTile = { ...startTile };
     let isMoving = false;
 
-    const moveToTile = (targetCol: number, targetRow: number) => {
+    let arriveCallback: (() => void) | null = null;
+
+    const moveToTile = (targetCol: number, targetRow: number, onArrive?: () => void) => {
       if (isMoving) return;
       if (targetCol < 0 || targetCol >= GRID_COLS || targetRow < 0 || targetRow >= GRID_ROWS) return;
       if (!this.openTileSet.has(`${targetCol},${targetRow}`)) return;
-      if (targetCol === currentTile.col && targetRow === currentTile.row) return;
+      if (targetCol === currentTile.col && targetRow === currentTile.row) {
+        onArrive?.();
+        return;
+      }
 
       isMoving = true;
+      if (onArrive) arriveCallback = onArrive;
       const walkDir = this.getWalkDirection(currentTile.col, currentTile.row, targetCol, targetRow);
       const dest = toWorld(targetCol, targetRow);
       const distance = Math.abs(targetCol - currentTile.col) + Math.abs(targetRow - currentTile.row);
@@ -340,9 +388,16 @@ export class RoomScene extends Phaser.Scene {
             sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
             sprite.stop();
           }
+          if (arriveCallback) {
+            arriveCallback();
+            arriveCallback = null;
+          }
         },
       });
     };
+
+    // Expose movement for furniture interactions
+    this.playerMoveTo = moveToTile;
 
     // Tap floor to move player cat
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
