@@ -96,6 +96,7 @@ export class FishingScene extends Phaser.Scene {
 
   // Water ripple
   private waterRippleTimer = 0;
+  private fishName = 'Fish';
   private ripples: Phaser.GameObjects.Arc[] = [];
 
   constructor() {
@@ -109,7 +110,15 @@ export class FishingScene extends Phaser.Scene {
     const save = getGameState();
     const cat = save?.cats.find((c) => c.id === this.catId);
     this.catBreed = cat?.breed ?? 'wildcat';
-    this.diffConfig = DIFFICULTY_MAP[this.difficulty] ?? DIFFICULTY_MAP.easy;
+    this.diffConfig = { ...(DIFFICULTY_MAP[this.difficulty] ?? DIFFICULTY_MAP.easy) };
+
+    // Cat stat bonuses: Endurance slows drain, Senses enlarges zone
+    if (cat) {
+      const endBonus = cat.stats.endurance * 0.008; // up to -0.08 drain at 10
+      const sensBonus = cat.stats.senses * 0.012;   // up to +0.12 zone at 10
+      this.diffConfig.drainRate = Math.max(0.05, this.diffConfig.drainRate - endBonus);
+      this.diffConfig.zoneSize = Math.min(0.5, this.diffConfig.zoneSize + sensBonus);
+    }
 
     this.isReeling = false;
     this.hookY = 0;
@@ -204,8 +213,28 @@ export class FishingScene extends Phaser.Scene {
       }).setOrigin(0.5);
     }
 
-    this.add.text(GAME_WIDTH / 2, 48, 'Fishing', {
-      fontFamily: 'Georgia, serif', fontSize: '11px', color: '#6b5b3e',
+    // Fish type — varies by difficulty, adds flavor
+    const fishTypes: Record<string, string[]> = {
+      easy: ['Perch', 'Minnow', 'Gudgeon', 'Dace'],
+      medium: ['Trout', 'Carp', 'Bream', 'Tench'],
+      hard: ['Pike', 'Salmon', 'Eel', 'Sturgeon'],
+    };
+    const fishList = fishTypes[this.difficulty] ?? fishTypes.easy;
+    const fishName = fishList[Math.floor(Math.random() * fishList.length)];
+    this.fishName = fishName;
+
+    // Stat bonuses display
+    const gameSave = getGameState();
+    const catData = gameSave?.cats.find((c: any) => c.id === this.catId);
+    const endurance = catData?.stats?.endurance ?? 0;
+    const senses = catData?.stats?.senses ?? 0;
+    const bonuses: string[] = [];
+    if (endurance >= 5) bonuses.push(`Endurance: slower drain`);
+    if (senses >= 5) bonuses.push(`Senses: wider zone`);
+    const bonusText = bonuses.length > 0 ? ` (${bonuses.join(', ')})` : '';
+
+    this.add.text(GAME_WIDTH / 2, 48, `Catch: ${fishName}${bonusText}`, {
+      fontFamily: 'Georgia, serif', fontSize: '10px', color: '#6b5b3e',
     }).setOrigin(0.5);
 
     // ── Timer ──
@@ -303,9 +332,16 @@ export class FishingScene extends Phaser.Scene {
       return;
     }
 
+    // ── Current surge — periodic speed boost that adds challenge ──
+    const surgeInterval = 6; // seconds between surges
+    const surgeDuration = 1.5;
+    const timeSinceLastSurge = this.elapsed % surgeInterval;
+    const isSurging = timeSinceLastSurge < surgeDuration && this.elapsed > 3; // no surge in first 3s
+    const speedMult = isSurging ? 2.0 : 1.0;
+
     // ── Move fish zone (bounce up and down) ──
     const zonePxHeight = BAR_HEIGHT * this.diffConfig.zoneSize;
-    this.zoneY += this.zoneDir * this.diffConfig.bounceSpeed * dt;
+    this.zoneY += this.zoneDir * this.diffConfig.bounceSpeed * speedMult * dt;
 
     // Bounce at top/bottom
     if (this.zoneY + zonePxHeight > BAR_HEIGHT) {
@@ -318,6 +354,8 @@ export class FishingScene extends Phaser.Scene {
 
     // Update zone rect position (convert bar-local to world)
     this.zoneRect.y = BAR_Y + BAR_HEIGHT - this.zoneY - zonePxHeight / 2;
+    // Flash zone during surge
+    this.zoneRect.setAlpha(isSurging ? 0.5 + Math.sin(this.elapsed * 10) * 0.3 : 0.6);
 
     // ── Move hook ──
     if (this.isReeling) {
@@ -430,7 +468,7 @@ export class FishingScene extends Phaser.Scene {
 
     // Show success text
     playSfx('splash');
-    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20, 'Fish Caught!', {
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20, `${this.fishName} Caught!`, {
       fontFamily: 'Georgia, serif', fontSize: '28px', color: '#c4956a',
     }).setOrigin(0.5);
 
