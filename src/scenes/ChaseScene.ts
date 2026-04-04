@@ -152,6 +152,10 @@ export class ChaseScene extends Phaser.Scene {
   private caught = false;
   private moveTimer: Phaser.Time.TimerEvent | null = null;
   private ratTimer: Phaser.Time.TimerEvent | null = null;
+  private dogTimer: Phaser.Time.TimerEvent | null = null;
+  private dogPos = { r: 6, c: 6 };
+  private dogGfx!: Phaser.GameObjects.Graphics;
+  private dogStunned = false;
   private moveCount = 0;
   private timeLeft = 60;
   private timerText!: Phaser.GameObjects.Text;
@@ -193,7 +197,8 @@ export class ChaseScene extends Phaser.Scene {
         <div style="color:#8b7355;font-family:Georgia,serif;font-size:14px;text-align:center;max-width:280px;line-height:1.6">
           Navigate the maze to <strong>catch the rat</strong> before time runs out.<br><br>
           Use the <strong>d-pad buttons</strong>, <strong>swipe</strong>, or <strong>WASD/arrows</strong> to move.<br><br>
-          Collect <strong style="color:#dda055">fish dots</strong> along the way for bonus rewards!
+          Collect <strong style="color:#dda055">fish dots</strong> along the way for bonus rewards!<br><br>
+          <strong style="color:#cc6666">Beware the guard dog!</strong> It patrols the maze and costs you time if it catches you.
         </div>
         <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:12px;margin-top:20px">Tap to start</div>
       `;
@@ -342,6 +347,15 @@ export class ChaseScene extends Phaser.Scene {
       loop: true,
     });
 
+    // Guard dog — patrols the maze, costs time if caught
+    this.createDog();
+    const dogSpeed = this.difficulty === 'hard' ? 400 : this.difficulty === 'medium' ? 500 : 700;
+    this.dogTimer = this.time.addEvent({
+      delay: dogSpeed,
+      callback: () => this.moveDog(),
+      loop: true,
+    });
+
     eventBus.emit('show-ui');
   }
 
@@ -452,6 +466,11 @@ export class ChaseScene extends Phaser.Scene {
     if (nr === this.ratPos.r && nc === this.ratPos.c) {
       this.catCaughtRat();
     }
+
+    // Check if ran into dog
+    if (nr === this.dogPos.r && nc === this.dogPos.c && !this.dogStunned) {
+      this.dogCaughtCat();
+    }
   }
 
   private moveRat(): void {
@@ -530,6 +549,119 @@ export class ChaseScene extends Phaser.Scene {
   private cleanup(): void {
     this.moveTimer?.destroy();
     this.ratTimer?.destroy();
+    this.dogTimer?.destroy();
+  }
+
+  private createDog(): void {
+    // Place dog in a floor cell away from both cat and rat
+    const floors: { r: number; c: number }[] = [];
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (this.grid[r][c] === FLOOR) {
+          const distCat = Math.abs(r - this.catPos.r) + Math.abs(c - this.catPos.c);
+          const distRat = Math.abs(r - this.ratPos.r) + Math.abs(c - this.ratPos.c);
+          if (distCat > 4 && distRat > 3) floors.push({ r, c });
+        }
+      }
+    }
+    if (floors.length > 0) {
+      const spot = floors[Math.floor(Math.random() * floors.length)];
+      this.dogPos = spot;
+    }
+
+    const { x, y } = this.cellToWorld(this.dogPos.r, this.dogPos.c);
+    this.dogGfx = this.add.graphics();
+    this.drawDog(x, y);
+  }
+
+  private drawDog(x: number, y: number): void {
+    this.dogGfx.clear();
+    if (this.dogStunned) {
+      this.dogGfx.fillStyle(0x555555, 0.4);
+    } else {
+      // Dog body (brown)
+      this.dogGfx.fillStyle(0x8B6914);
+    }
+    this.dogGfx.fillRoundedRect(x - 8, y - 5, 16, 12, 3);
+    // Head
+    this.dogGfx.fillCircle(x, y - 7, 5);
+    // Eyes
+    this.dogGfx.fillStyle(0xffffff);
+    this.dogGfx.fillCircle(x - 2, y - 8, 1.5);
+    this.dogGfx.fillCircle(x + 2, y - 8, 1.5);
+    this.dogGfx.fillStyle(0x111111);
+    this.dogGfx.fillCircle(x - 2, y - 8, 0.8);
+    this.dogGfx.fillCircle(x + 2, y - 8, 0.8);
+    // Ears
+    this.dogGfx.fillStyle(this.dogStunned ? 0x444444 : 0x6B4E0A);
+    this.dogGfx.fillTriangle(x - 5, y - 10, x - 3, y - 14, x - 1, y - 10);
+    this.dogGfx.fillTriangle(x + 5, y - 10, x + 3, y - 14, x + 1, y - 10);
+  }
+
+  private moveDog(): void {
+    if (this.caught || this.dogStunned) return;
+
+    // Dog chases the cat using simple pathfinding
+    const dr = this.catPos.r - this.dogPos.r;
+    const dc = this.catPos.c - this.dogPos.c;
+
+    // Try to move toward cat, prefer the larger axis
+    const moves: { dr: number; dc: number }[] = [];
+    if (Math.abs(dr) >= Math.abs(dc)) {
+      if (dr !== 0) moves.push({ dr: dr > 0 ? 1 : -1, dc: 0 });
+      if (dc !== 0) moves.push({ dr: 0, dc: dc > 0 ? 1 : -1 });
+    } else {
+      if (dc !== 0) moves.push({ dr: 0, dc: dc > 0 ? 1 : -1 });
+      if (dr !== 0) moves.push({ dr: dr > 0 ? 1 : -1, dc: 0 });
+    }
+    // Add random perpendicular move
+    if (moves.length === 0 || Math.random() < 0.2) {
+      const rndDir = DIRS[Math.floor(Math.random() * DIRS.length)];
+      moves.push({ dr: rndDir.dr, dc: rndDir.dc });
+    }
+
+    for (const m of moves) {
+      const nr = this.dogPos.r + m.dr;
+      const nc = this.dogPos.c + m.dc;
+      if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && this.grid[nr][nc] === FLOOR) {
+        this.dogPos = { r: nr, c: nc };
+        const dest = this.cellToWorld(nr, nc);
+        this.drawDog(dest.x, dest.y);
+        break;
+      }
+    }
+
+    // Check collision with cat
+    if (this.dogPos.r === this.catPos.r && this.dogPos.c === this.catPos.c) {
+      this.dogCaughtCat();
+    }
+  }
+
+  private dogCaughtCat(): void {
+    // Dog catches cat: lose 8 seconds, dog is stunned briefly
+    playSfx('hiss');
+    this.timeLeft = Math.max(1, this.timeLeft - 8);
+    this.timerText.setText(`Time: ${this.timeLeft}s`);
+    this.timerText.setColor('#cc4444');
+    this.time.delayedCall(500, () => this.timerText.setColor('#c4956a'));
+
+    // Flash warning
+    this.cameras.main.flash(200, 139, 69, 19, false);
+
+    const warn = this.add.text(GAME_WIDTH / 2, MAZE_Y - 10, 'Guard dog! -8 seconds', {
+      fontFamily: 'Georgia, serif', fontSize: '13px', color: '#cc6666',
+    }).setOrigin(0.5);
+    this.time.delayedCall(1500, () => warn.destroy());
+
+    // Stun dog for 3 seconds
+    this.dogStunned = true;
+    const { x, y } = this.cellToWorld(this.dogPos.r, this.dogPos.c);
+    this.drawDog(x, y);
+    this.time.delayedCall(3000, () => {
+      this.dogStunned = false;
+      const pos = this.cellToWorld(this.dogPos.r, this.dogPos.c);
+      this.drawDog(pos.x, pos.y);
+    });
   }
 
   private createButton(x: number, y: number, label: string, onClick: () => void): void {
