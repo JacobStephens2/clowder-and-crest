@@ -78,8 +78,9 @@ export class RoomScene extends Phaser.Scene {
     backBtn.on('pointerout', () => backBtn.setColor('#8b7355'));
 
     // Room title
+    const chapter = save?.chapter ?? 1;
     const roomNames: Record<string, string> = {
-      sleeping: 'Sleeping Quarters',
+      sleeping: chapter < 2 ? 'The Lean-To' : 'Sleeping Quarters',
       kitchen: 'Kitchen & Pantry',
       operations: 'Operations Hall',
     };

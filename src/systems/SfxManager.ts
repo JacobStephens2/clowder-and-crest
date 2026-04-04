@@ -19,6 +19,7 @@ function getAudio(key: string): HTMLAudioElement | null {
     rat_caught: 'assets/sfx/rat_caught.mp3',
     fail: 'assets/sfx/fail.mp3',
     splash: 'assets/sfx/fish_splash.mp3',
+    thunder: 'assets/sfx/thunder.mp3',
   };
   const path = paths[key];
   if (!path) return null;

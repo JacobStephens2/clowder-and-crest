@@ -9,7 +9,7 @@ const BREEDS_WITH_SPRITES = new Set(['wildcat', 'russian_blue', 'tuxedo', 'maine
 const ROOM_WIDTH = 340;
 const ROOM_HEIGHT = 180;
 const ROOM_GAP = 16;
-const ROOM_START_Y = 80;
+const ROOM_START_Y = 100;
 
 interface RoomDef {
   id: string;
@@ -20,11 +20,15 @@ interface RoomDef {
   cost: number;
 }
 
-const ROOMS: RoomDef[] = [
-  { id: 'sleeping', name: 'Sleeping Quarters', description: 'Rest and recovery', floorColor: 0x2e2a25, wallColor: 0x3a3530, cost: 0 },
-  { id: 'kitchen', name: 'Kitchen & Pantry', description: 'Meals for the guild', floorColor: 0x2e2822, wallColor: 0x3a2e28, cost: 50 },
-  { id: 'operations', name: 'Operations Hall', description: 'Plan and dispatch', floorColor: 0x252e2a, wallColor: 0x2e3530, cost: 100 },
-];
+function getRooms(chapter: number): RoomDef[] {
+  const sleepingName = chapter < 2 ? 'The Lean-To' : 'Sleeping Quarters';
+  const sleepingDesc = chapter < 2 ? 'A makeshift shelter behind the grain market' : 'Rest and recovery';
+  return [
+    { id: 'sleeping', name: sleepingName, description: sleepingDesc, floorColor: 0x2e2a25, wallColor: 0x3a3530, cost: 0 },
+    { id: 'kitchen', name: 'Kitchen & Pantry', description: 'Meals for the guild', floorColor: 0x2e2822, wallColor: 0x3a2e28, cost: 50 },
+    { id: 'operations', name: 'Operations Hall', description: 'Plan and dispatch', floorColor: 0x252e2a, wallColor: 0x2e3530, cost: 100 },
+  ];
+}
 
 export class GuildhallScene extends Phaser.Scene {
   constructor() {
@@ -52,7 +56,8 @@ export class GuildhallScene extends Phaser.Scene {
 
     // Guild name header
     const chapterName = getChapterName(save.chapter);
-    this.add.text(GAME_WIDTH / 2, 55, 'The Guildhall', {
+    const hallName = save.chapter < 2 ? 'Behind the Grain Market' : 'The Guildhall';
+    this.add.text(GAME_WIDTH / 2, 55, hallName, {
       fontFamily: 'Georgia, serif',
       fontSize: '22px',
       color: '#c4956a',
@@ -78,7 +83,7 @@ export class GuildhallScene extends Phaser.Scene {
     this.drawRooms(save);
 
     // Content height and scrolling
-    const contentHeight = ROOMS.length * (ROOM_HEIGHT + ROOM_GAP) + ROOM_START_Y + 40;
+    const contentHeight = 3 * (ROOM_HEIGHT + ROOM_GAP) + ROOM_START_Y + 40;
     const maxScroll = Math.max(0, contentHeight - GAME_HEIGHT + 120);
 
     if (maxScroll > 0) {
@@ -103,9 +108,9 @@ export class GuildhallScene extends Phaser.Scene {
 
   private drawRooms(save: SaveData): void {
     const cx = GAME_WIDTH / 2;
-    const startY = save.flags.ratPlagueStarted && !save.flags.ratPlagueResolved ? 115 : ROOM_START_Y;
+    const startY = save.flags.ratPlagueStarted && !save.flags.ratPlagueResolved ? 130 : ROOM_START_Y;
 
-    ROOMS.forEach((room, i) => {
+    getRooms(save.chapter).forEach((room, i) => {
       const y = startY + i * (ROOM_HEIGHT + ROOM_GAP);
       const roomData = save.rooms.find((r) => r.id === room.id);
       const unlocked = roomData?.unlocked ?? false;

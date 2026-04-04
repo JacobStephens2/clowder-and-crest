@@ -329,19 +329,19 @@ function showIntroStory(catName: string, onComplete: () => void): void {
       scene: 'town',
     },
     {
-      text: `${catName} pressed against the cold stone wall of the grain market. The smell of flour and mice drifted through the cracks.`,
+      text: `Behind the grain market, ${catName} found a lean-to — little more than a few boards propped against the stone wall. But it was dry, and the smell of mice drifted through the cracks.`,
       scene: 'guildhall',
     },
     {
-      text: `On the wall, a notice fluttered in the wind: "PEST CONTROL NEEDED — Payment in fish. Inquire at the guild board."`,
+      text: `On the market wall nearby, a notice fluttered in the wind: "PEST CONTROL NEEDED — Payment in fish."`,
       scene: 'guildhall',
     },
     {
-      text: `No guild existed yet. No cats had answered the call. But ${catName} saw an opportunity — a chance to build something from nothing.`,
+      text: `${catName} curled up under the lean-to's sagging roof. Tomorrow, there would be work. Tonight, this shelter was enough.`,
       scene: 'guildhall',
     },
     {
-      text: `This is where it begins. A lone stray, a storm, and a crumbling settlement in need of cats who can work.`,
+      text: `Every guild starts somewhere. This one starts here — a stray, a storm, and a lean-to behind the grain market.`,
       scene: 'town',
     },
   ];
@@ -381,12 +381,12 @@ function showIntroStory(catName: string, onComplete: () => void): void {
 
   // Panel-specific SFX
   const panelSounds: (string | null)[] = [
-    'day_bell',      // Storm — distant bell
-    null,            // Wildcat stumbles — cat appears, no extra sound
-    'purr',          // Pressed against wall — quiet purr
+    'thunder',       // Storm — thunder and rain
+    null,            // Wildcat stumbles — cat appears
+    'purr',          // Found the lean-to — quiet purr
     'job_accept',    // Notice on wall — quill scratch
-    null,            // Opportunity — silence, dramatic
-    'chapter',       // This is where it begins — fanfare
+    null,            // Curls up — silence, reflective
+    null,            // Every guild starts somewhere — quiet resolve
   ];
 
   function showPanel(): void {
