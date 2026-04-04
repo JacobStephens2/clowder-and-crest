@@ -3,8 +3,15 @@ import { BOND_THRESHOLDS, type BondRank } from '../utils/constants';
 
 const BOND_PAIRS = [
   ['wildcat', 'russian_blue'],
+  ['wildcat', 'maine_coon'],
+  ['wildcat', 'tuxedo'],
+  ['wildcat', 'siamese'],
+  ['russian_blue', 'tuxedo'],
+  ['russian_blue', 'siamese'],
   ['tuxedo', 'siamese'],
-  ['maine_coon', 'wildcat'],
+  ['maine_coon', 'tuxedo'],
+  ['maine_coon', 'siamese'],
+  ['maine_coon', 'russian_blue'],
 ];
 
 function bondKey(a: string, b: string): string {

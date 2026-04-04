@@ -102,6 +102,15 @@ export class RoomScene extends Phaser.Scene {
     this.drawFurniture(save);
     this.drawCats(save);
     this.drawAmbience();
+
+    // Cats react when you enter — play a random sound after a moment
+    this.time.delayedCall(800, () => {
+      const sounds = ['wildcat_meow', 'wildcat_chirp'];
+      const sound = sounds[Math.floor(Math.random() * sounds.length)];
+      if (this.cache.audio.exists(sound)) {
+        this.sound.play(sound, { volume: 0.25 });
+      }
+    });
   }
 
   private drawRoom(): void {

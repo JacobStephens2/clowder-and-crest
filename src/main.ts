@@ -257,6 +257,7 @@ eventBus.on('fish-changed', () => {
 bottomBar.addEventListener('click', (e) => {
   const btn = (e.target as HTMLElement).closest('.nav-btn') as HTMLElement;
   if (!btn || !gameState) return;
+  playSfx('tap', 0.3);
 
   const scene = btn.dataset.scene;
   // Close any open panels
@@ -322,13 +323,19 @@ eventBus.on('game-loaded', (save: SaveData) => {
   startBgm();
   startDayTimer();
 
+  // Welcome back message
+  if (save.totalJobsCompleted > 0) {
+    const catNames = save.cats.slice(0, 3).map((c) => c.name).join(', ');
+    setTimeout(() => showToast(`Welcome back! ${catNames}${save.cats.length > 3 ? ` and ${save.cats.length - 3} others` : ''} await your orders.`), 500);
+  }
+
   // Warn if can't afford today's upkeep
   const unlockedRooms = save.rooms.filter((r) => r.unlocked).length;
   const dailyCost = save.cats.length * 2 + unlockedRooms;
   if (save.fish < dailyCost && save.cats.length > 1) {
     setTimeout(() => {
       showToast(`Warning: You have ${save.fish} fish but need ${dailyCost} for today's upkeep. Earn fish or a cat may leave!`);
-    }, 1500);
+    }, 2500);
   }
 });
 
@@ -523,7 +530,7 @@ eventBus.on('show-town-overlay', () => {
       const discountLabel = repMod < 1 ? ' (reputation discount)' : repMod > 1 ? ' (reputation premium)' : '';
       html += `
         <div class="town-recruit-card">
-          <div class="town-recruit-avatar" style="background:${recruit.color}"></div>
+          <img src="assets/sprites/${recruit.id}/south.png" style="width:48px;height:48px;image-rendering:pixelated;border-radius:50%;background:${recruit.color}" />
           <div class="town-recruit-info">
             <div class="town-recruit-name">${recruit.name}</div>
             <div class="town-recruit-cost">Wants to join for ${adjustedCost} Fish${discountLabel}</div>

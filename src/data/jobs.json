@@ -262,5 +262,71 @@
     "maxReward": 30,
     "puzzleSkin": "manor",
     "description": "The bishop's cat has gone missing. Follow the clues through the old quarter."
+  },
+  {
+    "id": "gate_watch",
+    "name": "Gate Watch",
+    "category": "guard",
+    "difficulty": "easy",
+    "keyStats": ["endurance", "senses"],
+    "baseReward": 6,
+    "maxReward": 10,
+    "puzzleSkin": "market",
+    "description": "Watch the town gate from dusk to dawn. Report suspicious visitors."
+  },
+  {
+    "id": "dock_patrol",
+    "name": "Dock Patrol",
+    "category": "guard",
+    "difficulty": "medium",
+    "keyStats": ["endurance", "stealth"],
+    "baseReward": 12,
+    "maxReward": 18,
+    "puzzleSkin": "docks",
+    "description": "Patrol the harbor docks. Smugglers are getting bolder."
+  },
+  {
+    "id": "chapel_blessing",
+    "name": "Chapel Blessing",
+    "category": "sacred",
+    "difficulty": "easy",
+    "keyStats": ["charm", "senses"],
+    "baseReward": 6,
+    "maxReward": 10,
+    "puzzleSkin": "cathedral",
+    "description": "Sit beside the altar during evening prayers. Your presence comforts the faithful."
+  },
+  {
+    "id": "pilgrimage_escort",
+    "name": "Pilgrimage Escort",
+    "category": "sacred",
+    "difficulty": "medium",
+    "keyStats": ["endurance", "charm"],
+    "baseReward": 13,
+    "maxReward": 19,
+    "puzzleSkin": "monastery",
+    "description": "Accompany pilgrims on the road to the monastery. Keep spirits high."
+  },
+  {
+    "id": "market_watch",
+    "name": "Market Watch",
+    "category": "detection",
+    "difficulty": "easy",
+    "keyStats": ["senses", "intelligence"],
+    "baseReward": 6,
+    "maxReward": 10,
+    "puzzleSkin": "market",
+    "description": "Keep an eye on the market square. Something has been going missing from the stalls."
+  },
+  {
+    "id": "tunnel_mapping",
+    "name": "Tunnel Mapping",
+    "category": "detection",
+    "difficulty": "medium",
+    "keyStats": ["stealth", "senses"],
+    "baseReward": 12,
+    "maxReward": 18,
+    "puzzleSkin": "warehouse",
+    "description": "Map the network of passages beneath the old quarter. Don't get lost."
   }
 ]
