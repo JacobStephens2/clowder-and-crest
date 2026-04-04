@@ -2027,6 +2027,7 @@ function showMenuPanel(): void {
       <div>Bonds formed: ${gameState.bonds.filter(b => b.points >= 10).length}/${gameState.bonds.length}</div>
       <div>Furniture owned: ${gameState.furniture.length}</div>
     </div>
+    <button class="menu-btn" id="menu-achievements">Achievements</button>
     <button class="menu-btn" id="menu-save">Save Game</button>
     <button class="menu-btn" id="menu-furniture">Furniture Shop</button>
     <button class="menu-btn" id="menu-mute">${isMuted() ? 'Unmute Music' : 'Mute Music'}</button>
@@ -2040,6 +2041,42 @@ function showMenuPanel(): void {
   overlayLayer.appendChild(panel);
 
   document.getElementById('menu-close')!.addEventListener('click', () => panel.remove());
+
+  document.getElementById('menu-achievements')!.addEventListener('click', () => {
+    panel.remove();
+    const achievements = [
+      { name: 'First Steps', desc: 'Complete your first job', done: gameState!.totalJobsCompleted >= 1 },
+      { name: 'The Crew', desc: 'Recruit a second cat', done: gameState!.cats.length >= 2 },
+      { name: 'Full House', desc: 'Recruit all 5 cats', done: gameState!.cats.length >= 5 },
+      { name: 'Rat Slayer', desc: 'Survive the Rat Plague', done: !!gameState!.flags.ratPlagueResolved },
+      { name: 'Fish Mogul', desc: 'Earn 500 total fish', done: gameState!.totalFishEarned >= 500 },
+      { name: 'Bond Forger', desc: 'Reach Companion rank with any pair', done: gameState!.bonds.some(b => b.points >= 25) },
+      { name: 'Bonded', desc: 'Reach Bonded rank with any pair', done: gameState!.bonds.some(b => b.points >= 50) },
+      { name: 'Noble Guild', desc: 'Reach Noble reputation', done: gameState!.reputationScore >= 30 },
+      { name: 'Shadow Guild', desc: 'Reach Shadowed reputation', done: gameState!.reputationScore <= -30 },
+      { name: 'Veteran', desc: 'Complete 50 jobs', done: gameState!.totalJobsCompleted >= 50 },
+      { name: 'Interior Designer', desc: 'Own 10+ furniture items', done: gameState!.furniture.length >= 10 },
+      { name: 'Rival Defeated', desc: 'Drive away the Silver Paws', done: !!gameState!.flags.rivalDefeated },
+      { name: 'Established', desc: 'Reach Chapter 5', done: gameState!.chapter >= 5 },
+      { name: 'Survivor', desc: 'Survive 30 days', done: gameState!.day >= 30 },
+    ];
+    const earned = achievements.filter(a => a.done).length;
+    const ap = document.createElement('div');
+    ap.className = 'menu-overlay';
+    ap.innerHTML = `
+      <button class="panel-close" id="ach-close">&times;</button>
+      <h2>Achievements</h2>
+      <div style="margin-bottom:12px;color:#8b7355;font-size:13px">${earned}/${achievements.length} earned</div>
+      ${achievements.map(a => `
+        <div style="padding:6px 12px;margin-bottom:4px;background:rgba(42,37,32,${a.done ? 0.6 : 0.2});border-radius:4px;border-left:3px solid ${a.done ? '#4a8a4a' : '#3a3530'}">
+          <div style="color:${a.done ? '#c4956a' : '#555'};font-size:13px">${a.done ? '\u2705' : '\u2B1C'} ${a.name}</div>
+          <div style="color:${a.done ? '#8b7355' : '#444'};font-size:10px">${a.desc}</div>
+        </div>
+      `).join('')}
+    `;
+    overlayLayer.appendChild(ap);
+    document.getElementById('ach-close')!.addEventListener('click', () => { ap.remove(); showMenuPanel(); });
+  });
 
   document.getElementById('menu-save')!.addEventListener('click', () => {
     saveGame(gameState!);
