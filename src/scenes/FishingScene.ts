@@ -126,6 +126,24 @@ export class FishingScene extends Phaser.Scene {
     this.cameras.main.setZoom(DPR);
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
+    // Show tutorial on first play
+    if (!localStorage.getItem('clowder_fishing_tutorial')) {
+      localStorage.setItem('clowder_fishing_tutorial', '1');
+      const tutorial = document.createElement('div');
+      tutorial.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
+      tutorial.innerHTML = `
+        <div style="color:#c4956a;font-family:Georgia,serif;font-size:22px;margin-bottom:12px">Fishing</div>
+        <div style="color:#8b7355;font-family:Georgia,serif;font-size:14px;text-align:center;max-width:280px;line-height:1.6">
+          Hold <strong>click/tap</strong> or <strong>Space</strong> to reel in.<br><br>
+          Keep the gold hook inside the green fish zone to fill the catch meter.<br><br>
+          If the hook stays outside too long, the fish escapes!
+        </div>
+        <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:12px;margin-top:20px">Tap to start</div>
+      `;
+      tutorial.addEventListener('click', () => tutorial.remove());
+      document.body.appendChild(tutorial);
+    }
+
     // ── Water background ──
     const waterTop = 180;
     this.add.rectangle(GAME_WIDTH / 2, waterTop + (GAME_HEIGHT - waterTop) / 2,

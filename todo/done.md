@@ -80,4 +80,7 @@
 [x] - Fishing minigame (reel-in mechanic, difficulty-scaled fish zone + speed)
 [x] - Job art on town cards (5 scene images: mill, market, cathedral, ship, monastery)
 [x] - Add more puzzle/minigame types (Fishing added as 4th type)
+[x] - Fishing tutorial on first play (hold to reel, keep hook in zone)
+[x] - CC BY-NC-SA 4.0 license added
+[x] - Google Analytics installed
 [x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview
