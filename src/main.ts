@@ -867,10 +867,60 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
   }
   showToast(`Day ${gameState.day}: ${parts.join(' | ')}`);
 
-  // Show station events
+  // Show station events and check for crises
   for (const r of stationedResults) {
     if (r.event) {
       setTimeout(() => showToast(r.event!), 1500);
+    }
+  }
+
+  // Crisis event (~10% chance per day when cats are stationed, chapter 3+)
+  if (gameState.chapter >= 3 && gameState.stationedCats.length > 0 && Math.random() < 0.1) {
+    const crisisTarget = gameState.stationedCats[Math.floor(Math.random() * gameState.stationedCats.length)];
+    const crisisCat = gameState.cats.find((c) => c.id === crisisTarget.catId);
+    const crisisJob = getJob(crisisTarget.jobId);
+    if (crisisCat && crisisJob) {
+      const crisisMessages: Record<string, string> = {
+        pest_control: 'A swarm of rats is overwhelming the station!',
+        courier: 'The route is blocked by bandits!',
+        guard: 'Intruders are breaching the perimeter!',
+        sacred: 'Dark omens disturb the vigil!',
+        detection: 'The suspect is about to flee!',
+      };
+      const msg = crisisMessages[crisisJob.category] ?? 'Trouble at the station!';
+      setTimeout(() => {
+        const crisis = document.createElement('div');
+        crisis.className = 'assign-overlay';
+        crisis.innerHTML = `
+          <h2>Station Crisis!</h2>
+          <div style="color:#cc6666;font-size:14px;margin-bottom:8px;text-align:center">${msg}</div>
+          <div style="color:#8b7355;font-size:12px;margin-bottom:16px;text-align:center">${crisisCat.name} at ${crisisJob.name} needs backup.</div>
+          <div style="display:flex;gap:12px;justify-content:center">
+            <button class="btn-puzzle" id="crisis-help">Send Help (+bonus fish)</button>
+            <button class="btn-auto" id="crisis-ignore" style="background:#2a2520;border:1px solid #3a3530">Ignore (mood drops)</button>
+          </div>
+        `;
+        overlayLayer.appendChild(crisis);
+
+        document.getElementById('crisis-help')!.addEventListener('click', () => {
+          crisis.remove();
+          const bonus = Math.floor(crisisJob.baseReward * 0.8);
+          earnFish(gameState!, bonus);
+          playSfx('fish_earn');
+          showToast(`Crisis resolved! +${bonus} fish bonus.`);
+          updateStatusBar();
+          saveGame(gameState!);
+        });
+
+        document.getElementById('crisis-ignore')!.addEventListener('click', () => {
+          crisis.remove();
+          if (crisisCat.mood === 'happy') crisisCat.mood = 'content';
+          else if (crisisCat.mood === 'content') crisisCat.mood = 'tired';
+          else crisisCat.mood = 'unhappy';
+          showToast(`${crisisCat.name} is disappointed you didn't help.`);
+          saveGame(gameState!);
+        });
+      }, 3000);
     }
   }
 
