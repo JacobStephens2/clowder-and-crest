@@ -263,6 +263,15 @@ eventBus.on('game-loaded', (save: SaveData) => {
   updateStatusBar();
   startBgm();
   startDayTimer();
+
+  // Warn if can't afford today's upkeep
+  const unlockedRooms = save.rooms.filter((r) => r.unlocked).length;
+  const dailyCost = save.cats.length * 2 + unlockedRooms;
+  if (save.fish < dailyCost && save.cats.length > 1) {
+    setTimeout(() => {
+      showToast(`Warning: You have ${save.fish} fish but need ${dailyCost} for today's upkeep. Earn fish or a cat may leave!`);
+    }, 1500);
+  }
 });
 
 // Room unlock
@@ -532,17 +541,38 @@ function showAssignOverlay(job: JobDef): void {
     html += `<div style="color:#888;font-size:14px;padding:12px 0">${reason}</div>`;
   }
 
+  // Show which stats matter for this job
+  html += `<div style="font-size:11px;color:#6b5b3e;margin-bottom:8px">Key stats: ${job.keyStats.join(', ')}</div>`;
+
   availableCats.forEach((cat) => {
     const catIndex = gameState!.cats.indexOf(cat);
     const match = getStatMatchScore(cat, job);
     const matchPct = Math.round(match * 100);
-    const color = BREED_COLORS[cat.breed] ?? '#8b7355';
+    const matchColor = matchPct >= 70 ? '#4a8a4a' : matchPct >= 40 ? '#8a8a4a' : '#8a4a4a';
+
+    // Build fit details
+    const statDetails = job.keyStats.map((s) => `${s}: ${cat.stats[s]}`).join(', ');
+    const traitEffects: string[] = [];
+    if ((cat.traits ?? []).includes('Brave') && job.difficulty === 'hard') traitEffects.push('Brave +');
+    if ((cat.traits ?? []).includes('Lazy')) traitEffects.push('Lazy -');
+    if ((cat.traits ?? []).includes('Curious') && job.category === 'courier') traitEffects.push('Curious +');
+    if ((cat.traits ?? []).includes('Skittish') && job.difficulty === 'hard') traitEffects.push('Skittish -');
+    if (cat.mood === 'happy') traitEffects.push('Happy +');
+    else if (cat.mood === 'unhappy') traitEffects.push('Unhappy -');
+    else if (cat.mood === 'tired') traitEffects.push('Tired -');
+
+    const spriteImg = ['wildcat', 'russian_blue', 'tuxedo', 'maine_coon', 'siamese'].includes(cat.breed)
+      ? `<img src="assets/sprites/${cat.breed}/south.png" style="width:36px;height:36px;image-rendering:pixelated;border-radius:50%;background:${BREED_COLORS[cat.breed] ?? '#8b7355'}" />`
+      : `<div class="cat-avatar" style="background:${BREED_COLORS[cat.breed] ?? '#8b7355'};width:36px;height:36px;border-radius:50%;"></div>`;
+
     html += `
       <button class="assign-cat-btn" data-cat-index="${catIndex}">
-        <div class="cat-avatar" style="background:${color};width:36px;height:36px;border-radius:50%;"></div>
-        <div>
-          <div style="color:#c4956a">${cat.name} (${BREED_NAMES[cat.breed] ?? cat.breed})</div>
-          <div style="font-size:12px;color:#999">Match: ${matchPct}% | Lv.${cat.level}</div>
+        ${spriteImg}
+        <div style="flex:1">
+          <div style="color:#c4956a">${cat.name} <span style="font-size:11px;color:#6b5b3e">${BREED_NAMES[cat.breed] ?? cat.breed}</span></div>
+          <div style="font-size:12px;color:${matchColor};font-weight:bold">Match: ${matchPct}%</div>
+          <div style="font-size:10px;color:#777">${statDetails}</div>
+          ${traitEffects.length > 0 ? `<div style="font-size:10px;color:#8b7355">${traitEffects.join(' | ')}</div>` : ''}
         </div>
       </button>
     `;
