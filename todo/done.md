@@ -62,4 +62,7 @@
 [x] - Cat artwork in dialogue portraits (breed sprite in conversation)
 [x] - Daily costs visible on town view (upkeep breakdown + fish warning)
 [x] - Fish crisis: cat leaves guild after 2 consecutive days broke + warning on town view
+[x] - README.md created with full feature list
+[x] - GitHub repo description and topics updated
+[x] - Pause button in status bar (pauses timer + mutes music, play button to resume)
 [x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview

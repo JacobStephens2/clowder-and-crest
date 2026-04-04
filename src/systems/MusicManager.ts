@@ -82,3 +82,11 @@ export function toggleMute(): boolean {
 export function isMuted(): boolean {
   return bgmMuted;
 }
+
+export function pauseMusic(): void {
+  if (bgmAudio) bgmAudio.pause();
+}
+
+export function resumeMusic(): void {
+  if (bgmAudio && !bgmMuted) bgmAudio.play().catch(() => {});
+}

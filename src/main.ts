@@ -23,9 +23,9 @@ import { getJob, getStatMatchScore, generateDailyJobs, type JobDef } from './sys
 import { getPuzzleByDifficulty, generatePuzzle } from './systems/PuzzleGenerator';
 import { addBondPoints, processDailyBonds, getAvailableConversation, markConversationViewed, getBondRank, getBondPairs } from './systems/BondSystem';
 import { checkChapterAdvance, checkRatPlagueResolution, getChapterName, getNextChapterHint } from './systems/ProgressionManager';
-import { startBgm, toggleMute, isMuted, switchToPuzzleMusic, switchToNormalMusic } from './systems/MusicManager';
+import { startBgm, toggleMute, isMuted, switchToPuzzleMusic, switchToNormalMusic, pauseMusic, resumeMusic } from './systems/MusicManager';
 import { playSfx } from './systems/SfxManager';
-import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDayEnd } from './systems/DayTimer';
+import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDayEnd, pauseDayTimer, resumeDayTimer, isPaused } from './systems/DayTimer';
 import conversationsData from './data/conversations.json';
 
 // ──── Game State ────
@@ -67,6 +67,25 @@ const panelOverlay = document.getElementById('panel-overlay')!;
 const statusFish = document.getElementById('status-fish')!;
 const statusDay = document.getElementById('status-day')!;
 const statusChapter = document.getElementById('status-chapter')!;
+
+// ──── Pause Button ────
+const pauseBtn = document.getElementById('status-pause');
+if (pauseBtn) {
+  pauseBtn.addEventListener('click', () => {
+    if (isPaused()) {
+      resumeDayTimer();
+      resumeMusic();
+      pauseBtn.textContent = '||';
+      pauseBtn.style.color = '#8b7355';
+    } else {
+      pauseDayTimer();
+      pauseMusic();
+      pauseBtn.textContent = '\u25B6';
+      pauseBtn.style.color = '#c4956a';
+      showToast('Game paused');
+    }
+  });
+}
 
 // ──── UI Helpers ────
 let lastFishCount = -1;
