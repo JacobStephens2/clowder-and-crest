@@ -88,4 +88,8 @@
 [x] - Skip dialogue button in conversations
 [x] - Fish remaining shown in day transition recap
 [x] - Town art changes with time of day (day/dusk/night variants, selected by current phase)
+[x] - Themed Rush Hour blocks (crate, barrel, flour sack, cart, pew sprites per job category)
+[x] - Dialogue scene art backgrounds (guildhall, rooftop, granary at 15% opacity)
+[x] - APK export instructions documented (todo/export.md)
+[x] - Added to portfolio at stephens.page/portfolio.html
 [x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview
