@@ -66,6 +66,10 @@ export class BootScene extends Phaser.Scene {
       this.load.image(`furniture_${id}`, `assets/sprites/furniture/${id}.png`);
     }
 
+    // Load scene art
+    this.load.image('scene_guildhall', 'assets/sprites/scenes/guildhall.png');
+    this.load.image('scene_town_plague', 'assets/sprites/scenes/town_plague.png');
+
     // Placeholder texture for non-sprite breeds
     const canvas = document.createElement('canvas');
     canvas.width = 1;

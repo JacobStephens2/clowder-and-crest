@@ -42,6 +42,14 @@ export class GuildhallScene extends Phaser.Scene {
     eventBus.emit('show-ui');
     eventBus.emit('set-active-tab', 'guildhall');
 
+    // Guildhall building art
+    if (this.textures.exists('scene_guildhall')) {
+      const hall = this.add.sprite(GAME_WIDTH / 2, 140, 'scene_guildhall');
+      hall.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      hall.setScale(1.5);
+      hall.setAlpha(0.3);
+    }
+
     // Guild name header
     const chapterName = getChapterName(save.chapter);
     this.add.text(GAME_WIDTH / 2, 55, 'The Guildhall', {

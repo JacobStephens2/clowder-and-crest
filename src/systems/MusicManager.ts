@@ -9,17 +9,28 @@ const BGM_TRACKS = [
   'assets/audio/market_stalls_2.mp3',
 ];
 
+const PUZZLE_TRACKS = [
+  'assets/audio/puzzle_1.mp3',
+  'assets/audio/puzzle_2.mp3',
+];
+
 let bgmAudio: HTMLAudioElement | null = null;
 let bgmMuted = localStorage.getItem('clowder_bgm_muted') === '1';
 let bgmTrackIndex = -1;
+let currentMode: 'normal' | 'puzzle' = 'normal';
+
+function getTrackList(): string[] {
+  return currentMode === 'puzzle' ? PUZZLE_TRACKS : BGM_TRACKS;
+}
 
 function pickNextTrack(): string {
+  const tracks = getTrackList();
   let next: number;
   do {
-    next = Math.floor(Math.random() * BGM_TRACKS.length);
-  } while (next === bgmTrackIndex && BGM_TRACKS.length > 1);
+    next = Math.floor(Math.random() * tracks.length);
+  } while (next === bgmTrackIndex && tracks.length > 1);
   bgmTrackIndex = next;
-  return BGM_TRACKS[next];
+  return tracks[next];
 }
 
 function onTrackEnded(): void {
@@ -42,6 +53,20 @@ function playTrack(src: string): void {
 
 export function startBgm(): void {
   if (bgmAudio) return;
+  playTrack(pickNextTrack());
+}
+
+export function switchToPuzzleMusic(): void {
+  if (currentMode === 'puzzle') return;
+  currentMode = 'puzzle';
+  bgmTrackIndex = -1;
+  playTrack(pickNextTrack());
+}
+
+export function switchToNormalMusic(): void {
+  if (currentMode === 'normal') return;
+  currentMode = 'normal';
+  bgmTrackIndex = -1;
   playTrack(pickNextTrack());
 }
 

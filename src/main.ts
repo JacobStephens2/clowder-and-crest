@@ -21,7 +21,7 @@ import { getJob, getStatMatchScore, generateDailyJobs, type JobDef } from './sys
 import { getPuzzleByDifficulty, generatePuzzle } from './systems/PuzzleGenerator';
 import { addBondPoints, processDailyBonds, getAvailableConversation, markConversationViewed, getBondRank, getBondPairs } from './systems/BondSystem';
 import { checkChapterAdvance, checkRatPlagueResolution, getChapterName, getNextChapterHint } from './systems/ProgressionManager';
-import { startBgm, toggleMute, isMuted } from './systems/MusicManager';
+import { startBgm, toggleMute, isMuted, switchToPuzzleMusic, switchToNormalMusic } from './systems/MusicManager';
 import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDayEnd } from './systems/DayTimer';
 import conversationsData from './data/conversations.json';
 
@@ -531,6 +531,7 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
       showToast('No puzzle available!');
       return;
     }
+    switchToPuzzleMusic();
     switchScene('PuzzleScene', { puzzle, jobId: job.id, catId: cat.id });
   });
 
@@ -587,6 +588,7 @@ function doAutoResolve(job: JobDef, cat: typeof gameState extends null ? never :
 
 // Puzzle complete
 eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId }: any) => {
+  switchToNormalMusic();
   if (!gameState) return;
 
   const job = getJob(jobId);
@@ -637,7 +639,7 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
 });
 
 eventBus.on('puzzle-quit', () => {
-  // No penalty for quitting
+  switchToNormalMusic();
 });
 
 function advanceDay(): void {
@@ -753,7 +755,7 @@ function checkAndShowConversation(): void {
     }
   }
 
-  switchScene('GuildhallScene');
+  switchScene('TownScene');
 }
 
 function showConversation(breedA: string, breedB: string, rank: string): void {
