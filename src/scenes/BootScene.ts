@@ -63,16 +63,18 @@ export class BootScene extends Phaser.Scene {
       }
     }
 
-    // Load interaction animations (wildcat: scratch, sit, eat; all breeds: sleep)
-    const wcInteractions = [
+    // Load interaction animations (scratch, sit, eat) for ALL breeds
+    const interactions = [
       { name: 'scratch', frames: 12 },
       { name: 'sit', frames: 8 },
       { name: 'eat', frames: 7 },
     ];
-    for (const anim of wcInteractions) {
-      for (let f = 0; f < anim.frames; f++) {
-        const frame = String(f).padStart(3, '0');
-        this.load.image(`wildcat_${anim.name}_${f}`, `assets/sprites/wildcat/interact/${anim.name}/frame_${frame}.png`);
+    for (const breed of BREEDS_WITH_SPRITES) {
+      for (const anim of interactions) {
+        for (let f = 0; f < anim.frames; f++) {
+          const frame = String(f).padStart(3, '0');
+          this.load.image(`${breed}_${anim.name}_${f}`, `assets/sprites/${breed}/interact/${anim.name}/frame_${frame}.png`);
+        }
       }
     }
 
@@ -152,22 +154,24 @@ export class BootScene extends Phaser.Scene {
       }
     }
 
-    // Create interaction animations
-    for (const { name, frames } of [
-      { name: 'scratch', frames: 12 },
-      { name: 'sit', frames: 8 },
-      { name: 'eat', frames: 7 },
-    ]) {
-      const animFrames: Phaser.Types.Animations.AnimationFrame[] = [];
-      for (let f = 0; f < frames; f++) {
-        animFrames.push({ key: `wildcat_${name}_${f}` });
+    // Create interaction animations for ALL breeds
+    for (const breed of BREEDS_WITH_SPRITES) {
+      for (const { name, frames } of [
+        { name: 'scratch', frames: 12 },
+        { name: 'sit', frames: 8 },
+        { name: 'eat', frames: 7 },
+      ]) {
+        const animFrames: Phaser.Types.Animations.AnimationFrame[] = [];
+        for (let f = 0; f < frames; f++) {
+          animFrames.push({ key: `${breed}_${name}_${f}` });
+        }
+        this.anims.create({
+          key: `${breed}_${name}`,
+          frames: animFrames,
+          frameRate: 6,
+          repeat: 0,
+        });
       }
-      this.anims.create({
-        key: `wildcat_${name}`,
-        frames: animFrames,
-        frameRate: 6,
-        repeat: 0,
-      });
     }
 
     // Create sleep animations for all breeds

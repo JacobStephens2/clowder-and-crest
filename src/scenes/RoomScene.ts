@@ -259,7 +259,7 @@ export class RoomScene extends Phaser.Scene {
               : neighbors[0];
             if (target) {
               this.playerMoveTo(target.col, target.row, () => {
-                // Pick breed-specific anim (sleep) or wildcat-only anim (scratch/sit/eat)
+                // Pick breed-specific animation
                 const animKey = interaction.breedAnim
                   ? `${this.playerBreed}_${interaction.breedAnim}`
                   : interaction.anim ? `${this.playerBreed}_${interaction.anim}` : null;
