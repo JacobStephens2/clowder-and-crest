@@ -39,4 +39,4 @@
 [x] - ensure town view returns after closing job screen
 [x] - use puzzle music during puzzles (2 tracks, switches on enter/exit)
 [] - The player should be able to move furniture from one room to another, and choose the position in that room
-[] - The cats should wander around the guildhall on their own, so when you're looking at the guildhall overview you can see where each cat is, but not every cat is in every room all the time.
+[x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview

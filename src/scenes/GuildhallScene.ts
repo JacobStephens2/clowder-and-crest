@@ -158,9 +158,13 @@ export class GuildhallScene extends Phaser.Scene {
         const placed = save.furniture.filter((f) => f.room === room.id);
         this.drawFurniture(placed, cx, y + 60, ROOM_WIDTH - 40);
 
-        // Draw cats in sleeping quarters
-        if (room.id === 'sleeping') {
-          this.drawCats(save, cx, y + ROOM_HEIGHT - 55);
+        // Draw cats assigned to this room
+        const anyAssigned = save.cats.some((c) => c.assignedRoom);
+        const roomCats = anyAssigned
+          ? { ...save, cats: save.cats.filter((c) => c.assignedRoom === room.id || (!c.assignedRoom && room.id === 'sleeping')) }
+          : (room.id === 'sleeping' ? save : { ...save, cats: [] });
+        if (roomCats.cats.length > 0) {
+          this.drawCats(roomCats, cx, y + ROOM_HEIGHT - 55);
         }
       } else {
         // Locked room
