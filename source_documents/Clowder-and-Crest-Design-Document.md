@@ -538,6 +538,13 @@ Repository: `https://github.com/JacobStephens2/clowder` (private)
 - **Stationed job improvements** — level 2+ requirement, diminishing returns after 5 days
 - **Progression hints** — menu shows next chapter requirements
 - **Extracted MusicManager and DayTimer** — reduced main.ts god-file
+- **All 10 conversation pairings** — 30 scripts total (up from 9)
+- **Station events** — random daily events affect stationed cat earnings and mood
+- **Interactive furniture** — click scratching post, catnip, beds, etc. to send player cat
+- **Day transition overlay** — full-screen "Day N" indicator on day change
+- **Continuous key movement** — holding WASD moves cat continuously
+- **Trait tooltips** — hover shows mechanical effects in cat panel
+- **Fish count flash** — status bar flashes green/red on fish changes
 - HiDPI canvas rendering (device pixel ratio scaling)
 - Hybrid UI: Phaser canvas for game world + HTML/CSS overlays for all UI
 - **Town UI fully HTML** — native resolution text, scrollable cards
