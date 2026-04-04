@@ -1,7 +1,7 @@
 [] Complete Chapter 6 — rival guild resolution (win condition + narrative scene)
 [] Achievements/milestones screen in menu
 [] Overall game tutorial — guided first day for new players
-[] Harder late-game economy (scaling food cost per cat level, random expenses)
+[x] Harder late-game economy (scaling food cost per cat level, random expenses)
 [] Cat specialization at level 5 (permanent category bonus/penalty)
 [] Guild timeline/journal — scrollable log of major events
 [] More cat sounds per breed (unique vocalizations beyond wildcat)

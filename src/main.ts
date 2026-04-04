@@ -498,7 +498,7 @@ eventBus.on('game-loaded', (save: SaveData) => {
 
   // Warn if can't afford today's upkeep
   const unlockedRooms = save.rooms.filter((r) => r.unlocked).length;
-  const dailyCost = save.cats.length * 2 + unlockedRooms;
+  const dailyCost = save.cats.reduce((sum, c) => sum + 2 + Math.max(0, c.level - 1), 0) + unlockedRooms;
   if (save.fish < dailyCost && save.cats.length > 1) {
     setTimeout(() => {
       showToast(`Warning: You have ${save.fish} fish but need ${dailyCost} for today's upkeep. Earn fish or a cat may leave!`);
@@ -779,10 +779,11 @@ eventBus.on('show-town-overlay', () => {
   // Daily costs summary (must match advanceDay calculation)
   const unlockedRoomCount = gameState.rooms.filter((r) => r.unlocked).length;
   const chapterUpkeep = Math.max(0, gameState.chapter - 1) * 2;
-  const dailyCost = gameState.cats.length * 2 + unlockedRoomCount + chapterUpkeep;
+  const catFoodDisplay = gameState.cats.reduce((sum, c) => sum + 2 + Math.max(0, c.level - 1), 0);
+  const dailyCost = catFoodDisplay + unlockedRoomCount + chapterUpkeep;
   const canAffordUpkeep = gameState.fish >= dailyCost;
   html += `<div style="padding:4px 12px 8px;font-size:11px;color:${canAffordUpkeep ? '#8b7355' : '#cc6666'};font-family:Georgia,serif">
-    Daily upkeep: ${dailyCost} fish (${gameState.cats.length} cats + ${unlockedRoomCount} rooms${chapterUpkeep > 0 ? ` + ${chapterUpkeep} guild costs` : ''}) | Fish: ${gameState.fish}
+    Daily upkeep: ${dailyCost} fish (cats: ${catFoodDisplay} + rooms: ${unlockedRoomCount}${chapterUpkeep > 0 ? ` + guild: ${chapterUpkeep}` : ''}) | Fish: ${gameState.fish}
     ${!canAffordUpkeep ? '<br><strong>Warning: Cannot afford upkeep! A cat may leave the guild.</strong>' : ''}
   </div>`;
 
@@ -1251,11 +1252,12 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
   jobsCompletedToday.clear();
   cachedDailyJobs = null;
 
-  // Daily upkeep scales with chapter: base 2/cat + 1/room + chapter bonus
-  // This prevents runaway profit as the guild grows
+  // Daily upkeep scales with chapter and cat levels
   const unlockedRooms = gameState.rooms.filter((r) => r.unlocked).length;
-  const chapterUpkeep = Math.max(0, gameState.chapter - 1) * 2; // +2 per chapter beyond 1
-  const foodCost = gameState.cats.length * 2 + unlockedRooms + chapterUpkeep;
+  const chapterUpkeep = Math.max(0, gameState.chapter - 1) * 2;
+  // Higher-level cats eat more (1 extra fish per level above 1)
+  const catFoodCost = gameState.cats.reduce((sum, c) => sum + 2 + Math.max(0, c.level - 1), 0);
+  const foodCost = catFoodCost + unlockedRooms + chapterUpkeep;
   if (gameState.fish >= foodCost) {
     gameState.fish -= foodCost;
     // Well-fed cats recover mood
@@ -1338,6 +1340,26 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
     gameState.fish = Math.max(0, gameState.fish + repBonuses.dailyFish);
   }
 
+  // Random expenses (~15% chance from chapter 2+, scaling with chapter)
+  let randomExpense = 0;
+  let randomExpenseMsg = '';
+  if (gameState.chapter >= 2 && Math.random() < 0.15) {
+    const expenseEvents = [
+      { msg: 'A roof leak needs urgent repair!', cost: 3 },
+      { msg: 'A merchant overcharged for supplies.', cost: 2 },
+      { msg: 'Mice got into the fish stores overnight.', cost: 4 },
+      { msg: 'A visiting dignitary expects a gift.', cost: 3 },
+      { msg: 'A cat broke a valuable vase.', cost: 2 },
+      { msg: 'Guild tax collectors came by.', cost: 3 + gameState.chapter },
+      { msg: 'Medicine needed for a sick stray.', cost: 3 },
+      { msg: 'Storm damage to the guildhall entrance.', cost: 4 },
+    ];
+    const evt = expenseEvents[Math.floor(Math.random() * expenseEvents.length)];
+    randomExpense = evt.cost;
+    randomExpenseMsg = evt.msg;
+    gameState.fish = Math.max(0, gameState.fish - randomExpense);
+  }
+
   // Collect stationed earnings
   const stationedResults = collectStationedEarnings(gameState);
   const stationedTotal = stationedResults.reduce((sum, r) => sum + r.earned, 0);
@@ -1346,10 +1368,19 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
   const parts: string[] = [];
   if (repBonuses.dailyFish > 0) parts.push(`Reputation: +${repBonuses.dailyFish} fish`);
   parts.push(`Upkeep: -${foodCost} fish`);
+  if (randomExpense > 0) parts.push(`Expense: -${randomExpense} fish`);
   if (stationedTotal > 0) {
     parts.push(`Stationed: +${stationedTotal} fish`);
   }
   showToast(`Day ${gameState.day}: ${parts.join(' | ')}`);
+
+  // Show random expense event
+  if (randomExpenseMsg) {
+    setTimeout(() => {
+      playSfx('merchant');
+      showToast(`${randomExpenseMsg} (-${randomExpense} fish)`);
+    }, 1200);
+  }
 
   // Show station events and check for crises
   for (const r of stationedResults) {
@@ -2014,10 +2045,10 @@ function showMenuPanel(): void {
     ${progressHint ? `<div style="margin-bottom:12px;color:#6b8ea6;font-size:12px;font-style:italic">${progressHint}</div>` : ''}
     <div style="margin-bottom:16px;padding:8px 12px;background:rgba(42,37,32,0.6);border-radius:4px;font-size:12px;color:#8b7355">
       <div style="margin-bottom:4px;color:#c4956a">Daily Costs:</div>
-      <div>Cat food: ${gameState.cats.length} cats x 2 = ${gameState.cats.length * 2} fish</div>
+      <div>Cat food: ${gameState.cats.reduce((sum, c) => sum + 2 + Math.max(0, c.level - 1), 0)} fish (scales with level)</div>
       <div>Guild upkeep: ${gameState.rooms.filter(r => r.unlocked).length} rooms = ${gameState.rooms.filter(r => r.unlocked).length} fish</div>
       ${Math.max(0, gameState.chapter - 1) > 0 ? `<div>Guild costs: Chapter ${gameState.chapter} = ${Math.max(0, gameState.chapter - 1) * 2} fish</div>` : ''}
-      <div style="margin-top:4px;color:#c4956a">Total: ${gameState.cats.length * 2 + gameState.rooms.filter(r => r.unlocked).length + Math.max(0, gameState.chapter - 1) * 2} fish/day</div>
+      <div style="margin-top:4px;color:#c4956a">Total: ${gameState.cats.reduce((sum, c) => sum + 2 + Math.max(0, c.level - 1), 0) + gameState.rooms.filter(r => r.unlocked).length + Math.max(0, gameState.chapter - 1) * 2} fish/day</div>
     </div>
     <div style="margin-bottom:16px;padding:8px 12px;background:rgba(42,37,32,0.4);border-radius:4px;font-size:11px;color:#6b5b3e">
       <div style="margin-bottom:4px;color:#8b7355">Guild Statistics:</div>
