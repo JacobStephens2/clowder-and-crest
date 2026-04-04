@@ -19,7 +19,7 @@ import {
   deleteSave,
 } from './systems/SaveManager';
 import { createCat, getBreed, addXp } from './systems/CatManager';
-import { earnFish, spendFish, calculateReward, calculateAutoResolveReward, collectStationedEarnings, isCatStationed } from './systems/Economy';
+import { earnFish, spendFish, calculateReward, collectStationedEarnings, isCatStationed } from './systems/Economy';
 import { getJob, getStatMatchScore, generateDailyJobs, type JobDef } from './systems/JobBoard';
 import { getPuzzleByDifficulty, generatePuzzle } from './systems/PuzzleGenerator';
 import { addBondPoints, processDailyBonds, getAvailableConversation, markConversationViewed, getBondRank, getBondPairs } from './systems/BondSystem';
@@ -27,6 +27,7 @@ import { checkChapterAdvance, checkRatPlagueResolution, getChapterName, getNextC
 import { startBgm, toggleMute, isMuted, switchToPuzzleMusic, switchToNormalMusic, pauseMusic, resumeMusic } from './systems/MusicManager';
 import { playSfx, toggleSfxMute, isSfxMuted } from './systems/SfxManager';
 import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDayEnd, pauseDayTimer, resumeDayTimer, isPaused } from './systems/DayTimer';
+import { applyReputationShift, getReputationLabel, getReputationRecruitModifier } from './systems/ReputationSystem';
 import conversationsData from './data/conversations.json';
 
 // ──── Game State ────
@@ -130,34 +131,6 @@ function setActiveTab(scene: string): void {
   bottomBar.querySelectorAll('.nav-btn').forEach((btn) => {
     btn.classList.toggle('active', btn.getAttribute('data-scene') === scene);
   });
-}
-
-function applyReputationShift(job: JobDef): void {
-  if (!gameState) return;
-  const shifts: Record<string, number> = {
-    sacred: 3, guard: 2, pest_control: 0, courier: 0, detection: -2,
-  };
-  const shift = shifts[job.category] ?? 0;
-  if (shift !== 0) {
-    gameState.reputationScore = Math.max(-100, Math.min(100, gameState.reputationScore + shift));
-  }
-}
-
-function getReputationLabel(score: number): string {
-  if (score >= 30) return 'Noble';
-  if (score >= 10) return 'Respected';
-  if (score > -10) return 'Neutral';
-  if (score > -30) return 'Questionable';
-  return 'Shadowed';
-}
-
-// Reputation affects recruit costs: Noble gets discount, Shadowed pays premium
-function getReputationRecruitModifier(score: number): number {
-  if (score >= 30) return 0.8;  // 20% discount
-  if (score >= 10) return 0.9;  // 10% discount
-  if (score > -10) return 1.0;  // no change
-  if (score > -30) return 1.1;  // 10% premium
-  return 1.2;                    // 20% premium
 }
 
 function switchScene(target: string, data?: object): void {
@@ -780,44 +753,6 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
   });
 }
 
-function doAutoResolve(job: JobDef, cat: typeof gameState extends null ? never : NonNullable<typeof gameState>['cats'][number]): void {
-  if (!gameState) return;
-  const match = getStatMatchScore(cat, job);
-  const reward = calculateAutoResolveReward(job.baseReward, job.maxReward, match);
-
-  earnFish(gameState, reward);
-  playSfx('fish_earn');
-  gameState.totalJobsCompleted++;
-  if (!gameState.completedJobs.includes(job.id)) {
-    gameState.completedJobs.push(job.id);
-  }
-
-  // XP
-  const xpMap: Record<string, number> = { easy: 20, medium: 40, hard: 70 };
-  const leveled = addXp(cat, xpMap[job.difficulty] ?? 20);
-
-  // Bond points for working same day
-  for (const other of gameState.cats) {
-    if (other.id !== cat.id) {
-      addBondPoints(gameState, cat.breed, other.breed, 3);
-    }
-  }
-
-  // Mark cat as worked today
-  catsWorkedToday.add(cat.id);
-  saveGame(gameState);
-
-  showResultOverlay({
-    jobName: job.name,
-    catName: cat.name,
-    reward,
-    stars: 0,
-    xp: xpMap[job.difficulty] ?? 20,
-    leveled,
-    isAuto: true,
-  });
-}
-
 // Puzzle complete
 eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId, bonusFish }: any) => {
   switchToNormalMusic();
@@ -843,7 +778,7 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
   playSfx('purr');
   playSfx('fish_earn', 0.3);
   gameState.totalJobsCompleted++;
-  applyReputationShift(job);
+  applyReputationShift(gameState, job);
   if (!gameState.completedJobs.includes(job.id)) {
     gameState.completedJobs.push(job.id);
   }
@@ -877,7 +812,6 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
     minMoves,
     xp,
     leveled,
-    isAuto: false,
   });
 });
 
@@ -1057,18 +991,17 @@ interface ResultInfo {
   minMoves?: number;
   xp: number;
   leveled: boolean;
-  isAuto: boolean;
 }
 
 function showResultOverlay(info: ResultInfo): void {
   const overlay = document.createElement('div');
   overlay.className = 'result-overlay';
 
-  const starsStr = info.isAuto ? '' : '&#11088;'.repeat(info.stars) + '&#9734;'.repeat(3 - info.stars);
+  const starsStr = '&#11088;'.repeat(info.stars) + '&#9734;'.repeat(3 - info.stars);
   const movesStr = info.moves != null ? `<br>Moves: ${info.moves} (target: ${info.minMoves})` : '';
 
   overlay.innerHTML = `
-    <h2>${info.isAuto ? 'Job Complete' : 'Puzzle Solved!'}</h2>
+    <h2>Puzzle Solved!</h2>
     ${starsStr ? `<div class="result-stars">${starsStr}</div>` : ''}
     <div class="result-details">
       <strong>${info.jobName}</strong><br>
