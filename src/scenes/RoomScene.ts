@@ -167,19 +167,26 @@ export class RoomScene extends Phaser.Scene {
       const row = f.gridY % GRID_ROWS;
       const { x, y } = toWorld(col, row);
       const color = colors[f.furnitureId] ?? 0x5a5a5a;
-
-      const gfx = this.add.graphics();
       const size = TILE_SIZE - 8;
-      gfx.fillStyle(color);
-      gfx.fillRoundedRect(x - size / 2, y - size / 2, size, size, 4);
-      gfx.lineStyle(1, 0x3a3530, 0.5);
-      gfx.strokeRoundedRect(x - size / 2, y - size / 2, size, size, 4);
+      const spriteKey = `furniture_${f.furnitureId}`;
 
-      const label = f.furnitureId.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-      this.add.text(x, y, label, {
-        fontFamily: 'Georgia, serif', fontSize: '6px', color: '#ddd',
-        align: 'center', wordWrap: { width: size - 4 },
-      }).setOrigin(0.5);
+      if (this.textures.exists(spriteKey)) {
+        const sprite = this.add.sprite(x, y, spriteKey);
+        sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      } else {
+        // Fallback: colored rectangle with label
+        const gfx = this.add.graphics();
+        gfx.fillStyle(color);
+        gfx.fillRoundedRect(x - size / 2, y - size / 2, size, size, 4);
+        gfx.lineStyle(1, 0x3a3530, 0.5);
+        gfx.strokeRoundedRect(x - size / 2, y - size / 2, size, size, 4);
+
+        const label = f.furnitureId.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+        this.add.text(x, y, label, {
+          fontFamily: 'Georgia, serif', fontSize: '6px', color: '#ddd',
+          align: 'center', wordWrap: { width: size - 4 },
+        }).setOrigin(0.5);
+      }
 
       // Make interactive furniture clickable
       const interaction = INTERACTIVE_FURNITURE[f.furnitureId];
@@ -219,13 +226,6 @@ export class RoomScene extends Phaser.Scene {
           targets: glow, alpha: { from: 0.03, to: 0.09 },
           duration: 1500 + Math.random() * 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
         });
-      }
-
-      if (f.furnitureId === 'potted_catnip') {
-        gfx.fillStyle(0x4a8a3a, 0.8);
-        gfx.fillCircle(x - 4, y - 8, 4);
-        gfx.fillCircle(x + 5, y - 6, 3);
-        gfx.fillCircle(x, y - 10, 3);
       }
     });
   }

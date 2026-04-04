@@ -44,6 +44,15 @@ export class BootScene extends Phaser.Scene {
       }
     }
 
+    // Load furniture sprites
+    const furnitureIds = [
+      'straw_bed', 'scratching_post', 'lantern', 'cushioned_basket',
+      'bookshelf', 'potted_catnip', 'rug_wool', 'candle_stand',
+    ];
+    for (const id of furnitureIds) {
+      this.load.image(`furniture_${id}`, `assets/sprites/furniture/${id}.png`);
+    }
+
     // Placeholder texture for non-sprite breeds
     const canvas = document.createElement('canvas');
     canvas.width = 1;
