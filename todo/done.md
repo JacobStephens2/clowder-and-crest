@@ -87,4 +87,5 @@
 [x] - Separate music and SFX mute toggles in menu
 [x] - Skip dialogue button in conversations
 [x] - Fish remaining shown in day transition recap
+[x] - Town art changes with time of day (day/dusk/night variants, selected by current phase)
 [x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview

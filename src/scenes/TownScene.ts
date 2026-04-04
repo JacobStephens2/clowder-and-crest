@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
+import { getCurrentPhase } from '../systems/DayTimer';
 
 export class TownScene extends Phaser.Scene {
   constructor() {
@@ -15,11 +16,20 @@ export class TownScene extends Phaser.Scene {
     eventBus.emit('show-ui');
     eventBus.emit('set-active-tab', 'town');
 
-    // Townscape background — use pixel art if available, fallback to Phaser-drawn
-    if (this.textures.exists('scene_town')) {
-      const townBg = this.add.sprite(GAME_WIDTH / 2, 130, 'scene_town');
+    // Townscape background — select based on time of day
+    const phase = getCurrentPhase();
+    let townKey = 'scene_town'; // night (default)
+    if (phase === 'Dawn' || phase === 'Morning' || phase === 'Midday') {
+      townKey = 'scene_town_day';
+    } else if (phase === 'Afternoon' || phase === 'Dusk') {
+      townKey = 'scene_town_dusk';
+    }
+    // Fallback chain
+    if (!this.textures.exists(townKey)) townKey = 'scene_town';
+
+    if (this.textures.exists(townKey)) {
+      const townBg = this.add.sprite(GAME_WIDTH / 2, 130, townKey);
       townBg.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
-      // Scale to fit width
       const scale = GAME_WIDTH / townBg.width;
       townBg.setScale(scale);
     } else {
