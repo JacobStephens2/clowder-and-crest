@@ -533,6 +533,11 @@ Repository: `https://github.com/JacobStephens2/clowder` (private)
 - **Daily food upkeep** — 2 fish/day per cat as ongoing fish sink
 - **Mechanical traits and mood** — affect job stat matching and performance
 - **Save export/import** — download/upload JSON save files from menu
+- **Player cat control** — tap-to-move, WASD/arrow keys, golden diamond indicator
+- **Walkable furniture** — cats can sit on beds, blankets, baskets, and rugs
+- **Stationed job improvements** — level 2+ requirement, diminishing returns after 5 days
+- **Progression hints** — menu shows next chapter requirements
+- **Extracted MusicManager and DayTimer** — reduced main.ts god-file
 - HiDPI canvas rendering (device pixel ratio scaling)
 - Hybrid UI: Phaser canvas for game world + HTML/CSS overlays for all UI
 - **Town UI fully HTML** — native resolution text, scrollable cards
