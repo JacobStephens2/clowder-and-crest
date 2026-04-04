@@ -24,7 +24,7 @@ import { earnFish, spendFish, calculateReward, collectStationedEarnings, isCatSt
 import { getJob, getStatMatchScore, generateDailyJobs, type JobDef } from './systems/JobBoard';
 import { getPuzzleByDifficulty, generatePuzzle } from './systems/PuzzleGenerator';
 import { addBondPoints, processDailyBonds, getAvailableConversation, markConversationViewed, getBondRank, getBondPairs } from './systems/BondSystem';
-import { checkChapterAdvance, checkRatPlagueResolution, getChapterName, getNextChapterHint } from './systems/ProgressionManager';
+import { checkChapterAdvance, checkRatPlagueResolution, checkInquisitionResolution, getChapterName, getNextChapterHint } from './systems/ProgressionManager';
 import { startBgm, toggleMute, isMuted, switchToPuzzleMusic, switchToNormalMusic, pauseMusic, resumeMusic } from './systems/MusicManager';
 import { playSfx, toggleSfxMute, isSfxMuted } from './systems/SfxManager';
 import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDayEnd, pauseDayTimer, resumeDayTimer, isPaused } from './systems/DayTimer';
@@ -1146,6 +1146,16 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
     baseReward = Math.floor(baseReward * (1 + repBonuses.rewardBonus));
   }
 
+  // Bishop's Blessing: +5% all rewards
+  if (gameState.flags.bishopBlessing) {
+    baseReward = Math.floor(baseReward * 1.05);
+  }
+
+  // Underground Contact: shadow jobs pay +15% more
+  if (gameState.flags.undergroundContact && job.category === 'shadow') {
+    baseReward = Math.floor(baseReward * 1.15);
+  }
+
   // Job combo multiplier
   const comboMult = getComboMultiplier(cat.id, job.category, gameState.day);
   if (comboMult > 1) {
@@ -1199,6 +1209,18 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
   // Mark cat as worked today, job as completed today
   catsWorkedToday.add(cat.id);
   jobsCompletedToday.add(job.id);
+
+  // Track jobs during Inquisition investigation
+  if (gameState.flags.inquisitionStarted && !gameState.flags.inquisitionResolved) {
+    if (job.category === 'sacred') {
+      gameState.flags.inquisitionSacredJobs = ((gameState.flags.inquisitionSacredJobs as unknown as number ?? 0) + 1) as unknown as boolean;
+    } else if (job.category === 'guard') {
+      gameState.flags.inquisitionGuardJobs = ((gameState.flags.inquisitionGuardJobs as unknown as number ?? 0) + 1) as unknown as boolean;
+    } else if (job.category === 'shadow') {
+      gameState.flags.inquisitionShadowJobs = ((gameState.flags.inquisitionShadowJobs as unknown as number ?? 0) + 1) as unknown as boolean;
+    }
+  }
+
   saveGame(gameState);
 
   showResultOverlay({
@@ -1340,6 +1362,23 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
     if (plagueProgress > 0 && plagueProgress < 5) {
       showToast(`Plague progress: ${plagueProgress}/5 rat nests cleared. The town needs ${5 - plagueProgress} more.`);
     }
+  }
+
+  // Inquisition daily check
+  if (gameState.flags.inquisitionStarted && !gameState.flags.inquisitionResolved) {
+    const inqStart = gameState.flags.inquisitionDayStarted as unknown as number ?? gameState.day;
+    const inqDays = gameState.day - inqStart;
+    if (inqDays < 5) {
+      const sacredCount = gameState.flags.inquisitionSacredJobs as unknown as number ?? 0;
+      const guardCount = gameState.flags.inquisitionGuardJobs as unknown as number ?? 0;
+      const shadowCount = gameState.flags.inquisitionShadowJobs as unknown as number ?? 0;
+      const dayNum = inqDays + 1;
+      const questioning = gameState.cats[Math.floor(Math.random() * gameState.cats.length)];
+      setTimeout(() => {
+        showToast(`Inquisition Day ${dayNum}/5: The Inquisitor questioned ${questioning.name}. Sacred: ${sacredCount} | Guard: ${guardCount} | Shadow: ${shadowCount}`);
+      }, 2500);
+    }
+    checkInquisitionResolution(gameState);
   }
 
   // Reputation passive bonus
@@ -2586,3 +2625,177 @@ eventBus.on('rat-plague-resolved', () => {
   overlay.addEventListener('click', showScene);
   document.body.appendChild(overlay);
 });
+
+// Inquisition narrative scenes
+eventBus.on('inquisition-start', () => {
+  if (gameState) addJournalEntry(gameState, 'The Bishop\'s Inquisitor has arrived to investigate the guild.', 'event');
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:#0a0908;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:30px;';
+
+  const catName = gameState?.playerCatName ?? 'The wildcat';
+  const repLabel = getReputationLabel(gameState?.reputationScore ?? 0);
+  const lens = repLabel === 'Shadowed' ? 'hostile' : repLabel === 'Noble' ? 'respectful' : 'cautious';
+
+  const scenes = [
+    'A black-robed figure appeared at the guildhall gate at dawn. Behind him, two monks with ledgers.',
+    `"I am Brother Aldric, sent by His Excellency the Bishop. I am here to determine... what you are."`,
+    `He looked at ${catName} with ${lens} eyes. "Are you servants of the saints? Or something... else?"`,
+    `"For five days, I will observe. I will question your cats. I will watch what work you do."`,
+    `"Choose your jobs wisely. Sacred work speaks well of you. Shadow work... does not."`,
+  ];
+
+  let idx = 0;
+  const img = document.createElement('img');
+  img.src = 'assets/sprites/scenes/guildhall.png';
+  img.style.cssText = 'width:280px;image-rendering:pixelated;margin-bottom:16px;border-radius:4px;opacity:0.4;';
+  overlay.appendChild(img);
+  const txt = document.createElement('div');
+  txt.style.cssText = 'color:#c4956a;font-family:Georgia,serif;font-size:15px;text-align:center;max-width:320px;line-height:1.7;';
+  overlay.appendChild(txt);
+  const inqHint = document.createElement('div');
+  inqHint.style.cssText = 'color:#555;font-size:11px;margin-top:16px;font-family:Georgia,serif;';
+  inqHint.textContent = 'Tap to continue';
+  overlay.appendChild(inqHint);
+
+  const showInqScene = () => {
+    if (idx >= scenes.length) {
+      overlay.style.transition = 'opacity 0.5s';
+      overlay.style.opacity = '0';
+      setTimeout(() => overlay.remove(), 500);
+      return;
+    }
+    txt.style.opacity = '0';
+    txt.textContent = scenes[idx];
+    setTimeout(() => { txt.style.transition = 'opacity 0.5s'; txt.style.opacity = '1'; }, 50);
+    if (idx === 0) playSfx('thunder');
+    idx++;
+  };
+
+  showInqScene();
+  overlay.addEventListener('click', showInqScene);
+  document.body.appendChild(overlay);
+});
+
+eventBus.on('inquisition-verdict', (verdict: string) => {
+  const catName = gameState?.playerCatName ?? 'The wildcat';
+
+  let scenes: string[];
+  if (verdict === 'vindicated') {
+    scenes = [
+      'Brother Aldric stood before the guild on the fifth morning. His face, for the first time, showed a smile.',
+      `"I have seen enough. ${catName}'s guild serves the saints with devotion and courage."`,
+      '"The Bishop grants you his blessing. A chapel shall be consecrated in your guildhall."',
+      'The town bells rang. The guild had been vindicated — blessed by the Church itself.',
+    ];
+    if (gameState) {
+      gameState.reputationScore += 10;
+      addJournalEntry(gameState, 'Vindicated by the Inquisition! The Bishop grants his blessing.', 'chapter');
+      gameState.flags.bishopBlessing = true;
+    }
+  } else if (verdict === 'condemned') {
+    scenes = [
+      'Brother Aldric\'s face was stone. He unrolled a scroll stamped with the Bishop\'s seal.',
+      `"This guild has dealings in shadow. The evidence is clear. One among you must answer for it."`,
+      '"Choose which cat bears the sentence of exile. The rest may continue — under watch."',
+      `${catName} felt the weight of every shadow job, every dark deal. The consequences had arrived.`,
+    ];
+    if (gameState) {
+      gameState.reputationScore -= 20;
+      addJournalEntry(gameState, 'Condemned by the Inquisition. One cat must be exiled.', 'chapter');
+      gameState.flags.undergroundContact = true;
+    }
+  } else {
+    scenes = [
+      'Brother Aldric closed his ledger with a snap. Neither smile nor frown.',
+      `"Your guild is... unremarkable. Neither saintly nor sinful. The Bishop will not intervene."`,
+      `${catName} couldn't tell if that was relief or disappointment.`,
+      'The Inquisitor left as quietly as he came. Life went on.',
+    ];
+    if (gameState) {
+      addJournalEntry(gameState, 'Acquitted by the Inquisition. Neither blessed nor condemned.', 'chapter');
+    }
+  }
+
+  playSfx('chapter');
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:#0a0908;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:30px;';
+
+  let idx = 0;
+  const img = document.createElement('img');
+  img.src = 'assets/sprites/scenes/guildhall.png';
+  img.style.cssText = 'width:280px;image-rendering:pixelated;margin-bottom:16px;border-radius:4px;opacity:0.4;';
+  overlay.appendChild(img);
+  const txt = document.createElement('div');
+  txt.style.cssText = 'color:#c4956a;font-family:Georgia,serif;font-size:15px;text-align:center;max-width:320px;line-height:1.7;';
+  overlay.appendChild(txt);
+  const verdictHint = document.createElement('div');
+  verdictHint.style.cssText = 'color:#555;font-size:11px;margin-top:16px;font-family:Georgia,serif;';
+  verdictHint.textContent = 'Tap to continue';
+  overlay.appendChild(verdictHint);
+
+  const showVerdictScene = () => {
+    if (idx >= scenes.length) {
+      overlay.style.transition = 'opacity 0.5s';
+      overlay.style.opacity = '0';
+      setTimeout(() => {
+        overlay.remove();
+        if (verdict === 'condemned' && gameState && gameState.cats.length > 1) {
+          showExileChoice();
+        }
+      }, 500);
+      return;
+    }
+    txt.style.opacity = '0';
+    txt.textContent = scenes[idx];
+    setTimeout(() => { txt.style.transition = 'opacity 0.5s'; txt.style.opacity = '1'; }, 50);
+    idx++;
+  };
+
+  showVerdictScene();
+  overlay.addEventListener('click', showVerdictScene);
+  document.body.appendChild(overlay);
+});
+
+function showExileChoice(): void {
+  if (!gameState) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'assign-overlay';
+
+  const exilable = gameState.cats.filter((c) => c.id !== 'player_wildcat');
+  const buttons = exilable.map((cat) => {
+    const breedName = BREED_NAMES[cat.breed] ?? cat.breed;
+    return `<button class="exile-btn" data-cat-id="${cat.id}" style="display:flex;align-items:center;gap:8px;padding:10px 16px;margin:4px 0;width:100%;background:rgba(80,30,30,0.4);border:1px solid #8b4444;border-radius:6px;color:#cc8888;font-size:13px;cursor:pointer;font-family:Georgia,serif">
+      ${cat.name} the ${breedName} (Lv.${cat.level})
+    </button>`;
+  }).join('');
+
+  overlay.innerHTML = `
+    <h2 style="color:#cc6666">Choose Who Must Leave</h2>
+    <div style="color:#8b7355;font-size:12px;margin-bottom:12px;text-align:center">
+      The Inquisitor demands one cat be exiled. This cannot be undone.
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      ${buttons}
+    </div>
+  `;
+
+  overlayLayer.appendChild(overlay);
+
+  overlay.querySelectorAll('.exile-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const catId = (btn as HTMLElement).dataset.catId!;
+      const cat = gameState!.cats.find((c) => c.id === catId);
+      if (cat) {
+        addJournalEntry(gameState!, `${cat.name} was exiled by the Inquisitor's decree.`, 'event');
+        gameState!.cats = gameState!.cats.filter((c) => c.id !== catId);
+        gameState!.stationedCats = gameState!.stationedCats.filter((s) => s.catId !== catId);
+        saveGame(gameState!);
+        playSfx('cat_sad');
+        showToast(`${cat.name} has been exiled from the guild.`);
+      }
+      overlay.remove();
+    });
+  });
+}

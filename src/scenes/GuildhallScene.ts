@@ -98,6 +98,19 @@ export class GuildhallScene extends Phaser.Scene {
       }).setOrigin(0.5);
     }
 
+    // Inquisition warning
+    if (save.flags.inquisitionStarted && !save.flags.inquisitionResolved) {
+      const inqY = save.flags.ratPlagueStarted && !save.flags.ratPlagueResolved ? 118 : 95;
+      const inqStart = save.flags.inquisitionDayStarted as unknown as number ?? save.day;
+      const inqDaysLeft = Math.max(0, 5 - (save.day - inqStart));
+      this.add.rectangle(GAME_WIDTH / 2, inqY, ROOM_WIDTH, 22, 0x3a2050, 0.8);
+      this.add.text(GAME_WIDTH / 2, inqY, `The Inquisitor watches (${inqDaysLeft} days remain)`, {
+        fontFamily: 'Georgia, serif',
+        fontSize: '11px',
+        color: '#bb88cc',
+      }).setOrigin(0.5);
+    }
+
     this.drawRooms(save);
 
     // Content height and scrolling

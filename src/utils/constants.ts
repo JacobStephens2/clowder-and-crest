@@ -45,4 +45,5 @@ export const CHAPTER_TRIGGERS = [
   { chapter: 4, jobs: 15, cats: 4, fish: 0 },
   { chapter: 5, jobs: 30, cats: 5, fish: 0 },
   { chapter: 6, jobs: 50, cats: 5, fish: 500 },
+  { chapter: 7, jobs: 70, cats: 5, fish: 800 },
 ];
