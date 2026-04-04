@@ -508,13 +508,16 @@ export class RoomScene extends Phaser.Scene {
       });
     };
 
-    // Random meow sound for wildcat
-    if (cat.breed === 'wildcat' && this.sound.get('wildcat_meow') || this.cache.audio.exists('wildcat_meow')) {
+    // Random meow/chirp sounds for wildcat
+    if (cat.breed === 'wildcat') {
       this.time.addEvent({
         delay: 8000 + Math.random() * 15000,
         callback: () => {
           if (!isMoving && Math.random() < 0.3) {
-            this.sound.play('wildcat_meow', { volume: 0.4 });
+            const sound = Math.random() < 0.5 ? 'wildcat_meow' : 'wildcat_chirp';
+            if (this.cache.audio.exists(sound)) {
+              this.sound.play(sound, { volume: 0.4 });
+            }
           }
         },
         loop: true,

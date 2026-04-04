@@ -56,4 +56,5 @@
 [x] - Remove auto-resolve option (forces active gameplay via puzzles/minigames)
 [x] - Room detail view matches guildhall overview (same cats per room, player cat always present)
 [x] - Stationed cats hidden in room views (no more faded "away" ghosts)
+[x] - Wildcat chirp sound added (50/50 with meow when idle in room)
 [x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview
