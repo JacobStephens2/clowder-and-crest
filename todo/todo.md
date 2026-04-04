@@ -1,0 +1,2 @@
+[] - create new art for the player's cat / wildcat
+[] - work through the improvements to make described at /var/www/clowder.stephens.page/source_documents/Improvements to Make to Clowder and Crest.md, commit as you go, and update the /var/www/clowder.stephens.page/source_documents/Clowder-and-Crest-Design-Document.md as you go
