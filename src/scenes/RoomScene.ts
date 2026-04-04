@@ -350,15 +350,40 @@ export class RoomScene extends Phaser.Scene {
       moveToTile(grid.col, grid.row);
     });
 
-    // WASD / Arrow key movement
-    this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
-      const dc = event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D' ? 1
-        : event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A' ? -1 : 0;
-      const dr = event.key === 'ArrowDown' || event.key === 's' || event.key === 'S' ? 1
-        : event.key === 'ArrowUp' || event.key === 'w' || event.key === 'W' ? -1 : 0;
+    // WASD / Arrow key movement (supports diagonal via held keys)
+    const keysHeld = new Set<string>();
+
+    const processMovement = () => {
+      let dc = 0;
+      let dr = 0;
+      if (keysHeld.has('right')) dc += 1;
+      if (keysHeld.has('left')) dc -= 1;
+      if (keysHeld.has('down')) dr += 1;
+      if (keysHeld.has('up')) dr -= 1;
       if (dc !== 0 || dr !== 0) {
         moveToTile(currentTile.col + dc, currentTile.row + dr);
       }
+    };
+
+    const keyToDir = (key: string): string | null => {
+      if (key === 'ArrowRight' || key === 'd' || key === 'D') return 'right';
+      if (key === 'ArrowLeft' || key === 'a' || key === 'A') return 'left';
+      if (key === 'ArrowDown' || key === 's' || key === 'S') return 'down';
+      if (key === 'ArrowUp' || key === 'w' || key === 'W') return 'up';
+      return null;
+    };
+
+    this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
+      const dir = keyToDir(event.key);
+      if (dir) {
+        keysHeld.add(dir);
+        processMovement();
+      }
+    });
+
+    this.input.keyboard?.on('keyup', (event: KeyboardEvent) => {
+      const dir = keyToDir(event.key);
+      if (dir) keysHeld.delete(dir);
     });
   }
 
