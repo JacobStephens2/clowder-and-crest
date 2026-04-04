@@ -190,15 +190,22 @@ export class RoomScene extends Phaser.Scene {
 
   // ── Cat system ──
 
+  // Furniture cats can walk on (sit on beds, rugs, etc.)
+  private static readonly WALKABLE_FURNITURE = new Set([
+    'straw_bed', 'woolen_blanket', 'cushioned_basket', 'rug_wool',
+  ]);
+
   private buildOpenTiles(save: SaveData): void {
-    const usedPositions = new Set(
-      save.furniture.filter((f) => f.room === this.roomId).map((f) => `${f.gridX % GRID_COLS},${f.gridY % GRID_ROWS}`)
+    const blockedPositions = new Set(
+      save.furniture
+        .filter((f) => f.room === this.roomId && !RoomScene.WALKABLE_FURNITURE.has(f.furnitureId))
+        .map((f) => `${f.gridX % GRID_COLS},${f.gridY % GRID_ROWS}`)
     );
     this.openTiles = [];
     this.openTileSet = new Set();
     for (let row = 0; row < GRID_ROWS; row++) {
       for (let col = 0; col < GRID_COLS; col++) {
-        if (!usedPositions.has(`${col},${row}`)) {
+        if (!blockedPositions.has(`${col},${row}`)) {
           this.openTiles.push({ col, row });
           this.openTileSet.add(`${col},${row}`);
         }
@@ -299,25 +306,16 @@ export class RoomScene extends Phaser.Scene {
     let currentTile = { ...startTile };
     let isMoving = false;
 
-    // Tap floor to move player cat
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+    const moveToTile = (targetCol: number, targetRow: number) => {
       if (isMoving) return;
-
-      // Convert pointer to world coordinates (accounting for camera zoom/offset)
-      const worldX = pointer.x / DPR + (GAME_WIDTH / 2 - GAME_WIDTH / (2));
-      const worldY = pointer.y / DPR + (GAME_HEIGHT / 2 - GAME_HEIGHT / (2));
-
-      const grid = worldToGrid(pointer.worldX, pointer.worldY);
-
-      // Check if the tile is within the grid and open
-      if (grid.col < 0 || grid.col >= GRID_COLS || grid.row < 0 || grid.row >= GRID_ROWS) return;
-      if (!this.openTileSet.has(`${grid.col},${grid.row}`)) return;
-      if (grid.col === currentTile.col && grid.row === currentTile.row) return;
+      if (targetCol < 0 || targetCol >= GRID_COLS || targetRow < 0 || targetRow >= GRID_ROWS) return;
+      if (!this.openTileSet.has(`${targetCol},${targetRow}`)) return;
+      if (targetCol === currentTile.col && targetRow === currentTile.row) return;
 
       isMoving = true;
-      const walkDir = this.getWalkDirection(currentTile.col, currentTile.row, grid.col, grid.row);
-      const dest = toWorld(grid.col, grid.row);
-      const distance = Math.abs(grid.col - currentTile.col) + Math.abs(grid.row - currentTile.row);
+      const walkDir = this.getWalkDirection(currentTile.col, currentTile.row, targetCol, targetRow);
+      const dest = toWorld(targetCol, targetRow);
+      const distance = Math.abs(targetCol - currentTile.col) + Math.abs(targetRow - currentTile.row);
       const duration = distance * 250;
 
       if (sprite) {
@@ -335,7 +333,7 @@ export class RoomScene extends Phaser.Scene {
       this.tweens.add({
         targets: nameTag, x: dest.x, y: dest.y + 18, duration, ease: 'Linear',
         onComplete: () => {
-          currentTile = { col: grid.col, row: grid.row };
+          currentTile = { col: targetCol, row: targetRow };
           isMoving = false;
           if (sprite) {
             sprite.setTexture(`${cat.breed}_idle_${walkDir}`);
@@ -344,6 +342,23 @@ export class RoomScene extends Phaser.Scene {
           }
         },
       });
+    };
+
+    // Tap floor to move player cat
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      const grid = worldToGrid(pointer.worldX, pointer.worldY);
+      moveToTile(grid.col, grid.row);
+    });
+
+    // WASD / Arrow key movement
+    this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
+      const dc = event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D' ? 1
+        : event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A' ? -1 : 0;
+      const dr = event.key === 'ArrowDown' || event.key === 's' || event.key === 'S' ? 1
+        : event.key === 'ArrowUp' || event.key === 'w' || event.key === 'W' ? -1 : 0;
+      if (dc !== 0 || dr !== 0) {
+        moveToTile(currentTile.col + dc, currentTile.row + dr);
+      }
     });
   }
 

@@ -11,5 +11,5 @@
   [x] - 8 music tracks (up from 4)
   [] - Add more conversation scripts (only 3 of 10 pairings have dialogue)
   [] - Add more job templates beyond 8
-[] - Ensure the player can move their cat around spaces (for example, the sleeping quarters room view) using keyboard WASD or arrow keys.
-[] - Enable cats in rooms to go on top of furnishings like the straw bed (in this case, so the player can see the cats "use" the furniture they give them).
+[x] - Ensure the player can move their cat around spaces (for example, the sleeping quarters room view) using keyboard WASD or arrow keys.
+[x] - Enable cats in rooms to go on top of furnishings like the straw bed (in this case, so the player can see the cats "use" the furniture they give them).
