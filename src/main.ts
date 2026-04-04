@@ -33,6 +33,9 @@ import conversationsData from './data/conversations.json';
 // ──── Game State ────
 let gameState: SaveData | null = null;
 const catsWorkedToday = new Set<string>();
+const jobsCompletedToday = new Set<string>();
+let cachedDailyJobs: ReturnType<typeof generateDailyJobs> | null = null;
+let cachedJobDay = -1;
 
 export function getGameState(): SaveData | null {
   return gameState;
@@ -370,7 +373,12 @@ eventBus.on('show-town-overlay', () => {
   const overlay = document.createElement('div');
   overlay.className = 'town-overlay';
 
-  const dailyJobs = generateDailyJobs(gameState);
+  // Cache daily jobs per day, filter out completed ones
+  if (!cachedDailyJobs || cachedJobDay !== gameState.day) {
+    cachedDailyJobs = generateDailyJobs(gameState);
+    cachedJobDay = gameState.day;
+  }
+  const dailyJobs = cachedDailyJobs.filter((j) => !jobsCompletedToday.has(j.id));
 
   const plagueActive = gameState.flags.ratPlagueStarted && !gameState.flags.ratPlagueResolved;
 
@@ -799,8 +807,9 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
     }
   }
 
-  // Mark cat as worked today
+  // Mark cat as worked today, job as completed today
   catsWorkedToday.add(cat.id);
+  jobsCompletedToday.add(job.id);
   saveGame(gameState);
 
   showResultOverlay({
@@ -857,6 +866,8 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
   // Reset day timer and worked cats
   resetDayTimer();
   catsWorkedToday.clear();
+  jobsCompletedToday.clear();
+  cachedDailyJobs = null;
 
   // Daily upkeep: 2 fish per cat + 1 per unlocked room (guild maintenance)
   const unlockedRooms = gameState.rooms.filter((r) => r.unlocked).length;
@@ -1580,7 +1591,7 @@ function showFurnitureShop(): void {
 
       for (const item of roomItems) {
         const canBuy = roomUnlocked && gameState!.fish >= item.cost;
-        const spriteExists = ['straw_bed', 'scratching_post', 'lantern', 'cushioned_basket', 'bookshelf', 'potted_catnip', 'rug_wool', 'candle_stand'].includes(item.id);
+        const spriteExists = ['straw_bed', 'scratching_post', 'lantern', 'cushioned_basket', 'bookshelf', 'potted_catnip', 'rug_wool', 'candle_stand', 'woolen_blanket', 'fish_barrel', 'herb_rack', 'stone_hearth', 'notice_board', 'saints_icon', 'fish_bone_mobile'].includes(item.id);
         const spriteImg = spriteExists ? `<img src="assets/sprites/furniture/${item.id}.png" style="width:32px;height:32px;image-rendering:pixelated;margin-bottom:4px" />` : '';
         html += `<div class="shop-item ${canBuy ? '' : 'disabled'}" data-item-id="${item.id}">
           ${spriteImg}

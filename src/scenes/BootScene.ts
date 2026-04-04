@@ -81,6 +81,8 @@ export class BootScene extends Phaser.Scene {
     const furnitureIds = [
       'straw_bed', 'scratching_post', 'lantern', 'cushioned_basket',
       'bookshelf', 'potted_catnip', 'rug_wool', 'candle_stand',
+      'woolen_blanket', 'fish_barrel', 'herb_rack', 'stone_hearth',
+      'notice_board', 'saints_icon', 'fish_bone_mobile',
     ];
     for (const id of furnitureIds) {
       this.load.image(`furniture_${id}`, `assets/sprites/furniture/${id}.png`);
