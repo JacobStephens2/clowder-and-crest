@@ -2218,6 +2218,45 @@ eventBus.on('chapter-advance', (chapter: number) => {
   trackEvent('chapter_advance', { chapter, name });
   showToast(`Chapter ${chapter}: ${name}`);
 
+  // Chapter 5 endgame acknowledgment
+  if (chapter === 5) {
+    setTimeout(() => {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:#0a0908;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:30px;';
+      const catName = gameState?.playerCatName ?? 'The wildcat';
+      const repLabel = getReputationLabel(gameState?.reputationScore ?? 0);
+      const scenes = [
+        `The lean-to behind the grain market is long gone. In its place stands a guildhall — warm, furnished, and full of life.`,
+        `${catName} looks around the hall. Five cats, each with their own story, their own strength. A clowder.`,
+        `The town knows their names now. The merchants wave. The monks nod. Even the children leave fish by the door.`,
+        `From a stray in a storm to ${repLabel === 'Noble' ? 'the most trusted guild in town' : repLabel === 'Shadowed' ? 'a guild that operates in the shadows, feared and wealthy' : 'a guild that has earned its place'}.`,
+        `This is what ${catName} built. Not just a guild — a home.\n\nThank you for playing Clowder & Crest.`,
+      ];
+      let idx = 0;
+      const img = document.createElement('img');
+      img.src = 'assets/sprites/crest.png';
+      img.style.cssText = 'width:96px;height:96px;image-rendering:pixelated;margin-bottom:20px;opacity:0.8;';
+      overlay.appendChild(img);
+      const text = document.createElement('div');
+      text.style.cssText = 'color:#c4956a;font-family:Georgia,serif;font-size:15px;text-align:center;max-width:320px;line-height:1.7;white-space:pre-line;';
+      overlay.appendChild(text);
+      const hint = document.createElement('div');
+      hint.style.cssText = 'color:#555;font-size:11px;margin-top:16px;font-family:Georgia,serif;';
+      hint.textContent = 'Tap to continue';
+      overlay.appendChild(hint);
+      const show = () => {
+        if (idx >= scenes.length) { overlay.style.transition = 'opacity 0.5s'; overlay.style.opacity = '0'; setTimeout(() => overlay.remove(), 500); return; }
+        text.style.opacity = '0'; text.textContent = scenes[idx];
+        setTimeout(() => { text.style.transition = 'opacity 0.5s'; text.style.opacity = '1'; }, 50);
+        if (idx === scenes.length - 1) playSfx('chapter');
+        idx++;
+      };
+      show();
+      overlay.addEventListener('click', show);
+      document.body.appendChild(overlay);
+    }, 2000);
+  }
+
   // Chapter 6: The Rival — narrative scene
   if (chapter === 6) {
     setTimeout(() => {

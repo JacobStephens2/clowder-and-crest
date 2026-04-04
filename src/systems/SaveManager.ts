@@ -60,7 +60,7 @@ export interface SaveData {
 }
 
 const SAVE_KEY = 'clowder_and_crest_save';
-const SAVE_VERSION = 1;
+const SAVE_VERSION = 2;
 
 export function createDefaultSave(playerCatName: string): SaveData {
   return {

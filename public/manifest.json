@@ -1,0 +1,17 @@
+{
+  "name": "Clowder & Crest",
+  "short_name": "Clowder",
+  "description": "A cozy medieval cat guild management game",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1c1b19",
+  "theme_color": "#c4956a",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    }
+  ]
+}
