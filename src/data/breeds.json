@@ -1,0 +1,87 @@
+[
+  {
+    "id": "wildcat",
+    "name": "Wildcat",
+    "temperament": "Fierce, independent, territorial",
+    "roleAffinity": "Pest control, frontier patrol",
+    "baseStats": {
+      "hunting": 7,
+      "stealth": 5,
+      "intelligence": 4,
+      "endurance": 5,
+      "charm": 3,
+      "senses": 4
+    },
+    "statBias": ["hunting", "stealth"],
+    "recruitCost": 0,
+    "description": "The ancestral mouser. Guild founder."
+  },
+  {
+    "id": "russian_blue",
+    "name": "Russian Blue",
+    "temperament": "Gentle, loyal, reserved, sensitive",
+    "roleAffinity": "Sacred guardian, library mouser, quiet reconnaissance",
+    "baseStats": {
+      "hunting": 4,
+      "stealth": 7,
+      "intelligence": 6,
+      "endurance": 4,
+      "charm": 4,
+      "senses": 5
+    },
+    "statBias": ["stealth", "intelligence"],
+    "recruitCost": 30,
+    "description": "Gentle but perceptive."
+  },
+  {
+    "id": "tuxedo",
+    "name": "Tuxedo",
+    "temperament": "Sharp, formal, focused",
+    "roleAffinity": "Detective work, courier, diplomacy",
+    "baseStats": {
+      "hunting": 4,
+      "stealth": 4,
+      "intelligence": 6,
+      "endurance": 4,
+      "charm": 6,
+      "senses": 4
+    },
+    "statBias": ["intelligence", "charm"],
+    "recruitCost": 40,
+    "description": "Disciplined civic-worker energy."
+  },
+  {
+    "id": "maine_coon",
+    "name": "Maine Coon",
+    "temperament": "Gentle giant, patient, social",
+    "roleAffinity": "Guard duty, heavy labor, companionship",
+    "baseStats": {
+      "hunting": 5,
+      "stealth": 3,
+      "intelligence": 4,
+      "endurance": 7,
+      "charm": 5,
+      "senses": 4
+    },
+    "statBias": ["endurance", "hunting"],
+    "recruitCost": 50,
+    "description": "Large, reliable, excellent for barn and dock work."
+  },
+  {
+    "id": "siamese",
+    "name": "Siamese",
+    "temperament": "Vocal, dramatic, intelligent",
+    "roleAffinity": "Oracle work, message delivery, advisory",
+    "baseStats": {
+      "hunting": 3,
+      "stealth": 4,
+      "intelligence": 7,
+      "endurance": 4,
+      "charm": 6,
+      "senses": 5
+    },
+    "statBias": ["intelligence", "charm"],
+    "recruitCost": 60,
+    "description": "Talkative specialist. Good for story moments."
+  }
+]

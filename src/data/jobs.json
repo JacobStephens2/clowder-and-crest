@@ -1,0 +1,90 @@
+[
+  {
+    "id": "mill_mousing",
+    "name": "Mill Mousing",
+    "category": "pest_control",
+    "difficulty": "easy",
+    "keyStats": ["hunting"],
+    "baseReward": 5,
+    "maxReward": 8,
+    "puzzleSkin": "mill",
+    "description": "Clear the mill of mice. Slide flour sacks to reach the rat nest."
+  },
+  {
+    "id": "granary_patrol",
+    "name": "Granary Patrol",
+    "category": "pest_control",
+    "difficulty": "easy",
+    "keyStats": ["hunting", "endurance"],
+    "baseReward": 6,
+    "maxReward": 10,
+    "puzzleSkin": "granary",
+    "description": "Patrol the granary perimeter. Slide crates and barrels."
+  },
+  {
+    "id": "cathedral_mousing",
+    "name": "Cathedral Mousing",
+    "category": "pest_control",
+    "difficulty": "medium",
+    "keyStats": ["hunting", "charm"],
+    "baseReward": 10,
+    "maxReward": 15,
+    "puzzleSkin": "cathedral",
+    "description": "Hunt mice in the cathedral. Slide pews and candlestands."
+  },
+  {
+    "id": "warehouse_clearing",
+    "name": "Warehouse Clearing",
+    "category": "pest_control",
+    "difficulty": "medium",
+    "keyStats": ["hunting", "endurance"],
+    "baseReward": 12,
+    "maxReward": 18,
+    "puzzleSkin": "warehouse",
+    "description": "Clear out a large warehouse. Slide crates in a tight grid."
+  },
+  {
+    "id": "ship_hold",
+    "name": "Ship Hold",
+    "category": "pest_control",
+    "difficulty": "hard",
+    "keyStats": ["hunting", "endurance"],
+    "baseReward": 18,
+    "maxReward": 25,
+    "puzzleSkin": "ship",
+    "description": "Purge rats from a merchant vessel. Slide cargo and coiled rope."
+  },
+  {
+    "id": "market_letter",
+    "name": "Market Letter",
+    "category": "courier",
+    "difficulty": "easy",
+    "keyStats": ["stealth", "intelligence"],
+    "baseReward": 5,
+    "maxReward": 8,
+    "puzzleSkin": "market",
+    "description": "Deliver a letter through the busy market. Slide stalls and carts."
+  },
+  {
+    "id": "monastery_dispatch",
+    "name": "Monastery Dispatch",
+    "category": "courier",
+    "difficulty": "medium",
+    "keyStats": ["stealth", "endurance"],
+    "baseReward": 10,
+    "maxReward": 16,
+    "puzzleSkin": "monastery",
+    "description": "Carry a message to the monastery. Slide garden hedges and walls."
+  },
+  {
+    "id": "nobles_sealed_letter",
+    "name": "Noble's Sealed Letter",
+    "category": "courier",
+    "difficulty": "hard",
+    "keyStats": ["stealth", "intelligence", "charm"],
+    "baseReward": 16,
+    "maxReward": 22,
+    "puzzleSkin": "manor",
+    "description": "Deliver a sealed letter past manor guards. Slide furniture and dodge guard dogs."
+  }
+]

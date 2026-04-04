@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Clowder &amp; Crest</title>
+  <link rel="stylesheet" href="/src/ui/overlay.css" />
+</head>
+<body>
+  <div id="game-wrapper">
+    <!-- Phaser canvas renders here -->
+    <div id="game-container"></div>
+
+    <!-- HTML/CSS overlay layer -->
+    <div id="overlay-layer">
+      <!-- Status bar - top -->
+      <div id="status-bar">
+        <span id="status-fish">0 Fish</span>
+        <span id="status-day">Day 1</span>
+        <span id="status-chapter">Ch. 1</span>
+      </div>
+
+      <!-- Bottom navigation -->
+      <nav id="bottom-bar">
+        <button class="nav-btn active" data-scene="guildhall">
+          <span class="nav-icon">&#127970;</span>
+          <span class="nav-label">Guild</span>
+        </button>
+        <button class="nav-btn" data-scene="town">
+          <span class="nav-icon">&#127963;</span>
+          <span class="nav-label">Town</span>
+        </button>
+        <button class="nav-btn" data-scene="cats">
+          <span class="nav-icon">&#128049;</span>
+          <span class="nav-label">Cats</span>
+        </button>
+        <button class="nav-btn" data-scene="menu">
+          <span class="nav-icon">&#9776;</span>
+          <span class="nav-label">Menu</span>
+        </button>
+      </nav>
+
+      <!-- Overlay panels (hidden by default) -->
+      <div id="panel-overlay" class="panel hidden"></div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

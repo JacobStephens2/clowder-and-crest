@@ -1,0 +1,17 @@
+[
+  { "id": "straw_bed", "name": "Straw Bed", "width": 2, "height": 1, "cost": 10, "room": "sleeping", "effect": "catCapacity", "effectValue": 1 },
+  { "id": "woolen_blanket", "name": "Woolen Blanket", "width": 1, "height": 1, "cost": 15, "room": "sleeping", "effect": "moodRecovery", "effectValue": 1 },
+  { "id": "cushioned_basket", "name": "Cushioned Basket", "width": 2, "height": 1, "cost": 30, "room": "sleeping", "effect": "moodRecovery", "effectValue": 2 },
+  { "id": "fish_barrel", "name": "Fish Barrel", "width": 1, "height": 1, "cost": 20, "room": "kitchen", "effect": "unlockMeals", "effectValue": 1 },
+  { "id": "herb_rack", "name": "Herb Rack", "width": 1, "height": 1, "cost": 25, "room": "kitchen", "effect": "moodBuff", "effectValue": 1 },
+  { "id": "stone_hearth", "name": "Stone Hearth", "width": 2, "height": 2, "cost": 50, "room": "kitchen", "effect": "moodAll", "effectValue": 2 },
+  { "id": "notice_board", "name": "Notice Board", "width": 1, "height": 2, "cost": 0, "room": "operations", "effect": "displayJobs", "effectValue": 1 },
+  { "id": "lantern", "name": "Lantern", "width": 1, "height": 1, "cost": 8, "room": "any", "effect": "ambience", "effectValue": 1 },
+  { "id": "candle_stand", "name": "Candle Stand", "width": 1, "height": 1, "cost": 12, "room": "any", "effect": "sensesTraining", "effectValue": 1 },
+  { "id": "scratching_post", "name": "Scratching Post", "width": 1, "height": 1, "cost": 15, "room": "any", "effect": "agilityTraining", "effectValue": 1 },
+  { "id": "bookshelf", "name": "Bookshelf", "width": 1, "height": 2, "cost": 35, "room": "any", "effect": "intelligenceTraining", "effectValue": 1 },
+  { "id": "rug_wool", "name": "Wool Rug", "width": 2, "height": 2, "cost": 20, "room": "any", "effect": "moodRoom", "effectValue": 1 },
+  { "id": "saints_icon", "name": "Saint's Icon", "width": 1, "height": 1, "cost": 40, "room": "any", "effect": "sensesTraining", "effectValue": 1 },
+  { "id": "fish_bone_mobile", "name": "Fish Bone Mobile", "width": 1, "height": 1, "cost": 10, "room": "any", "effect": "moodRoom", "effectValue": 0.5 },
+  { "id": "potted_catnip", "name": "Potted Catnip", "width": 1, "height": 1, "cost": 18, "room": "any", "effect": "moodRoom", "effectValue": 2 }
+]

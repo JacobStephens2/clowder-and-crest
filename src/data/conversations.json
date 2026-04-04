@@ -1,0 +1,114 @@
+{
+  "wildcat_russian_blue": [
+    {
+      "rank": "C",
+      "title": "First Watch",
+      "lines": [
+        { "speaker": "wildcat", "text": "You move quietly. I almost didn't hear you." },
+        { "speaker": "russian_blue", "text": "That was the idea. I was watching the grain store." },
+        { "speaker": "wildcat", "text": "I already cleared it. Three rats since dawn." },
+        { "speaker": "russian_blue", "text": "I know. I saw. You fight like you've got something to prove." },
+        { "speaker": "wildcat", "text": "Maybe I do. This guild doesn't build itself." },
+        { "speaker": "russian_blue", "text": "...No. But you don't have to build it alone." }
+      ]
+    },
+    {
+      "rank": "B",
+      "title": "Rain on the Roof",
+      "lines": [
+        { "speaker": "russian_blue", "text": "Do you ever rest? You've been at the board since first light." },
+        { "speaker": "wildcat", "text": "Resting is how you lose what you've built." },
+        { "speaker": "russian_blue", "text": "Resting is how you keep it. Listen to the rain for a moment." },
+        { "speaker": "wildcat", "text": "...Fine. One moment." },
+        { "speaker": "russian_blue", "text": "The sound of water on stone. That's what home sounds like." },
+        { "speaker": "wildcat", "text": "Home. I haven't thought of anywhere that way in a long time." }
+      ]
+    },
+    {
+      "rank": "A",
+      "title": "The Founder's Trust",
+      "lines": [
+        { "speaker": "wildcat", "text": "When the plague rats came, you didn't run." },
+        { "speaker": "russian_blue", "text": "Neither did you. Though you had more reason to." },
+        { "speaker": "wildcat", "text": "What do you mean?" },
+        { "speaker": "russian_blue", "text": "You built this from nothing. You had the most to lose." },
+        { "speaker": "wildcat", "text": "I had the most to fight for. That's different." },
+        { "speaker": "russian_blue", "text": "Then I'll fight beside you. For as long as the guild stands." }
+      ]
+    }
+  ],
+  "tuxedo_siamese": [
+    {
+      "rank": "C",
+      "title": "Method and Madness",
+      "lines": [
+        { "speaker": "tuxedo", "text": "I've mapped the courier routes. Three optimal paths to the monastery." },
+        { "speaker": "siamese", "text": "The monks' cat told me something is wrong in the scriptorium. I can feel it." },
+        { "speaker": "tuxedo", "text": "Feel it. You can feel it." },
+        { "speaker": "siamese", "text": "Mock if you like. My whiskers know things your maps don't." },
+        { "speaker": "tuxedo", "text": "I'm not mocking. I'm... cataloguing." }
+      ]
+    },
+    {
+      "rank": "B",
+      "title": "The Letter and the Omen",
+      "lines": [
+        { "speaker": "siamese", "text": "That noble's letter you delivered. It smelled like ash and lavender." },
+        { "speaker": "tuxedo", "text": "It was sealed. You shouldn't have been sniffing it." },
+        { "speaker": "siamese", "text": "Ash means grief. Lavender means someone wants to forget." },
+        { "speaker": "tuxedo", "text": "Or someone was burning herbs near their writing desk." },
+        { "speaker": "siamese", "text": "Possibly. But my way is more interesting, isn't it?" },
+        { "speaker": "tuxedo", "text": "...Annoyingly, yes." }
+      ]
+    },
+    {
+      "rank": "A",
+      "title": "Two Ways of Seeing",
+      "lines": [
+        { "speaker": "tuxedo", "text": "I've been thinking about what you said. About the omens." },
+        { "speaker": "siamese", "text": "A formal cat like you, thinking about omens?" },
+        { "speaker": "tuxedo", "text": "Your intuitions have been right more often than chance allows. That's... data." },
+        { "speaker": "siamese", "text": "And your routes have kept us safe every time. That's a kind of wisdom too." },
+        { "speaker": "tuxedo", "text": "Perhaps the guild needs both. The map and the whisker." },
+        { "speaker": "siamese", "text": "Now you're talking sense." }
+      ]
+    }
+  ],
+  "maine_coon_wildcat": [
+    {
+      "rank": "C",
+      "title": "Size and Speed",
+      "lines": [
+        { "speaker": "maine_coon", "text": "You're fast. Faster than any cat I've seen." },
+        { "speaker": "wildcat", "text": "Speed keeps you alive when you're small." },
+        { "speaker": "maine_coon", "text": "I wouldn't know about small. But I can hold a door all night." },
+        { "speaker": "wildcat", "text": "That's... actually useful. The granary gate doesn't latch properly." },
+        { "speaker": "maine_coon", "text": "Show me. I'll keep it shut." }
+      ]
+    },
+    {
+      "rank": "B",
+      "title": "What We Protect",
+      "lines": [
+        { "speaker": "wildcat", "text": "Why did you come here? You could guard any barn in the county." },
+        { "speaker": "maine_coon", "text": "Barns don't need protecting. They just need sitting in." },
+        { "speaker": "wildcat", "text": "And a guild does?" },
+        { "speaker": "maine_coon", "text": "A guild has cats who care about each other. That's worth more than grain." },
+        { "speaker": "wildcat", "text": "You're more thoughtful than you look." },
+        { "speaker": "maine_coon", "text": "Big body, big heart. It's a package deal." }
+      ]
+    },
+    {
+      "rank": "A",
+      "title": "The Last Watch",
+      "lines": [
+        { "speaker": "maine_coon", "text": "The plague rats almost took the guildhall. I held the door, but barely." },
+        { "speaker": "wildcat", "text": "I saw the scratches. You should have called for help." },
+        { "speaker": "maine_coon", "text": "You were clearing the cathedral. The town needed you more." },
+        { "speaker": "wildcat", "text": "The guild needs you too. Don't forget that." },
+        { "speaker": "maine_coon", "text": "I won't. As long as you remember you don't have to carry everything alone." },
+        { "speaker": "wildcat", "text": "...Deal." }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+export const GAME_WIDTH = 390;
+export const GAME_HEIGHT = 844;
+export const GRID_SIZE = 6;
+export const TILE_SIZE = 54;
+export const PUZZLE_OFFSET_X = (390 - 6 * 54) / 2; // 33, centered
+export const PUZZLE_OFFSET_Y = 90;
+
+export const BREED_COLORS: Record<string, string> = {
+  wildcat: '#8B7355',
+  russian_blue: '#6B8EA6',
+  tuxedo: '#2C2C2C',
+  maine_coon: '#C4956A',
+  siamese: '#D4C5A9',
+};
+
+export const BREED_NAMES: Record<string, string> = {
+  wildcat: 'Wildcat',
+  russian_blue: 'Russian Blue',
+  tuxedo: 'Tuxedo',
+  maine_coon: 'Maine Coon',
+  siamese: 'Siamese',
+};
+
+export const STAT_NAMES = ['hunting', 'stealth', 'intelligence', 'endurance', 'charm', 'senses'] as const;
+export type StatName = typeof STAT_NAMES[number];
+
+export const BOND_RANKS = ['stranger', 'acquaintance', 'companion', 'bonded'] as const;
+export type BondRank = typeof BOND_RANKS[number];
+
+export const BOND_THRESHOLDS: Record<BondRank, number> = {
+  stranger: 0,
+  acquaintance: 10,
+  companion: 25,
+  bonded: 50,
+};
+
+export const CHAPTER_TRIGGERS = [
+  { chapter: 1, jobs: 0, cats: 1, fish: 0 },
+  { chapter: 2, jobs: 5, cats: 2, fish: 0 },
+  { chapter: 3, jobs: 0, cats: 3, fish: 200 },
+  { chapter: 4, jobs: 15, cats: 4, fish: 0 },
+  { chapter: 5, jobs: 30, cats: 5, fish: 0 },
+];
