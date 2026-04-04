@@ -44,16 +44,24 @@ export class BootScene extends Phaser.Scene {
       }
     }
 
-    // Load interaction animations (wildcat only for now)
-    const interactions = [
+    // Load interaction animations (wildcat: scratch, sit, eat; all breeds: sleep)
+    const wcInteractions = [
       { name: 'scratch', frames: 12 },
       { name: 'sit', frames: 8 },
       { name: 'eat', frames: 7 },
     ];
-    for (const anim of interactions) {
+    for (const anim of wcInteractions) {
       for (let f = 0; f < anim.frames; f++) {
         const frame = String(f).padStart(3, '0');
         this.load.image(`wildcat_${anim.name}_${f}`, `assets/sprites/wildcat/interact/${anim.name}/frame_${frame}.png`);
+      }
+    }
+
+    // Load sleep animation for all breeds (10 frames each)
+    for (const breed of BREEDS_WITH_SPRITES) {
+      for (let f = 0; f < 10; f++) {
+        const frame = String(f).padStart(3, '0');
+        this.load.image(`${breed}_sleep_${f}`, `assets/sprites/${breed}/interact/sleep/frame_${frame}.png`);
       }
     }
 
@@ -123,6 +131,20 @@ export class BootScene extends Phaser.Scene {
         frames: animFrames,
         frameRate: 6,
         repeat: 0,
+      });
+    }
+
+    // Create sleep animations for all breeds
+    for (const breed of BREEDS_WITH_SPRITES) {
+      const sleepFrames: Phaser.Types.Animations.AnimationFrame[] = [];
+      for (let f = 0; f < 10; f++) {
+        sleepFrames.push({ key: `${breed}_sleep_${f}` });
+      }
+      this.anims.create({
+        key: `${breed}_sleep`,
+        frames: sleepFrames,
+        frameRate: 4,
+        repeat: -1, // loop — cat sleeps until disturbed
       });
     }
 

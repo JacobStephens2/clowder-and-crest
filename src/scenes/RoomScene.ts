@@ -31,11 +31,12 @@ function worldToGrid(wx: number, wy: number): { col: number; row: number } {
 }
 
 // Interactive furniture: cats can walk to these and perform an action
-const INTERACTIVE_FURNITURE: Record<string, { action: string; duration: number; anim?: string }> = {
+const INTERACTIVE_FURNITURE: Record<string, { action: string; duration: number; anim?: string; breedAnim?: string }> = {
   scratching_post: { action: 'scratching', duration: 2000, anim: 'scratch' },
   potted_catnip: { action: 'sniffing catnip', duration: 1500, anim: 'eat' },
-  cushioned_basket: { action: 'curling up', duration: 2500, anim: 'sit' },
-  straw_bed: { action: 'lying down', duration: 2500, anim: 'sit' },
+  cushioned_basket: { action: 'curling up', duration: 3000, breedAnim: 'sleep' },
+  straw_bed: { action: 'sleeping', duration: 4000, breedAnim: 'sleep' },
+  woolen_blanket: { action: 'napping', duration: 3500, breedAnim: 'sleep' },
   bookshelf: { action: 'investigating', duration: 1500 },
 };
 
@@ -247,13 +248,25 @@ export class RoomScene extends Phaser.Scene {
               : neighbors[0];
             if (target) {
               this.playerMoveTo(target.col, target.row, () => {
-                const animKey = interaction.anim ? `${this.playerBreed}_${interaction.anim}` : null;
+                // Pick breed-specific anim (sleep) or wildcat-only anim (scratch/sit/eat)
+                const animKey = interaction.breedAnim
+                  ? `${this.playerBreed}_${interaction.breedAnim}`
+                  : interaction.anim ? `${this.playerBreed}_${interaction.anim}` : null;
                 if (animKey && this.playerSprite && this.anims.exists(animKey)) {
                   this.playerSprite.play(animKey);
-                  this.playerSprite.once('animationcomplete', () => {
-                    this.playerSprite?.setTexture(`${this.playerBreed}_idle_south`);
-                    this.playerSprite?.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
-                  });
+                  // For looping anims (sleep), stop after duration; for one-shot, wait for complete
+                  if (interaction.breedAnim === 'sleep') {
+                    this.time.delayedCall(interaction.duration, () => {
+                      this.playerSprite?.setTexture(`${this.playerBreed}_idle_south`);
+                      this.playerSprite?.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+                      this.playerSprite?.stop();
+                    });
+                  } else {
+                    this.playerSprite.once('animationcomplete', () => {
+                      this.playerSprite?.setTexture(`${this.playerBreed}_idle_south`);
+                      this.playerSprite?.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+                    });
+                  }
                 }
                 const actionText = document.createElement('div');
                 actionText.className = 'toast';
