@@ -160,11 +160,21 @@ export class GuildhallScene extends Phaser.Scene {
 
         // Draw cats assigned to this room
         const anyAssigned = save.cats.some((c) => c.assignedRoom);
-        const roomCats = anyAssigned
-          ? { ...save, cats: save.cats.filter((c) => c.assignedRoom === room.id || (!c.assignedRoom && room.id === 'sleeping')) }
-          : (room.id === 'sleeping' ? save : { ...save, cats: [] });
-        if (roomCats.cats.length > 0) {
-          this.drawCats(roomCats, cx, y + ROOM_HEIGHT - 55);
+        let catsForRoom: typeof save.cats;
+        if (anyAssigned) {
+          catsForRoom = save.cats.filter((c) => c.assignedRoom === room.id || (!c.assignedRoom && room.id === 'sleeping'));
+        } else {
+          // Auto-distribute: spread cats across unlocked rooms
+          const unlockedRoomIds = save.rooms.filter((r) => r.unlocked).map((r) => r.id);
+          const roomIndex = unlockedRoomIds.indexOf(room.id);
+          if (roomIndex >= 0) {
+            catsForRoom = save.cats.filter((_, idx) => idx % unlockedRoomIds.length === roomIndex);
+          } else {
+            catsForRoom = [];
+          }
+        }
+        if (catsForRoom.length > 0) {
+          this.drawCats({ ...save, cats: catsForRoom }, cx, y + ROOM_HEIGHT - 55);
         }
       } else {
         // Locked room

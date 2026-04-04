@@ -1,1 +1,1 @@
-[] Prevent every cat from always being in every guild hall room. Sometimes when I look at the guild hall view for example, one of the cats may appear in the Kitchen, or in the Operations Hall if I have built those rooms
+[] - consider removing the auto resolve option for jobs
