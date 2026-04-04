@@ -205,16 +205,51 @@ export class RoomScene extends Phaser.Scene {
       dragHit.on('dragend', () => {
         const grid = worldToGrid(dragHit.x, dragHit.y);
         if (grid.col >= 0 && grid.col < GRID_COLS && grid.row >= 0 && grid.row < GRID_ROWS) {
-          // Update save data
           f.gridX = grid.col;
           f.gridY = grid.row;
           const save = getGameState();
           if (save) saveGame(save);
-          // Reload the scene to redraw
           this.scene.restart({ roomId: this.roomId });
         } else {
-          // Snap back
-          this.scene.restart({ roomId: this.roomId });
+          // Dragged off grid — offer to move to another room
+          const save = getGameState();
+          if (!save) { this.scene.restart({ roomId: this.roomId }); return; }
+          const otherRooms = save.rooms.filter((r) => r.unlocked && r.id !== this.roomId);
+          if (otherRooms.length === 0) { this.scene.restart({ roomId: this.roomId }); return; }
+
+          const picker = document.createElement('div');
+          picker.className = 'assign-overlay';
+          const label = f.furnitureId.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+          picker.innerHTML = `
+            <button class="panel-close" id="move-furn-close">&times;</button>
+            <h2>Move ${label}</h2>
+            <div style="color:#8b7355;margin-bottom:12px">Move to another room?</div>
+            ${otherRooms.map((r) => {
+              const rLabel = r.id === 'sleeping' ? 'Sleeping Quarters' : r.id === 'kitchen' ? 'Kitchen' : 'Operations';
+              return `<button class="menu-btn move-furn-btn" data-room="${r.id}">${rLabel}</button>`;
+            }).join('')}
+            <button class="menu-btn" id="move-furn-cancel" style="margin-top:12px">Cancel</button>
+          `;
+          document.getElementById('overlay-layer')?.appendChild(picker);
+          document.getElementById('move-furn-close')!.addEventListener('click', () => {
+            picker.remove();
+            this.scene.restart({ roomId: this.roomId });
+          });
+          document.getElementById('move-furn-cancel')!.addEventListener('click', () => {
+            picker.remove();
+            this.scene.restart({ roomId: this.roomId });
+          });
+          picker.querySelectorAll('.move-furn-btn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              const newRoom = btn.getAttribute('data-room')!;
+              f.room = newRoom;
+              f.gridX = save.furniture.filter((ff) => ff.room === newRoom).length % 5;
+              f.gridY = Math.floor(save.furniture.filter((ff) => ff.room === newRoom).length / 5);
+              saveGame(save);
+              picker.remove();
+              this.scene.restart({ roomId: this.roomId });
+            });
+          });
         }
       });
 

@@ -38,5 +38,5 @@
 [x] - make the art for the town different during the rat plague (PixelLab plague scene)
 [x] - ensure town view returns after closing job screen
 [x] - use puzzle music during puzzles (2 tracks, switches on enter/exit)
-[] - The player should be able to move furniture from one room to another, and choose the position in that room
+[x] - Move furniture between rooms (drag off grid to get room picker dialog)
 [x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview
