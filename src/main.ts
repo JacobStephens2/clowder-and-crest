@@ -151,6 +151,15 @@ function getReputationLabel(score: number): string {
   return 'Shadowed';
 }
 
+// Reputation affects recruit costs: Noble gets discount, Shadowed pays premium
+function getReputationRecruitModifier(score: number): number {
+  if (score >= 30) return 0.8;  // 20% discount
+  if (score >= 10) return 0.9;  // 10% discount
+  if (score > -10) return 1.0;  // no change
+  if (score > -30) return 1.1;  // 10% premium
+  return 1.2;                    // 20% premium
+}
+
 function switchScene(target: string, data?: object): void {
   const sceneKeys = ['GuildhallScene', 'TownScene', 'PuzzleScene', 'SokobanScene', 'ChaseScene', 'FishingScene', 'TitleScene', 'RoomScene'];
   for (const key of sceneKeys) {
@@ -480,17 +489,20 @@ eventBus.on('show-town-overlay', () => {
   if (recruitable.length === 0) {
     html += `<div class="town-empty">All cats have joined the guild.</div>`;
   } else {
+    const repMod = getReputationRecruitModifier(gameState.reputationScore);
     for (const recruit of recruitable) {
-      const canAfford = gameState.fish >= recruit.cost;
+      const adjustedCost = Math.floor(recruit.cost * repMod);
+      const canAfford = gameState.fish >= adjustedCost;
+      const discountLabel = repMod < 1 ? ' (reputation discount)' : repMod > 1 ? ' (reputation premium)' : '';
       html += `
         <div class="town-recruit-card">
           <div class="town-recruit-avatar" style="background:${recruit.color}"></div>
           <div class="town-recruit-info">
             <div class="town-recruit-name">${recruit.name}</div>
-            <div class="town-recruit-cost">Wants to join for ${recruit.cost} Fish</div>
+            <div class="town-recruit-cost">Wants to join for ${adjustedCost} Fish${discountLabel}</div>
           </div>
-          <button class="town-recruit-btn ${canAfford ? '' : 'disabled'}" data-breed-id="${recruit.id}" ${canAfford ? '' : 'disabled'}>
-            ${canAfford ? 'Recruit' : `${recruit.cost} Fish`}
+          <button class="town-recruit-btn ${canAfford ? '' : 'disabled'}" data-breed-id="${recruit.id}" data-cost="${adjustedCost}" ${canAfford ? '' : 'disabled'}>
+            ${canAfford ? 'Recruit' : `${adjustedCost} Fish`}
           </button>
         </div>
       `;
@@ -737,6 +749,7 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
   document.getElementById('btn-do-puzzle')!.addEventListener('click', () => {
     overlay.remove();
     switchToPuzzleMusic();
+    pauseDayTimer(); // Pause time during puzzles/minigames
 
     // Pick minigame type based on job category
     const roll = Math.random();
@@ -808,6 +821,7 @@ function doAutoResolve(job: JobDef, cat: typeof gameState extends null ? never :
 // Puzzle complete
 eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId, bonusFish }: any) => {
   switchToNormalMusic();
+  resumeDayTimer();
   if (!gameState) return;
 
   const job = getJob(jobId);
@@ -817,7 +831,13 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
     return;
   }
 
-  const baseReward = calculateReward(job.baseReward, job.maxReward, stars);
+  let baseReward = calculateReward(job.baseReward, job.maxReward, stars);
+  // Lucky Fishbone bonus
+  if (gameState.flags.luckyFishbone) {
+    baseReward = Math.floor(baseReward * 1.2);
+    delete gameState.flags.luckyFishbone;
+    showToast('Lucky Fishbone activated! +20% reward.');
+  }
   const reward = baseReward + (bonusFish ?? 0);
   earnFish(gameState, reward);
   playSfx('purr');
@@ -863,6 +883,7 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
 
 eventBus.on('puzzle-quit', ({ jobId, catId }: any = {}) => {
   switchToNormalMusic();
+  resumeDayTimer();
   playSfx('hiss');
   if (!gameState) return;
 
@@ -918,10 +939,17 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
     // Can't afford full food — cats go hungry, mood drops
     const wasAlreadyBroke = gameState.fish === 0;
     gameState.fish = 0;
-    for (const cat of gameState.cats) {
-      if (cat.mood === 'happy') cat.mood = 'content';
-      else if (cat.mood === 'content') cat.mood = 'tired';
-      else cat.mood = 'unhappy';
+
+    // Saint's Blessing prevents one mood drop
+    if (gameState.flags.saintBlessing) {
+      delete gameState.flags.saintBlessing;
+      showToast('Saint\'s Blessing protected your cats from hunger!');
+    } else {
+      for (const cat of gameState.cats) {
+        if (cat.mood === 'happy') cat.mood = 'content';
+        else if (cat.mood === 'content') cat.mood = 'tired';
+        else cat.mood = 'unhappy';
+      }
     }
 
     // If broke two days in a row, an unhappy non-player cat may leave
@@ -1123,7 +1151,7 @@ function checkAndShowConversation(): void {
     const convos = conversationsData as Record<string, any[]>;
     const groupKeys = Object.keys(convos).filter((k) => k.startsWith('group_'));
     for (const key of groupKeys) {
-      const viewedKey = `group_${key}`;
+      const viewedKey = `viewed_${key}`;
       if (!gameState.flags[viewedKey]) {
         // Check trigger conditions
         const shouldTrigger =
