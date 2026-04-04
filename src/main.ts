@@ -66,11 +66,20 @@ const statusDay = document.getElementById('status-day')!;
 const statusChapter = document.getElementById('status-chapter')!;
 
 // ──── UI Helpers ────
+let lastFishCount = -1;
 function updateStatusBar(): void {
   if (!gameState) return;
+  const prevFish = lastFishCount;
+  lastFishCount = gameState.fish;
   statusFish.textContent = `${gameState.fish} Fish`;
   statusDay.textContent = `Day ${gameState.day}`;
   statusChapter.textContent = `Ch. ${gameState.chapter}`;
+
+  // Flash fish count on change
+  if (prevFish >= 0 && prevFish !== gameState.fish) {
+    statusFish.style.color = gameState.fish > prevFish ? '#4a8a4a' : '#aa4444';
+    setTimeout(() => { statusFish.style.color = ''; }, 800);
+  }
 }
 
 function showToast(message: string): void {
@@ -862,7 +871,15 @@ function showCatPanel(): void {
         </div>
       </div>
       ${stationedJob ? `<div class="stationed-badge">Stationed: ${stationedJob.name} (since day ${stationed!.dayStarted})<button class="recall-btn" data-cat-id="${cat.id}">Recall</button></div>` : ''}
-      <div style="font-size:12px;color:#8b7355;margin-bottom:4px">${cat.traits.join(', ')}</div>
+      <div style="font-size:12px;color:#8b7355;margin-bottom:4px">${cat.traits.map((t: string) => {
+        const effects: Record<string, string> = {
+          Brave: '+10% hard jobs', Lazy: '-8% all jobs', Curious: '+8% courier',
+          Pious: '+5% pest control', 'Night Owl': '+5% all', Skittish: '-10% hard jobs',
+          Loyal: '+3% all', Mischievous: 'random ±', Grumpy: '', Playful: '',
+        };
+        const eff = effects[t];
+        return eff ? `<span title="${eff}" style="cursor:help;border-bottom:1px dotted #6b5b3e">${t}</span>` : t;
+      }).join(', ')}</div>
       <div class="cat-stats">
         ${STAT_NAMES.map((s) => `<div class="cat-stat"><span>${s}</span><span class="cat-stat-value">${cat.stats[s]}</span></div>`).join('')}
       </div>
