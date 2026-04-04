@@ -1460,6 +1460,43 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
         const reduced = Math.max(0, current - 2);
         gameState.flags.rivalInfluence = reduced as unknown as boolean;
         showToast(`You defended all contested jobs! Silver Paws influence: ${reduced}`);
+
+        // Win condition: rival influence reduced to 0
+        if (reduced === 0 && !gameState.flags.rivalDefeated) {
+          gameState.flags.rivalDefeated = true;
+          playSfx('chapter');
+          setTimeout(() => {
+            const ov = document.createElement('div');
+            ov.style.cssText = 'position:fixed;inset:0;background:#0a0908;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:30px;';
+            const catName = gameState?.playerCatName ?? 'The wildcat';
+            const scenes = [
+              'The Silver Paws sent a messenger at dawn — a sleek cat with a silver collar.',
+              `"Your guild has proven itself," the messenger said. "${catName}'s clowder is the real thing. We withdraw."`,
+              'The contested jobs vanished from the board. The town had only one guild now — yours.',
+              `${catName} watched the Silver Paws leave through the market gate. A rival defeated. A legacy defended.`,
+            ];
+            let idx = 0;
+            const img = document.createElement('img');
+            img.src = 'assets/sprites/scenes/town_day.png';
+            img.style.cssText = 'width:280px;image-rendering:pixelated;margin-bottom:16px;border-radius:4px;opacity:0.5;';
+            ov.appendChild(img);
+            const txt = document.createElement('div');
+            txt.style.cssText = 'color:#c4956a;font-family:Georgia,serif;font-size:15px;text-align:center;max-width:320px;line-height:1.7;';
+            ov.appendChild(txt);
+            const hint = document.createElement('div');
+            hint.style.cssText = 'color:#555;font-size:11px;margin-top:16px;font-family:Georgia,serif;';
+            hint.textContent = 'Tap to continue';
+            ov.appendChild(hint);
+            const show = () => {
+              if (idx >= scenes.length) { ov.style.transition = 'opacity 0.5s'; ov.style.opacity = '0'; setTimeout(() => ov.remove(), 500); return; }
+              txt.style.opacity = '0'; txt.textContent = scenes[idx];
+              setTimeout(() => { txt.style.transition = 'opacity 0.5s'; txt.style.opacity = '1'; }, 50);
+              idx++;
+            };
+            show(); ov.addEventListener('click', show);
+            document.body.appendChild(ov);
+          }, 2000);
+        }
       }
     }
   }
