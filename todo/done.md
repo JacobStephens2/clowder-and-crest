@@ -54,4 +54,6 @@
 [x] - ElevenLabs SFX: fish earn, block slide, purr, day bell, job accept, chapter fanfare, UI tap, cat hiss
 [x] - Distribute cats across unlocked rooms (auto-spread when no assignments, respect assignedRoom when set)
 [x] - Remove auto-resolve option (forces active gameplay via puzzles/minigames)
+[x] - Room detail view matches guildhall overview (same cats per room, player cat always present)
+[x] - Stationed cats hidden in room views (no more faded "away" ghosts)
 [x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview

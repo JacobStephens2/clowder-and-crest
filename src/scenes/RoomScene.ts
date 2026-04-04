@@ -367,24 +367,33 @@ export class RoomScene extends Phaser.Scene {
   }
 
   private drawCats(save: SaveData): void {
-    // Show cats assigned to this room (or all cats if none have room assignments yet)
+    // Filter: only cats assigned to this room (or auto-distributed) + always include player cat
+    // Exclude stationed cats entirely — they're away at their jobs
     const anyAssigned = save.cats.some((c) => c.assignedRoom);
-    const cats = anyAssigned
-      ? save.cats.filter((c) => c.assignedRoom === this.roomId || (!c.assignedRoom && this.roomId === 'sleeping'))
-      : save.cats;
+    let roomCats: typeof save.cats;
+    if (anyAssigned) {
+      roomCats = save.cats.filter((c) =>
+        c.assignedRoom === this.roomId || (!c.assignedRoom && this.roomId === 'sleeping') || c.id === 'player_wildcat'
+      );
+    } else {
+      // Auto-distribute across unlocked rooms, but always include player
+      const unlockedRoomIds = save.rooms.filter((r) => r.unlocked).map((r) => r.id);
+      const roomIndex = unlockedRoomIds.indexOf(this.roomId);
+      roomCats = save.cats.filter((c, idx) =>
+        c.id === 'player_wildcat' || (roomIndex >= 0 && idx % unlockedRoomIds.length === roomIndex)
+      );
+    }
+    // Remove stationed cats — they are away
+    const cats = roomCats.filter((c) => !isCatStationed(save, c.id));
     if (cats.length === 0) return;
 
     this.buildOpenTiles(save);
 
     cats.forEach((cat, i) => {
       const startTile = this.pickRandomTile();
-      const stationed = isCatStationed(save, cat.id);
       const isPlayer = cat.id === 'player_wildcat';
 
-      if (stationed) {
-        const { x, y } = toWorld(startTile.col, startTile.row);
-        this.drawStationedCat(cat, x, y);
-      } else if (isPlayer) {
+      if (isPlayer) {
         this.spawnPlayerCat(cat, startTile);
       } else {
         this.spawnWanderingCat(cat, startTile, i);
@@ -676,29 +685,6 @@ export class RoomScene extends Phaser.Scene {
     gfx.fillCircle(3, -11, 0.7);
   }
 
-  private drawStationedCat(cat: SaveData['cats'][number], x: number, y: number): void {
-    const hasSprite = BREEDS_WITH_SPRITES.has(cat.breed);
-    if (hasSprite) {
-      const sprite = this.add.sprite(x, y - 4, `${cat.breed}_idle_south`);
-      sprite.setScale(1.2);
-      sprite.setAlpha(0.3);
-      sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
-    } else {
-      const color = parseInt((BREED_COLORS[cat.breed] ?? '#8b7355').replace('#', ''), 16);
-      const gfx = this.add.graphics();
-      gfx.setPosition(x, y);
-      gfx.setAlpha(0.3);
-      this.drawFallbackCatGraphics(gfx, color);
-    }
-
-    this.add.text(x, y + 18, cat.name, {
-      fontFamily: 'Georgia, serif', fontSize: '8px', color: '#555',
-    }).setOrigin(0.5);
-
-    this.add.text(x, y + 27, '(away)', {
-      fontFamily: 'Georgia, serif', fontSize: '7px', color: '#555',
-    }).setOrigin(0.5);
-  }
 
   private drawAmbience(): void {
     for (let i = 0; i < 6; i++) {
