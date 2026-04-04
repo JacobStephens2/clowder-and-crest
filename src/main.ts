@@ -65,6 +65,14 @@ const game = new Phaser.Game(config);
 // ──── OTA Updates (Capacitor only, silent) ────
 checkForUpdates();
 
+// ──── Auto-save on page unload ────
+window.addEventListener('beforeunload', () => {
+  if (gameState) saveGame(gameState);
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && gameState) saveGame(gameState);
+});
+
 // ──── UI References ────
 const overlayLayer = document.getElementById('overlay-layer')!;
 const statusBar = document.getElementById('status-bar')!;
