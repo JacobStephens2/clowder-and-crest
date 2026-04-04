@@ -1,0 +1,2 @@
+[] Ensure that the cats shown on the guildhall overview view in a given room, such as the kitchen, are the only cats that appear in that room when you click that room / enter it (in addition to the player's cat, the wildcat)
+[] Currently when viewing a room's detail view, you can see a cat as "Away". The away cats / stationed cats should not be visible at all in the rooms.
