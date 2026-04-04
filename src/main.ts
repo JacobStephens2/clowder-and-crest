@@ -25,6 +25,7 @@ import conversationsData from './data/conversations.json';
 
 // ──── Game State ────
 let gameState: SaveData | null = null;
+const catsWorkedToday = new Set<string>();
 
 export function getGameState(): SaveData | null {
   return gameState;
@@ -495,7 +496,7 @@ function showAssignOverlay(job: JobDef): void {
   const overlay = document.createElement('div');
   overlay.className = 'assign-overlay';
 
-  const availableCats = gameState!.cats.filter((cat) => !isCatStationed(gameState!, cat.id));
+  const availableCats = gameState!.cats.filter((cat) => !isCatStationed(gameState!, cat.id) && !catsWorkedToday.has(cat.id));
 
   let html = `
     <button class="panel-close" id="assign-close">&times;</button>
@@ -505,7 +506,9 @@ function showAssignOverlay(job: JobDef): void {
   `;
 
   if (availableCats.length === 0) {
-    html += `<div style="color:#888;font-size:14px;padding:12px 0">All cats are stationed at jobs. Recall one first.</div>`;
+    const allStationed = gameState!.cats.every((cat) => isCatStationed(gameState!, cat.id));
+    const reason = allStationed ? 'All cats are stationed at jobs. Recall one first.' : 'All cats have worked today. Wait for a new day.';
+    html += `<div style="color:#888;font-size:14px;padding:12px 0">${reason}</div>`;
   }
 
   availableCats.forEach((cat) => {
@@ -609,8 +612,9 @@ function doAutoResolve(job: JobDef, cat: typeof gameState extends null ? never :
     }
   }
 
-  // Advance day
-  advanceDay();
+  // Mark cat as worked today
+  catsWorkedToday.add(cat.id);
+  saveGame(gameState);
 
   showResultOverlay({
     jobName: job.name,
@@ -657,7 +661,9 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
     }
   }
 
-  advanceDay();
+  // Mark cat as worked today
+  catsWorkedToday.add(cat.id);
+  saveGame(gameState);
 
   showResultOverlay({
     jobName: job.name,
@@ -680,9 +686,10 @@ function advanceDay(): void {
   if (!gameState) return;
   gameState.day++;
 
-  // Reset day timer
+  // Reset day timer and worked cats
   dayTimerStart = Date.now();
   updateTimeDisplay();
+  catsWorkedToday.clear();
 
   // Collect stationed earnings
   const stationedResults = collectStationedEarnings(gameState);
