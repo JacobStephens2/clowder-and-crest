@@ -305,9 +305,10 @@ eventBus.on('show-name-prompt', () => {
     prompt.remove();
     gameState = createDefaultSave(name);
     saveGame(gameState);
-    eventBus.emit('game-loaded', gameState);
-    switchScene('GuildhallScene');
-    showToast(`${name} the Wildcat arrives...`);
+    showIntroStory(name, () => {
+      eventBus.emit('game-loaded', gameState!);
+      switchScene('GuildhallScene');
+    });
   };
 
   submit.addEventListener('click', doSubmit);
@@ -315,6 +316,97 @@ eventBus.on('show-name-prompt', () => {
     if (e.key === 'Enter') doSubmit();
   });
 });
+
+// Intro story sequence for new games
+function showIntroStory(catName: string, onComplete: () => void): void {
+  const panels = [
+    {
+      text: `The storm came without warning. Rain hammered the cobblestones as lightning split the sky over the sleeping town.`,
+      scene: 'town',
+    },
+    {
+      text: `A lone wildcat — thin, soaked, and hungry — stumbled through the market square, seeking shelter from the downpour.`,
+      scene: 'town',
+    },
+    {
+      text: `${catName} pressed against the cold stone wall of the grain market. The smell of flour and mice drifted through the cracks.`,
+      scene: 'guildhall',
+    },
+    {
+      text: `On the wall, a notice fluttered in the wind: "PEST CONTROL NEEDED — Payment in fish. Inquire at the guild board."`,
+      scene: 'guildhall',
+    },
+    {
+      text: `No guild existed yet. No cats had answered the call. But ${catName} saw an opportunity — a chance to build something from nothing.`,
+      scene: 'guildhall',
+    },
+    {
+      text: `This is where it begins. A lone stray, a storm, and a crumbling settlement in need of cats who can work.`,
+      scene: 'town',
+    },
+  ];
+
+  let panelIndex = 0;
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position:fixed;inset:0;background:#0a0908;z-index:9999;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    cursor:pointer;padding:30px;
+  `;
+
+  const sceneImg = document.createElement('img');
+  sceneImg.style.cssText = 'width:280px;max-height:160px;image-rendering:pixelated;margin-bottom:24px;border-radius:4px;opacity:0.4;object-fit:cover;';
+  overlay.appendChild(sceneImg);
+
+  const textDiv = document.createElement('div');
+  textDiv.style.cssText = 'color:#c4956a;font-family:Georgia,serif;font-size:16px;text-align:center;max-width:320px;line-height:1.7;min-height:80px;';
+  overlay.appendChild(textDiv);
+
+  const hintDiv = document.createElement('div');
+  hintDiv.style.cssText = 'color:#555;font-family:Georgia,serif;font-size:11px;margin-top:20px;';
+  hintDiv.textContent = 'Tap to continue';
+  overlay.appendChild(hintDiv);
+
+  const skipBtn = document.createElement('button');
+  skipBtn.textContent = 'Skip';
+  skipBtn.style.cssText = 'position:absolute;top:16px;right:16px;background:none;border:1px solid #3a3530;color:#6b5b3e;padding:6px 14px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer;';
+  overlay.appendChild(skipBtn);
+
+  function showPanel(): void {
+    if (panelIndex >= panels.length) {
+      overlay.style.transition = 'opacity 0.5s';
+      overlay.style.opacity = '0';
+      setTimeout(() => { overlay.remove(); onComplete(); }, 500);
+      return;
+    }
+    const panel = panels[panelIndex];
+    const sceneSrc = panel.scene === 'town' ? 'assets/sprites/scenes/town.png' : 'assets/sprites/scenes/guildhall.png';
+    sceneImg.src = sceneSrc;
+
+    // Fade in text
+    textDiv.style.opacity = '0';
+    textDiv.textContent = panel.text;
+    setTimeout(() => { textDiv.style.transition = 'opacity 0.6s'; textDiv.style.opacity = '1'; }, 50);
+
+    panelIndex++;
+  }
+
+  showPanel();
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === skipBtn) return;
+    showPanel();
+  });
+
+  skipBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    overlay.remove();
+    onComplete();
+  });
+
+  document.body.appendChild(overlay);
+}
 
 // Game loaded
 eventBus.on('game-loaded', (save: SaveData) => {
