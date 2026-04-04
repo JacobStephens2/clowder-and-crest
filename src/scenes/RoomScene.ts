@@ -275,161 +275,253 @@ export class RoomScene extends Phaser.Scene {
     }
   }
 
+  private openTiles: { col: number; row: number }[] = [];
+
+  private buildOpenTiles(save: SaveData): void {
+    const usedPositions = new Set(
+      save.furniture.filter((f) => f.room === this.roomId).map((f) => `${f.gridX % GRID_COLS},${f.gridY % GRID_ROWS}`)
+    );
+    this.openTiles = [];
+    for (let row = 0; row < GRID_ROWS; row++) {
+      for (let col = 0; col < GRID_COLS; col++) {
+        if (!usedPositions.has(`${col},${row}`)) {
+          this.openTiles.push({ col, row });
+        }
+      }
+    }
+  }
+
+  private pickRandomTile(exclude?: { col: number; row: number }): { col: number; row: number } {
+    const candidates = exclude
+      ? this.openTiles.filter((t) => t.col !== exclude.col || t.row !== exclude.row)
+      : this.openTiles;
+    return candidates[Math.floor(Math.random() * candidates.length)] ?? { col: 2, row: 2 };
+  }
+
+  private getWalkDirection(fromCol: number, fromRow: number, toCol: number, toRow: number): string {
+    const dc = toCol - fromCol;
+    const dr = toRow - fromRow;
+    // In isometric: east = +col, south = +row
+    if (Math.abs(dc) >= Math.abs(dr)) {
+      return dc > 0 ? 'east' : 'west';
+    }
+    return dr > 0 ? 'south' : 'north';
+  }
+
   private drawCats(save: SaveData): void {
     const cats = save.cats;
     if (cats.length === 0) return;
 
-    // Place cats on the floor grid, avoiding furniture positions
-    const usedPositions = new Set(
-      save.furniture.filter((f) => f.room === this.roomId).map((f) => `${f.gridX},${f.gridY}`)
-    );
-
-    const catPositions: { col: number; row: number }[] = [];
-    for (let row = 1; row < GRID_ROWS; row++) {
-      for (let col = 1; col < GRID_COLS; col++) {
-        if (!usedPositions.has(`${col % GRID_COLS},${Math.floor(col / GRID_COLS)}`)) {
-          catPositions.push({ col, row });
-        }
-        if (catPositions.length >= cats.length) break;
-      }
-      if (catPositions.length >= cats.length) break;
-    }
+    this.buildOpenTiles(save);
 
     cats.forEach((cat, i) => {
-      const pos = catPositions[i] ?? { col: 1 + i, row: GRID_ROWS - 2 };
-      const { x, y } = toIso(pos.col, pos.row);
+      const startTile = this.pickRandomTile();
       const stationed = isCatStationed(save, cat.id);
       const hasSprite = BREEDS_WITH_SPRITES.has(cat.breed);
 
-      if (hasSprite) {
-        this.drawSpritecat(cat, x, y, i, stationed);
+      if (stationed) {
+        const { x, y } = toIso(startTile.col, startTile.row);
+        this.drawStationedCat(cat, x, y, hasSprite);
+      } else if (hasSprite) {
+        this.spawnWanderingSprite(cat, startTile, i);
       } else {
-        this.drawFallbackCat(cat, x, y, i, stationed);
+        this.spawnWanderingFallback(cat, startTile, i);
       }
     });
   }
 
-  private drawSpritecat(cat: SaveData['cats'][number], x: number, y: number, index: number, stationed: boolean): void {
-    // Pick a random idle direction
-    const directions = ['south', 'east', 'west', 'north'];
-    const dir = directions[index % directions.length];
-    const idleKey = `${cat.breed}_idle_${dir}`;
-    const walkAnimKey = `${cat.breed}_walk_${dir}`;
+  private spawnWanderingSprite(cat: SaveData['cats'][number], startTile: { col: number; row: number }, index: number): void {
+    const { x, y } = toIso(startTile.col, startTile.row);
 
-    // Shadow
     const shadow = this.add.graphics();
     shadow.fillStyle(0x000000, 0.2);
-    shadow.fillEllipse(x, y + 2, 24, 8);
+    shadow.fillEllipse(0, 0, 24, 8);
+    shadow.setPosition(x, y + 2);
 
-    const sprite = this.add.sprite(x, y - 14, idleKey);
+    const sprite = this.add.sprite(x, y - 14, `${cat.breed}_idle_south`);
     sprite.setScale(1.2);
+    sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
 
-    if (stationed) {
-      sprite.setAlpha(0.3);
-      shadow.setAlpha(0.3);
-    } else {
-      // Randomly pick between idle bob and walk animation
-      if (index % 3 === 0 && this.anims.exists(walkAnimKey)) {
-        sprite.play(walkAnimKey);
-      } else {
-        // Gentle bob for idle
-        this.tweens.add({
-          targets: sprite,
-          y: sprite.y - 1.5,
-          duration: 1800 + index * 300,
-          yoyo: true,
-          repeat: -1,
-          ease: 'Sine.easeInOut',
-        });
-      }
-    }
-
-    // Name tag
-    this.add.text(x, y + 10, cat.name, {
+    const nameTag = this.add.text(x, y + 10, cat.name, {
       fontFamily: 'Georgia, serif',
       fontSize: '8px',
-      color: stationed ? '#555' : '#c4956a',
+      color: '#c4956a',
     }).setOrigin(0.5);
 
-    if (stationed) {
-      this.add.text(x, y + 19, '(away)', {
-        fontFamily: 'Georgia, serif',
-        fontSize: '7px',
-        color: '#555',
-      }).setOrigin(0.5);
-    }
+    let currentTile = { ...startTile };
+
+    const wanderToNext = () => {
+      // Idle pause before next move
+      const idleTime = 2000 + Math.random() * 3000;
+      const dir = ['south', 'east', 'west', 'north'][Math.floor(Math.random() * 4)];
+      sprite.setTexture(`${cat.breed}_idle_${dir}`);
+      sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      sprite.stop();
+
+      this.time.delayedCall(idleTime, () => {
+        const nextTile = this.pickRandomTile(currentTile);
+        const walkDir = this.getWalkDirection(currentTile.col, currentTile.row, nextTile.col, nextTile.row);
+        const dest = toIso(nextTile.col, nextTile.row);
+        const walkKey = `${cat.breed}_walk_${walkDir}`;
+
+        if (this.anims.exists(walkKey)) {
+          sprite.play(walkKey);
+        }
+
+        const duration = 800 + Math.random() * 600;
+        this.tweens.add({
+          targets: sprite,
+          x: dest.x,
+          y: dest.y - 14,
+          duration,
+          ease: 'Linear',
+        });
+        this.tweens.add({
+          targets: shadow,
+          x: dest.x,
+          y: dest.y + 2,
+          duration,
+          ease: 'Linear',
+        });
+        this.tweens.add({
+          targets: nameTag,
+          x: dest.x,
+          y: dest.y + 10,
+          duration,
+          ease: 'Linear',
+          onComplete: () => {
+            currentTile = { ...nextTile };
+            wanderToNext();
+          },
+        });
+      });
+    };
+
+    // Start with a random delay so cats don't all move at once
+    this.time.delayedCall(index * 500 + Math.random() * 1000, wanderToNext);
   }
 
-  private drawFallbackCat(cat: SaveData['cats'][number], x: number, y: number, index: number, stationed: boolean): void {
+  private spawnWanderingFallback(cat: SaveData['cats'][number], startTile: { col: number; row: number }, index: number): void {
+    const { x, y } = toIso(startTile.col, startTile.row);
     const color = parseInt((BREED_COLORS[cat.breed] ?? '#8b7355').replace('#', ''), 16);
+
+    // Container-like approach using a graphics object at (0,0) offset by position
     const gfx = this.add.graphics();
+    gfx.setPosition(x, y);
+    this.drawFallbackCatGraphics(gfx, color);
 
-    if (stationed) {
-      gfx.setAlpha(0.3);
-    }
+    const nameTag = this.add.text(x, y + 10, cat.name, {
+      fontFamily: 'Georgia, serif',
+      fontSize: '8px',
+      color: '#c4956a',
+    }).setOrigin(0.5);
 
+    let currentTile = { ...startTile };
+
+    const wanderToNext = () => {
+      const idleTime = 2000 + Math.random() * 3000;
+
+      // Idle bob
+      this.tweens.add({
+        targets: gfx,
+        y: gfx.y - 1.5,
+        duration: 800,
+        yoyo: true,
+        ease: 'Sine.easeInOut',
+      });
+
+      this.time.delayedCall(idleTime, () => {
+        const nextTile = this.pickRandomTile(currentTile);
+        const dest = toIso(nextTile.col, nextTile.row);
+        const duration = 800 + Math.random() * 600;
+
+        this.tweens.add({
+          targets: gfx,
+          x: dest.x,
+          y: dest.y,
+          duration,
+          ease: 'Linear',
+        });
+        this.tweens.add({
+          targets: nameTag,
+          x: dest.x,
+          y: dest.y + 10,
+          duration,
+          ease: 'Linear',
+          onComplete: () => {
+            currentTile = { ...nextTile };
+            wanderToNext();
+          },
+        });
+      });
+    };
+
+    this.time.delayedCall(index * 500 + Math.random() * 1000, wanderToNext);
+  }
+
+  private drawFallbackCatGraphics(gfx: Phaser.GameObjects.Graphics, color: number): void {
     // Shadow
     gfx.fillStyle(0x000000, 0.2);
-    gfx.fillEllipse(x, y + 2, 20, 8);
+    gfx.fillEllipse(0, 2, 20, 8);
 
     // Body
     gfx.fillStyle(color);
-    gfx.fillEllipse(x, y - 6, 18, 12);
+    gfx.fillEllipse(0, -6, 18, 12);
 
     // Head
-    gfx.fillCircle(x - 4, y - 16, 7);
+    gfx.fillCircle(-4, -16, 7);
 
     // Ears
-    gfx.fillTriangle(x - 10, y - 19, x - 7, y - 27, x - 4, y - 19);
-    gfx.fillTriangle(x + 1, y - 19, x - 2, y - 27, x - 5, y - 19);
+    gfx.fillTriangle(-10, -19, -7, -27, -4, -19);
+    gfx.fillTriangle(1, -19, -2, -27, -5, -19);
 
     // Inner ears
     gfx.fillStyle(Phaser.Display.Color.IntegerToColor(color).brighten(30).color);
-    gfx.fillTriangle(x - 9, y - 20, x - 7, y - 25, x - 5, y - 20);
-    gfx.fillTriangle(x, y - 20, x - 2, y - 25, x - 4, y - 20);
+    gfx.fillTriangle(-9, -20, -7, -25, -5, -20);
+    gfx.fillTriangle(0, -20, -2, -25, -4, -20);
 
     // Eyes
     gfx.fillStyle(0xddcc88);
-    gfx.fillCircle(x - 6, y - 17, 2);
-    gfx.fillCircle(x - 2, y - 17, 2);
+    gfx.fillCircle(-6, -17, 2);
+    gfx.fillCircle(-2, -17, 2);
     gfx.fillStyle(0x111111);
-    gfx.fillCircle(x - 6, y - 17, 0.8);
-    gfx.fillCircle(x - 2, y - 17, 0.8);
+    gfx.fillCircle(-6, -17, 0.8);
+    gfx.fillCircle(-2, -17, 0.8);
 
     // Tail
     gfx.lineStyle(2.5, color);
     gfx.beginPath();
-    gfx.moveTo(x + 8, y - 4);
-    gfx.lineTo(x + 14, y - 10);
-    gfx.lineTo(x + 18, y - 14);
+    gfx.moveTo(8, -4);
+    gfx.lineTo(14, -10);
+    gfx.lineTo(18, -14);
     gfx.strokePath();
+  }
 
-    // Name tag
+  private drawStationedCat(cat: SaveData['cats'][number], x: number, y: number, hasSprite: boolean): void {
+    if (hasSprite) {
+      const sprite = this.add.sprite(x, y - 14, `${cat.breed}_idle_south`);
+      sprite.setScale(1.2);
+      sprite.setAlpha(0.3);
+      sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+    } else {
+      const color = parseInt((BREED_COLORS[cat.breed] ?? '#8b7355').replace('#', ''), 16);
+      const gfx = this.add.graphics();
+      gfx.setPosition(x, y);
+      gfx.setAlpha(0.3);
+      this.drawFallbackCatGraphics(gfx, color);
+    }
+
     this.add.text(x, y + 10, cat.name, {
       fontFamily: 'Georgia, serif',
       fontSize: '8px',
-      color: stationed ? '#555' : '#c4956a',
+      color: '#555',
     }).setOrigin(0.5);
 
-    if (stationed) {
-      this.add.text(x, y + 19, '(away)', {
-        fontFamily: 'Georgia, serif',
-        fontSize: '7px',
-        color: '#555',
-      }).setOrigin(0.5);
-    }
-
-    // Idle animation
-    if (!stationed) {
-      this.tweens.add({
-        targets: gfx,
-        y: { from: 0, to: -1.5 },
-        duration: 1800 + index * 300,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut',
-      });
-    }
+    this.add.text(x, y + 19, '(away)', {
+      fontFamily: 'Georgia, serif',
+      fontSize: '7px',
+      color: '#555',
+    }).setOrigin(0.5);
   }
 
   private drawAmbience(): void {
