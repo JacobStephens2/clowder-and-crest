@@ -1,6 +1,6 @@
 [x] Complete Chapter 6 — rival guild resolution (win condition + narrative scene)
 [x] Achievements/milestones screen in menu
-[] Overall game tutorial — guided first day for new players
+[x] Overall game tutorial — guided first day for new players
 [x] Harder late-game economy (scaling food cost per cat level, random expenses)
 [x] Cat specialization at level 5 (permanent category bonus/penalty)
 [x] Guild timeline/journal — scrollable log of major events

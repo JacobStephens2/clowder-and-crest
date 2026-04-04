@@ -383,6 +383,8 @@ eventBus.on('show-name-prompt', () => {
     showIntroStory(name, () => {
       eventBus.emit('game-loaded', gameState!);
       switchScene('GuildhallScene');
+      // Start guided tutorial for new players
+      setTimeout(() => showTutorial(), 1500);
     });
   };
 
@@ -529,6 +531,76 @@ function showIntroStory(catName: string, onComplete: () => void): void {
   rainAmbience.play().catch(() => {});
 
   document.body.appendChild(overlay);
+}
+
+function showTutorial(): void {
+  const steps = [
+    { text: 'Welcome to your guildhall! This is where your cats live. Tap a room to go inside and see your cats.', highlight: 'canvas' },
+    { text: 'Use the tabs at the bottom to navigate. The Town is where you find jobs, recruit cats, and buy supplies.', highlight: 'bottom-bar' },
+    { text: 'Your fish count and day timer are shown at the top. Fish is your currency — earn it by completing jobs.', highlight: 'status-bar' },
+    { text: 'Head to the Town tab now to pick up your first job. Match your cat\'s stats to the job for the best results!', highlight: 'bottom-bar' },
+    { text: 'Each day, pay upkeep for your cats and rooms. Complete jobs, recruit more cats, and grow your guild. Good luck!', highlight: null },
+  ];
+
+  let stepIndex = 0;
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9998;pointer-events:none;';
+
+  const backdrop = document.createElement('div');
+  backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9997;pointer-events:auto;cursor:pointer;';
+
+  const bubble = document.createElement('div');
+  bubble.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:320px;padding:16px 20px;background:#1c1b19;border:2px solid #c4956a;border-radius:12px;z-index:9999;pointer-events:auto;cursor:pointer;';
+
+  const textDiv = document.createElement('div');
+  textDiv.style.cssText = 'color:#c4956a;font-family:Georgia,serif;font-size:14px;line-height:1.6;text-align:center;';
+
+  const hint = document.createElement('div');
+  hint.style.cssText = 'color:#6b5b3e;font-family:Georgia,serif;font-size:11px;margin-top:8px;text-align:center;';
+  hint.textContent = 'Tap to continue';
+
+  const counter = document.createElement('div');
+  counter.style.cssText = 'color:#555;font-family:Georgia,serif;font-size:10px;margin-top:4px;text-align:center;';
+
+  bubble.appendChild(textDiv);
+  bubble.appendChild(hint);
+  bubble.appendChild(counter);
+
+  function showStep(): void {
+    if (stepIndex >= steps.length) {
+      backdrop.remove();
+      overlay.remove();
+      bubble.remove();
+      return;
+    }
+    const step = steps[stepIndex];
+    textDiv.textContent = step.text;
+    counter.textContent = `${stepIndex + 1}/${steps.length}`;
+
+    // Highlight target element
+    if (step.highlight) {
+      const el = document.getElementById(step.highlight) ?? document.querySelector(step.highlight);
+      if (el) {
+        (el as HTMLElement).style.position = 'relative';
+        (el as HTMLElement).style.zIndex = '9998';
+        // Reset previous highlights
+        setTimeout(() => {
+          (el as HTMLElement).style.zIndex = '';
+        }, 5000);
+      }
+    }
+    stepIndex++;
+  }
+
+  showStep();
+
+  backdrop.addEventListener('click', showStep);
+  bubble.addEventListener('click', (e) => { e.stopPropagation(); showStep(); });
+
+  document.body.appendChild(backdrop);
+  document.body.appendChild(overlay);
+  document.body.appendChild(bubble);
 }
 
 // Game loaded
