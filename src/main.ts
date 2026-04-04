@@ -393,10 +393,15 @@ function showIntroStory(catName: string, onComplete: () => void): void {
     if (panelIndex >= panels.length) {
       overlay.style.transition = 'opacity 0.5s';
       overlay.style.opacity = '0';
-      // Fade out intro music
+      // Fade out intro music and rain
       const fadeOut = setInterval(() => {
-        if (introMusic.volume > 0.05) { introMusic.volume -= 0.05; }
-        else { introMusic.pause(); clearInterval(fadeOut); }
+        if (introMusic.volume > 0.05) introMusic.volume -= 0.05;
+        if (rainAmbience.volume > 0.03) rainAmbience.volume -= 0.03;
+        if (introMusic.volume <= 0.05 && rainAmbience.volume <= 0.03) {
+          introMusic.pause();
+          rainAmbience.pause();
+          clearInterval(fadeOut);
+        }
       }, 100);
       setTimeout(() => { overlay.remove(); onComplete(); }, 500);
       return;
@@ -433,14 +438,20 @@ function showIntroStory(catName: string, onComplete: () => void): void {
     e.stopPropagation();
     overlay.remove();
     introMusic.pause();
+    rainAmbience.pause();
     onComplete();
   });
 
-  // Play intro music
+  // Play intro music + rain ambience
   const introMusic = new Audio('assets/audio/intro.mp3');
   introMusic.volume = 0.4;
   introMusic.loop = false;
   introMusic.play().catch(() => {});
+
+  const rainAmbience = new Audio('assets/sfx/rain_loop.mp3');
+  rainAmbience.volume = 0.25;
+  rainAmbience.loop = true;
+  rainAmbience.play().catch(() => {});
 
   document.body.appendChild(overlay);
 }
