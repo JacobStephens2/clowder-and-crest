@@ -756,9 +756,11 @@ eventBus.on('show-town-overlay', () => {
     const statusColor = available ? '#4a8a4a' : stationed ? '#6b8ea6' : '#8a6a4a';
     const statusText = stationed ? 'stationed' : worked ? 'worked' : 'available';
     const breedName = BREED_NAMES[cat.breed] ?? cat.breed;
-    html += `<div style="background:rgba(42,37,32,0.6);padding:4px 8px;border-radius:4px;font-size:11px;font-family:Georgia,serif;border-left:3px solid ${statusColor}">
+    const canRest = available && cat.mood !== 'happy';
+    html += `<div style="background:rgba(42,37,32,0.6);padding:4px 8px;border-radius:4px;font-size:11px;font-family:Georgia,serif;border-left:3px solid ${statusColor};display:flex;align-items:center;gap:6px">
       <span style="color:#c4956a">${cat.name}</span>
-      <span style="color:${statusColor};font-size:9px"> ${statusText}</span>
+      <span style="color:${statusColor};font-size:9px">${statusText}</span>
+      ${canRest ? `<button class="rest-cat-btn" data-cat-id="${cat.id}" style="font-size:9px;padding:1px 6px;background:#2a3530;border:1px solid #4a6a4a;color:#4a8a4a;border-radius:3px;cursor:pointer;margin-left:auto">Rest</button>` : ''}
     </div>`;
   }
   html += `</div></div>`;
@@ -828,6 +830,25 @@ eventBus.on('show-town-overlay', () => {
       const breedId = btn.getAttribute('data-breed-id')!;
       overlay.remove();
       eventBus.emit('recruit-cat', breedId);
+    });
+  });
+
+  // Wire up rest buttons
+  overlay.querySelectorAll('.rest-cat-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const catId = btn.getAttribute('data-cat-id')!;
+      const cat = gameState!.cats.find((c) => c.id === catId);
+      if (!cat) return;
+      catsWorkedToday.add(cat.id); // Uses the cat for the day
+      // Boost mood by 2 tiers
+      if (cat.mood === 'unhappy') cat.mood = 'content';
+      else if (cat.mood === 'tired') cat.mood = 'happy';
+      else if (cat.mood === 'content') cat.mood = 'happy';
+      playSfx('purr');
+      showToast(`${cat.name} spent the day resting. Mood: ${cat.mood}`);
+      saveGame(gameState!);
+      overlay.remove();
+      eventBus.emit('show-town-overlay');
     });
   });
 
@@ -1005,8 +1026,12 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
     <button class="panel-close" id="choice-close">&times;</button>
     <h2>${job.name}</h2>
     <div class="job-desc">${cat.name} the ${BREED_NAMES[cat.breed] ?? cat.breed} is ready.</div>
-    <div class="assign-choice">
-      <button class="btn-puzzle" id="btn-do-puzzle">Take the Job</button>
+    <div style="font-size:11px;color:#6b5b3e;margin-bottom:8px;text-align:center">Choose your approach:</div>
+    <div class="assign-choice" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center">
+      <button class="btn-puzzle minigame-btn" data-game="puzzle" style="flex:1;min-width:140px">\u{1F9E9} Slide Blocks</button>
+      <button class="btn-puzzle minigame-btn" data-game="sokoban" style="flex:1;min-width:140px">\u{1F4E6} Push Crates</button>
+      <button class="btn-puzzle minigame-btn" data-game="fishing" style="flex:1;min-width:140px">\u{1F3A3} Fish</button>
+      ${['pest_control', 'detection'].includes(job.category) ? '<button class="btn-puzzle minigame-btn" data-game="chase" style="flex:1;min-width:140px">\u{1F400} Chase Rat</button>' : ''}
     </div>
     <div style="margin-top:16px;padding-top:12px;border-top:1px solid #3a3530">
       ${cat.level >= 2
@@ -1026,31 +1051,36 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
     }
   });
 
-  document.getElementById('btn-do-puzzle')!.addEventListener('click', () => {
+  const startMinigame = (gameType: string) => {
     overlay.remove();
-    // Hide town overlay and other panels during minigames
     overlayLayer.querySelectorAll('.town-overlay, .assign-overlay').forEach((el) => el.remove());
     switchToPuzzleMusic();
-    pauseDayTimer(); // Pause time during puzzles/minigames
+    pauseDayTimer();
 
-    // Pick minigame type based on job category
-    const roll = Math.random();
-    const canChase = ['pest_control', 'detection'].includes(job.category);
-    if (roll < 0.25) {
-      switchScene('FishingScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
-    } else if (canChase && roll < 0.50) {
-      switchScene('ChaseScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
-    } else if (roll < 0.75) {
-      switchScene('SokobanScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
-    } else {
-      // Rush Hour
-      const puzzle = generatePuzzle(job.difficulty) ?? getPuzzleByDifficulty(job.difficulty);
-      if (!puzzle) {
-        showToast('No puzzle available!');
-        return;
+    switch (gameType) {
+      case 'fishing':
+        switchScene('FishingScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
+        break;
+      case 'chase':
+        switchScene('ChaseScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
+        break;
+      case 'sokoban':
+        switchScene('SokobanScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
+        break;
+      case 'puzzle':
+      default: {
+        const puzzle = generatePuzzle(job.difficulty) ?? getPuzzleByDifficulty(job.difficulty);
+        if (!puzzle) { showToast('No puzzle available!'); return; }
+        switchScene('PuzzleScene', { puzzle, jobId: job.id, catId: cat.id });
+        break;
       }
-      switchScene('PuzzleScene', { puzzle, jobId: job.id, catId: cat.id });
     }
+  };
+
+  overlay.querySelectorAll('.minigame-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      startMinigame(btn.getAttribute('data-game') ?? 'puzzle');
+    });
   });
 
   document.getElementById('btn-do-station')?.addEventListener('click', () => {
