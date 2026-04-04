@@ -1004,7 +1004,7 @@ function showAssignOverlay(job: JobDef): void {
       <button class="assign-cat-btn" data-cat-index="${catIndex}">
         ${spriteImg}
         <div style="flex:1">
-          <div style="color:#c4956a">${cat.name} <span style="font-size:11px;color:#6b5b3e">${BREED_NAMES[cat.breed] ?? cat.breed}</span></div>
+          <div style="color:#c4956a">${cat.name} <span style="font-size:11px;color:#6b5b3e">${BREED_NAMES[cat.breed] ?? cat.breed}</span>${cat.specialization ? ` <span style="font-size:10px;color:${cat.specialization === job.category ? '#6b8ea6' : '#6b5b3e'}">${SPECIALIZATION_CATEGORIES[cat.specialization]?.icon ?? ''} ${SPECIALIZATION_CATEGORIES[cat.specialization]?.name ?? ''}</span>` : ''}</div>
           <div style="font-size:12px;color:${matchColor};font-weight:bold">Match: ${matchPct}%</div>
           <div style="font-size:10px;color:#777">${statDetails}</div>
           ${traitEffects.length > 0 ? `<div style="font-size:10px;color:#8b7355">${traitEffects.join(' | ')}</div>` : ''}
@@ -1198,6 +1198,7 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
   showResultOverlay({
     jobName: job.name,
     catName: cat.name,
+    catId: cat.id,
     reward,
     stars,
     moves,
@@ -1544,12 +1545,67 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
 interface ResultInfo {
   jobName: string;
   catName: string;
+  catId: string;
   reward: number;
   stars: number;
   moves?: number;
   minMoves?: number;
   xp: number;
   leveled: boolean;
+}
+
+const SPECIALIZATION_CATEGORIES: Record<string, { name: string; desc: string; icon: string }> = {
+  pest_control: { name: 'Ratcatcher', desc: '+20% pest control, -5% others', icon: '\uD83D\uDC00' },
+  courier: { name: 'Courier', desc: '+20% courier jobs, -5% others', icon: '\uD83D\uDCE8' },
+  guard: { name: 'Sentinel', desc: '+20% guard duty, -5% others', icon: '\uD83D\uDEE1\uFE0F' },
+  sacred: { name: 'Acolyte', desc: '+20% sacred rites, -5% others', icon: '\u271D\uFE0F' },
+  detection: { name: 'Sleuth', desc: '+20% detection, -5% others', icon: '\uD83D\uDD0D' },
+  shadow: { name: 'Shadow', desc: '+20% shadow ops, -5% others', icon: '\uD83C\uDF19' },
+};
+
+function showSpecializationChoice(catId: string, catName: string, onDone: () => void): void {
+  const overlay = document.createElement('div');
+  overlay.className = 'assign-overlay';
+
+  const categories = Object.entries(SPECIALIZATION_CATEGORIES);
+  const buttons = categories.map(([key, spec]) => `
+    <button class="spec-btn" data-spec="${key}" style="display:flex;align-items:center;gap:8px;padding:10px 16px;margin:4px 0;width:100%;background:rgba(42,37,32,0.6);border:1px solid #6b5b3e;border-radius:6px;color:#c4956a;font-size:13px;cursor:pointer;font-family:Georgia,serif">
+      <span style="font-size:20px">${spec.icon}</span>
+      <span><strong>${spec.name}</strong><br><span style="font-size:11px;color:#8b7355">${spec.desc}</span></span>
+    </button>
+  `).join('');
+
+  overlay.innerHTML = `
+    <h2 style="color:#dda055">Specialization!</h2>
+    <div style="color:#c4956a;font-size:14px;margin-bottom:8px;text-align:center">
+      ${catName} has reached maximum level!
+    </div>
+    <div style="color:#8b7355;font-size:12px;margin-bottom:16px;text-align:center">
+      Choose a permanent specialization. This gives a +20% bonus to one job category but -5% to all others.
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px;max-height:260px;overflow-y:auto">
+      ${buttons}
+    </div>
+  `;
+
+  overlayLayer.appendChild(overlay);
+
+  overlay.querySelectorAll('.spec-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const spec = (btn as HTMLElement).dataset.spec!;
+      if (!gameState) return;
+      const cat = gameState.cats.find((c) => c.id === catId);
+      if (cat) {
+        cat.specialization = spec;
+        saveGame(gameState);
+        const specName = SPECIALIZATION_CATEGORIES[spec].name;
+        playSfx('chapter');
+        showToast(`${catName} specialized as a ${specName}!`);
+      }
+      overlay.remove();
+      onDone();
+    });
+  });
 }
 
 function showResultOverlay(info: ResultInfo): void {
@@ -1580,6 +1636,15 @@ function showResultOverlay(info: ResultInfo): void {
 
   document.getElementById('result-continue')!.addEventListener('click', () => {
     overlay.remove();
+
+    // Check if this cat just hit level 5 and needs a specialization
+    const resultCat = gameState?.cats.find((c) => c.id === info.catId);
+    if (info.leveled && resultCat && resultCat.level >= 5 && !resultCat.specialization) {
+      showSpecializationChoice(info.catId, info.catName, () => {
+        checkAndShowConversation();
+      });
+      return;
+    }
 
     // Check for available conversations
     checkAndShowConversation();
@@ -1882,7 +1947,7 @@ function showCatPanel(): void {
         ${avatarHtml}
         <div style="flex:1">
           <div class="cat-card-name">${cat.name}${cat.isPlayer ? ' (You)' : ''} <button class="rename-btn" data-cat-id="${cat.id}">Rename</button></div>
-          <div class="cat-card-breed">${breedName} | Lv.${cat.level} | ${cat.mood}</div>
+          <div class="cat-card-breed">${breedName} | Lv.${cat.level}${cat.specialization ? ` | ${SPECIALIZATION_CATEGORIES[cat.specialization]?.icon ?? ''} ${SPECIALIZATION_CATEGORIES[cat.specialization]?.name ?? cat.specialization}` : ''} | ${cat.mood}</div>
         </div>
       </div>
       ${stationedJob ? `<div class="stationed-badge">Stationed: ${stationedJob.name} (since day ${stationed!.dayStarted})<button class="recall-btn" data-cat-id="${cat.id}">Recall</button></div>` : ''}

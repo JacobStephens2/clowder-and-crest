@@ -95,6 +95,15 @@ export function getStatMatchScore(cat: CatSaveData, job: JobDef): number {
   else if (cat.mood === 'tired') score -= 0.08;
   else if (cat.mood === 'unhappy') score -= 0.15;
 
+  // Specialization bonus/penalty (level 5 choice)
+  if (cat.specialization) {
+    if (cat.specialization === job.category) {
+      score += 0.2; // +20% in specialized category
+    } else {
+      score -= 0.05; // -5% in other categories
+    }
+  }
+
   return Math.max(0, Math.min(1, score));
 }
 

@@ -11,6 +11,7 @@ export interface CatSaveData {
   stats: Record<StatName, number>;
   isPlayer: boolean;
   assignedRoom?: string;
+  specialization?: string;
 }
 
 export interface BondSaveData {
