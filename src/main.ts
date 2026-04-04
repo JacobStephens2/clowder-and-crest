@@ -30,6 +30,11 @@ import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDay
 import { applyReputationShift, getReputationLabel, getReputationRecruitModifier, getReputationBonuses } from './systems/ReputationSystem';
 import conversationsData from './data/conversations.json';
 
+// ──── Analytics ────
+function trackEvent(name: string, params?: Record<string, any>): void {
+  try { (window as any).gtag?.('event', name, params); } catch { /* ignore */ }
+}
+
 // ──── Game State ────
 let gameState: SaveData | null = null;
 const catsWorkedToday = new Set<string>();
@@ -584,6 +589,7 @@ function showRecruitNamePrompt(breedId: string, breedName: string): void {
     saveGame(gameState!);
 
     playSfx('recruit');
+    trackEvent('cat_recruited', { breed: breedId, totalCats: gameState!.cats.length });
     showToast(`${name} the ${breedName} joined the guild!`);
     checkChapterAdvance(gameState!);
     saveGame(gameState!);
@@ -1516,6 +1522,7 @@ function showResultOverlay(info: ResultInfo): void {
   const movesStr = info.moves != null ? `<br>Moves: ${info.moves} (target: ${info.minMoves})` : '';
 
   playSfx('victory');
+  trackEvent('job_completed', { stars: info.stars, reward: info.reward, job: info.jobName });
 
   overlay.innerHTML = `
     <h2>Puzzle Solved!</h2>
@@ -2208,6 +2215,7 @@ function showFurnitureShop(): void {
 eventBus.on('chapter-advance', (chapter: number) => {
   playSfx('chapter');
   const name = getChapterName(chapter);
+  trackEvent('chapter_advance', { chapter, name });
   showToast(`Chapter ${chapter}: ${name}`);
 
   // Chapter 6: The Rival — narrative scene

@@ -39,6 +39,15 @@ export class BootScene extends Phaser.Scene {
       loadText.destroy();
     });
 
+    // Handle load errors gracefully — skip missing assets
+    let failCount = 0;
+    this.load.on('loaderror', (file: { key: string }) => {
+      failCount++;
+      if (failCount <= 3) {
+        loadText.setText(`Loading... (${failCount} asset${failCount > 1 ? 's' : ''} unavailable)`);
+      }
+    });
+
     // Load cat sprites
     for (const breed of BREEDS_WITH_SPRITES) {
       // Idle rotations
