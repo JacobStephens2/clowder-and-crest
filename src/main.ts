@@ -505,6 +505,34 @@ eventBus.on('show-town-overlay', () => {
     ${!canAffordUpkeep ? '<br><strong>Warning: Cannot afford upkeep! A cat may leave the guild.</strong>' : ''}
   </div>`;
 
+  // Traveling merchant (appears every 3rd day, chapter 2+)
+  if (gameState.chapter >= 2 && gameState.day % 3 === 0) {
+    const merchantItems = [
+      { name: 'Catnip Elixir', cost: 25, effect: 'All cats mood +1 tier', id: 'elixir' },
+      { name: 'Lucky Fishbone', cost: 15, effect: '+20% reward on next job', id: 'fishbone' },
+      { name: 'Training Scroll', cost: 30, effect: '+1 to a random stat for one cat', id: 'scroll' },
+      { name: 'Saint\'s Blessing', cost: 40, effect: 'Prevents next mood drop', id: 'blessing' },
+    ];
+    // Pick 2 random items
+    const shuffledItems = merchantItems.sort(() => Math.random() - 0.5).slice(0, 2);
+
+    html += `<div class="town-section-divider"></div>`;
+    html += `<div class="town-section-title">\u{1F9D9} Traveling Merchant</div>`;
+    html += `<div style="padding:0 12px 8px;font-size:11px;color:#6b5b3e;font-family:Georgia,serif">A wandering merchant passes through town today.</div>`;
+    shuffledItems.forEach((item) => {
+      const canBuy = gameState!.fish >= item.cost;
+      html += `<div class="town-job-card" style="padding:8px 12px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="color:#c4956a;font-size:13px">${item.name}</div>
+            <div style="color:#6b5b3e;font-size:11px">${item.effect}</div>
+          </div>
+          <button class="town-job-accept merchant-buy ${canBuy ? '' : 'disabled'}" data-merchant-id="${item.id}" ${canBuy ? '' : 'disabled'}>${item.cost} Fish</button>
+        </div>
+      </div>`;
+    });
+  }
+
   // End Day button
   html += `
     <div class="town-section-divider"></div>
@@ -533,6 +561,44 @@ eventBus.on('show-town-overlay', () => {
       const breedId = btn.getAttribute('data-breed-id')!;
       overlay.remove();
       eventBus.emit('recruit-cat', breedId);
+    });
+  });
+
+  // Wire up merchant buy buttons
+  overlay.querySelectorAll('.merchant-buy:not(.disabled)').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const itemId = btn.getAttribute('data-merchant-id')!;
+      const costs: Record<string, number> = { elixir: 25, fishbone: 15, scroll: 30, blessing: 40 };
+      const cost = costs[itemId] ?? 20;
+      if (!spendFish(gameState!, cost)) return;
+      playSfx('fish_earn');
+
+      if (itemId === 'elixir') {
+        for (const cat of gameState!.cats) {
+          if (cat.mood === 'unhappy') cat.mood = 'tired';
+          else if (cat.mood === 'tired') cat.mood = 'content';
+          else if (cat.mood === 'content') cat.mood = 'happy';
+        }
+        showToast('All cats feel refreshed!');
+      } else if (itemId === 'fishbone') {
+        // Store bonus flag — next job reward gets +20%
+        gameState!.flags.luckyFishbone = true as unknown as boolean;
+        showToast('Lucky Fishbone acquired! Next job pays +20%.');
+      } else if (itemId === 'scroll') {
+        const cat = gameState!.cats[Math.floor(Math.random() * gameState!.cats.length)];
+        const stats = ['hunting', 'stealth', 'intelligence', 'endurance', 'charm', 'senses'] as const;
+        const stat = stats[Math.floor(Math.random() * stats.length)];
+        cat.stats[stat] = Math.min(10, cat.stats[stat] + 1);
+        showToast(`${cat.name}'s ${stat} increased to ${cat.stats[stat]}!`);
+      } else if (itemId === 'blessing') {
+        gameState!.flags.saintBlessing = true as unknown as boolean;
+        showToast('Saint\'s Blessing protects your cats from the next mood drop.');
+      }
+
+      saveGame(gameState!);
+      updateStatusBar();
+      overlay.remove();
+      eventBus.emit('show-town-overlay');
     });
   });
 
