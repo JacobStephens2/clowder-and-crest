@@ -136,6 +136,23 @@ Each pairing has a three-conversation arc that deepens as the cats work together
 - **Sacred work** — cats in this world occupy a spiritual role. The saints guide them. The work matters beyond the fish it earns.
 - **The weight of leading** — the player's wildcat carries the guild on their back. The other cats follow because the wildcat showed up first.
 - **Cozy-but-somber** — the tone is warm but never trivial. The storm is real. The rats are real. The hunger is real. But the hearth is real too.
+- **Moral temptation** — the Crest/Shadow reputation system forces real tradeoffs. Shadow jobs pay 25% more fish, but bonds between cats decay and XP slows. Crest pays less but builds trust, unlocks mood protection, and grows bonds faster. The player must choose between short-term survival and long-term community — a reflection of the game's Catholic moral atmosphere.
+
+---
+
+## Festivals
+
+Every 7 days, a themed festival occurs that doubles rewards for a specific job category:
+
+| Festival | Category | Flavor |
+|---|---|---|
+| Feast of St. Gertrude | Pest Control | Patron saint of cats blesses the ratters |
+| Market Festival | Courier | The market buzzes with urgent deliveries |
+| Night of the Watch | Guard | The town honors its protectors |
+| Festival of Lights | Sacred | Candlelight vigils and processions |
+| Day of Mysteries | Detection | The town's unsolved cases resurface |
+| Fisherman's Bounty | All (+50%) | A bountiful catch day |
+| Guild Anniversary | All (+50%) | The guild celebrates its founding |
 
 ---
 

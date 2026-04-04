@@ -1,8 +1,8 @@
-# Clowder & Crest — Design Document v6
+# Clowder & Crest — Design Document v7
 
 A cat guild management game set in a medieval fantasy world. Built with Phaser 3 + TypeScript + Capacitor for Android and web.
 
-**What changed from v5:** 30 total jobs across 5 balanced categories. All 10 breed pairings track bonds. Introductory story sequence. Job combo chains, daily cat wishes, reputation tier bonuses with recruit cost modifiers, bond milestone celebrations. Welcome-back message on load. Cat sprites in recruitment area. Tab navigation sounds. Room entry cat reactions. New player guidance text. Responsive mobile layout. Restart game option. 14 sound effects. Comprehensive meta tags for SEO/sharing.
+**What changed from v6:** Temptation economics for Crest/Shadow (Shadow pays +25% fish but bonds decay; Crest gives XP/bond growth). Chapter-scaling upkeep prevents runaway profit. Player chooses minigame type per job. Cat rest action (work-vs-rest tradeoff). Offline stationed earnings (capped). Festival system (7 rotating events). Job preview in day transition. Conversation cliffhangers. Cat Hunting stat adds time in chase minigame. Virtual d-pad for mobile chase controls. Heraldic crest logo. Rain ambience in intro. Save migration forward-compatible.
 
 ---
 
@@ -269,8 +269,9 @@ Each job has: category, difficulty (easy/medium/hard), key stats, base/max rewar
 ### Job Resolution
 
 When a cat is assigned to a job, the player chooses:
-1. **Take the Job** — Randomly selects one of 3 minigame types: Rush Hour (sliding blocks), Sokoban (crate pushing), or Chase (rat hunt in maze). Pest control jobs can get all 3; courier jobs get Rush Hour or Sokoban. Stars (1-3) determine reward multiplier.
+1. **Play a minigame** — Player picks from: Slide Blocks (Rush Hour), Push Crates (Sokoban), Fish, or Chase Rat (pest control/detection only). Each requires different skills — strategic choice, not random. Stars (1-3) determine reward multiplier. Cat stats affect gameplay (e.g., Hunting adds time in chase).
 2. **Station Here** (level 2+ only) — Cat earns passive daily income. Diminishing returns after 5 days. Random station events (~20% chance per day).
+3. **Rest** — Available for non-happy cats in the town view. Uses the cat for the day but boosts mood by 2 tiers. Creates work-vs-rest tradeoff.
 
 ### Job Failure
 
@@ -579,7 +580,20 @@ Repository: `https://github.com/JacobStephens2/clowder-and-crest`
 - **Introductory story sequence** — 6-panel narrative intro for new games with scene art
 - **Welcome back message** on game load with cat names
 - **New player guidance** — contextual hints for first jobs, recruitment, bonds
-- **Day transition overlay** — full-screen "Day N" indicator on day change
+- **Player chooses minigame type** — strategic decision per job, not random assignment
+- **Cat rest action** — work-vs-rest tradeoff for mood management
+- **Offline stationed earnings** — cats accumulate fish while player is away (capped at 5 days)
+- **Festival system** — 7 rotating themed bonus events every 7 days
+- **Job preview** in day transition — teaser for tomorrow's board
+- **Conversation cliffhangers** — narrative hooks at C/B rank completion
+- **Chapter-scaling upkeep** — prevents runaway profit in late game
+- **Temptation Crest/Shadow** — Shadow pays +25% fish but erodes bonds; Crest gives XP/bond growth
+- **Cat stats in minigames** — Hunting stat adds time in chase
+- **Heraldic crest logo** — favicon, title screen, guildhall badge
+- **Rain ambience** — continuous rain loop in intro story
+- **Virtual d-pad** for mobile chase controls
+- **Save forward migration** — missing fields backfilled, saves never destroyed
+- **Day transition overlay** — full-screen "Day N" indicator with recap and job preview
 - **Continuous key movement** — holding WASD moves cat continuously
 - **Trait tooltips** — hover shows mechanical effects in cat panel
 - **Fish count flash** — status bar flashes green/red on fish changes
