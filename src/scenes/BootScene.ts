@@ -108,6 +108,9 @@ export class BootScene extends Phaser.Scene {
       this.load.image(`block_${block}`, `assets/sprites/blocks/${block}.png`);
     }
 
+    // Load crest logo
+    this.load.image('crest', 'assets/sprites/crest.png');
+
     // Load scene art
     this.load.image('scene_guildhall', 'assets/sprites/scenes/guildhall.png');
     this.load.image('scene_town', 'assets/sprites/scenes/town.png');

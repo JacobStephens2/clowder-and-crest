@@ -58,6 +58,12 @@ export class GuildhallScene extends Phaser.Scene {
     // Guild name header
     const chapterName = getChapterName(save.chapter);
     const hallName = save.chapter < 2 ? 'Behind the Grain Market' : 'The Guildhall';
+    // Show crest next to guildhall name when established
+    if (save.chapter >= 2 && this.textures.exists('crest')) {
+      const crest = this.add.sprite(GAME_WIDTH / 2 - 90, 55, 'crest');
+      crest.setScale(0.25);
+      crest.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+    }
     this.add.text(GAME_WIDTH / 2, 55, hallName, {
       fontFamily: 'Georgia, serif',
       fontSize: '22px',

@@ -46,14 +46,23 @@ export class TitleScene extends Phaser.Scene {
     vignette.fillRect(0, 0, GAME_WIDTH, 60);
     vignette.fillRect(0, GAME_HEIGHT - 60, GAME_WIDTH, 60);
 
+    // Crest logo
+    if (this.textures.exists('crest')) {
+      const crest = this.add.sprite(cx, 115, 'crest');
+      crest.setScale(0.7);
+      crest.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      crest.setAlpha(0);
+      this.tweens.add({ targets: crest, alpha: 0.9, duration: 1500, ease: 'Sine.easeIn' });
+    }
+
     // Title
-    const title1 = this.add.text(cx, 175, 'Clowder', {
+    const title1 = this.add.text(cx, 185, 'Clowder', {
       fontFamily: 'Georgia, serif',
       fontSize: '48px',
       color: '#c4956a',
     }).setOrigin(0.5).setAlpha(0);
 
-    const title2 = this.add.text(cx, 230, '& Crest', {
+    const title2 = this.add.text(cx, 240, '& Crest', {
       fontFamily: 'Georgia, serif',
       fontSize: '32px',
       color: '#8b7355',
@@ -66,15 +75,15 @@ export class TitleScene extends Phaser.Scene {
     // Decorative line
     const line = this.add.graphics();
     line.lineStyle(1, 0x6b5b3e, 0.6);
-    line.lineBetween(cx - 80, 260, cx + 80, 260);
+    line.lineBetween(cx - 80, 270, cx + 80, 270);
 
-    this.add.text(cx, 278, 'A Cat Guild Management Game', {
+    this.add.text(cx, 288, 'A Cat Guild Management Game', {
       fontFamily: 'Georgia, serif',
       fontSize: '13px',
       color: '#6b5b3e',
     }).setOrigin(0.5);
 
-    this.add.text(cx, 305, 'Recruit cats. Take jobs. Solve puzzles.\nBuild your guild from rags to riches.', {
+    this.add.text(cx, 315, 'Recruit cats. Take jobs. Solve puzzles.\nBuild your guild from rags to riches.', {
       fontFamily: 'Georgia, serif',
       fontSize: '10px',
       color: '#555',
