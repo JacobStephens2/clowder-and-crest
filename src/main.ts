@@ -695,13 +695,38 @@ function advanceDay(): void {
   updateTimeDisplay();
   catsWorkedToday.clear();
 
+  // Daily food upkeep: 2 fish per cat
+  const foodCost = gameState.cats.length * 2;
+  if (gameState.fish >= foodCost) {
+    gameState.fish -= foodCost;
+    // Well-fed cats recover mood
+    for (const cat of gameState.cats) {
+      if (cat.mood === 'unhappy') cat.mood = 'tired';
+      else if (cat.mood === 'tired') cat.mood = 'content';
+      else if (cat.mood === 'content' && Math.random() < 0.3) cat.mood = 'happy';
+    }
+  } else {
+    // Can't afford full food — cats go hungry, mood drops
+    gameState.fish = 0;
+    for (const cat of gameState.cats) {
+      if (cat.mood === 'happy') cat.mood = 'content';
+      else if (cat.mood === 'content') cat.mood = 'tired';
+      else cat.mood = 'unhappy';
+    }
+    showToast(`Not enough fish to feed ${gameState.cats.length} cats!`);
+  }
+
   // Collect stationed earnings
   const stationedResults = collectStationedEarnings(gameState);
-  if (stationedResults.length > 0) {
-    const totalEarned = stationedResults.reduce((sum, r) => sum + r.earned, 0);
-    const names = stationedResults.map((r) => r.catName).join(', ');
-    showToast(`Stationed cats earned ${totalEarned} fish (${names})`);
+  const stationedTotal = stationedResults.reduce((sum, r) => sum + r.earned, 0);
+
+  // Build day summary
+  const parts: string[] = [];
+  parts.push(`Food: -${Math.min(foodCost, foodCost)} fish`);
+  if (stationedTotal > 0) {
+    parts.push(`Stationed: +${stationedTotal} fish`);
   }
+  showToast(`Day ${gameState.day}: ${parts.join(' | ')}`);
 
   processDailyBonds(gameState);
   checkRatPlagueResolution(gameState);

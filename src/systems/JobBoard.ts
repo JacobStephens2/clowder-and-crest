@@ -49,7 +49,25 @@ export function getStatMatchScore(cat: CatSaveData, job: JobDef): number {
   if (job.keyStats.length === 0) return 0.5;
   const total = job.keyStats.reduce((sum, s) => sum + cat.stats[s], 0);
   const max = job.keyStats.length * 10;
-  return total / max;
+  let score = total / max;
+
+  // Trait modifiers
+  const traits = cat.traits ?? [];
+  if (traits.includes('Brave') && job.difficulty === 'hard') score += 0.1;
+  if (traits.includes('Lazy')) score -= 0.08;
+  if (traits.includes('Curious') && job.category === 'courier') score += 0.08;
+  if (traits.includes('Pious') && job.category === 'pest_control') score += 0.05;
+  if (traits.includes('Night Owl')) score += 0.05;
+  if (traits.includes('Skittish') && job.difficulty === 'hard') score -= 0.1;
+  if (traits.includes('Loyal')) score += 0.03;
+  if (traits.includes('Mischievous')) score += Math.random() > 0.5 ? 0.1 : -0.05;
+
+  // Mood modifiers
+  if (cat.mood === 'happy') score += 0.1;
+  else if (cat.mood === 'tired') score -= 0.08;
+  else if (cat.mood === 'unhappy') score -= 0.15;
+
+  return Math.max(0, Math.min(1, score));
 }
 
 export function getDifficultyThreshold(difficulty: string): number {
