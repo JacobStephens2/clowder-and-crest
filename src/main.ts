@@ -1157,8 +1157,10 @@ function showResultOverlay(info: ResultInfo): void {
       <strong>${info.jobName}</strong><br>
       ${info.catName} earned <span class="fish-earned">+${info.reward} Fish</span>
       ${movesStr}
-      <br>+${info.xp} XP${info.leveled ? ' — LEVEL UP!' : ''}
+      <br>+${info.xp} XP
     </div>
+    ${info.leveled ? `<div style="color:#dda055;font-size:18px;margin-bottom:12px;animation:fadeSlideIn 0.5s ease">\u2B50 LEVEL UP! \u2B50<br><span style="font-size:13px">${info.catName} is now stronger!</span></div>` : ''}
+    <div style="font-size:12px;color:#6b5b3e;margin-bottom:16px">Balance: ${gameState?.fish ?? 0} fish</div>
     <button id="result-continue">Continue</button>
   `;
 
