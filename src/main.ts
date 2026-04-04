@@ -132,6 +132,25 @@ function setActiveTab(scene: string): void {
   });
 }
 
+function applyReputationShift(job: JobDef): void {
+  if (!gameState) return;
+  const shifts: Record<string, number> = {
+    sacred: 3, guard: 2, pest_control: 0, courier: 0, detection: -2,
+  };
+  const shift = shifts[job.category] ?? 0;
+  if (shift !== 0) {
+    gameState.reputationScore = Math.max(-100, Math.min(100, gameState.reputationScore + shift));
+  }
+}
+
+function getReputationLabel(score: number): string {
+  if (score >= 30) return 'Noble';
+  if (score >= 10) return 'Respected';
+  if (score > -10) return 'Neutral';
+  if (score > -30) return 'Questionable';
+  return 'Shadowed';
+}
+
 function switchScene(target: string, data?: object): void {
   const sceneKeys = ['GuildhallScene', 'TownScene', 'PuzzleScene', 'SokobanScene', 'ChaseScene', 'FishingScene', 'TitleScene', 'RoomScene'];
   for (const key of sceneKeys) {
@@ -804,6 +823,7 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
   playSfx('purr');
   playSfx('fish_earn', 0.3);
   gameState.totalJobsCompleted++;
+  applyReputationShift(job);
   if (!gameState.completedJobs.includes(job.id)) {
     gameState.completedJobs.push(job.id);
   }
@@ -1388,7 +1408,8 @@ function showMenuPanel(): void {
     <h2>Menu</h2>
     <div style="margin-bottom:12px;color:#8b7355;font-size:14px">
       Chapter ${gameState.chapter}: ${chapterName}<br>
-      Day ${gameState.day} | ${gameState.cats.length} cats | ${gameState.totalJobsCompleted} jobs done
+      Day ${gameState.day} | ${gameState.cats.length} cats | ${gameState.totalJobsCompleted} jobs done<br>
+      Reputation: ${getReputationLabel(gameState.reputationScore)} (${gameState.reputationScore > 0 ? '+' : ''}${gameState.reputationScore})
     </div>
     ${progressHint ? `<div style="margin-bottom:12px;color:#6b8ea6;font-size:12px;font-style:italic">${progressHint}</div>` : ''}
     <div style="margin-bottom:16px;padding:8px 12px;background:rgba(42,37,32,0.6);border-radius:4px;font-size:12px;color:#8b7355">
