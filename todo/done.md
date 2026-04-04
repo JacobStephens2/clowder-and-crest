@@ -53,4 +53,5 @@
 [x] - Chase minigame: Pac-Man style rat chase in procedural maze (pest control jobs, 1/3 chance)
 [x] - ElevenLabs SFX: fish earn, block slide, purr, day bell, job accept, chapter fanfare, UI tap, cat hiss
 [x] - Distribute cats across unlocked rooms (auto-spread when no assignments, respect assignedRoom when set)
+[x] - Remove auto-resolve option (forces active gameplay via puzzles/minigames)
 [x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview

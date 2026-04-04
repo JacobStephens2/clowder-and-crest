@@ -546,8 +546,7 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
     <h2>${job.name}</h2>
     <div class="job-desc">${cat.name} the ${BREED_NAMES[cat.breed] ?? cat.breed} is ready.</div>
     <div class="assign-choice">
-      <button class="btn-puzzle" id="btn-do-puzzle">Solve Puzzle</button>
-      <button class="btn-auto" id="btn-do-auto">Auto-Resolve</button>
+      <button class="btn-puzzle" id="btn-do-puzzle">Take the Job</button>
     </div>
     <div style="margin-top:16px;padding-top:12px;border-top:1px solid #3a3530">
       ${cat.level >= 2
@@ -583,11 +582,6 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
       }
       switchScene('PuzzleScene', { puzzle, jobId: job.id, catId: cat.id });
     }
-  });
-
-  document.getElementById('btn-do-auto')!.addEventListener('click', () => {
-    overlay.remove();
-    doAutoResolve(job, cat);
   });
 
   document.getElementById('btn-do-station')?.addEventListener('click', () => {
