@@ -795,11 +795,19 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
   const colorB = BREED_COLORS[breedB] ?? '#8b7355';
   const nameA = catA?.name ?? BREED_NAMES[breedA] ?? breedA;
   const nameB = catB?.name ?? BREED_NAMES[breedB] ?? breedB;
+  const breedNameA = BREED_NAMES[breedA] ?? breedA;
+  const breedNameB = BREED_NAMES[breedB] ?? breedB;
 
   overlay.innerHTML = `
     <div class="conversation-portraits">
-      <div class="conversation-portrait" id="portrait-left" style="background:${colorA}">${nameA}</div>
-      <div class="conversation-portrait" id="portrait-right" style="background:${colorB}">${nameB}</div>
+      <div class="conversation-portrait" id="portrait-left" style="background:${colorA}">
+        <div class="portrait-name">${nameA}</div>
+        <div class="portrait-breed">${breedNameA}</div>
+      </div>
+      <div class="conversation-portrait" id="portrait-right" style="background:${colorB}">
+        <div class="portrait-name">${nameB}</div>
+        <div class="portrait-breed">${breedNameB}</div>
+      </div>
     </div>
     <div class="conversation-textbox">
       <div class="conversation-speaker" id="conv-speaker"></div>
@@ -828,7 +836,9 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
 
     const line = convo.lines[lineIndex];
     const isA = line.speaker === breedA;
-    speaker.textContent = isA ? nameA : nameB;
+    const speakerName = isA ? nameA : nameB;
+    const speakerBreed = isA ? breedNameA : breedNameB;
+    speaker.innerHTML = `${speakerName} <span class="speaker-breed">${speakerBreed}</span>`;
     text.textContent = line.text;
 
     portraitLeft.classList.toggle('speaking', isA);

@@ -274,6 +274,16 @@ html, body {
   color: #fff;
 }
 
+.portrait-name {
+  font-size: 11px;
+}
+
+.portrait-breed {
+  font-size: 8px;
+  opacity: 0.6;
+  margin-top: 2px;
+}
+
 .conversation-portrait.speaking {
   border-color: #c4956a;
   box-shadow: 0 0 12px rgba(196, 149, 106, 0.3);
@@ -292,6 +302,12 @@ html, body {
   font-size: 13px;
   color: #8b7355;
   margin-bottom: 6px;
+}
+
+.speaker-breed {
+  font-size: 11px;
+  color: #6b5b3e;
+  margin-left: 4px;
 }
 
 .conversation-text {
