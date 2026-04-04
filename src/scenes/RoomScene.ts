@@ -87,6 +87,15 @@ export class RoomScene extends Phaser.Scene {
       color: '#c4956a',
     }).setOrigin(0.5);
 
+    // Hint for furniture movement
+    if (save.furniture.some((f) => f.room === this.roomId)) {
+      this.add.text(GAME_WIDTH / 2, 68, 'Drag furniture to rearrange. Drag off-grid to move rooms.', {
+        fontFamily: 'Georgia, serif',
+        fontSize: '8px',
+        color: '#555',
+      }).setOrigin(0.5);
+    }
+
     this.drawRoom();
     this.drawFurniture(save);
     this.drawCats(save);
