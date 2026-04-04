@@ -580,6 +580,10 @@ eventBus.on('show-town-overlay', () => {
     <div class="town-section-divider"></div>
     <div class="town-section-title">Job Board</div>
     ${gameState.totalJobsCompleted < 3 ? '<div style="padding:0 12px 8px;font-size:11px;color:#6b5b3e;font-family:Georgia,serif">Accept a job and assign one of your cats to complete it. Solve puzzles to earn fish.</div>' : ''}
+    ${(() => {
+      const festival = getCurrentFestival(gameState.day);
+      return festival ? `<div style="background:#3a3520;color:#dda055;padding:8px 12px;margin:0 0 8px;border-radius:4px;font-size:12px;text-align:center;font-family:Georgia,serif;border:1px solid #6b5b3e">\u{1F389} <strong>${festival.name}</strong><br>${festival.bonus}</div>` : '';
+    })()}
   `;
 
   // Job cards
@@ -1034,6 +1038,12 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
     showToast('Lucky Fishbone activated! +20% reward.');
   }
 
+  // Festival bonus
+  const festival = getCurrentFestival(gameState.day);
+  if (festival && (festival.category === 'all' || festival.category === job.category)) {
+    baseReward = Math.floor(baseReward * festival.multiplier);
+  }
+
   // Reputation reward bonus
   const repBonuses = getReputationBonuses(gameState.reputationScore);
   if (repBonuses.rewardBonus !== 0) {
@@ -1135,6 +1145,22 @@ eventBus.on('puzzle-quit', ({ jobId, catId }: any = {}) => {
 
   setTimeout(() => suggestEndDay(), 1500);
 });
+
+// Festival system — every 7 days
+const FESTIVALS = [
+  { name: 'Feast of St. Gertrude', bonus: 'All pest control jobs pay double today.', category: 'pest_control', multiplier: 2 },
+  { name: 'Market Festival', bonus: 'All courier jobs pay double today.', category: 'courier', multiplier: 2 },
+  { name: 'Night of the Watch', bonus: 'All guard jobs pay double today.', category: 'guard', multiplier: 2 },
+  { name: 'Festival of Lights', bonus: 'All sacred jobs pay double today.', category: 'sacred', multiplier: 2 },
+  { name: 'Day of Mysteries', bonus: 'All detection jobs pay double today.', category: 'detection', multiplier: 2 },
+  { name: 'Fisherman\'s Bounty', bonus: 'Fishing minigames give triple fish!', category: 'all', multiplier: 1.5 },
+  { name: 'Guild Anniversary', bonus: 'All jobs pay +50%. Celebrate!', category: 'all', multiplier: 1.5 },
+];
+
+function getCurrentFestival(day: number): typeof FESTIVALS[number] | null {
+  if (day % 7 !== 0 || day === 0) return null;
+  return FESTIVALS[(day / 7) % FESTIVALS.length];
+}
 
 function advanceDay(): { foodCost: number; stationedEarned: number; events: string[]; fishRemaining: number } {
   if (!gameState) return { foodCost: 0, stationedEarned: 0, events: [], fishRemaining: 0 };
