@@ -5,6 +5,7 @@ import { TitleScene } from './scenes/TitleScene';
 import { GuildhallScene } from './scenes/GuildhallScene';
 import { TownScene } from './scenes/TownScene';
 import { PuzzleScene } from './scenes/PuzzleScene';
+import { SokobanScene } from './scenes/SokobanScene';
 import { RoomScene } from './scenes/RoomScene';
 import { eventBus } from './utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS, BREED_NAMES, STAT_NAMES } from './utils/constants';
@@ -48,7 +49,7 @@ const config: Phaser.Types.Core.GameConfig = {
     pixelArt: false,
     antialias: true,
   },
-  scene: [BootScene, TitleScene, GuildhallScene, TownScene, PuzzleScene, RoomScene],
+  scene: [BootScene, TitleScene, GuildhallScene, TownScene, PuzzleScene, SokobanScene, RoomScene],
 };
 
 const game = new Phaser.Game(config);
@@ -97,7 +98,7 @@ function setActiveTab(scene: string): void {
 }
 
 function switchScene(target: string, data?: object): void {
-  const sceneKeys = ['GuildhallScene', 'TownScene', 'PuzzleScene', 'TitleScene', 'RoomScene'];
+  const sceneKeys = ['GuildhallScene', 'TownScene', 'PuzzleScene', 'SokobanScene', 'TitleScene', 'RoomScene'];
   for (const key of sceneKeys) {
     if (game.scene.isActive(key) || game.scene.isPaused(key)) {
       game.scene.stop(key);
@@ -541,13 +542,18 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
 
   document.getElementById('btn-do-puzzle')!.addEventListener('click', () => {
     overlay.remove();
-    const puzzle = generatePuzzle(job.difficulty) ?? getPuzzleByDifficulty(job.difficulty);
-    if (!puzzle) {
-      showToast('No puzzle available!');
-      return;
-    }
     switchToPuzzleMusic();
-    switchScene('PuzzleScene', { puzzle, jobId: job.id, catId: cat.id });
+    // Randomly pick between Rush Hour and Sokoban
+    if (Math.random() < 0.5) {
+      switchScene('SokobanScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
+    } else {
+      const puzzle = generatePuzzle(job.difficulty) ?? getPuzzleByDifficulty(job.difficulty);
+      if (!puzzle) {
+        showToast('No puzzle available!');
+        return;
+      }
+      switchScene('PuzzleScene', { puzzle, jobId: job.id, catId: cat.id });
+    }
   });
 
   document.getElementById('btn-do-auto')!.addEventListener('click', () => {
