@@ -705,12 +705,10 @@ export class SokobanScene extends Phaser.Scene {
 
     // Buttons
     const btnY = OFFSET_Y + GRID_PX + 50;
-    this.createButton(60, btnY, 'Undo', () => this.undo());
     this.createButton(GAME_WIDTH / 2, btnY, 'Quit', () => {
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
       eventBus.emit('navigate', 'TownScene');
     });
-    this.createButton(GAME_WIDTH - 60, btnY, 'Reset', () => this.resetPuzzle());
 
     // Keyboard input
     if (this.input.keyboard) {

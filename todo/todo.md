@@ -15,6 +15,6 @@
 [] show the furniture sprites / art in the guild overview (I'm not referring to the room specific views)
 [] add an end day button at the bottom of the guild view
 [] show wishes at the top of the guild view
-[] remove the undo button from the sokobond / crate pushing game, as it removes consequences of actions, remove the reset button too for the same reason
+[x] remove the undo button from the sokobond / crate pushing game, as it removes consequences of actions, remove the reset button too for the same reason
 [] put full screen art in the dialogues, either of the cat talking, or of the game's setting / an unlocked location in the game
 [] Playtest with real users
