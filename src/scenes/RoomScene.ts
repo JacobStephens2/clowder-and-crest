@@ -347,6 +347,7 @@ export class RoomScene extends Phaser.Scene {
 
     let currentTile = { ...startTile };
     let isMoving = false;
+    const keysHeld = new Set<string>();
 
     let arriveCallback: (() => void) | null = null;
 
@@ -368,7 +369,7 @@ export class RoomScene extends Phaser.Scene {
 
       if (sprite) {
         const walkKey = `${cat.breed}_walk_${walkDir}`;
-        if (this.anims.exists(walkKey)) {
+        if (this.anims.exists(walkKey) && sprite.anims.currentAnim?.key !== walkKey) {
           sprite.play(walkKey);
         }
         this.tweens.add({ targets: sprite, x: dest.x, y: dest.y - 4, duration, ease: 'Linear' });
@@ -383,7 +384,8 @@ export class RoomScene extends Phaser.Scene {
         onComplete: () => {
           currentTile = { col: targetCol, row: targetRow };
           isMoving = false;
-          if (sprite) {
+          // Only go idle if no direction keys are held (prevents flicker during continuous movement)
+          if (sprite && keysHeld.size === 0) {
             sprite.setTexture(`${cat.breed}_idle_${walkDir}`);
             sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
             sprite.stop();
@@ -406,7 +408,6 @@ export class RoomScene extends Phaser.Scene {
     });
 
     // WASD / Arrow key movement (supports diagonal + continuous hold)
-    const keysHeld = new Set<string>();
     let moveRepeat: ReturnType<typeof setInterval> | null = null;
 
     const processMovement = () => {
@@ -438,6 +439,14 @@ export class RoomScene extends Phaser.Scene {
       if (keysHeld.size === 0 && moveRepeat) {
         clearInterval(moveRepeat);
         moveRepeat = null;
+      }
+      // Go idle when all keys released and not moving
+      if (keysHeld.size === 0 && !isMoving && sprite) {
+        sprite.stop();
+        const currentAnim = sprite.anims.currentAnim?.key ?? '';
+        const dir = currentAnim.split('_').pop() ?? 'south';
+        sprite.setTexture(`${cat.breed}_idle_${dir}`);
+        sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
       }
     };
 
