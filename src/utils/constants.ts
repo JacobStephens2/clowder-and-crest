@@ -1,3 +1,4 @@
+export const DPR = Math.min(window.devicePixelRatio || 1, 3);
 export const GAME_WIDTH = 390;
 export const GAME_HEIGHT = 844;
 export const GRID_SIZE = 6;

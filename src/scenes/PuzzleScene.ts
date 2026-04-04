@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { type PuzzleConfig, type PuzzleBlock } from '../systems/PuzzleGenerator';
 import { eventBus } from '../utils/events';
-import { GAME_WIDTH, GRID_SIZE, TILE_SIZE, PUZZLE_OFFSET_X, PUZZLE_OFFSET_Y } from '../utils/constants';
+import { DPR, GAME_WIDTH, GAME_HEIGHT, GRID_SIZE, TILE_SIZE, PUZZLE_OFFSET_X, PUZZLE_OFFSET_Y } from '../utils/constants';
 
 const GRID_COLOR = 0x2a2520;
 const GRID_LINE_COLOR = 0x3a3530;
@@ -45,6 +45,8 @@ export class PuzzleScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor('#1c1b19');
+    this.cameras.main.setZoom(DPR);
+    this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
     // Draw grid background
     const gridPx = GRID_SIZE * TILE_SIZE;

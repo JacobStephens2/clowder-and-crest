@@ -5,8 +5,9 @@ import { TitleScene } from './scenes/TitleScene';
 import { GuildhallScene } from './scenes/GuildhallScene';
 import { TownScene } from './scenes/TownScene';
 import { PuzzleScene } from './scenes/PuzzleScene';
+import { RoomScene } from './scenes/RoomScene';
 import { eventBus } from './utils/events';
-import { GAME_WIDTH, GAME_HEIGHT, BREED_COLORS, BREED_NAMES, STAT_NAMES } from './utils/constants';
+import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS, BREED_NAMES, STAT_NAMES } from './utils/constants';
 import {
   type SaveData,
   createDefaultSave,
@@ -16,7 +17,7 @@ import {
 } from './systems/SaveManager';
 import { createCat, getBreed, addXp } from './systems/CatManager';
 import { earnFish, spendFish, calculateReward, calculateAutoResolveReward, collectStationedEarnings, isCatStationed } from './systems/Economy';
-import { getJob, getStatMatchScore, type JobDef } from './systems/JobBoard';
+import { getJob, getStatMatchScore, generateDailyJobs, type JobDef } from './systems/JobBoard';
 import { getPuzzleByDifficulty } from './systems/PuzzleGenerator';
 import { addBondPoints, processDailyBonds, getAvailableConversation, markConversationViewed, getBondRank, getBondPairs } from './systems/BondSystem';
 import { checkChapterAdvance, checkRatPlagueResolution, getChapterName } from './systems/ProgressionManager';
@@ -32,15 +33,19 @@ export function getGameState(): SaveData | null {
 // ──── Phaser Game ────
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
-  width: GAME_WIDTH,
-  height: GAME_HEIGHT,
+  width: GAME_WIDTH * DPR,
+  height: GAME_HEIGHT * DPR,
   parent: 'game-container',
   backgroundColor: '#1c1b19',
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  scene: [BootScene, TitleScene, GuildhallScene, TownScene, PuzzleScene],
+  render: {
+    pixelArt: false,
+    antialias: true,
+  },
+  scene: [BootScene, TitleScene, GuildhallScene, TownScene, PuzzleScene, RoomScene],
 };
 
 const game = new Phaser.Game(config);
@@ -80,13 +85,71 @@ function setActiveTab(scene: string): void {
 }
 
 function switchScene(target: string, data?: object): void {
-  const sceneKeys = ['GuildhallScene', 'TownScene', 'PuzzleScene', 'TitleScene'];
+  const sceneKeys = ['GuildhallScene', 'TownScene', 'PuzzleScene', 'TitleScene', 'RoomScene'];
   for (const key of sceneKeys) {
     if (game.scene.isActive(key) || game.scene.isPaused(key)) {
       game.scene.stop(key);
     }
   }
   game.scene.start(target, data);
+}
+
+// ──── Background Music ────
+let bgmAudio: HTMLAudioElement | null = null;
+let bgmMuted = localStorage.getItem('clowder_bgm_muted') === '1';
+
+function startBgm(): void {
+  if (bgmAudio) return;
+  bgmAudio = new Audio('assets/audio/guildhall.mp3');
+  bgmAudio.loop = true;
+  bgmAudio.volume = 0.35;
+  bgmAudio.muted = bgmMuted;
+  bgmAudio.play().catch(() => {
+    bgmAudio = null;
+  });
+}
+
+// ──── Day Timer ────
+const DAY_DURATION = 5 * 60 * 1000; // 5 minutes per in-game day
+const TIME_PHASES = ['Dawn', 'Morning', 'Midday', 'Afternoon', 'Dusk', 'Night'];
+let dayTimerStart = 0;
+let dayTimerInterval: ReturnType<typeof setInterval> | null = null;
+const statusTime = document.getElementById('status-time')!;
+
+function startDayTimer(): void {
+  if (dayTimerInterval) clearInterval(dayTimerInterval);
+  dayTimerStart = Date.now();
+  updateTimeDisplay();
+  dayTimerInterval = setInterval(() => {
+    if (!gameState) return;
+    const elapsed = Date.now() - dayTimerStart;
+    if (elapsed >= DAY_DURATION) {
+      advanceDay();
+      dayTimerStart = Date.now();
+      showToast('A new day dawns...');
+      // Refresh the town overlay if it's open
+      const townOverlay = overlayLayer.querySelector('.town-overlay');
+      if (townOverlay) {
+        townOverlay.remove();
+        eventBus.emit('show-town-overlay');
+      }
+    }
+    updateTimeDisplay();
+  }, 1000);
+}
+
+function stopDayTimer(): void {
+  if (dayTimerInterval) {
+    clearInterval(dayTimerInterval);
+    dayTimerInterval = null;
+  }
+}
+
+function updateTimeDisplay(): void {
+  const elapsed = Date.now() - dayTimerStart;
+  const progress = Math.min(elapsed / DAY_DURATION, 1);
+  const phaseIndex = Math.min(Math.floor(progress * TIME_PHASES.length), TIME_PHASES.length - 1);
+  statusTime.textContent = TIME_PHASES[phaseIndex];
 }
 
 // ──── Event Handlers ────
@@ -99,6 +162,7 @@ eventBus.on('navigate', (target: string) => {
 eventBus.on('hide-ui', () => {
   statusBar.style.display = 'none';
   bottomBar.style.display = 'none';
+  stopDayTimer();
 });
 
 eventBus.on('show-ui', () => {
@@ -124,7 +188,7 @@ bottomBar.addEventListener('click', (e) => {
   panelOverlay.innerHTML = '';
 
   // Remove any custom overlays
-  overlayLayer.querySelectorAll('.assign-overlay, .conversation-overlay, .result-overlay, .menu-overlay').forEach((el) => el.remove());
+  overlayLayer.querySelectorAll('.assign-overlay, .conversation-overlay, .result-overlay, .menu-overlay, .town-overlay').forEach((el) => el.remove());
 
   switch (scene) {
     case 'guildhall':
@@ -179,6 +243,8 @@ eventBus.on('show-name-prompt', () => {
 eventBus.on('game-loaded', (save: SaveData) => {
   gameState = save;
   updateStatusBar();
+  startBgm();
+  startDayTimer();
 });
 
 // Room unlock
@@ -250,6 +316,146 @@ function showRecruitNamePrompt(breedId: string, breedName: string): void {
     if (e.key === 'Enter') doSubmit();
   });
 }
+
+// Town overlay (HTML)
+eventBus.on('show-town-overlay', () => {
+  if (!gameState) return;
+
+  // Remove any existing town overlay
+  overlayLayer.querySelectorAll('.town-overlay').forEach((el) => el.remove());
+
+  const overlay = document.createElement('div');
+  overlay.className = 'town-overlay';
+
+  const dailyJobs = generateDailyJobs(gameState);
+
+  let html = `
+    <div class="town-header">
+      <div class="town-title">Town Square</div>
+      <div class="town-day">Day ${gameState.day}</div>
+    </div>
+    <div class="town-section-divider"></div>
+    <div class="town-section-title">Job Board</div>
+  `;
+
+  // Job cards
+  dailyJobs.forEach((job) => {
+    const diffClass = `diff-${job.difficulty}`;
+    const catIcon = job.category === 'pest_control' ? '\u{1F400}' : '\u{1F4DC}';
+    html += `
+      <div class="town-job-card">
+        <div class="town-job-top">
+          <span class="town-job-icon">${catIcon}</span>
+          <span class="town-job-name">${job.name}</span>
+          <span class="town-job-diff ${diffClass}">${job.difficulty}</span>
+        </div>
+        <div class="town-job-desc">${job.description}</div>
+        <div class="town-job-bottom">
+          <span class="town-job-reward">${job.baseReward}-${job.maxReward} Fish</span>
+          <span class="town-job-stats">${job.keyStats.join(', ')}</span>
+          <button class="town-job-accept" data-job-id="${job.id}">Accept</button>
+        </div>
+      </div>
+    `;
+  });
+
+  // Stationed cats
+  if (gameState.stationedCats.length > 0) {
+    html += `<div class="town-section-divider stationed"></div>`;
+    html += `<div class="town-section-title stationed">Stationed Cats</div>`;
+
+    for (const stationed of gameState.stationedCats) {
+      const cat = gameState.cats.find((c) => c.id === stationed.catId);
+      const job = getJob(stationed.jobId);
+      if (!cat || !job) continue;
+
+      const match = getStatMatchScore(cat, job);
+      const dailyEarn = Math.max(1, Math.floor(job.baseReward * 0.5 + job.baseReward * match * 0.5));
+      const daysWorked = gameState.day - stationed.dayStarted;
+      const color = BREED_COLORS[cat.breed] ?? '#8b7355';
+
+      html += `
+        <div class="town-stationed-card">
+          <div class="town-stationed-avatar" style="background:${color}"></div>
+          <div class="town-stationed-info">
+            <div class="town-stationed-name">${cat.name} — ${job.name}</div>
+            <div class="town-stationed-detail">~${dailyEarn} fish/day | ${daysWorked} day${daysWorked !== 1 ? 's' : ''} worked</div>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  // Recruits
+  const ownedBreeds = new Set(gameState.cats.map((c) => c.breed));
+  const recruitable = [
+    { id: 'russian_blue', name: 'Russian Blue', cost: 30, color: '#6b8ea6' },
+    { id: 'tuxedo', name: 'Tuxedo', cost: 40, color: '#3c3c3c' },
+    { id: 'maine_coon', name: 'Maine Coon', cost: 50, color: '#c4956a' },
+    { id: 'siamese', name: 'Siamese', cost: 60, color: '#d4c5a9' },
+  ].filter((r) => !ownedBreeds.has(r.id));
+
+  html += `<div class="town-section-divider"></div>`;
+  html += `<div class="town-section-title">Stray Cats Nearby</div>`;
+
+  if (recruitable.length === 0) {
+    html += `<div class="town-empty">All cats have joined the guild.</div>`;
+  } else {
+    for (const recruit of recruitable) {
+      const canAfford = gameState.fish >= recruit.cost;
+      html += `
+        <div class="town-recruit-card">
+          <div class="town-recruit-avatar" style="background:${recruit.color}"></div>
+          <div class="town-recruit-info">
+            <div class="town-recruit-name">${recruit.name}</div>
+            <div class="town-recruit-cost">Wants to join for ${recruit.cost} Fish</div>
+          </div>
+          <button class="town-recruit-btn ${canAfford ? '' : 'disabled'}" data-breed-id="${recruit.id}" ${canAfford ? '' : 'disabled'}>
+            ${canAfford ? 'Recruit' : `${recruit.cost} Fish`}
+          </button>
+        </div>
+      `;
+    }
+  }
+
+  // End Day button
+  html += `
+    <div class="town-section-divider"></div>
+    <button class="town-end-day" id="town-end-day">End Day</button>
+    <div class="town-end-day-hint">Advance to the next day. Stationed cats collect earnings.</div>
+  `;
+
+  overlay.innerHTML = html;
+  overlayLayer.appendChild(overlay);
+
+  // Wire up job accept buttons
+  overlay.querySelectorAll('.town-job-accept').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const jobId = btn.getAttribute('data-job-id')!;
+      const job = dailyJobs.find((j) => j.id === jobId);
+      if (job) {
+        overlay.remove();
+        eventBus.emit('job-accept', { job });
+      }
+    });
+  });
+
+  // Wire up recruit buttons
+  overlay.querySelectorAll('.town-recruit-btn:not(.disabled)').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const breedId = btn.getAttribute('data-breed-id')!;
+      overlay.remove();
+      eventBus.emit('recruit-cat', breedId);
+    });
+  });
+
+  // Wire up end day button
+  document.getElementById('town-end-day')!.addEventListener('click', () => {
+    overlay.remove();
+    advanceDay();
+    checkAndShowConversation();
+  });
+});
 
 // Job accept — show cat assignment overlay
 eventBus.on('job-accept', ({ job }: { job: JobDef }) => {
@@ -446,6 +652,10 @@ function advanceDay(): void {
   if (!gameState) return;
   gameState.day++;
 
+  // Reset day timer
+  dayTimerStart = Date.now();
+  updateTimeDisplay();
+
   // Collect stationed earnings
   const stationedResults = collectStationedEarnings(gameState);
   if (stationedResults.length > 0) {
@@ -621,8 +831,8 @@ function showCatPanel(): void {
     html += `<div class="cat-card">
       <div class="cat-card-header">
         <div class="cat-avatar" style="background:${color}"></div>
-        <div>
-          <div class="cat-card-name">${cat.name}${cat.isPlayer ? ' (You)' : ''}</div>
+        <div style="flex:1">
+          <div class="cat-card-name">${cat.name}${cat.isPlayer ? ' (You)' : ''} <button class="rename-btn" data-cat-id="${cat.id}">Rename</button></div>
           <div class="cat-card-breed">${breedName} | Lv.${cat.level} | ${cat.mood}</div>
         </div>
       </div>
@@ -661,6 +871,17 @@ function showCatPanel(): void {
 
   document.getElementById('cats-close')!.addEventListener('click', () => panel.remove());
 
+  panel.querySelectorAll('.rename-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const catId = btn.getAttribute('data-cat-id')!;
+      const cat = gameState!.cats.find((c) => c.id === catId);
+      if (!cat) return;
+      panel.remove();
+      showRenamePrompt(cat);
+    });
+  });
+
   panel.querySelectorAll('.recall-btn').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -672,6 +893,45 @@ function showCatPanel(): void {
       panel.remove();
       showCatPanel();
     });
+  });
+}
+
+// Rename cat prompt
+function showRenamePrompt(cat: typeof gameState extends null ? never : NonNullable<typeof gameState>['cats'][number]): void {
+  const prompt = document.createElement('div');
+  prompt.className = 'name-prompt-overlay';
+  const color = BREED_COLORS[cat.breed] ?? '#8b7355';
+  const breedName = BREED_NAMES[cat.breed] ?? cat.breed;
+  prompt.innerHTML = `
+    <div style="width:60px;height:60px;border-radius:50%;background:${color};border:2px solid #6b5b3e;margin-bottom:16px"></div>
+    <h2>Rename ${cat.name}</h2>
+    <p>${breedName} | Lv.${cat.level}</p>
+    <input type="text" id="rename-input" placeholder="${cat.name}" maxlength="20" autocomplete="off" value="${cat.name}" />
+    <button id="rename-submit">Rename</button>
+  `;
+  overlayLayer.appendChild(prompt);
+
+  const input = document.getElementById('rename-input') as HTMLInputElement;
+  const submit = document.getElementById('rename-submit')!;
+  input.focus();
+  input.select();
+
+  const doRename = () => {
+    const newName = input.value.trim();
+    if (newName && newName !== cat.name) {
+      const oldName = cat.name;
+      cat.name = newName;
+      if (cat.isPlayer) gameState!.playerCatName = newName;
+      saveGame(gameState!);
+      showToast(`${oldName} is now ${newName}`);
+    }
+    prompt.remove();
+    showCatPanel();
+  };
+
+  submit.addEventListener('click', doRename);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') doRename();
   });
 }
 
@@ -695,6 +955,7 @@ function showMenuPanel(): void {
     </div>
     <button class="menu-btn" id="menu-save">Save Game</button>
     <button class="menu-btn" id="menu-furniture">Furniture Shop</button>
+    <button class="menu-btn" id="menu-mute">${bgmMuted ? 'Unmute Music' : 'Mute Music'}</button>
     <button class="menu-btn danger" id="menu-delete">Delete Save</button>
   `;
 
@@ -710,6 +971,17 @@ function showMenuPanel(): void {
   document.getElementById('menu-furniture')!.addEventListener('click', () => {
     panel.remove();
     showFurnitureShop();
+  });
+
+  document.getElementById('menu-mute')!.addEventListener('click', () => {
+    bgmMuted = !bgmMuted;
+    localStorage.setItem('clowder_bgm_muted', bgmMuted ? '1' : '0');
+    if (bgmAudio) {
+      bgmAudio.muted = bgmMuted;
+    }
+    panel.remove();
+    showMenuPanel();
+    showToast(bgmMuted ? 'Music muted' : 'Music unmuted');
   });
 
   document.getElementById('menu-delete')!.addEventListener('click', () => {

@@ -1,13 +1,15 @@
 import Phaser from 'phaser';
 
+const BREEDS_WITH_SPRITES = ['wildcat'];
+const DIRECTIONS = ['south', 'north', 'east', 'west'];
+const WALK_FRAMES = 6;
+
 export class BootScene extends Phaser.Scene {
   constructor() {
     super({ key: 'BootScene' });
   }
 
   preload(): void {
-    // No external assets to load for MVP — using generated graphics
-    // Show a loading bar
     const { width, height } = this.cameras.main;
     const barW = width * 0.6;
     const barH = 20;
@@ -27,7 +29,22 @@ export class BootScene extends Phaser.Scene {
       fill.destroy();
     });
 
-    // Load a placeholder 1x1 pixel so the loader runs
+    // Load cat sprites
+    for (const breed of BREEDS_WITH_SPRITES) {
+      // Idle rotations
+      for (const dir of DIRECTIONS) {
+        this.load.image(`${breed}_idle_${dir}`, `assets/sprites/${breed}/${dir}.png`);
+      }
+      // Walk animations
+      for (const dir of DIRECTIONS) {
+        for (let f = 0; f < WALK_FRAMES; f++) {
+          const frame = String(f).padStart(3, '0');
+          this.load.image(`${breed}_walk_${dir}_${f}`, `assets/sprites/${breed}/walk/${dir}/frame_${frame}.png`);
+        }
+      }
+    }
+
+    // Placeholder texture for non-sprite breeds
     const canvas = document.createElement('canvas');
     canvas.width = 1;
     canvas.height = 1;
@@ -35,6 +52,22 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Create walk animations for each breed/direction
+    for (const breed of BREEDS_WITH_SPRITES) {
+      for (const dir of DIRECTIONS) {
+        const frames: Phaser.Types.Animations.AnimationFrame[] = [];
+        for (let f = 0; f < WALK_FRAMES; f++) {
+          frames.push({ key: `${breed}_walk_${dir}_${f}` });
+        }
+        this.anims.create({
+          key: `${breed}_walk_${dir}`,
+          frames,
+          frameRate: 8,
+          repeat: -1,
+        });
+      }
+    }
+
     this.scene.start('TitleScene');
   }
 }

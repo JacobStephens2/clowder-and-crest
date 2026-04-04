@@ -1,135 +1,25 @@
 import Phaser from 'phaser';
 import { eventBus } from '../utils/events';
-import { GAME_WIDTH, GAME_HEIGHT, BREED_COLORS, BREED_NAMES } from '../utils/constants';
-import { getGameState } from '../main';
-import { generateDailyJobs, getJob, getStatMatchScore, type JobDef } from '../systems/JobBoard';
+import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 
 export class TownScene extends Phaser.Scene {
-  private dailyJobs: JobDef[] = [];
-
   constructor() {
     super({ key: 'TownScene' });
   }
 
   create(): void {
     this.cameras.main.setBackgroundColor('#1c1b19');
-
-    const save = getGameState();
-    if (!save) return;
+    this.cameras.main.setZoom(DPR);
+    this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
     eventBus.emit('show-ui');
     eventBus.emit('set-active-tab', 'town');
 
-    // Townscape background
+    // Townscape background (Phaser canvas)
     this.drawTownscape();
 
-    // Town header
-    this.add.text(GAME_WIDTH / 2, 56, 'Town Square', {
-      fontFamily: 'Georgia, serif',
-      fontSize: '22px',
-      color: '#c4956a',
-    }).setOrigin(0.5);
-
-    this.add.text(GAME_WIDTH / 2, 76, `Day ${save.day}`, {
-      fontFamily: 'Georgia, serif',
-      fontSize: '12px',
-      color: '#6b5b3e',
-    }).setOrigin(0.5);
-
-    // Job Board section
-    const boardY = 250;
-    this.add.rectangle(GAME_WIDTH / 2, boardY - 8, 200, 2, 0x6b5b3e, 0.3);
-    this.add.text(GAME_WIDTH / 2, boardY + 4, 'Job Board', {
-      fontFamily: 'Georgia, serif',
-      fontSize: '17px',
-      color: '#8b7355',
-    }).setOrigin(0.5);
-
-    // Generate daily jobs
-    this.dailyJobs = generateDailyJobs(save);
-
-    // Draw job cards
-    let cardY = boardY + 30;
-    this.dailyJobs.forEach((job) => {
-      cardY = this.drawJobCard(job, cardY, save);
-    });
-
-    // Stationed cats section
-    if (save.stationedCats && save.stationedCats.length > 0) {
-      cardY += 16;
-      this.add.rectangle(GAME_WIDTH / 2, cardY, 200, 2, 0x3a5a3a, 0.3);
-      cardY += 16;
-      this.add.text(GAME_WIDTH / 2, cardY, 'Stationed Cats', {
-        fontFamily: 'Georgia, serif',
-        fontSize: '17px',
-        color: '#8baa8b',
-      }).setOrigin(0.5);
-      cardY += 24;
-
-      for (const stationed of save.stationedCats) {
-        const cat = save.cats.find((c: any) => c.id === stationed.catId);
-        const job = getJob(stationed.jobId);
-        if (!cat || !job) continue;
-
-        const match = getStatMatchScore(cat, job);
-        const dailyEarn = Math.max(1, Math.floor(job.baseReward * 0.5 + job.baseReward * match * 0.5));
-        const daysWorked = save.day - stationed.dayStarted;
-
-        const cardW = GAME_WIDTH - 30;
-        const bg = this.add.rectangle(GAME_WIDTH / 2, cardY + 22, cardW, 46, 0x2a2e2a);
-        bg.setStrokeStyle(1, 0x3a5a3a);
-
-        const color = parseInt((BREED_COLORS[cat.breed] ?? '#8b7355').replace('#', ''), 16);
-        this.add.circle(38, cardY + 22, 14, color);
-
-        this.add.text(58, cardY + 12, `${cat.name} — ${job.name}`, {
-          fontFamily: 'Georgia, serif',
-          fontSize: '13px',
-          color: '#8baa8b',
-        });
-
-        this.add.text(58, cardY + 28, `~${dailyEarn} fish/day | ${daysWorked} day${daysWorked !== 1 ? 's' : ''} worked`, {
-          fontFamily: 'Georgia, serif',
-          fontSize: '10px',
-          color: '#6b8b6b',
-        });
-
-        cardY += 56;
-      }
-    }
-
-    // Recruit section
-    cardY += 16;
-    this.add.rectangle(GAME_WIDTH / 2, cardY, 200, 2, 0x6b5b3e, 0.3);
-    cardY += 16;
-    this.add.text(GAME_WIDTH / 2, cardY, 'Stray Cats Nearby', {
-      fontFamily: 'Georgia, serif',
-      fontSize: '17px',
-      color: '#8b7355',
-    }).setOrigin(0.5);
-    cardY += 24;
-
-    this.drawRecruits(cardY, save);
-
-    // Scrolling
-    const maxScroll = Math.max(0, cardY + 200 - GAME_HEIGHT + 80);
-    if (maxScroll > 0) {
-      let scrollY = 0;
-      let dragStartY = 0;
-      let scrollStart = 0;
-      this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-        dragStartY = pointer.y;
-        scrollStart = scrollY;
-      });
-      this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-        if (!pointer.isDown) return;
-        const dy = dragStartY - pointer.y;
-        if (Math.abs(dy) > 5) {
-          scrollY = Phaser.Math.Clamp(scrollStart + dy, 0, maxScroll);
-          this.cameras.main.scrollY = scrollY;
-        }
-      });
-    }
+    // Town UI is rendered as HTML overlay
+    eventBus.emit('show-town-overlay');
   }
 
   private drawTownscape(): void {
@@ -231,149 +121,5 @@ export class TownScene extends Phaser.Scene {
       gfx.fillStyle(0x1c1b19, 0.3);
       gfx.fillEllipse(mx, 200 + Math.random() * 20, 60 + Math.random() * 30, 10);
     }
-  }
-
-  private drawJobCard(job: JobDef, startY: number, save: any): number {
-    const cardH = 82;
-    const cardW = GAME_WIDTH - 30;
-    const cx = GAME_WIDTH / 2;
-
-    // Card background
-    const bg = this.add.rectangle(cx, startY + cardH / 2, cardW, cardH, 0x2a2520);
-    bg.setStrokeStyle(1, 0x3a3530);
-
-    // Category icon
-    const catIcon = job.category === 'pest_control' ? '\u{1F400}' : '\u{1F4DC}';
-    this.add.text(26, startY + 10, catIcon, {
-      fontSize: '18px',
-    });
-
-    // Difficulty badge
-    const diffColors: Record<string, number> = { easy: 0x3a5a3a, medium: 0x5a5a3a, hard: 0x5a3a3a };
-    const diffX = cardW + 15 - 36;
-    this.add.rectangle(diffX, startY + 14, 46, 16, diffColors[job.difficulty] ?? 0x444444).setStrokeStyle(1, 0x555555, 0.4);
-    this.add.text(diffX, startY + 14, job.difficulty, {
-      fontFamily: 'Georgia, serif',
-      fontSize: '9px',
-      color: '#ccc',
-    }).setOrigin(0.5);
-
-    // Job name
-    this.add.text(50, startY + 8, job.name, {
-      fontFamily: 'Georgia, serif',
-      fontSize: '14px',
-      color: '#c4956a',
-    });
-
-    // Description
-    this.add.text(26, startY + 30, job.description, {
-      fontFamily: 'Georgia, serif',
-      fontSize: '10px',
-      color: '#888',
-      wordWrap: { width: cardW - 40 },
-    });
-
-    // Reward and accept button
-    this.add.text(26, startY + 56, `Reward: ${job.baseReward}-${job.maxReward} Fish`, {
-      fontFamily: 'Georgia, serif',
-      fontSize: '11px',
-      color: '#6b8ea6',
-    });
-
-    // Stats required
-    this.add.text(180, startY + 56, job.keyStats.join(', '), {
-      fontFamily: 'Georgia, serif',
-      fontSize: '10px',
-      color: '#6b5b3e',
-    });
-
-    // Accept button
-    const btnX = cardW + 15 - 40;
-    const btnY = startY + 60;
-    const btn = this.add.rectangle(btnX, btnY, 64, 26, 0x3a5a3a);
-    btn.setStrokeStyle(1, 0x4a6a4a);
-    btn.setInteractive({ useHandCursor: true });
-
-    this.add.text(btnX, btnY, 'Accept', {
-      fontFamily: 'Georgia, serif',
-      fontSize: '11px',
-      color: '#ddd',
-    }).setOrigin(0.5);
-
-    btn.on('pointerover', () => btn.setFillStyle(0x4a6a4a));
-    btn.on('pointerout', () => btn.setFillStyle(0x3a5a3a));
-    btn.on('pointerdown', () => {
-      eventBus.emit('job-accept', { job, catIndex: 0 });
-    });
-
-    return startY + cardH + 8;
-  }
-
-  private drawRecruits(startY: number, save: any): void {
-    const ownedBreeds = new Set(save.cats.map((c: any) => c.breed));
-
-    const recruitable = [
-      { id: 'russian_blue', name: 'Russian Blue', cost: 30, color: '#6b8ea6' },
-      { id: 'tuxedo', name: 'Tuxedo', cost: 40, color: '#3c3c3c' },
-      { id: 'maine_coon', name: 'Maine Coon', cost: 50, color: '#c4956a' },
-      { id: 'siamese', name: 'Siamese', cost: 60, color: '#d4c5a9' },
-    ].filter((r) => !ownedBreeds.has(r.id));
-
-    if (recruitable.length === 0) {
-      this.add.text(GAME_WIDTH / 2, startY + 10, 'All cats have joined the guild.', {
-        fontFamily: 'Georgia, serif',
-        fontSize: '13px',
-        color: '#555',
-      }).setOrigin(0.5);
-      return;
-    }
-
-    recruitable.forEach((recruit, i) => {
-      const y = startY + i * 56;
-      const cardW = GAME_WIDTH - 30;
-      const cx = GAME_WIDTH / 2;
-
-      const bg = this.add.rectangle(cx, y + 22, cardW, 46, 0x2a2520);
-      bg.setStrokeStyle(1, 0x3a3530);
-
-      // Breed color swatch + cat silhouette
-      const color = parseInt(recruit.color.replace('#', ''), 16);
-      const gfx = this.add.graphics();
-      gfx.fillStyle(color);
-      gfx.fillEllipse(38, y + 22, 20, 12);
-      gfx.fillCircle(38, y + 13, 6);
-      gfx.fillTriangle(33, y + 11, 36, y + 5, 38, y + 11);
-      gfx.fillTriangle(43, y + 11, 40, y + 5, 38, y + 11);
-
-      this.add.text(58, y + 12, recruit.name, {
-        fontFamily: 'Georgia, serif',
-        fontSize: '14px',
-        color: '#c4956a',
-      });
-
-      this.add.text(58, y + 28, `Wants to join for ${recruit.cost} Fish`, {
-        fontFamily: 'Georgia, serif',
-        fontSize: '10px',
-        color: '#888',
-      });
-
-      const canAfford = save.fish >= recruit.cost;
-      const btnX = cardW + 15 - 50;
-      const btn = this.add.rectangle(btnX, y + 22, 70, 28, canAfford ? 0x3a5a3a : 0x333333);
-      btn.setStrokeStyle(1, canAfford ? 0x4a6a4a : 0x444444);
-
-      this.add.text(btnX, y + 22, canAfford ? 'Recruit' : `${recruit.cost} Fish`, {
-        fontFamily: 'Georgia, serif',
-        fontSize: '11px',
-        color: canAfford ? '#ddd' : '#555',
-      }).setOrigin(0.5);
-
-      if (canAfford) {
-        btn.setInteractive({ useHandCursor: true });
-        btn.on('pointerover', () => btn.setFillStyle(0x4a6a4a));
-        btn.on('pointerout', () => btn.setFillStyle(0x3a5a3a));
-        btn.on('pointerdown', () => eventBus.emit('recruit-cat', recruit.id));
-      }
-    });
   }
 }

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { hasSave, loadGame } from '../systems/SaveManager';
 import { eventBus } from '../utils/events';
-import { GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
+import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -12,6 +12,8 @@ export class TitleScene extends Phaser.Scene {
     const cx = GAME_WIDTH / 2;
 
     this.cameras.main.setBackgroundColor('#1c1b19');
+    this.cameras.main.setZoom(DPR);
+    this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
     // Rain particles (subtle lines falling)
     const rainGfx = this.add.graphics();
@@ -72,43 +74,23 @@ export class TitleScene extends Phaser.Scene {
       color: '#6b5b3e',
     }).setOrigin(0.5);
 
-    // Cat silhouette — sitting on a stone wall
-    const catGfx = this.add.graphics();
-    // Wall
-    catGfx.fillStyle(0x2a2620, 0.8);
-    catGfx.fillRect(cx - 60, 405, 120, 20);
-    catGfx.lineStyle(1, 0x3a3530, 0.5);
-    catGfx.lineBetween(cx - 60, 405, cx + 60, 405);
+    // Stone wall
+    const wallGfx = this.add.graphics();
+    wallGfx.fillStyle(0x2a2620, 0.8);
+    wallGfx.fillRect(cx - 60, 405, 120, 20);
+    wallGfx.lineStyle(1, 0x3a3530, 0.5);
+    wallGfx.lineBetween(cx - 60, 405, cx + 60, 405);
 
-    // Cat sitting on wall
-    catGfx.fillStyle(0x8b7355, 0.7);
-    // Body
-    catGfx.fillEllipse(cx, 390, 40, 26);
-    // Head
-    catGfx.fillCircle(cx, 367, 14);
-    // Ears
-    catGfx.fillTriangle(cx - 14, 362, cx - 7, 345, cx - 2, 362);
-    catGfx.fillTriangle(cx + 14, 362, cx + 7, 345, cx + 2, 362);
-    // Eyes (looking out)
-    catGfx.fillStyle(0xddcc88, 0.8);
-    catGfx.fillCircle(cx - 5, 366, 3);
-    catGfx.fillCircle(cx + 5, 366, 3);
-    catGfx.fillStyle(0x111111, 0.9);
-    catGfx.fillCircle(cx - 5, 366, 1.5);
-    catGfx.fillCircle(cx + 5, 366, 1.5);
-    // Tail
-    catGfx.lineStyle(3, 0x8b7355, 0.7);
-    catGfx.beginPath();
-    catGfx.moveTo(cx + 20, 395);
-    catGfx.lineTo(cx + 38, 388);
-    catGfx.lineTo(cx + 45, 378);
-    catGfx.lineTo(cx + 42, 370);
-    catGfx.strokePath();
+    // Pixel art cat sitting on wall
+    const catSprite = this.add.sprite(cx, 382, 'wildcat_idle_south');
+    catSprite.setScale(3);
+    // Crisp pixel scaling
+    catSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
 
-    // Subtle tail sway
+    // Gentle idle bob
     this.tweens.add({
-      targets: catGfx,
-      x: { from: 0, to: 2 },
+      targets: catSprite,
+      y: catSprite.y - 2,
       duration: 2000,
       yoyo: true,
       repeat: -1,

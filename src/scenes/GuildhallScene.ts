@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { eventBus } from '../utils/events';
-import { GAME_WIDTH, GAME_HEIGHT, BREED_COLORS } from '../utils/constants';
+import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS } from '../utils/constants';
 import { getGameState } from '../main';
 import type { SaveData } from '../systems/SaveManager';
 import { getChapterName } from '../systems/ProgressionManager';
@@ -32,6 +32,8 @@ export class GuildhallScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor('#1c1b19');
+    this.cameras.main.setZoom(DPR);
+    this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
     const save = getGameState();
     if (!save) return;
@@ -109,6 +111,16 @@ export class GuildhallScene extends Phaser.Scene {
       border.setFillStyle(0x000000, 0);
 
       if (unlocked) {
+        // Make room clickable
+        border.setFillStyle(0x000000, 0);
+        border.setInteractive({ useHandCursor: true });
+        border.on('pointerover', () => border.setStrokeStyle(2, 0xc4956a));
+        border.on('pointerout', () => border.setStrokeStyle(2, 0x6b5b3e));
+        border.on('pointerdown', () => {
+          eventBus.emit('navigate', 'RoomScene');
+          this.scene.start('RoomScene', { roomId: room.id });
+        });
+
         // Room name with subtle decoration
         const nameY = y + 14;
         this.add.text(cx, nameY, room.name, {
@@ -120,6 +132,13 @@ export class GuildhallScene extends Phaser.Scene {
           fontFamily: 'Georgia, serif',
           fontSize: '10px',
           color: '#6b5b3e',
+        }).setOrigin(0.5);
+
+        // "Tap to enter" hint
+        this.add.text(cx, y + ROOM_HEIGHT - 10, 'Tap to enter', {
+          fontFamily: 'Georgia, serif',
+          fontSize: '9px',
+          color: '#555',
         }).setOrigin(0.5);
 
         // Wall decorations (lantern glow effects)
