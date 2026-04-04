@@ -5,6 +5,7 @@ import { getGameState } from '../main';
 import type { SaveData } from '../systems/SaveManager';
 import { getChapterName } from '../systems/ProgressionManager';
 
+const BREEDS_WITH_SPRITES = new Set(['wildcat']);
 const ROOM_WIDTH = 340;
 const ROOM_HEIGHT = 180;
 const ROOM_GAP = 16;
@@ -258,62 +259,70 @@ export class GuildhallScene extends Phaser.Scene {
     const spacing = Math.min(60, (ROOM_WIDTH - 40) / catCount);
     const startX = cx - ((catCount - 1) * spacing) / 2;
 
+    const moodColors: Record<string, string> = {
+      happy: '#4a8a4a',
+      content: '#8a8a4a',
+      tired: '#8a6a4a',
+      unhappy: '#8a4a4a',
+    };
+
+    const directions = ['south', 'east', 'west', 'north'];
+
     save.cats.forEach((cat, i) => {
       const x = startX + i * spacing;
       const y = baseY;
-      const color = parseInt((BREED_COLORS[cat.breed] ?? '#8B7355').replace('#', ''), 16);
 
-      // Cat body — a sitting cat silhouette
-      // Tail
-      const gfx = this.add.graphics();
-      gfx.lineStyle(2, color);
-      gfx.beginPath();
-      gfx.moveTo(x + 12, y + 2);
-      gfx.lineTo(x + 20, y - 5);
-      gfx.lineTo(x + 22, y - 10);
-      gfx.strokePath();
+      if (BREEDS_WITH_SPRITES.has(cat.breed)) {
+        const dir = directions[i % directions.length];
+        const sprite = this.add.sprite(x, y - 10, `${cat.breed}_idle_${dir}`);
+        sprite.setScale(1.5);
+        sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
 
-      // Body
-      gfx.fillStyle(color);
-      gfx.fillEllipse(x, y, 24, 16);
-      // Head
-      gfx.fillCircle(x, y - 12, 8);
-      // Ears
-      gfx.fillTriangle(x - 7, y - 15, x - 3, y - 24, x + 1, y - 15);
-      gfx.fillTriangle(x + 7, y - 15, x + 3, y - 24, x - 1, y - 15);
-      // Eyes
-      gfx.fillStyle(0xddcc88);
-      gfx.fillCircle(x - 3, y - 13, 2);
-      gfx.fillCircle(x + 3, y - 13, 2);
-      // Pupils
-      gfx.fillStyle(0x111111);
-      gfx.fillCircle(x - 3, y - 13, 1);
-      gfx.fillCircle(x + 3, y - 13, 1);
+        this.tweens.add({
+          targets: sprite,
+          y: sprite.y - 1,
+          duration: 1500 + i * 200,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut',
+        });
+      } else {
+        const color = parseInt((BREED_COLORS[cat.breed] ?? '#8B7355').replace('#', ''), 16);
+        const gfx = this.add.graphics();
+        gfx.lineStyle(2, color);
+        gfx.beginPath();
+        gfx.moveTo(x + 12, y + 2);
+        gfx.lineTo(x + 20, y - 5);
+        gfx.lineTo(x + 22, y - 10);
+        gfx.strokePath();
 
-      // Mood indicator
-      const moodColors: Record<string, string> = {
-        happy: '#4a8a4a',
-        content: '#8a8a4a',
-        tired: '#8a6a4a',
-        unhappy: '#8a4a4a',
-      };
+        gfx.fillStyle(color);
+        gfx.fillEllipse(x, y, 24, 16);
+        gfx.fillCircle(x, y - 12, 8);
+        gfx.fillTriangle(x - 7, y - 15, x - 3, y - 24, x + 1, y - 15);
+        gfx.fillTriangle(x + 7, y - 15, x + 3, y - 24, x - 1, y - 15);
+        gfx.fillStyle(0xddcc88);
+        gfx.fillCircle(x - 3, y - 13, 2);
+        gfx.fillCircle(x + 3, y - 13, 2);
+        gfx.fillStyle(0x111111);
+        gfx.fillCircle(x - 3, y - 13, 1);
+        gfx.fillCircle(x + 3, y - 13, 1);
 
-      // Name label
+        this.tweens.add({
+          targets: gfx,
+          scaleY: { from: 1, to: 1.03 },
+          duration: 1500 + i * 200,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut',
+        });
+      }
+
       this.add.text(x, y + 14, cat.name, {
         fontFamily: 'Georgia, serif',
         fontSize: '9px',
         color: moodColors[cat.mood] ?? '#c4956a',
       }).setOrigin(0.5);
-
-      // Subtle breathing animation
-      this.tweens.add({
-        targets: gfx,
-        scaleY: { from: 1, to: 1.03 },
-        duration: 1500 + i * 200,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut',
-      });
     });
   }
 }
