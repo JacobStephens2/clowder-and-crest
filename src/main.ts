@@ -716,6 +716,8 @@ eventBus.on('puzzle-quit', ({ jobId, catId }: any = {}) => {
   const catName = cat?.name ?? 'Your cat';
   const jobName = job?.name ?? 'the job';
   showToast(`${catName} failed ${jobName}. Lost ${penalty} fish and can't work again today.`);
+
+  setTimeout(() => suggestEndDay(), 1500);
 });
 
 function advanceDay(): { foodCost: number; stationedEarned: number; events: string[] } {
@@ -818,6 +820,46 @@ function showResultOverlay(info: ResultInfo): void {
   });
 }
 
+function allCatsBusy(): boolean {
+  if (!gameState) return false;
+  return gameState.cats.every((cat) => isCatStationed(gameState!, cat.id) || catsWorkedToday.has(cat.id));
+}
+
+function suggestEndDay(): void {
+  if (!allCatsBusy() || !gameState) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'assign-overlay';
+  overlay.innerHTML = `
+    <h2>All Cats Busy</h2>
+    <div style="color:#8b7355;font-size:14px;margin-bottom:16px;text-align:center">
+      Every cat has worked or is stationed today.<br>End the day to start fresh?
+    </div>
+    <div style="display:flex;gap:12px;justify-content:center">
+      <button class="btn-puzzle" id="end-day-yes">End Day</button>
+      <button class="btn-auto" id="end-day-no" style="background:#2a2520;border:1px solid #3a3530">Keep Waiting</button>
+    </div>
+  `;
+  overlayLayer.appendChild(overlay);
+
+  document.getElementById('end-day-yes')!.addEventListener('click', () => {
+    overlay.remove();
+    const recap = advanceDay();
+    showDayTransition(gameState!.day, recap);
+    playSfx('day_bell', 0.4);
+    // Refresh town if open
+    const townOverlay = overlayLayer.querySelector('.town-overlay');
+    if (townOverlay) {
+      townOverlay.remove();
+      eventBus.emit('show-town-overlay');
+    }
+  });
+
+  document.getElementById('end-day-no')!.addEventListener('click', () => {
+    overlay.remove();
+  });
+}
+
 function checkAndShowConversation(): void {
   if (!gameState) {
     switchScene('GuildhallScene');
@@ -836,6 +878,9 @@ function checkAndShowConversation(): void {
   }
 
   switchScene('TownScene');
+
+  // If all cats are busy, suggest ending the day
+  setTimeout(() => suggestEndDay(), 500);
 }
 
 function showConversation(breedA: string, breedB: string, rank: string): void {
