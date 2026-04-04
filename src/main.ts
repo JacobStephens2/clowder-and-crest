@@ -1456,6 +1456,38 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
     }
   }
 
+  // Chapter 6+: Rival guild influence — uncompleted contested jobs count as rival wins
+  if (gameState.chapter >= 6 && cachedDailyJobs) {
+    const contestedJobs = (cachedDailyJobs as any[]).filter((j: any) => j.contested);
+    const contestedLost = contestedJobs.filter((j: any) => !jobsCompletedToday.has(j.id));
+    if (contestedLost.length > 0) {
+      const rivalInfluence = (gameState.flags.rivalInfluence as unknown as number ?? 0) + contestedLost.length;
+      gameState.flags.rivalInfluence = rivalInfluence as unknown as boolean;
+      showToast(`The Silver Paws claimed ${contestedLost.length} contested job${contestedLost.length > 1 ? 's' : ''}. Their influence: ${rivalInfluence}`);
+
+      // Consequences at thresholds
+      if (rivalInfluence >= 10 && !gameState.flags.rivalPoached) {
+        gameState.flags.rivalPoached = true;
+        const poachable = gameState.cats.filter((c) => c.id !== 'player_wildcat' && c.mood !== 'happy');
+        if (poachable.length > 0) {
+          const poached = poachable[Math.floor(Math.random() * poachable.length)];
+          gameState.cats = gameState.cats.filter((c) => c.id !== poached.id);
+          gameState.stationedCats = gameState.stationedCats.filter((s) => s.catId !== poached.id);
+          playSfx('hiss');
+          setTimeout(() => showToast(`${poached.name} was poached by the Silver Paws! Reduce their influence by completing contested jobs.`), 2000);
+        }
+      }
+    } else if (contestedJobs.length > 0) {
+      // Player completed all contested jobs — reduce rival influence
+      const current = (gameState.flags.rivalInfluence as unknown as number ?? 0);
+      if (current > 0) {
+        const reduced = Math.max(0, current - 2);
+        gameState.flags.rivalInfluence = reduced as unknown as boolean;
+        showToast(`You defended all contested jobs! Silver Paws influence: ${reduced}`);
+      }
+    }
+  }
+
   checkRatPlagueResolution(gameState);
   checkChapterAdvance(gameState);
   saveGame(gameState);
