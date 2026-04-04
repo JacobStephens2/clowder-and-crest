@@ -182,9 +182,10 @@ export class ChaseScene extends Phaser.Scene {
     this.cameras.main.setZoom(DPR);
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
-    // Tutorial on first play
+    // Tutorial on first play — pause scene until dismissed
     if (!localStorage.getItem('clowder_chase_tutorial')) {
       localStorage.setItem('clowder_chase_tutorial', '1');
+      this.scene.pause();
       const t = document.createElement('div');
       t.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
       t.innerHTML = `
@@ -196,7 +197,10 @@ export class ChaseScene extends Phaser.Scene {
         </div>
         <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:12px;margin-top:20px">Tap to start</div>
       `;
-      t.addEventListener('click', () => t.remove());
+      t.addEventListener('click', () => {
+        t.remove();
+        this.scene.resume();
+      });
       document.body.appendChild(t);
     }
 

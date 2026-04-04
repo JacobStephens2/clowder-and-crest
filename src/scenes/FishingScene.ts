@@ -84,6 +84,7 @@ export class FishingScene extends Phaser.Scene {
   private catchMeter = 0;      // 0..1
   private elapsed = 0;         // seconds since start
   private finished = false;
+  private tutorialShowing = false;
 
   // Graphics objects
   private hookRect!: Phaser.GameObjects.Rectangle;
@@ -136,9 +137,10 @@ export class FishingScene extends Phaser.Scene {
     this.cameras.main.setZoom(DPR);
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
-    // Show tutorial on first play
+    // Show tutorial on first play — pause game until dismissed
     if (!localStorage.getItem('clowder_fishing_tutorial')) {
       localStorage.setItem('clowder_fishing_tutorial', '1');
+      this.tutorialShowing = true;
       const tutorial = document.createElement('div');
       tutorial.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
       tutorial.innerHTML = `
@@ -150,7 +152,10 @@ export class FishingScene extends Phaser.Scene {
         </div>
         <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:12px;margin-top:20px">Tap to start</div>
       `;
-      tutorial.addEventListener('click', () => tutorial.remove());
+      tutorial.addEventListener('click', () => {
+        tutorial.remove();
+        this.tutorialShowing = false;
+      });
       document.body.appendChild(tutorial);
     }
 
@@ -318,7 +323,7 @@ export class FishingScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
-    if (this.finished) return;
+    if (this.finished || this.tutorialShowing) return;
 
     const dt = delta / 1000; // seconds
     this.elapsed += dt;
