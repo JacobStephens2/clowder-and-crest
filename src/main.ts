@@ -70,6 +70,8 @@ const statusChapter = document.getElementById('status-chapter')!;
 
 // ──── Pause Button ────
 const pauseBtn = document.getElementById('status-pause');
+let pauseOverlay: HTMLDivElement | null = null;
+
 if (pauseBtn) {
   pauseBtn.addEventListener('click', () => {
     if (isPaused()) {
@@ -77,12 +79,23 @@ if (pauseBtn) {
       resumeMusic();
       pauseBtn.textContent = '||';
       pauseBtn.style.color = '#8b7355';
+      if (pauseOverlay) { pauseOverlay.remove(); pauseOverlay = null; }
     } else {
       pauseDayTimer();
       pauseMusic();
       pauseBtn.textContent = '\u25B6';
       pauseBtn.style.color = '#c4956a';
-      showToast('Game paused');
+      // Block all input with a full-screen overlay
+      pauseOverlay = document.createElement('div');
+      pauseOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9998;display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:pointer;';
+      pauseOverlay.innerHTML = `
+        <div style="color:#c4956a;font-family:Georgia,serif;font-size:32px;margin-bottom:8px">Paused</div>
+        <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:14px">Tap anywhere to resume</div>
+      `;
+      pauseOverlay.addEventListener('click', () => {
+        pauseBtn.click(); // trigger unpause
+      });
+      document.body.appendChild(pauseOverlay);
     }
   });
 }
@@ -988,8 +1001,8 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
   const breedNameA = BREED_NAMES[breedA] ?? breedA;
   const breedNameB = BREED_NAMES[breedB] ?? breedB;
 
-  const portraitImgA = `<img src="assets/sprites/${breedA}/south.png" style="width:48px;height:48px;image-rendering:pixelated;margin-bottom:4px" />`;
-  const portraitImgB = `<img src="assets/sprites/${breedB}/south.png" style="width:48px;height:48px;image-rendering:pixelated;margin-bottom:4px" />`;
+  const portraitImgA = `<img src="assets/sprites/${breedA}/south.png" style="width:72px;height:72px;image-rendering:pixelated;margin-bottom:4px" />`;
+  const portraitImgB = `<img src="assets/sprites/${breedB}/south.png" style="width:72px;height:72px;image-rendering:pixelated;margin-bottom:4px" />`;
 
   overlay.innerHTML = `
     <div class="conversation-portraits">

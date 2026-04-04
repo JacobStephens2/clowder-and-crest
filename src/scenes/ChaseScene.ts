@@ -96,7 +96,7 @@ function placeDots(grid: number[][], exclude: Set<string>): { r: number; c: numb
   const dots: { r: number; c: number }[] = [];
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
-      if (grid[r][c] === FLOOR && !exclude.has(`${r},${c}`)) {
+      if (grid[r][c] === FLOOR && !exclude.has(`${r},${c}`) && Math.random() < 0.25) {
         dots.push({ r, c });
       }
     }

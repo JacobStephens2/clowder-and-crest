@@ -72,4 +72,8 @@
 [x] - Fish warning on game load (toast if can't afford upkeep)
 [x] - Design document updated to v5 (matches current game state)
 [x] - Cat art on assign screen (breed sprites replace colored circles)
+[x] - Russian Blue south walk frames fixed (regenerated character via PixelLab)
+[x] - Chase minigame fish rebalanced (25% dot placement instead of 100%)
+[x] - Bigger cat art in dialogues (72px portraits, 100px circles)
+[x] - Pause blocks gameplay (full-screen "Paused" overlay, tap to resume)
 [x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview
