@@ -3,6 +3,7 @@ import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS } from '../utils/constants';
 import { getGameState } from '../main';
 import type { SaveData } from '../systems/SaveManager';
+import { getCurrentFestival } from '../systems/GameSystems';
 import { getChapterName } from '../systems/ProgressionManager';
 
 import { ALL_BREED_IDS } from '../utils/constants';
@@ -75,6 +76,16 @@ export class GuildhallScene extends Phaser.Scene {
       fontSize: '12px',
       color: '#6b5b3e',
     }).setOrigin(0.5);
+
+    // Festival indicator
+    const festival = getCurrentFestival(save.day);
+    if (festival) {
+      const festY = 93;
+      this.add.rectangle(GAME_WIDTH / 2, festY, ROOM_WIDTH, 20, 0x3a3520, 0.8);
+      this.add.text(GAME_WIDTH / 2, festY, `\u{1F389} ${festival.name}`, {
+        fontFamily: 'Georgia, serif', fontSize: '10px', color: '#dda055',
+      }).setOrigin(0.5);
+    }
 
     // Plague warning
     if (save.flags.ratPlagueStarted && !save.flags.ratPlagueResolved) {

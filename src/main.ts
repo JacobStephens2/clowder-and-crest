@@ -72,13 +72,17 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// ──── Auto-save on page unload ────
+// ──── Auto-save ────
 window.addEventListener('beforeunload', () => {
   if (gameState) saveGame(gameState);
 });
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && gameState) saveGame(gameState);
 });
+// Periodic auto-save every 60 seconds
+setInterval(() => {
+  if (gameState) saveGame(gameState);
+}, 60000);
 
 // ──── UI References ────
 const overlayLayer = document.getElementById('overlay-layer')!;
