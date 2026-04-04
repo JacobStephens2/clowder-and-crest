@@ -3,6 +3,7 @@ import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS } from '../utils/constants';
 import { getGameState } from '../main';
 import type { SaveData } from '../systems/SaveManager';
+import { saveGame } from '../systems/SaveManager';
 import { isCatStationed } from '../systems/Economy';
 
 const BREEDS_WITH_SPRITES = new Set(['wildcat', 'russian_blue', 'tuxedo', 'maine_coon', 'siamese']);
@@ -188,6 +189,41 @@ export class RoomScene extends Phaser.Scene {
           fontFamily: 'Georgia, serif', fontSize: '6px', color: '#ddd',
           align: 'center', wordWrap: { width: size - 4 },
         }).setOrigin(0.5);
+      }
+
+      // Make furniture draggable for rearrangement
+      const dragHit = this.add.rectangle(x, y, size, size, 0x000000, 0)
+        .setInteractive({ draggable: true, useHandCursor: true });
+
+      dragHit.on('drag', (_pointer: Phaser.Input.Pointer, dragX: number, dragY: number) => {
+        dragHit.setPosition(dragX, dragY);
+        // Move the visual (sprite or fallback) too
+        const spriteObj = this.children.getByName(`furn_sprite_${f.furnitureId}_${col}_${row}`) as Phaser.GameObjects.Sprite | null;
+        if (spriteObj) spriteObj.setPosition(dragX, dragY);
+      });
+
+      dragHit.on('dragend', () => {
+        const grid = worldToGrid(dragHit.x, dragHit.y);
+        if (grid.col >= 0 && grid.col < GRID_COLS && grid.row >= 0 && grid.row < GRID_ROWS) {
+          // Update save data
+          f.gridX = grid.col;
+          f.gridY = grid.row;
+          const save = getGameState();
+          if (save) saveGame(save);
+          // Reload the scene to redraw
+          this.scene.restart({ roomId: this.roomId });
+        } else {
+          // Snap back
+          this.scene.restart({ roomId: this.roomId });
+        }
+      });
+
+      // Name the sprite for drag tracking
+      if (this.textures.exists(spriteKey)) {
+        const spriteObj = this.children.list.find(
+          (c) => c instanceof Phaser.GameObjects.Sprite && (c as Phaser.GameObjects.Sprite).texture.key === spriteKey
+        ) as Phaser.GameObjects.Sprite | undefined;
+        if (spriteObj) spriteObj.setName(`furn_sprite_${f.furnitureId}_${col}_${row}`);
       }
 
       // Make interactive furniture clickable

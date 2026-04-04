@@ -14,4 +14,4 @@
 [x] - when the player buys something from the furniture shop, let them choose which room (room picker overlay)
 [x] - prevent the number of moves noted when a player is solving a puzzle from being obscured by the header
 [x] - put an image of the cat on the cat block in the rush hour puzzle (breed sprite on target block)
-[] - let the player rearrange furniture in rooms
+[x] - let the player rearrange furniture in rooms (drag to reposition, persists to save)
