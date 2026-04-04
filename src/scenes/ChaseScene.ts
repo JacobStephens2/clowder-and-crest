@@ -239,9 +239,8 @@ export class ChaseScene extends Phaser.Scene {
       fontFamily: 'Georgia, serif', fontSize: '12px', color: '#dda055',
     }).setOrigin(0.5);
 
-    // Buttons
-    const btnY = MAZE_Y + MAZE_H + 30;
-    this.createButton(GAME_WIDTH / 2, btnY, 'Quit', () => {
+    // Quit button (top-left, out of the way of d-pad)
+    this.createButton(60, MAZE_Y + MAZE_H + 30, 'Quit', () => {
       this.cleanup();
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
       eventBus.emit('navigate', 'TownScene');
@@ -254,12 +253,39 @@ export class ChaseScene extends Phaser.Scene {
       if (dir) this.moveCat(dir.dr, dir.dc);
     });
 
-    // Input: tap to move (direction based on tap relative to cat)
+    // Virtual d-pad for mobile (below maze)
+    const dpadY = MAZE_Y + MAZE_H + 70;
+    const dpadX = GAME_WIDTH / 2;
+    const dpadSize = 40;
+    const dpadGap = 4;
+
+    const makeArrow = (x: number, y: number, dr: number, dc: number, label: string) => {
+      const btn = this.add.rectangle(x, y, dpadSize, dpadSize, 0x2a2520, 0.8);
+      btn.setStrokeStyle(1, 0x6b5b3e);
+      btn.setInteractive({ useHandCursor: true });
+      this.add.text(x, y, label, { fontSize: '18px', color: '#c4956a' }).setOrigin(0.5);
+      btn.on('pointerdown', () => { if (!this.caught) this.moveCat(dr, dc); });
+    };
+
+    makeArrow(dpadX, dpadY - dpadSize - dpadGap, -1, 0, '\u25B2'); // Up
+    makeArrow(dpadX, dpadY + dpadSize + dpadGap, 1, 0, '\u25BC');  // Down
+    makeArrow(dpadX - dpadSize - dpadGap, dpadY, 0, -1, '\u25C0'); // Left
+    makeArrow(dpadX + dpadSize + dpadGap, dpadY, 0, 1, '\u25B6');  // Right
+
+    // Swipe gesture for mobile
+    let swipeStart: { x: number; y: number } | null = null;
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (this.caught) return;
-      const catWorld = this.cellToWorld(this.catPos.r, this.catPos.c);
-      const dx = pointer.worldX - catWorld.x;
-      const dy = pointer.worldY - catWorld.y;
+      // Only register swipes in the maze area
+      if (pointer.worldY < MAZE_Y || pointer.worldY > MAZE_Y + MAZE_H) return;
+      swipeStart = { x: pointer.worldX, y: pointer.worldY };
+    });
+    this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+      if (this.caught || !swipeStart) return;
+      const dx = pointer.worldX - swipeStart.x;
+      const dy = pointer.worldY - swipeStart.y;
+      const dist = Math.hypot(dx, dy);
+      swipeStart = null;
+      if (dist < 15) return; // Too short, ignore
       if (Math.abs(dx) > Math.abs(dy)) {
         this.moveCat(0, dx > 0 ? 1 : -1);
       } else {

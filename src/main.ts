@@ -285,6 +285,9 @@ bottomBar.addEventListener('click', (e) => {
 
 // New game — name prompt
 eventBus.on('show-name-prompt', () => {
+  // Remove any existing name prompt to prevent stacking
+  overlayLayer.querySelectorAll('.name-prompt-overlay').forEach((el) => el.remove());
+
   const prompt = document.createElement('div');
   prompt.className = 'name-prompt-overlay';
   prompt.innerHTML = `
@@ -300,7 +303,10 @@ eventBus.on('show-name-prompt', () => {
 
   input.focus();
 
+  let submitted = false;
   const doSubmit = () => {
+    if (submitted) return; // Prevent double-submit on mobile
+    submitted = true;
     const name = input.value.trim() || 'Stray';
     prompt.remove();
     gameState = createDefaultSave(name);
@@ -984,6 +990,8 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
 
   document.getElementById('btn-do-puzzle')!.addEventListener('click', () => {
     overlay.remove();
+    // Hide town overlay and other panels during minigames
+    overlayLayer.querySelectorAll('.town-overlay, .assign-overlay').forEach((el) => el.remove());
     switchToPuzzleMusic();
     pauseDayTimer(); // Pause time during puzzles/minigames
 
