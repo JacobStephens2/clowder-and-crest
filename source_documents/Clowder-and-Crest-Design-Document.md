@@ -1,8 +1,8 @@
-# Clowder & Crest — Design Document v7
+# Clowder & Crest — Design Document v8
 
 A cat guild management game set in a medieval fantasy world. Built with Phaser 3 + TypeScript + Capacitor for Android and web.
 
-**What changed from v6:** Temptation economics for Crest/Shadow (Shadow pays +25% fish but bonds decay; Crest gives XP/bond growth). Chapter-scaling upkeep prevents runaway profit. Player chooses minigame type per job. Cat rest action (work-vs-rest tradeoff). Offline stationed earnings (capped). Festival system (7 rotating events). Job preview in day transition. Conversation cliffhangers. Cat Hunting stat adds time in chase minigame. Virtual d-pad for mobile chase controls. Heraldic crest logo. Rain ambience in intro. Save migration forward-compatible.
+**What changed from v7:** Chapter 7 (The Inquisition — 5-day investigation with 3 verdicts). Bengal breed with PixelLab sprites and 5 bond conversation chains. Cat specialization at level 5 (+20% category bonus). Guild journal. Hunt minigame (whack-a-mole for pest control). Guard dog threat in chase. Level-scaling food costs and random expenses. Furniture requirements for wishes. Wood plank room textures. Full-screen dialogue art. Guided new-player tutorial. PixelLab rat sprite. Minigame approach limits by job category.
 
 ---
 
@@ -21,6 +21,8 @@ A cat guild management game set in a medieval fantasy world. Built with Phaser 3
 3. **The central crisis — The Rat Plague** — A great plague of rats descends on the town. The guild must prove its worth. Drawing on the legend of St. Rosalia of Palermo and St. Gertrude of Nivelles.
 4. **Independence and the final ordeal** — The guild must prove itself through a major contract or stand.
 5. **Final union, completion and fulfillment** — The guild is established, renowned, and home.
+6. **The Rival** — The Silver Paws rival guild contests jobs and poaches cats. Defeating them unlocks the Bengal breed.
+7. **The Inquisition** — The Bishop's Inquisitor investigates the guild for 5 days. Job choices determine whether the guild is vindicated, acquitted, or condemned.
 
 ---
 
@@ -232,15 +234,16 @@ Each in-game day lasts **5 real-time minutes**:
 
 **The player is the founding Wildcat** — the first cat, the guild founder, always present. Named at game start.
 
-### Breeds (5 MVP)
+### Breeds (6)
 
-| Breed | Temperament | Stat Bias | Recruit Cost |
-|---|---|---|---|
-| **Wildcat** | Fierce, independent, territorial | Hunting ++, Stealth + | (starter) |
-| **Russian Blue** | Gentle, loyal, reserved | Stealth ++, Intelligence + | 30 fish |
-| **Tuxedo** | Sharp, formal, focused | Intelligence +, Charm + | 40 fish |
-| **Maine Coon** | Gentle giant, patient, social | Endurance ++, Hunting + | 50 fish |
-| **Siamese** | Vocal, dramatic, intelligent | Intelligence ++, Charm + | 60 fish |
+| Breed | Temperament | Stat Bias | Recruit Cost | Unlock |
+|---|---|---|---|---|
+| **Wildcat** | Fierce, independent, territorial | Hunting ++, Stealth + | (starter) | — |
+| **Russian Blue** | Gentle, loyal, reserved | Stealth ++, Intelligence + | 30 fish | Ch.1 |
+| **Tuxedo** | Sharp, formal, focused | Intelligence +, Charm + | 40 fish | Ch.1 |
+| **Maine Coon** | Gentle giant, patient, social | Endurance ++, Hunting + | 50 fish | Ch.1 |
+| **Siamese** | Vocal, dramatic, intelligent | Intelligence ++, Charm + | 60 fish | Ch.1 |
+| **Bengal** | High-energy, restless, brilliant | Senses ++, Intelligence + | 70 fish | Ch.6 (rival defeated) |
 
 ### Cat Stats (6 core, rated 1-10)
 
@@ -250,7 +253,7 @@ Hunting, Stealth, Intelligence, Endurance, Charm, Senses
 
 - **Name** — player-assigned, renamable from the Cats panel at any time
 - **Breed** — determines sprite, base stats, temperament
-- **Level** — 1-5, gains XP from completed jobs
+- **Level** — 1-5, gains XP from completed jobs. At level 5, chooses a permanent specialization (+20% to one job category, -5% to others)
 - **Mood** — Happy / Content / Tired / Unhappy — mechanically affects job performance (+10% when happy, -15% when unhappy). Recovers with daily food, drops when underfed.
 - **Traits** — 1-2 from: Brave (+10% on hard jobs), Lazy (-8%), Curious (+8% courier), Pious (+5% pest control), Night Owl (+5%), Skittish (-10% hard), Loyal (+3%), Mischievous (random ±), Grumpy, Playful
 - **Bond levels** with other cats — Stranger -> Acquaintance -> Companion -> Bonded
@@ -286,7 +289,7 @@ Quitting a puzzle costs 30% of the job's base reward in fish, drops the cat's mo
 
 ---
 
-## Minigame System (3 Types)
+## Minigame System (5 Types)
 
 ### Rush Hour Sliding Blocks
 6x6 grid, axis-constrained blocks. Slide the cat token to the exit. Touch-native drag controls. Cat breed sprite shown on the target block.
@@ -294,7 +297,7 @@ Quitting a puzzle costs 30% of the job's base reward in fish, drops the cat's mo
 - **Procedural generation** with BFS validation (easy: 4-6 blocks, medium: 6-9, hard: 8-12)
 - 5 hand-designed fallback puzzles
 - Star rating: 3 stars (min moves), 2 stars (≤2x), 1 star (completed)
-- Undo, Reset, Quit buttons
+- Available for all job categories
 
 ### Sokoban Crate Pushing
 7x7 grid. Push crates onto target positions. WASD/arrow/tap controls.
@@ -302,16 +305,33 @@ Quitting a puzzle costs 30% of the job's base reward in fish, drops the cat's mo
 - **Procedural generation** via reverse-play with BFS verification + deadlock detection
 - 8 hand-crafted fallback levels (easy: 2 crates, medium: 3, hard: 4)
 - Star rating based on move efficiency
+- Available for all job categories
 
 ### Chase Minigame
-13x13 procedurally generated maze. Cat chases a rat with simple flee AI. Collect fish dots along the way.
+13x13 procedurally generated maze. Cat chases a rat (PixelLab sprite) with simple flee AI. Collect fish dots along the way. A guard dog patrols the maze — getting caught costs 8 seconds.
 
-- Timer: 60s easy, 55s medium, 45s hard. Rat speed scales with difficulty.
+- Timer: 60s easy, 55s medium, 45s hard. Rat/dog speed scales with difficulty.
 - Stars based on time remaining + dots collected
 - Timeout = failure penalty
-- Pest control jobs only (~33% chance)
+- Available for pest control, detection, shadow jobs
 
-All minigames show the job name and assigned cat's sprite. Quitting triggers failure penalty.
+### Hunt Minigame
+Whack-a-mole style. 9 holes in a 3x3 grid. Rats pop up and must be tapped before they disappear.
+
+- Spawn rate and visibility window scale with difficulty
+- Miss limit: 5 easy, 4 medium, 3 hard. Exceeding = failure
+- Hunting stat adds bonus time
+- Available for pest control jobs only
+
+### Fishing Minigame
+Reel-in mechanic with fish zone tracking. Hold to reel, keep hook in the green zone.
+
+- Current surges every 6 seconds add challenge
+- Cat's Endurance and Senses stats affect gameplay
+- 12 named fish types
+- Available for courier and guard jobs
+
+All minigames show the job name and assigned cat's sprite. Quitting triggers failure penalty. Tutorial overlays pause the game until dismissed.
 
 ---
 
@@ -321,10 +341,11 @@ Bond system with Fire Emblem-style support conversations:
 
 - Cats build Bond Points from working on the same day (+3 per job)
 - At thresholds (10/25/50), conversations unlock
-- 3 pairings x 3 ranks = 9 conversation scripts
-- Portrait circles show cat name + breed subtitle
+- 15 pairings x 3 ranks = 45 pair conversations + 3 group conversations = 48 total
+- Full-screen scene art backgrounds (guildhall, granary, rooftop) at 25% opacity
+- Portrait circles show cat pixel art sprite, name, and breed subtitle
 - Speaker label shows "Name *Breed*" format
-- Pairings: Wildcat↔Russian Blue, Tuxedo↔Siamese, Maine Coon↔Wildcat
+- All 15 breed pairings covered (including Bengal with all 5 original breeds)
 
 ---
 
@@ -533,11 +554,12 @@ Repository: `https://github.com/JacobStephens2/clowder-and-crest`
 
 ### Implemented
 
-- 1 playable starter cat (Wildcat) + 4 recruitable cats (5 breeds total)
+- 1 playable starter cat (Wildcat) + 5 recruitable cats (6 breeds total, Bengal unlocked Ch.6)
 - Player is the founding Wildcat — names their cat at game start, can rename any cat
-- 6 cat stats, traits, mood, levels (cap 5)
-- Job board with 5 categories (Pest Control, Courier, Guard, Sacred, Detection), **30 job templates**
-- **4 minigame types**: Rush Hour (procedural), Sokoban (procedural + 8 fallback), Chase (procedural maze), Fishing (reel-in mechanic)
+- 6 cat stats, traits, mood, levels (cap 5), **specialization at level 5** (+20% to one job category)
+- Job board with 6 categories (Pest Control, Courier, Guard, Sacred, Detection, Shadow), **30 job templates**
+- **5 minigame types**: Rush Hour (procedural), Sokoban (procedural + 8 fallback), Chase (procedural maze + guard dog), Fishing (reel-in mechanic), Hunt (whack-a-mole)
+- **Minigame approach limits** — fishing for courier/guard only, chase for pest/detection/shadow, hunt for pest control
 - **No auto-resolve** — all jobs require active gameplay
 - **Job failure penalty** — fish loss, mood drop, cat used for the day
 - **Job fit details** — key stats, trait/mood modifiers, color-coded match shown when assigning
@@ -556,15 +578,20 @@ Repository: `https://github.com/JacobStephens2/clowder-and-crest`
 - **Wandering cats** in room view with directional walk animations
 - 15 furniture items with auto-placement on purchase
 - Fish economy with balanced income/costs
-- 5-chapter progression with **Rat Plague as dramatic siege** (narrative onset/resolution scenes, daily escalation with cat sickness and rising upkeep, progress bar tracker)
-- **All 10 bond pairings** tracked with 30 pair conversations + 3 group conversations (33 total)
+- **7-chapter progression** — Rat Plague siege (Ch.3), Rival guild (Ch.6), Inquisition investigation (Ch.7)
+- **Chapter 6: The Rival** — Silver Paws contest jobs, poach cats; win by reducing influence to 0
+- **Chapter 7: The Inquisition** — 5-day investigation, job choices determine verdict (Vindicated/Acquitted/Condemned)
+- **All 15 bond pairings** tracked with 45 pair conversations + 3 group conversations (48 total)
 - **Breed subtitles** in conversation portrait circles and speaker labels
 - **Cat renaming** from the Cats panel
 - **Background music** — 10 ambient + 2 puzzle tracks, separate music/SFX mute toggles
-- **Pixel art sprites** — all 5 breeds have idle (4 directions) + walk (4 directions x 6 frames)
+- **Pixel art sprites** — all 6 breeds have idle (4 directions) + walk (4 directions x 6 frames) + scratch/sit/eat/sleep animations
+- **PixelLab rat sprite** used in chase and hunt minigames
+- **Furniture sprites** displayed in guildhall overview rooms
 - Pixel art on title screen, guildhall overview, and room detail view
+- **Wood plank floor textures** per room type (sleeping/kitchen/operations) with stone walls
 - **Procedural puzzle generation** — BFS-validated random puzzles per difficulty tier
-- **Daily food upkeep** — 2 fish/day per cat as ongoing fish sink
+- **Daily food upkeep** — scales with cat level (2 + level-1 per cat); random expense events (~15% from Ch.2+)
 - **Mechanical traits and mood** — affect job stat matching and performance
 - **Save export/import** — download/upload JSON save files from menu
 - **Player cat control** — tap-to-move, WASD/arrow keys, golden diamond indicator
@@ -574,9 +601,16 @@ Repository: `https://github.com/JacobStephens2/clowder-and-crest`
 - **Extracted MusicManager and DayTimer** — reduced main.ts god-file
 - **Interactive furniture** — click scratching post, catnip, beds to send player cat; sleep animations for all breeds on beds
 - **Cat interaction** — click cats in rooms to walk over, bond (+1 point), hear purr, see heart animation
-- **Daily cat wishes** — one random cat per day has a wish; fulfill for mood/bond/stat rewards
+- **Daily cat wishes** — requires appropriate furniture to fulfill (bed for nap, scratching post for scratching, etc.)
 - **Bond milestone celebrations** — fanfare + heart toast when bond rank increases
 - **14 sound effects** (ElevenLabs) — victory, recruit, furniture, rat caught, fish splash, fail, purr, hiss, bell, quill, fanfare, tap, block slide, fish earn
+- **Breed-specific vocalizations** — pitch-shifted sounds for all 6 breeds (persian low, siamese high, etc.)
+- **Guild journal** — scrollable log of chapters, recruits, level-ups, bonds, specializations, and events
+- **Achievements screen** — 14 milestones tracking progress
+- **Guided tutorial** — 5-step walkthrough for new players on first day
+- **Wish banner** on guildhall view with fulfill button
+- **End Day button** on guildhall view
+- **Full-screen dialogue art** — scene backgrounds at 25% opacity in conversations
 - **Introductory story sequence** — 6-panel narrative intro for new games with scene art
 - **Welcome back message** on game load with cat names
 - **New player guidance** — contextual hints for first jobs, recruitment, bonds

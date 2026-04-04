@@ -115,9 +115,44 @@ The story follows Christopher Booker's **Rags to Riches** pattern: a protagonist
 
 ---
 
+## Chapter 6: The Rival
+
+**Setting:** The guild's success has attracted competition. A rival guild — the Silver Paws — emerges, contesting jobs and poaching cats.
+
+**What happens:** Contested jobs appear on the board. Jobs the player doesn't complete are claimed by the Silver Paws, increasing their influence. At high influence, they poach an unhappy cat. The player must complete all contested jobs to reduce rival influence to zero.
+
+**Progression trigger:** Complete 50 total jobs + earn 500 fish + defeat the Silver Paws.
+
+**Resolution:** When rival influence reaches zero, a 4-panel narrative scene plays where the Silver Paws concede and withdraw. The Bengal — a brilliant, restless cat from the rival guild — becomes available for recruitment.
+
+**Emotional arc:** Defending what you've built. The guild must prove it deserves its success against a credible challenger.
+
+---
+
+## Chapter 7: The Inquisition
+
+**Setting:** The Bishop sends an Inquisitor — Brother Aldric — to investigate the guild. Are these cats holy servants, or something darker?
+
+**What happens:** A 5-day investigation begins. Each day, the Inquisitor questions a random cat and observes the guild's work. The player's job choices during these 5 days determine the verdict:
+
+- **Sacred and Guard jobs** earn favor with the Inquisitor
+- **Shadow jobs** earn condemnation
+- **Other jobs** are neutral
+
+**Three verdicts:**
+- **Vindicated** (4+ sacred/guard, 0 shadow): Bishop's Blessing — permanent +5% all rewards
+- **Acquitted** (mixed record): No penalty, no blessing
+- **Condemned** (3+ shadow or shadow > good work): One cat must be exiled, -20 reputation, but gain an underground contact (+15% shadow rewards)
+
+**Narrative scenes:** Brother Aldric arrives with monks and ledgers (5-panel intro). Verdict delivered (4-panel resolution). Condemned verdict triggers an exile choice overlay.
+
+**Emotional arc:** The reckoning. Your reputation choices from Chapters 1-6 face institutional scrutiny. Noble players feel validated. Shadow players face real consequences — but the game doesn't punish them unfairly; it makes the tradeoff visible.
+
+---
+
 ## Bond Stories
 
-Between the chapter arc, the emotional heart of the game lives in the **bond conversations** — 30 pair conversations across all 10 breed pairings, plus 3 group conversations at major milestones.
+Between the chapter arc, the emotional heart of the game lives in the **bond conversations** — 45 pair conversations across all 15 breed pairings, plus 3 group conversations at major milestones.
 
 ### Pair Bonds (C → B → A rank)
 
@@ -135,6 +170,11 @@ Each pairing has a three-conversation arc that deepens as the cats work together
 | **Maine Coon & Tuxedo** | Strength and strategy. The bodyguard and the analyst. |
 | **Maine Coon & Siamese** | The giant and the oracle. Physical power and spiritual insight. |
 | **Maine Coon & Russian Blue** | Gentle giants, both. Two quiet souls who don't need words. |
+| **Wildcat & Bengal** | The defector. A rival guild member who chose loyalty over politics. |
+| **Bengal & Russian Blue** | Too loud and too quiet. Opposites who learn to complement each other. |
+| **Bengal & Siamese** | Two kinds of brilliant. Pattern-seeker meets people-reader. |
+| **Bengal & Tuxedo** | Method and madness. The improviser and the organizer. |
+| **Bengal & Maine Coon** | Speed and strength. The scout and the anchor. |
 
 ### Group Conversations
 

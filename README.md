@@ -6,23 +6,32 @@ A cozy medieval cat guild management game. Recruit cats, take jobs, solve puzzle
 
 ## Features
 
-- **5 cat breeds** with pixel art sprites, walk animations, and sleeping poses (Wildcat, Russian Blue, Tuxedo, Maine Coon, Siamese)
-- **4 minigame types** — player chooses per job: Rush Hour sliding blocks, Sokoban crate pushing, rat chase maze, and fishing
-- **30 jobs** across 5 categories: Pest Control, Courier, Guard, Sacred, Detection
-- **Guildhall with 3 rooms** — 15 furniture items with pixel art, drag to rearrange, move between rooms
-- **Bond system** with 33 conversation scripts (30 pair + 3 group) across all 10 cat pairings, with narrative cliffhangers
+- **6 cat breeds** with pixel art sprites, walk animations, and sleeping poses (Wildcat, Russian Blue, Tuxedo, Maine Coon, Siamese, Bengal)
+- **5 minigame types** — player chooses per job: Rush Hour sliding blocks, Sokoban crate pushing, rat chase maze, fishing, and rat hunting
+- **30 jobs** across 6 categories: Pest Control, Courier, Guard, Sacred, Detection, Shadow
+- **7 chapters** of narrative content — from stray to established guild, rival guild conflict, and Church Inquisition
+- **Guildhall with 3 rooms** — 15 furniture items with pixel art sprites, drag to rearrange, move between rooms
+- **Bond system** with 48 conversation scripts (45 pair + 3 group) across all 15 cat pairings, with narrative cliffhangers
 - **Reputation system** (Crest/Shadow) — temptation economics: Shadow pays more fish but erodes bonds; Crest grows slower but builds trust. Affects recruit costs, XP, daily income, and bond growth
 - **Traveling merchant** every 3rd day with special items
 - **Festival system** — 7 rotating themed bonus events every 7 days
 - **Station crisis events** requiring player intervention
 - **Job combo chains** for consecutive same-category work (+25% at 5-day streak)
-- **Daily cat wishes** and **cat rest action** (work-vs-rest tradeoff)
+- **Daily cat wishes** with furniture requirements (need the right furniture to fulfill)
+- **Cat specialization** at level 5 — permanent +20% bonus to one job category
+- **Guild journal** — scrollable log of chapters, recruits, level-ups, bonds, and events
+- **Achievements** — 14 milestones tracking progress
+- **Guided tutorial** for new players on first day
 - **Offline stationed earnings** — cats accumulate fish while you're away (capped)
 - **Real-time day cycle** (3-minute days) with Dawn-to-Night phases and time-of-day town art
-- **Economy** with chapter-scaling upkeep, stationed passive income, fish crisis mechanics
+- **Economy** with level-scaling food costs, random expenses, chapter-scaling upkeep, stationed passive income, fish crisis mechanics
 - **Rat Plague siege** (Chapter 3) — dramatic narrative scenes, daily escalation (cat sickness, rising costs), progress bar, climactic St. Rosalia procession resolution
+- **Chapter 6: The Rival** — Silver Paws rival guild contests jobs, poaches cats, resolved through sustained competition
+- **Chapter 7: The Inquisition** — 5-day investigation by Bishop's Inquisitor, job choices determine verdict (Vindicated/Acquitted/Condemned)
 - **Introductory story sequence** with rain ambience, music, and narrative panels
-- **Cat stats affect minigames** — Hunting adds time in rat chase
+- **Cat stats affect minigames** — Hunting adds time in rat chase and hunt
+- **Guard dog** in chase minigame — patrols the maze, costs time if caught
+- **Breed-specific vocalizations** — pitch-shifted sounds for all 6 breeds
 - **Heraldic crest logo** on title screen, favicon, and guildhall
 - **12 music tracks** + 15 ElevenLabs sound effects + rain ambience
 - **Procedural puzzle generation** with BFS validation
