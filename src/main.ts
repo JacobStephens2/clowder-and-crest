@@ -65,6 +65,13 @@ const game = new Phaser.Game(config);
 // ──── OTA Updates (Capacitor only, silent) ────
 checkForUpdates();
 
+// ──── Keyboard shortcuts ────
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && pauseBtn && gameState) {
+    pauseBtn.click();
+  }
+});
+
 // ──── Auto-save on page unload ────
 window.addEventListener('beforeunload', () => {
   if (gameState) saveGame(gameState);
@@ -1963,6 +1970,14 @@ function showMenuPanel(): void {
       <div>Guild upkeep: ${gameState.rooms.filter(r => r.unlocked).length} rooms = ${gameState.rooms.filter(r => r.unlocked).length} fish</div>
       ${Math.max(0, gameState.chapter - 1) > 0 ? `<div>Guild costs: Chapter ${gameState.chapter} = ${Math.max(0, gameState.chapter - 1) * 2} fish</div>` : ''}
       <div style="margin-top:4px;color:#c4956a">Total: ${gameState.cats.length * 2 + gameState.rooms.filter(r => r.unlocked).length + Math.max(0, gameState.chapter - 1) * 2} fish/day</div>
+    </div>
+    <div style="margin-bottom:16px;padding:8px 12px;background:rgba(42,37,32,0.4);border-radius:4px;font-size:11px;color:#6b5b3e">
+      <div style="margin-bottom:4px;color:#8b7355">Guild Statistics:</div>
+      <div>Days survived: ${gameState.day}</div>
+      <div>Total fish earned: ${gameState.totalFishEarned}</div>
+      <div>Jobs completed: ${gameState.totalJobsCompleted}</div>
+      <div>Bonds formed: ${gameState.bonds.filter(b => b.points >= 10).length}/${gameState.bonds.length}</div>
+      <div>Furniture owned: ${gameState.furniture.length}</div>
     </div>
     <button class="menu-btn" id="menu-save">Save Game</button>
     <button class="menu-btn" id="menu-furniture">Furniture Shop</button>
