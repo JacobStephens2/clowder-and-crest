@@ -10,7 +10,7 @@ import { ChaseScene } from './scenes/ChaseScene';
 import { RoomScene } from './scenes/RoomScene';
 import { FishingScene } from './scenes/FishingScene';
 import { eventBus } from './utils/events';
-import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS, BREED_NAMES, STAT_NAMES } from './utils/constants';
+import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS, BREED_NAMES, STAT_NAMES, ALL_BREED_IDS } from './utils/constants';
 import {
   type SaveData,
   createDefaultSave,
@@ -898,7 +898,7 @@ function showAssignOverlay(job: JobDef): void {
     else if (cat.mood === 'unhappy') traitEffects.push('Unhappy -');
     else if (cat.mood === 'tired') traitEffects.push('Tired -');
 
-    const spriteImg = ['wildcat', 'russian_blue', 'tuxedo', 'maine_coon', 'siamese'].includes(cat.breed)
+    const spriteImg = (ALL_BREED_IDS as readonly string[]).includes(cat.breed)
       ? `<img src="assets/sprites/${cat.breed}/south.png" style="width:36px;height:36px;image-rendering:pixelated;border-radius:50%;background:${BREED_COLORS[cat.breed] ?? '#8b7355'}" />`
       : `<div class="cat-avatar" style="background:${BREED_COLORS[cat.breed] ?? '#8b7355'};width:36px;height:36px;border-radius:50%;"></div>`;
 
@@ -1585,7 +1585,7 @@ function showCatPanel(): void {
     const stationed = gameState!.stationedCats.find((s) => s.catId === cat.id);
     const stationedJob = stationed ? getJob(stationed.jobId) : undefined;
 
-    const spriteExists = ['wildcat', 'russian_blue', 'tuxedo', 'maine_coon', 'siamese'].includes(cat.breed);
+    const spriteExists = (ALL_BREED_IDS as readonly string[]).includes(cat.breed);
     const avatarHtml = spriteExists
       ? `<img src="assets/sprites/${cat.breed}/south.png" style="width:40px;height:40px;image-rendering:pixelated;border-radius:50%;background:${color}" />`
       : `<div class="cat-avatar" style="background:${color}"></div>`;
@@ -1885,7 +1885,7 @@ function showFurnitureShop(): void {
 
       for (const item of roomItems) {
         const canBuy = roomUnlocked && gameState!.fish >= item.cost;
-        const spriteExists = ['straw_bed', 'scratching_post', 'lantern', 'cushioned_basket', 'bookshelf', 'potted_catnip', 'rug_wool', 'candle_stand', 'woolen_blanket', 'fish_barrel', 'herb_rack', 'stone_hearth', 'notice_board', 'saints_icon', 'fish_bone_mobile'].includes(item.id);
+        const spriteExists = true; // All furniture items have sprites
         const spriteImg = spriteExists ? `<img src="assets/sprites/furniture/${item.id}.png" style="width:32px;height:32px;image-rendering:pixelated;margin-bottom:4px" />` : '';
         html += `<div class="shop-item ${canBuy ? '' : 'disabled'}" data-item-id="${item.id}">
           ${spriteImg}

@@ -6,6 +6,9 @@ export const TILE_SIZE = 54;
 export const PUZZLE_OFFSET_X = (390 - 6 * 54) / 2; // 33, centered
 export const PUZZLE_OFFSET_Y = 90;
 
+// Single source of truth for breed IDs — used for sprite loading, art checks, etc.
+export const ALL_BREED_IDS = ['wildcat', 'russian_blue', 'tuxedo', 'maine_coon', 'siamese'] as const;
+
 export const BREED_COLORS: Record<string, string> = {
   wildcat: '#8B7355',
   russian_blue: '#6B8EA6',

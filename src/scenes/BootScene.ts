@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
-const BREEDS_WITH_SPRITES = ['wildcat', 'russian_blue', 'tuxedo', 'maine_coon', 'siamese'];
+import { ALL_BREED_IDS } from '../utils/constants';
+const BREEDS_WITH_SPRITES = ALL_BREED_IDS as readonly string[];
 const DIRECTIONS = ['south', 'north', 'east', 'west'];
 const WALK_FRAMES = 6;
 
@@ -16,17 +17,26 @@ export class BootScene extends Phaser.Scene {
     const barX = (width - barW) / 2;
     const barY = height / 2;
 
+    const title = this.add.text(width / 2, barY - 40, 'Clowder & Crest', {
+      fontFamily: 'Georgia, serif', fontSize: '20px', color: '#c4956a',
+    }).setOrigin(0.5);
+    const loadText = this.add.text(width / 2, barY + 24, 'Loading...', {
+      fontFamily: 'Georgia, serif', fontSize: '12px', color: '#6b5b3e',
+    }).setOrigin(0.5);
     const bg = this.add.rectangle(barX + barW / 2, barY, barW, barH, 0x333333);
     const fill = this.add.rectangle(barX, barY, 0, barH, 0xc4956a);
     fill.setOrigin(0, 0.5);
 
     this.load.on('progress', (value: number) => {
       fill.width = barW * value;
+      loadText.setText(`Loading... ${Math.round(value * 100)}%`);
     });
 
     this.load.on('complete', () => {
       bg.destroy();
       fill.destroy();
+      title.destroy();
+      loadText.destroy();
     });
 
     // Load cat sprites

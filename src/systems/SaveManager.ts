@@ -112,9 +112,20 @@ export function loadGame(): SaveData | null {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw) as SaveData;
-    if (data.version !== SAVE_VERSION) return null;
-    // Migrate older saves missing stationedCats
+    // Migrate saves forward instead of destroying them
     if (!data.stationedCats) data.stationedCats = [];
+    if (!data.bonds) data.bonds = [];
+    if (!data.flags) data.flags = {};
+    if (!data.availableRecruits) data.availableRecruits = [];
+    if (!data.puzzlesCompleted) data.puzzlesCompleted = {};
+    if (data.totalFishEarned === undefined) data.totalFishEarned = 0;
+    if (data.totalJobsCompleted === undefined) data.totalJobsCompleted = 0;
+    if (data.reputationScore === undefined) data.reputationScore = 0;
+    // Ensure cats have assignedRoom field
+    for (const cat of data.cats ?? []) {
+      if (cat.assignedRoom === undefined) cat.assignedRoom = undefined;
+    }
+    data.version = SAVE_VERSION;
     return data;
   } catch {
     return null;

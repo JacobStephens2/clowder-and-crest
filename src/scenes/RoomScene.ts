@@ -7,7 +7,8 @@ import { saveGame } from '../systems/SaveManager';
 import { isCatStationed } from '../systems/Economy';
 import { addBondPoints } from '../systems/BondSystem';
 
-const BREEDS_WITH_SPRITES = new Set(['wildcat', 'russian_blue', 'tuxedo', 'maine_coon', 'siamese']);
+import { ALL_BREED_IDS } from '../utils/constants';
+const BREEDS_WITH_SPRITES = new Set(ALL_BREED_IDS as readonly string[]);
 
 // Top-down grid
 const GRID_COLS = 7;
