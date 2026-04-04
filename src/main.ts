@@ -648,11 +648,18 @@ function advanceDay(): void {
 
   // Build day summary
   const parts: string[] = [];
-  parts.push(`Food: -${Math.min(foodCost, foodCost)} fish`);
+  parts.push(`Food: -${foodCost} fish`);
   if (stationedTotal > 0) {
     parts.push(`Stationed: +${stationedTotal} fish`);
   }
   showToast(`Day ${gameState.day}: ${parts.join(' | ')}`);
+
+  // Show station events
+  for (const r of stationedResults) {
+    if (r.event) {
+      setTimeout(() => showToast(r.event!), 1500);
+    }
+  }
 
   processDailyBonds(gameState);
   checkRatPlagueResolution(gameState);

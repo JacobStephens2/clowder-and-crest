@@ -31,8 +31,29 @@ export function calculateAutoResolveReward(baseReward: number, maxReward: number
   return baseReward + Math.floor(range * statMatch * Math.random());
 }
 
-export function collectStationedEarnings(save: SaveData): { catName: string; jobName: string; earned: number }[] {
-  const results: { catName: string; jobName: string; earned: number }[] = [];
+export interface StationedResult {
+  catName: string;
+  jobName: string;
+  earned: number;
+  event?: string;
+}
+
+const STATION_EVENTS_PEST = [
+  'Rats fought back — {cat} got scratched but held the line.',
+  'A massive rat king appeared! {cat} earned a bonus.',
+  '{cat} found a hidden stash of fish behind the grain sacks!',
+  'The granary flooded — {cat} had to work twice as hard.',
+];
+
+const STATION_EVENTS_COURIER = [
+  'A dog blocked the route — {cat} had to find a detour.',
+  '{cat} delivered a letter to a grateful merchant — tip included!',
+  'Heavy rain slowed deliveries. {cat} pushed through.',
+  '{cat} discovered a shortcut through the bell tower!',
+];
+
+export function collectStationedEarnings(save: SaveData): StationedResult[] {
+  const results: StationedResult[] = [];
 
   for (const stationed of save.stationedCats) {
     const cat = save.cats.find((c) => c.id === stationed.catId);
@@ -40,7 +61,6 @@ export function collectStationedEarnings(save: SaveData): { catName: string; job
     if (!cat || !job) continue;
 
     const match = getStatMatchScore(cat, job);
-    // Stationed earnings: lower than one-off jobs but guaranteed daily income
     let earned = Math.max(1, Math.floor(job.baseReward * 0.5 + job.baseReward * match * 0.5));
 
     // Diminishing returns after 5 days at the same station
@@ -49,8 +69,39 @@ export function collectStationedEarnings(save: SaveData): { catName: string; job
       const decay = Math.max(0.3, 1 - (daysStationed - 5) * 0.1);
       earned = Math.max(1, Math.floor(earned * decay));
     }
+
+    // Station events (~20% chance per day)
+    let event: string | undefined;
+    if (Math.random() < 0.2) {
+      const events = job.category === 'pest_control' ? STATION_EVENTS_PEST : STATION_EVENTS_COURIER;
+      const template = events[Math.floor(Math.random() * events.length)];
+      event = template.replace('{cat}', cat.name);
+
+      // Events can modify earnings
+      if (template.includes('bonus') || template.includes('tip') || template.includes('stash') || template.includes('shortcut')) {
+        earned = Math.floor(earned * 1.5);
+      } else if (template.includes('twice as hard') || template.includes('fought back')) {
+        earned = Math.floor(earned * 0.7);
+        // Mood impact
+        if (cat.mood === 'happy') cat.mood = 'content';
+        else if (cat.mood === 'content') cat.mood = 'tired';
+      }
+    }
+
+    // Lazy cats occasionally slack off
+    if ((cat.traits ?? []).includes('Lazy') && Math.random() < 0.15) {
+      earned = Math.floor(earned * 0.5);
+      event = `${cat.name} napped on the job — half earnings today.`;
+    }
+
+    // Curious cats occasionally find extra
+    if ((cat.traits ?? []).includes('Curious') && Math.random() < 0.1) {
+      earned = Math.floor(earned * 1.3);
+      event = `${cat.name} found something interesting — bonus fish!`;
+    }
+
     earnFish(save, earned);
-    results.push({ catName: cat.name, jobName: job.name, earned });
+    results.push({ catName: cat.name, jobName: job.name, earned, event });
   }
 
   return results;
