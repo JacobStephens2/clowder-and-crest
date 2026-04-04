@@ -2,7 +2,7 @@
 
 A cat guild management game set in a medieval fantasy world. Built with Phaser 3 + TypeScript + Capacitor for Android and web.
 
-**What changed from v4:** Added 3 minigame types (Rush Hour, Sokoban, Chase), removed auto-resolve, 15 job templates, cat room assignments, furniture drag-to-rearrange and room transfer, interactive furniture with animations, cat interaction (click to bond), fish crisis mechanic, pause button, ElevenLabs sound effects, job fit details, daily cost warnings, and comprehensive pixel art for all cats, furniture, and scenes.
+**What changed from v4:** Added 4 minigame types (Rush Hour, Sokoban, Chase, Fishing), removed auto-resolve, 24 job templates across 5 categories (pest control, courier, guard, sacred, detection), cat room assignments, furniture drag-to-rearrange and room transfer, interactive furniture with sleep animations, cat interaction (click to bond), fish crisis mechanic, pause button, ElevenLabs sound effects, job fit details, daily cost warnings, traveling merchant NPC, station crisis events, reputation system (Crest/Shadow), multi-cat group conversations, time-of-day town art, themed puzzle blocks, and comprehensive pixel art for all cats, furniture, and scenes.
 
 ---
 
