@@ -39,6 +39,12 @@ export interface StationedJob {
   dayStarted: number;
 }
 
+export interface JournalEntry {
+  day: number;
+  text: string;
+  type: 'chapter' | 'recruit' | 'level' | 'bond' | 'event' | 'specialization' | 'reputation';
+}
+
 export interface SaveData {
   version: number;
   day: number;
@@ -57,6 +63,7 @@ export interface SaveData {
   flags: Record<string, boolean>;
   availableRecruits: string[];
   stationedCats: StationedJob[];
+  journal: JournalEntry[];
   lastPlayedTimestamp?: number;
 }
 
@@ -98,6 +105,7 @@ export function createDefaultSave(playerCatName: string): SaveData {
     flags: {},
     availableRecruits: [],
     stationedCats: [],
+    journal: [],
   };
 }
 
@@ -124,6 +132,7 @@ export function loadGame(): SaveData | null {
     if (data.totalFishEarned === undefined) data.totalFishEarned = 0;
     if (data.totalJobsCompleted === undefined) data.totalJobsCompleted = 0;
     if (data.reputationScore === undefined) data.reputationScore = 0;
+    if (!data.journal) data.journal = [];
     // Ensure cats have assignedRoom field
     for (const cat of data.cats ?? []) {
       if (cat.assignedRoom === undefined) cat.assignedRoom = undefined;
@@ -141,4 +150,10 @@ export function deleteSave(): void {
 
 export function hasSave(): boolean {
   return localStorage.getItem(SAVE_KEY) !== null;
+}
+
+export function addJournalEntry(save: SaveData, text: string, type: JournalEntry['type']): void {
+  save.journal.push({ day: save.day, text, type });
+  // Keep journal to a reasonable size (last 100 entries)
+  if (save.journal.length > 100) save.journal.splice(0, save.journal.length - 100);
 }

@@ -17,6 +17,7 @@ import {
   saveGame,
   loadGame,
   deleteSave,
+  addJournalEntry,
 } from './systems/SaveManager';
 import { createCat, getBreed, addXp } from './systems/CatManager';
 import { earnFish, spendFish, calculateReward, collectStationedEarnings, isCatStationed } from './systems/Economy';
@@ -569,6 +570,7 @@ function showRecruitNamePrompt(breedId: string, breedName: string): void {
 
     playSfx('recruit');
     trackEvent('cat_recruited', { breed: breedId, totalCats: gameState!.cats.length });
+    addJournalEntry(gameState!, `${name} the ${breedName} joined the guild.`, 'recruit');
     showToast(`${name} the ${breedName} joined the guild!`);
     checkChapterAdvance(gameState!);
     saveGame(gameState!);
@@ -1175,6 +1177,9 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
   const repXpBonus = getReputationBonuses(gameState.reputationScore).xpBonus;
   if (repXpBonus !== 0) xp = Math.max(1, Math.floor(xp * (1 + repXpBonus)));
   const leveled = addXp(cat, xp);
+  if (leveled) {
+    addJournalEntry(gameState, `${cat.name} reached level ${cat.level}!`, 'level');
+  }
 
   // Bond points (with rank-up celebration)
   for (const other of gameState.cats) {
@@ -1182,6 +1187,7 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
       const result = addBondPoints(gameState, cat.breed, other.breed, 3);
       if (result?.rankUp) {
         const otherName = other.name;
+        addJournalEntry(gameState, `${cat.name} & ${otherName} reached ${result.newRank} rank.`, 'bond');
         setTimeout(() => {
           playSfx('chapter');
           showToast(`\u2764 ${cat.name} & ${otherName} reached ${result.newRank} rank!`);
@@ -1289,6 +1295,7 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
       const unhappyCats = gameState.cats.filter((c) => c.mood === 'unhappy' && c.id !== 'player_wildcat');
       if (unhappyCats.length > 0) {
         const leaver = unhappyCats[Math.floor(Math.random() * unhappyCats.length)];
+        addJournalEntry(gameState, `${leaver.name} the ${BREED_NAMES[leaver.breed] ?? leaver.breed} left the guild — too hungry to stay.`, 'event');
         gameState.cats = gameState.cats.filter((c) => c.id !== leaver.id);
         gameState.stationedCats = gameState.stationedCats.filter((s) => s.catId !== leaver.id);
         showToast(`${leaver.name} the ${BREED_NAMES[leaver.breed] ?? leaver.breed} left the guild — too hungry to stay.`);
@@ -1457,6 +1464,7 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
     const unhappy = gameState.cats.filter((c) => c.mood !== 'happy' && c.id !== 'player_wildcat');
     if (unhappy.length > 0) {
       const leaver = unhappy[Math.floor(Math.random() * unhappy.length)];
+      addJournalEntry(gameState, `${leaver.name} left — couldn't stomach the guild's shadow dealings.`, 'reputation');
       gameState.cats = gameState.cats.filter((c) => c.id !== leaver.id);
       gameState.stationedCats = gameState.stationedCats.filter((s) => s.catId !== leaver.id);
       playSfx('cat_sad');
@@ -1597,8 +1605,9 @@ function showSpecializationChoice(catId: string, catName: string, onDone: () => 
       const cat = gameState.cats.find((c) => c.id === catId);
       if (cat) {
         cat.specialization = spec;
-        saveGame(gameState);
         const specName = SPECIALIZATION_CATEGORIES[spec].name;
+        addJournalEntry(gameState, `${catName} specialized as a ${specName}.`, 'specialization');
+        saveGame(gameState);
         playSfx('chapter');
         showToast(`${catName} specialized as a ${specName}!`);
       }
@@ -2124,6 +2133,7 @@ function showMenuPanel(): void {
       <div>Furniture owned: ${gameState.furniture.length}</div>
     </div>
     <button class="menu-btn" id="menu-achievements">Achievements</button>
+    <button class="menu-btn" id="menu-journal">Guild Journal</button>
     <button class="menu-btn" id="menu-save">Save Game</button>
     <button class="menu-btn" id="menu-furniture">Furniture Shop</button>
     <button class="menu-btn" id="menu-mute">${isMuted() ? 'Unmute Music' : 'Mute Music'}</button>
@@ -2172,6 +2182,35 @@ function showMenuPanel(): void {
     `;
     overlayLayer.appendChild(ap);
     document.getElementById('ach-close')!.addEventListener('click', () => { ap.remove(); showMenuPanel(); });
+  });
+
+  document.getElementById('menu-journal')!.addEventListener('click', () => {
+    panel.remove();
+    const jp = document.createElement('div');
+    jp.className = 'menu-overlay';
+
+    const entries = [...(gameState!.journal ?? [])].reverse();
+    const typeIcons: Record<string, string> = {
+      chapter: '\uD83D\uDCD6', recruit: '\uD83D\uDC3E', level: '\u2B50',
+      bond: '\u2764\uFE0F', event: '\u26A0\uFE0F', specialization: '\uD83C\uDFC5', reputation: '\uD83C\uDFAD',
+    };
+
+    jp.innerHTML = `
+      <button class="panel-close" id="journal-close">&times;</button>
+      <h2>Guild Journal</h2>
+      <div style="max-height:400px;overflow-y:auto;padding:4px 0">
+        ${entries.length === 0 ? '<div style="color:#6b5b3e;text-align:center;padding:20px">No entries yet. Your story is just beginning.</div>' :
+          entries.map((e) => `
+            <div style="display:flex;gap:8px;padding:6px 8px;border-bottom:1px solid rgba(107,91,62,0.2);font-size:12px">
+              <span style="flex-shrink:0;width:50px;color:#6b5b3e">Day ${e.day}</span>
+              <span style="flex-shrink:0">${typeIcons[e.type] ?? '\uD83D\uDCDD'}</span>
+              <span style="color:#c4956a">${e.text}</span>
+            </div>
+          `).join('')}
+      </div>
+    `;
+    overlayLayer.appendChild(jp);
+    document.getElementById('journal-close')!.addEventListener('click', () => { jp.remove(); showMenuPanel(); });
   });
 
   document.getElementById('menu-save')!.addEventListener('click', () => {
@@ -2365,6 +2404,7 @@ eventBus.on('chapter-advance', (chapter: number) => {
   playSfx('chapter');
   const name = getChapterName(chapter);
   trackEvent('chapter_advance', { chapter, name });
+  if (gameState) addJournalEntry(gameState, `Chapter ${chapter}: ${name}`, 'chapter');
   showToast(`Chapter ${chapter}: ${name}`);
 
   // Chapter 5 endgame acknowledgment
@@ -2449,6 +2489,7 @@ eventBus.on('rat-plague-start', () => {
       ['mill_mousing', 'granary_patrol', 'cathedral_mousing', 'warehouse_clearing', 'ship_hold'].includes(id)
     ).length as unknown as boolean;
     gameState.flags.plagueDayStarted = gameState.day as unknown as boolean;
+    addJournalEntry(gameState, 'The Rat Plague has begun. The town is under siege.', 'event');
   }
 
   // Dramatic plague onset — narrative scene
@@ -2498,6 +2539,7 @@ eventBus.on('rat-plague-start', () => {
 });
 
 eventBus.on('rat-plague-resolved', () => {
+  if (gameState) addJournalEntry(gameState, 'The Rat Plague has been resolved! The town is saved.', 'event');
   // Dramatic resolution — St. Rosalia's procession
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:#0a0908;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:30px;';
