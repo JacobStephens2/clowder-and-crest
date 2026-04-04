@@ -57,6 +57,9 @@ export class BootScene extends Phaser.Scene {
       }
     }
 
+    // Load sound effects
+    this.load.audio('wildcat_meow', 'assets/audio/wildcat_meow.mp3');
+
     // Load furniture sprites
     const furnitureIds = [
       'straw_bed', 'scratching_post', 'lantern', 'cushioned_basket',

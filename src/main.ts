@@ -417,6 +417,24 @@ eventBus.on('show-town-overlay', () => {
     }
   }
 
+  // Cat availability indicator
+  html += `<div class="town-section-divider"></div>`;
+  html += `<div style="padding:0 12px 8px"><div style="color:#c4956a;font-size:14px;margin-bottom:6px;font-family:Georgia,serif">Your Cats</div>`;
+  html += `<div style="display:flex;flex-wrap:wrap;gap:6px">`;
+  for (const cat of gameState.cats) {
+    const stationed = isCatStationed(gameState, cat.id);
+    const worked = catsWorkedToday.has(cat.id);
+    const available = !stationed && !worked;
+    const statusColor = available ? '#4a8a4a' : stationed ? '#6b8ea6' : '#8a6a4a';
+    const statusText = stationed ? 'stationed' : worked ? 'worked' : 'available';
+    const breedName = BREED_NAMES[cat.breed] ?? cat.breed;
+    html += `<div style="background:rgba(42,37,32,0.6);padding:4px 8px;border-radius:4px;font-size:11px;font-family:Georgia,serif;border-left:3px solid ${statusColor}">
+      <span style="color:#c4956a">${cat.name}</span>
+      <span style="color:${statusColor};font-size:9px"> ${statusText}</span>
+    </div>`;
+  }
+  html += `</div></div>`;
+
   // End Day button
   html += `
     <div class="town-section-divider"></div>

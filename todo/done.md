@@ -48,4 +48,6 @@
 [x] - Scaling upkeep costs (2 fish/cat + 1 fish/room, shown in menu Daily Costs panel)
 [x] - Add Sokoban puzzle type (7x7 grid, push crates to targets, WASD/tap, procedural + 8 fallback levels)
 [x] - Add more puzzles (50/50 random between Rush Hour and Sokoban per job)
+[x] - Wildcat meow sound effect (random ~30% chance every 8-23s when idle in room)
+[x] - Cat availability indicator on town view (available/worked/stationed with color coding)
 [x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview
