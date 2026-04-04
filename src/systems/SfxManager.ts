@@ -20,6 +20,12 @@ function getAudio(key: string): HTMLAudioElement | null {
     fail: 'assets/sfx/fail.mp3',
     splash: 'assets/sfx/fish_splash.mp3',
     thunder: 'assets/sfx/thunder.mp3',
+    room_unlock: 'assets/sfx/room_unlock.mp3',
+    cat_sad: 'assets/sfx/cat_sad.mp3',
+    sparkle: 'assets/sfx/sparkle.mp3',
+    alarm: 'assets/sfx/alarm.mp3',
+    crate_push: 'assets/sfx/crate_push.mp3',
+    merchant: 'assets/sfx/merchant.mp3',
   };
   const path = paths[key];
   if (!path) return null;

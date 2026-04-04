@@ -3,6 +3,7 @@ import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
+import { playSfx } from '../systems/SfxManager';
 
 // ──── Constants ────
 const SOKOBAN_GRID = 7;
@@ -819,6 +820,7 @@ export class SokobanScene extends Phaser.Scene {
     this.playerPos.c = newC;
     this.moveCount++;
     this.updateMoveText();
+    if (crateIdx >= 0) playSfx('crate_push', 0.3);
 
     // Animate
     this.animateMove(direction, crateIdx);

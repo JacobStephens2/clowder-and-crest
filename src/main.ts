@@ -518,6 +518,7 @@ eventBus.on('unlock-room', (roomId: string) => {
   if (spendFish(gameState, cost)) {
     room.unlocked = true;
     saveGame(gameState);
+    playSfx('room_unlock');
     showToast(`${roomId.charAt(0).toUpperCase() + roomId.slice(1)} unlocked!`);
     switchScene('GuildhallScene');
   } else {
@@ -823,6 +824,11 @@ eventBus.on('show-town-overlay', () => {
   overlay.innerHTML = html;
   overlayLayer.appendChild(overlay);
 
+  // Play merchant sound if merchant is present
+  if (gameState.chapter >= 2 && gameState.day % 3 === 0) {
+    playSfx('merchant', 0.3);
+  }
+
   // Wire up job accept buttons
   overlay.querySelectorAll('.town-job-accept').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -888,7 +894,7 @@ eventBus.on('show-town-overlay', () => {
         cat.stats[statKey] = Math.min(10, cat.stats[statKey] + 1);
       }
     }
-    playSfx('purr');
+    playSfx('sparkle');
     showToast(`${wish.catName} is delighted! ${wish.reward}`);
     saveGame(gameState);
     updateStatusBar();
@@ -1283,7 +1289,7 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
         gameState.cats = gameState.cats.filter((c) => c.id !== leaver.id);
         gameState.stationedCats = gameState.stationedCats.filter((s) => s.catId !== leaver.id);
         showToast(`${leaver.name} the ${BREED_NAMES[leaver.breed] ?? leaver.breed} left the guild — too hungry to stay.`);
-        playSfx('hiss');
+        playSfx('cat_sad');
       } else {
         showToast(`Not enough fish! Cats may leave if this continues.`);
       }
@@ -1368,6 +1374,7 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
       };
       const msg = crisisMessages[crisisJob.category] ?? 'Trouble at the station!';
       setTimeout(() => {
+        playSfx('alarm');
         const crisis = document.createElement('div');
         crisis.className = 'assign-overlay';
         crisis.innerHTML = `
@@ -1420,7 +1427,7 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
       const leaver = unhappy[Math.floor(Math.random() * unhappy.length)];
       gameState.cats = gameState.cats.filter((c) => c.id !== leaver.id);
       gameState.stationedCats = gameState.stationedCats.filter((s) => s.catId !== leaver.id);
-      playSfx('hiss');
+      playSfx('cat_sad');
       showToast(`${leaver.name} left the guild. "I didn't sign up for this kind of work."`);
     }
   }
