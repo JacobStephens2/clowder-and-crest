@@ -126,35 +126,109 @@ export class RoomScene extends Phaser.Scene {
       const roomBg = this.add.sprite(GAME_WIDTH / 2, GRID_TOP + (GRID_ROWS * TILE_SIZE) / 2, 'scene_room');
       roomBg.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
       roomBg.setScale(GRID_COLS * TILE_SIZE / roomBg.width);
-      roomBg.setAlpha(0.25);
+      roomBg.setAlpha(0.15);
     }
 
     const gfx = this.add.graphics();
     const gridW = GRID_COLS * TILE_SIZE;
     const gridH = GRID_ROWS * TILE_SIZE;
 
-    // Floor tiles (checkerboard)
+    // Room-specific floor palettes
+    const floorPalettes: Record<string, { base: number[]; accent: number; grain: number }> = {
+      sleeping: {
+        base: [0x3a3228, 0x352e24, 0x382f26, 0x33291f],
+        accent: 0x4a3a2a, grain: 0x2a2218,
+      },
+      kitchen: {
+        base: [0x3a3430, 0x36302c, 0x38322e, 0x342e2a],
+        accent: 0x4a4038, grain: 0x2a2420,
+      },
+      operations: {
+        base: [0x2e3432, 0x2a302e, 0x2c322e, 0x282e2c],
+        accent: 0x3a4a42, grain: 0x1e2624,
+      },
+    };
+
+    const palette = floorPalettes[this.roomId] ?? floorPalettes.sleeping;
+
+    // Floor tiles with wood plank effect
     for (let row = 0; row < GRID_ROWS; row++) {
       for (let col = 0; col < GRID_COLS; col++) {
-        const shade = (col + row) % 2 === 0 ? 0x2e2a25 : 0x322e28;
-        gfx.fillStyle(shade);
-        gfx.fillRect(GRID_LEFT + col * TILE_SIZE, GRID_TOP + row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        const x = GRID_LEFT + col * TILE_SIZE;
+        const y = GRID_TOP + row * TILE_SIZE;
 
-        gfx.lineStyle(1, 0x3a3530, 0.12);
-        gfx.strokeRect(GRID_LEFT + col * TILE_SIZE, GRID_TOP + row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        // Base tile color with subtle variation
+        const baseIdx = ((col * 3 + row * 7) % palette.base.length);
+        gfx.fillStyle(palette.base[baseIdx]);
+        gfx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+
+        // Wood grain lines (horizontal planks)
+        gfx.lineStyle(1, palette.grain, 0.15);
+        const plankH = 12;
+        for (let py = 0; py < TILE_SIZE; py += plankH) {
+          gfx.beginPath();
+          gfx.moveTo(x, y + py);
+          gfx.lineTo(x + TILE_SIZE, y + py);
+          gfx.strokePath();
+        }
+
+        // Subtle wood grain variation within planks
+        gfx.lineStyle(1, palette.grain, 0.06);
+        const seed = col * 13 + row * 37;
+        for (let g = 0; g < 3; g++) {
+          const gy = y + ((seed + g * 17) % TILE_SIZE);
+          gfx.beginPath();
+          gfx.moveTo(x + 2, gy);
+          gfx.lineTo(x + TILE_SIZE - 2, gy + ((seed + g) % 3) - 1);
+          gfx.strokePath();
+        }
+
+        // Corner nail/peg marks on some tiles
+        if ((col + row) % 3 === 0) {
+          gfx.fillStyle(palette.accent, 0.3);
+          gfx.fillCircle(x + 4, y + 4, 1.5);
+          gfx.fillCircle(x + TILE_SIZE - 4, y + TILE_SIZE - 4, 1.5);
+        }
+
+        // Tile border
+        gfx.lineStyle(1, palette.accent, 0.08);
+        gfx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
       }
     }
 
-    // Walls
-    const wallThickness = 8;
-    gfx.fillStyle(0x2a2622);
-    gfx.fillRect(GRID_LEFT - wallThickness, GRID_TOP - wallThickness, gridW + wallThickness * 2, wallThickness);
-    gfx.fillStyle(0x262420);
-    gfx.fillRect(GRID_LEFT - wallThickness, GRID_TOP - wallThickness, wallThickness, gridH + wallThickness * 2);
-    gfx.fillStyle(0x242220);
-    gfx.fillRect(GRID_LEFT + gridW, GRID_TOP - wallThickness, wallThickness, gridH + wallThickness * 2);
-    gfx.fillStyle(0x282622);
-    gfx.fillRect(GRID_LEFT - wallThickness, GRID_TOP + gridH, gridW + wallThickness * 2, wallThickness);
+    // Walls with stone texture
+    const wallThickness = 10;
+    const wallColors = { top: 0x3a3632, left: 0x343028, right: 0x302c28, bottom: 0x363230 };
+
+    // Draw each wall with stone block pattern
+    const drawStoneWall = (wx: number, wy: number, ww: number, wh: number, color: number, horizontal: boolean) => {
+      gfx.fillStyle(color);
+      gfx.fillRect(wx, wy, ww, wh);
+      // Stone block lines
+      gfx.lineStyle(1, 0x222018, 0.25);
+      if (horizontal) {
+        const blockW = 18;
+        for (let bx = wx; bx < wx + ww; bx += blockW) {
+          gfx.beginPath();
+          gfx.moveTo(bx, wy);
+          gfx.lineTo(bx, wy + wh);
+          gfx.strokePath();
+        }
+      } else {
+        const blockH = 14;
+        for (let by = wy; by < wy + wh; by += blockH) {
+          gfx.beginPath();
+          gfx.moveTo(wx, by);
+          gfx.lineTo(wx + ww, by);
+          gfx.strokePath();
+        }
+      }
+    };
+
+    drawStoneWall(GRID_LEFT - wallThickness, GRID_TOP - wallThickness, gridW + wallThickness * 2, wallThickness, wallColors.top, true);
+    drawStoneWall(GRID_LEFT - wallThickness, GRID_TOP - wallThickness, wallThickness, gridH + wallThickness * 2, wallColors.left, false);
+    drawStoneWall(GRID_LEFT + gridW, GRID_TOP - wallThickness, wallThickness, gridH + wallThickness * 2, wallColors.right, false);
+    drawStoneWall(GRID_LEFT - wallThickness, GRID_TOP + gridH, gridW + wallThickness * 2, wallThickness, wallColors.bottom, true);
 
     gfx.lineStyle(1, 0x3a3530, 0.6);
     gfx.strokeRect(GRID_LEFT - wallThickness, GRID_TOP - wallThickness, gridW + wallThickness * 2, gridH + wallThickness * 2);
