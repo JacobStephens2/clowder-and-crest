@@ -148,19 +148,23 @@ document.body.appendChild(guildWishBanner);
 
 function updateGuildWishBanner(): void {
   if (!gameState) { guildWishBanner.style.display = 'none'; return; }
-  const wish = getDailyWish(gameState.day, gameState.cats);
+  const wish = getDailyWish(gameState.day, gameState.cats, gameState.furniture.map(f => f.furnitureId));
   if (!wish || gameState.flags[`wish_day_${gameState.day}`]) {
     guildWishBanner.style.display = 'none';
     return;
   }
   guildWishBanner.style.display = 'block';
+  const needsFurn = wish.requiresFurniture;
+  const FURN_NAMES: Record<string, string> = { straw_bed: 'Straw Bed', fish_barrel: 'Fish Barrel', scratching_post: 'Scratching Post', potted_catnip: 'Potted Catnip' };
   guildWishBanner.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div>
         <div style="color:#dda055;font-size:12px">\u{1F4AD} ${wish.catName}'s Wish</div>
         <div style="color:#8b7355;font-size:10px;margin-top:2px">"${wish.wish}"</div>
       </div>
-      <button id="guild-fulfill-wish" style="padding:4px 10px;background:#2a2520;border:1px solid #dda055;border-radius:4px;color:#dda055;font-size:11px;font-family:Georgia,serif;cursor:pointer;white-space:nowrap">5 fish</button>
+      ${needsFurn
+        ? `<span style="font-size:10px;color:#8b5b3e;white-space:nowrap">Needs: ${FURN_NAMES[needsFurn] ?? needsFurn}</span>`
+        : `<button id="guild-fulfill-wish" style="padding:4px 10px;background:#2a2520;border:1px solid #dda055;border-radius:4px;color:#dda055;font-size:11px;font-family:Georgia,serif;cursor:pointer;white-space:nowrap">5 fish</button>`}
     </div>
   `;
   document.getElementById('guild-fulfill-wish')?.addEventListener('click', () => {
@@ -811,15 +815,19 @@ eventBus.on('show-town-overlay', () => {
   }
 
   // Daily cat wish
-  const wish = getDailyWish(gameState.day, gameState.cats);
+  const wish = getDailyWish(gameState.day, gameState.cats, gameState.furniture.map(f => f.furnitureId));
   if (wish && !gameState.flags[`wish_day_${gameState.day}`]) {
     html += `<div class="town-section-divider"></div>`;
-    html += `<div class="town-job-card" style="border-left:3px solid #dda055;padding:8px 12px">
+    const needsFurniture = wish.requiresFurniture;
+    const FURNITURE_NAMES: Record<string, string> = { straw_bed: 'Straw Bed', fish_barrel: 'Fish Barrel', scratching_post: 'Scratching Post', potted_catnip: 'Potted Catnip' };
+    html += `<div class="town-job-card" style="border-left:3px solid ${needsFurniture ? '#6b5b3e' : '#dda055'};padding:8px 12px">
       <div style="color:#dda055;font-size:13px;font-family:Georgia,serif">\u{1F4AD} ${wish.catName}'s Wish</div>
       <div style="color:#8b7355;font-size:11px;margin:4px 0">"${wish.wish}"</div>
       <div style="display:flex;justify-content:space-between;align-items:center">
         <span style="color:#6b5b3e;font-size:10px">Reward: ${wish.reward}</span>
-        <button class="town-job-accept" id="fulfill-wish">Fulfill (5 fish)</button>
+        ${needsFurniture
+          ? `<span style="font-size:10px;color:#8b5b3e">Needs: ${FURNITURE_NAMES[needsFurniture] ?? needsFurniture}</span>`
+          : `<button class="town-job-accept" id="fulfill-wish">Fulfill (5 fish)</button>`}
       </div>
     </div>`;
   }
@@ -941,7 +949,7 @@ eventBus.on('show-town-overlay', () => {
   // Wire up wish button
   document.getElementById('fulfill-wish')?.addEventListener('click', () => {
     if (!gameState || !spendFish(gameState, 5)) { showToast('Not enough fish!'); return; }
-    const wish = getDailyWish(gameState.day, gameState.cats);
+    const wish = getDailyWish(gameState.day, gameState.cats, gameState.furniture.map(f => f.furnitureId));
     if (!wish) return;
     gameState.flags[`wish_day_${gameState.day}`] = true;
     const cat = gameState.cats.find((c) => c.id === wish.catId);

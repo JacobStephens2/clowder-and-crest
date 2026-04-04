@@ -20,19 +20,25 @@ export function updateCombo(catId: string, category: string, day: number): numbe
 }
 
 // ── Daily cat wish system ──
-export function getDailyWish(day: number, cats: { id: string; name: string }[]): { catId: string; catName: string; wish: string; reward: string } | null {
+export function getDailyWish(day: number, cats: { id: string; name: string }[], ownedFurniture?: string[]): { catId: string; catName: string; wish: string; reward: string; requiresFurniture?: string } | null {
   if (cats.length < 2) return null;
   const rng = (day * 7919) % cats.length;
   const cat = cats[rng];
   const wishes = [
-    { wish: 'wants a fish treat', reward: '+5 mood' },
+    { wish: 'wants a fish treat', reward: '+5 mood', furniture: 'fish_barrel' },
     { wish: 'wants to explore a room', reward: '+2 bond' },
-    { wish: 'wants to scratch something', reward: '+1 agility' },
-    { wish: 'wants to nap in a warm spot', reward: '+3 mood' },
-    { wish: 'wants to play with a friend', reward: '+3 bond' },
+    { wish: 'wants to scratch something', reward: '+1 agility', furniture: 'scratching_post' },
+    { wish: 'wants to nap in a warm spot', reward: '+3 mood', furniture: 'straw_bed' },
+    { wish: 'wants to play with a friend', reward: '+3 bond', furniture: 'potted_catnip' },
   ];
   const pick = wishes[(day * 1013) % wishes.length];
-  return { catId: cat.id, catName: cat.name, ...pick };
+
+  // Check if player has the required furniture
+  if (pick.furniture && ownedFurniture && !ownedFurniture.includes(pick.furniture)) {
+    return { catId: cat.id, catName: cat.name, wish: pick.wish, reward: pick.reward, requiresFurniture: pick.furniture };
+  }
+
+  return { catId: cat.id, catName: cat.name, wish: pick.wish, reward: pick.reward };
 }
 
 // ── Festival system ──
