@@ -1,4 +1,4 @@
-const DAY_DURATION = 5 * 60 * 1000; // 5 minutes per in-game day
+const DAY_DURATION = 3 * 60 * 1000; // 3 minutes per in-game day
 const TIME_PHASES = ['Dawn', 'Morning', 'Midday', 'Afternoon', 'Dusk', 'Night'];
 
 let dayTimerStart = 0;

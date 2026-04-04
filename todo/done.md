@@ -42,4 +42,6 @@
 [x] - Add more job templates (15 total, up from 8)
 [x] - Ideate and implement improvement (day recap with food/station/event summary in transition)
 [x] - Cats shown in assigned rooms on guildhall overview
+[x] - Shorter days (3 minutes, down from 5)
+[x] - Rat plague indicator on Town view (red warning banner)
 [x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview

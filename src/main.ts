@@ -324,11 +324,14 @@ eventBus.on('show-town-overlay', () => {
 
   const dailyJobs = generateDailyJobs(gameState);
 
+  const plagueActive = gameState.flags.ratPlagueStarted && !gameState.flags.ratPlagueResolved;
+
   let html = `
     <div class="town-header">
       <div class="town-title">Town Square</div>
       <div class="town-day">Day ${gameState.day}</div>
     </div>
+    ${plagueActive ? '<div style="background:#4a2020;color:#cc6666;padding:8px 12px;margin:0 12px 8px;border-radius:4px;font-size:12px;text-align:center;font-family:Georgia,serif">The Rat Plague ravages the town. Complete pest control jobs to end it.</div>' : ''}
     <div class="town-section-divider"></div>
     <div class="town-section-title">Job Board</div>
   `;
