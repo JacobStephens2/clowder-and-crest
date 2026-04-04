@@ -1105,7 +1105,10 @@ function showFurnitureShop(): void {
 
       for (const item of roomItems) {
         const canBuy = roomUnlocked && gameState!.fish >= item.cost;
+        const spriteExists = ['straw_bed', 'scratching_post', 'lantern', 'cushioned_basket', 'bookshelf', 'potted_catnip', 'rug_wool', 'candle_stand'].includes(item.id);
+        const spriteImg = spriteExists ? `<img src="assets/sprites/furniture/${item.id}.png" style="width:32px;height:32px;image-rendering:pixelated;margin-bottom:4px" />` : '';
         html += `<div class="shop-item ${canBuy ? '' : 'disabled'}" data-item-id="${item.id}">
+          ${spriteImg}
           <div class="shop-item-name">${item.name}</div>
           <div class="shop-item-cost">${item.cost > 0 ? item.cost + ' Fish' : 'Free'}</div>
         </div>`;
