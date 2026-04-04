@@ -105,12 +105,17 @@ export class RoomScene extends Phaser.Scene {
     this.drawCats(save);
     this.drawAmbience();
 
-    // Cats react when you enter — play a random sound after a moment
+    // Cats react when you enter — play a random breed-appropriate sound
     this.time.delayedCall(800, () => {
-      const sounds = ['wildcat_meow', 'wildcat_chirp'];
-      const sound = sounds[Math.floor(Math.random() * sounds.length)];
-      if (this.cache.audio.exists(sound)) {
-        this.sound.play(sound, { volume: 0.25 });
+      const entryPitch: Record<string, number> = {
+        wildcat: 1.0, persian: 0.75, siamese: 1.3, russian_blue: 0.9, maine_coon: 0.6,
+      };
+      // Pick a random cat in the room for the greeting sound
+      const randomCat = save.cats[Math.floor(Math.random() * save.cats.length)];
+      const pitch = entryPitch[randomCat?.breed ?? 'wildcat'] ?? 1.0;
+      const soundKey = Math.random() < 0.5 ? 'wildcat_meow' : 'wildcat_chirp';
+      if (this.cache.audio.exists(soundKey)) {
+        this.sound.play(soundKey, { volume: 0.25, rate: pitch + (Math.random() * 0.1 - 0.05) });
       }
     });
   }
@@ -541,21 +546,26 @@ export class RoomScene extends Phaser.Scene {
       });
     };
 
-    // Random meow/chirp sounds for wildcat
-    if (cat.breed === 'wildcat') {
-      this.time.addEvent({
-        delay: 8000 + Math.random() * 15000,
-        callback: () => {
-          if (!isMoving && Math.random() < 0.3) {
-            const sound = Math.random() < 0.5 ? 'wildcat_meow' : 'wildcat_chirp';
-            if (this.cache.audio.exists(sound)) {
-              this.sound.play(sound, { volume: 0.4 });
-            }
+    // Random vocalizations for all breeds (pitch-shifted for variety)
+    const breedPitch: Record<string, number> = {
+      wildcat: 1.0, persian: 0.75, siamese: 1.3, russian_blue: 0.9, maine_coon: 0.6,
+    };
+    const pitch = breedPitch[cat.breed] ?? 1.0;
+    this.time.addEvent({
+      delay: 8000 + Math.random() * 15000,
+      callback: () => {
+        if (!isMoving && Math.random() < 0.3) {
+          // Use breed-specific sound if available, else fall back to wildcat
+          const breedSound = `${cat.breed}_${Math.random() < 0.5 ? 'meow' : 'chirp'}`;
+          const fallbackSound = Math.random() < 0.5 ? 'wildcat_meow' : 'wildcat_chirp';
+          const soundKey = this.cache.audio.exists(breedSound) ? breedSound : fallbackSound;
+          if (this.cache.audio.exists(soundKey)) {
+            this.sound.play(soundKey, { volume: 0.4, rate: pitch + (Math.random() * 0.15 - 0.075) });
           }
-        },
-        loop: true,
-      });
-    }
+        }
+      },
+      loop: true,
+    });
 
     // Expose movement for furniture interactions
     this.playerMoveTo = moveToTile;
