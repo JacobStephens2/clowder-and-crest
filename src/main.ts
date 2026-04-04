@@ -126,6 +126,21 @@ if (pauseBtn) {
   });
 }
 
+// ──── Floating End Day Button (guild view) ────
+const guildEndDayBtn = document.createElement('button');
+guildEndDayBtn.textContent = 'End Day';
+guildEndDayBtn.style.cssText = 'display:none;position:fixed;bottom:70px;left:50%;transform:translateX(-50%);padding:10px 28px;background:#2a2520;border:1px solid #6b5b3e;border-radius:8px;color:#c4956a;font-family:Georgia,serif;font-size:14px;cursor:pointer;z-index:500;';
+guildEndDayBtn.addEventListener('click', () => {
+  if (!gameState) return;
+  playSfx('day_bell', 0.4);
+  const result = advanceDay();
+  showDayTransition(gameState.day, result);
+  saveGame(gameState);
+  updateStatusBar();
+  switchScene('GuildhallScene');
+});
+document.body.appendChild(guildEndDayBtn);
+
 // ──── UI Helpers ────
 let lastFishCount = -1;
 function updateStatusBar(): void {
@@ -165,6 +180,8 @@ function switchScene(target: string, data?: object): void {
     }
   }
   game.scene.start(target, data);
+  // Show floating end day button only on guild overview
+  guildEndDayBtn.style.display = target === 'GuildhallScene' ? 'block' : 'none';
 }
 
 // ──── Day Timer Callback ────

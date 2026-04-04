@@ -13,8 +13,9 @@
 [] limit the approaches to jobs, as some approaches don't make sense, like fishing to complete the mill mousing job doesn't thematically fit for example
 [] add a hunting mini game for jobs that are about hunting rodents
 [] show the furniture sprites / art in the guild overview (I'm not referring to the room specific views)
-[] add an end day button at the bottom of the guild view
+[x] add an end day button at the bottom of the guild view
 [] show wishes at the top of the guild view
 [x] remove the undo button from the sokobond / crate pushing game, as it removes consequences of actions, remove the reset button too for the same reason
 [] put full screen art in the dialogues, either of the cat talking, or of the game's setting / an unlocked location in the game
+[] add a threat to the pac-man style game, something the cats have to avoid that can chase them, this can make failure more possible in this mini-game, something thematically that could injure the cat, like a dog or some or thing that could be antithetical to a cat
 [] Playtest with real users
