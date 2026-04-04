@@ -350,8 +350,9 @@ export class RoomScene extends Phaser.Scene {
       moveToTile(grid.col, grid.row);
     });
 
-    // WASD / Arrow key movement (supports diagonal via held keys)
+    // WASD / Arrow key movement (supports diagonal + continuous hold)
     const keysHeld = new Set<string>();
+    let moveRepeat: ReturnType<typeof setInterval> | null = null;
 
     const processMovement = () => {
       let dc = 0;
@@ -362,6 +363,26 @@ export class RoomScene extends Phaser.Scene {
       if (keysHeld.has('up')) dr -= 1;
       if (dc !== 0 || dr !== 0) {
         moveToTile(currentTile.col + dc, currentTile.row + dr);
+      }
+    };
+
+    const startRepeat = () => {
+      if (moveRepeat) return;
+      processMovement();
+      moveRepeat = setInterval(() => {
+        if (keysHeld.size === 0) {
+          clearInterval(moveRepeat!);
+          moveRepeat = null;
+          return;
+        }
+        processMovement();
+      }, 280);
+    };
+
+    const stopRepeat = () => {
+      if (keysHeld.size === 0 && moveRepeat) {
+        clearInterval(moveRepeat);
+        moveRepeat = null;
       }
     };
 
@@ -377,13 +398,16 @@ export class RoomScene extends Phaser.Scene {
       const dir = keyToDir(event.key);
       if (dir) {
         keysHeld.add(dir);
-        processMovement();
+        startRepeat();
       }
     });
 
     this.input.keyboard?.on('keyup', (event: KeyboardEvent) => {
       const dir = keyToDir(event.key);
-      if (dir) keysHeld.delete(dir);
+      if (dir) {
+        keysHeld.delete(dir);
+        stopRepeat();
+      }
     });
   }
 

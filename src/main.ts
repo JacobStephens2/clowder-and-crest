@@ -98,10 +98,27 @@ function switchScene(target: string, data?: object): void {
 }
 
 // ──── Day Timer Callback ────
+function showDayTransition(day: number): void {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    opacity:0;transition:opacity 0.5s;pointer-events:none;
+  `;
+  overlay.innerHTML = `
+    <div style="color:#c4956a;font-family:Georgia,serif;font-size:28px;margin-bottom:8px">Day ${day}</div>
+    <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:14px">A new day dawns...</div>
+  `;
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => { overlay.style.opacity = '1'; });
+  setTimeout(() => { overlay.style.opacity = '0'; }, 2000);
+  setTimeout(() => overlay.remove(), 2500);
+}
+
 setOnDayEnd(() => {
   if (!gameState) return;
   advanceDay();
-  showToast('A new day dawns...');
+  showDayTransition(gameState.day);
   const townOverlay = overlayLayer.querySelector('.town-overlay');
   if (townOverlay) {
     townOverlay.remove();
@@ -410,6 +427,7 @@ eventBus.on('show-town-overlay', () => {
   document.getElementById('town-end-day')!.addEventListener('click', () => {
     overlay.remove();
     advanceDay();
+    showDayTransition(gameState!.day);
     checkAndShowConversation();
   });
 });
