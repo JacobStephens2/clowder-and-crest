@@ -6,7 +6,7 @@
 [x] Guild timeline/journal — scrollable log of major events
 [x] More cat sounds per breed (unique vocalizations beyond wildcat)
 [x] Chapter 7: The Inquisition (from vision doc)
-[] New breed: Bengal (Chapter 6 rivalry recruit)
+[x] New breed: Bengal (Chapter 6 rivalry recruit)
 [] Develop the artwork for the rooms. Right now they look like chessboards, not pixel art places in this world
 [] create art for the rats in the pacman minigame
 [x] prevent fishing from starting while the user is still reading the tutorial introduction (and so then them failing it in the background while still reading the intro text)

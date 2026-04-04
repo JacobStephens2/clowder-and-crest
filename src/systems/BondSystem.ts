@@ -6,12 +6,17 @@ const BOND_PAIRS = [
   ['wildcat', 'maine_coon'],
   ['wildcat', 'tuxedo'],
   ['wildcat', 'siamese'],
+  ['wildcat', 'bengal'],
   ['russian_blue', 'tuxedo'],
   ['russian_blue', 'siamese'],
+  ['russian_blue', 'bengal'],
   ['tuxedo', 'siamese'],
+  ['tuxedo', 'bengal'],
   ['maine_coon', 'tuxedo'],
   ['maine_coon', 'siamese'],
   ['maine_coon', 'russian_blue'],
+  ['maine_coon', 'bengal'],
+  ['siamese', 'bengal'],
 ];
 
 function bondKey(a: string, b: string): string {

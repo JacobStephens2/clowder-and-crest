@@ -7,7 +7,7 @@ export const PUZZLE_OFFSET_X = (390 - 6 * 54) / 2; // 33, centered
 export const PUZZLE_OFFSET_Y = 90;
 
 // Single source of truth for breed IDs — used for sprite loading, art checks, etc.
-export const ALL_BREED_IDS = ['wildcat', 'russian_blue', 'tuxedo', 'maine_coon', 'siamese'] as const;
+export const ALL_BREED_IDS = ['wildcat', 'russian_blue', 'tuxedo', 'maine_coon', 'siamese', 'bengal'] as const;
 
 export const BREED_COLORS: Record<string, string> = {
   wildcat: '#8B7355',
@@ -15,6 +15,7 @@ export const BREED_COLORS: Record<string, string> = {
   tuxedo: '#2C2C2C',
   maine_coon: '#C4956A',
   siamese: '#D4C5A9',
+  bengal: '#C49A6C',
 };
 
 export const BREED_NAMES: Record<string, string> = {
@@ -23,6 +24,7 @@ export const BREED_NAMES: Record<string, string> = {
   tuxedo: 'Tuxedo',
   maine_coon: 'Maine Coon',
   siamese: 'Siamese',
+  bengal: 'Bengal',
 };
 
 export const STAT_NAMES = ['hunting', 'stealth', 'intelligence', 'endurance', 'charm', 'senses'] as const;

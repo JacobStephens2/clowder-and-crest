@@ -411,5 +411,179 @@
         { "speaker": "maine_coon", "text": "This is better than fish. This is home." }
       ]
     }
+  ],
+  "bengal_wildcat": [
+    {
+      "rank": "C",
+      "title": "The Defector",
+      "lines": [
+        { "speaker": "bengal", "text": "You beat the Silver Paws. I didn't think anyone could." },
+        { "speaker": "wildcat", "text": "You were one of them." },
+        { "speaker": "bengal", "text": "I was. They promised glory. They delivered politics." },
+        { "speaker": "wildcat", "text": "And now you're here because...?" },
+        { "speaker": "bengal", "text": "Because you fight for something real. I want to see what that looks like from the inside." }
+      ]
+    },
+    {
+      "rank": "B",
+      "title": "Restless Energy",
+      "lines": [
+        { "speaker": "wildcat", "text": "You've been pacing since dawn. Sit down." },
+        { "speaker": "bengal", "text": "I can't. My legs need to move. My mind needs problems." },
+        { "speaker": "wildcat", "text": "Then take a job. The docks need patrol." },
+        { "speaker": "bengal", "text": "Already did that. And the market sweep. Before breakfast." },
+        { "speaker": "wildcat", "text": "...You're going to be trouble, aren't you?" },
+        { "speaker": "bengal", "text": "The best kind." }
+      ]
+    },
+    {
+      "rank": "A",
+      "title": "Where I Belong",
+      "lines": [
+        { "speaker": "bengal", "text": "I dreamed of the Silver Paws last night. Their hall. Their rules." },
+        { "speaker": "wildcat", "text": "Do you miss it?" },
+        { "speaker": "bengal", "text": "I miss the certainty. Someone always told you what to do." },
+        { "speaker": "wildcat", "text": "And here?" },
+        { "speaker": "bengal", "text": "Here I have to decide for myself. It's terrifying." },
+        { "speaker": "wildcat", "text": "That's what freedom costs." },
+        { "speaker": "bengal", "text": "Worth every fish." }
+      ]
+    }
+  ],
+  "bengal_russian_blue": [
+    {
+      "rank": "C",
+      "title": "Too Loud",
+      "lines": [
+        { "speaker": "russian_blue", "text": "Must you knock over everything when you enter a room?" },
+        { "speaker": "bengal", "text": "I didn't knock anything over. That barrel was already tilting." },
+        { "speaker": "russian_blue", "text": "It was perfectly stable until you ran past it." },
+        { "speaker": "bengal", "text": "You need to relax. Life's too short to worry about barrels." }
+      ]
+    },
+    {
+      "rank": "B",
+      "title": "Different Speeds",
+      "lines": [
+        { "speaker": "bengal", "text": "How do you just... sit there? For hours?" },
+        { "speaker": "russian_blue", "text": "I'm listening. The walls tell you things if you're patient." },
+        { "speaker": "bengal", "text": "The walls told me I was bored, so I went hunting." },
+        { "speaker": "russian_blue", "text": "And yet you came back to sit with me." },
+        { "speaker": "bengal", "text": "...The quiet is nice. Sometimes." }
+      ]
+    },
+    {
+      "rank": "A",
+      "title": "Complement",
+      "lines": [
+        { "speaker": "russian_blue", "text": "You noticed the rat nest before anyone. How?" },
+        { "speaker": "bengal", "text": "Scratches on the floor. Changed scent near the wall. You would have heard it eventually." },
+        { "speaker": "russian_blue", "text": "Eventually isn't soon enough when lives are at stake." },
+        { "speaker": "bengal", "text": "That's why you need someone fast. And I need someone who remembers to check twice." },
+        { "speaker": "russian_blue", "text": "We make a good team, don't we?" }
+      ]
+    }
+  ],
+  "bengal_siamese": [
+    {
+      "rank": "C",
+      "title": "Two Kinds of Brilliant",
+      "lines": [
+        { "speaker": "siamese", "text": "You solved that puzzle in six moves. The record was twelve." },
+        { "speaker": "bengal", "text": "I see patterns. Can't help it. Everything is a puzzle to me." },
+        { "speaker": "siamese", "text": "Interesting. I see people. Every face is a story." },
+        { "speaker": "bengal", "text": "Which is more useful?" },
+        { "speaker": "siamese", "text": "Depends on whether the problem has claws." }
+      ]
+    },
+    {
+      "rank": "B",
+      "title": "Rivals in Mind",
+      "lines": [
+        { "speaker": "bengal", "text": "I heard you figured out the merchant was lying before anyone else." },
+        { "speaker": "siamese", "text": "His left ear twitched. Classic tell." },
+        { "speaker": "bengal", "text": "I noticed the ledger numbers didn't add up. Same conclusion, different path." },
+        { "speaker": "siamese", "text": "Are we competing?" },
+        { "speaker": "bengal", "text": "Only if you're losing." }
+      ]
+    },
+    {
+      "rank": "A",
+      "title": "The Smart Ones",
+      "lines": [
+        { "speaker": "siamese", "text": "Do you ever feel like you see too much? Every flaw, every angle?" },
+        { "speaker": "bengal", "text": "Every day. The Silver Paws used that. Made me their strategist. Their weapon." },
+        { "speaker": "siamese", "text": "And here?" },
+        { "speaker": "bengal", "text": "Here they ask what I think, not just what I see. There's a difference." },
+        { "speaker": "siamese", "text": "That's called trust. Guard it carefully." }
+      ]
+    }
+  ],
+  "bengal_tuxedo": [
+    {
+      "rank": "C",
+      "title": "By the Book",
+      "lines": [
+        { "speaker": "tuxedo", "text": "You filed your patrol report... on the back of a fish wrapper." },
+        { "speaker": "bengal", "text": "The information is all there. Route, time, findings." },
+        { "speaker": "tuxedo", "text": "On a fish wrapper." },
+        { "speaker": "bengal", "text": "Would you prefer I didn't file one at all?" }
+      ]
+    },
+    {
+      "rank": "B",
+      "title": "Method and Madness",
+      "lines": [
+        { "speaker": "bengal", "text": "Your filing system is incredible. Every job, every outcome, cross-referenced." },
+        { "speaker": "tuxedo", "text": "Was that... a compliment?" },
+        { "speaker": "bengal", "text": "Don't let it go to your head. I'm just saying — the Silver Paws had nothing like this." },
+        { "speaker": "tuxedo", "text": "That's why they lost." }
+      ]
+    },
+    {
+      "rank": "A",
+      "title": "Order and Chaos",
+      "lines": [
+        { "speaker": "tuxedo", "text": "I've been thinking. Your instincts and my systems — we could restructure the job board." },
+        { "speaker": "bengal", "text": "You want to work together? You, who color-codes everything?" },
+        { "speaker": "tuxedo", "text": "And you, who solves problems before I finish describing them. Yes." },
+        { "speaker": "bengal", "text": "The guild would run like a machine." },
+        { "speaker": "tuxedo", "text": "A well-organized machine." }
+      ]
+    }
+  ],
+  "bengal_maine_coon": [
+    {
+      "rank": "C",
+      "title": "The Big One",
+      "lines": [
+        { "speaker": "bengal", "text": "You're... larger than I expected." },
+        { "speaker": "maine_coon", "text": "And you're faster. I saw you clear the fence." },
+        { "speaker": "bengal", "text": "In the Silver Paws, speed was everything. Size meant slow." },
+        { "speaker": "maine_coon", "text": "In this guild, we don't have to be just one thing." }
+      ]
+    },
+    {
+      "rank": "B",
+      "title": "Strength",
+      "lines": [
+        { "speaker": "bengal", "text": "That crate was stuck. I couldn't budge it. You moved it with one shoulder." },
+        { "speaker": "maine_coon", "text": "And you found the three behind it that I would have missed." },
+        { "speaker": "bengal", "text": "We're covering each other's weaknesses. That's... new for me." },
+        { "speaker": "maine_coon", "text": "That's what a guild is supposed to be." }
+      ]
+    },
+    {
+      "rank": "A",
+      "title": "Gentle Giant",
+      "lines": [
+        { "speaker": "bengal", "text": "You never raise your voice. Even when things go wrong." },
+        { "speaker": "maine_coon", "text": "Shouting just makes everyone smaller. Including you." },
+        { "speaker": "bengal", "text": "The Silver Paws' leader shouted constantly. I thought that was leadership." },
+        { "speaker": "maine_coon", "text": "It's not. Leadership is making others feel bigger than they are." },
+        { "speaker": "bengal", "text": "You'd have been a terrible Silver Paw. Too kind." },
+        { "speaker": "maine_coon", "text": "I'll take that as the highest compliment." }
+      ]
+    }
   ]
 }

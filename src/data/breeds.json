@@ -83,5 +83,22 @@
     "statBias": ["intelligence", "charm"],
     "recruitCost": 60,
     "description": "Talkative specialist. Good for story moments."
+  },
+  {
+    "id": "bengal",
+    "name": "Bengal",
+    "temperament": "High-energy, restless, brilliant",
+    "roleAffinity": "Detection, courier, pest control",
+    "baseStats": {
+      "hunting": 6,
+      "stealth": 5,
+      "intelligence": 6,
+      "endurance": 5,
+      "charm": 3,
+      "senses": 7
+    },
+    "statBias": ["senses", "intelligence"],
+    "recruitCost": 70,
+    "description": "A fierce, spotted cat from the rival guild. Brilliant and restless."
   }
 ]

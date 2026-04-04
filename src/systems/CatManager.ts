@@ -72,7 +72,12 @@ export function addXp(cat: CatSaveData, amount: number): boolean {
 
 export function getAvailableRecruits(save: SaveData): BreedDef[] {
   const ownedBreeds = new Set(save.cats.map((c) => c.breed));
-  return breeds.filter((b) => !ownedBreeds.has(b.id) && b.recruitCost > 0);
+  return breeds.filter((b) => {
+    if (ownedBreeds.has(b.id) || b.recruitCost <= 0) return false;
+    // Bengal only available after Chapter 6 rival is defeated
+    if (b.id === 'bengal' && (save.chapter < 6 || !save.flags.rivalDefeated)) return false;
+    return true;
+  });
 }
 
 export function getCatStatTotal(cat: CatSaveData, statNames: StatName[]): number {
