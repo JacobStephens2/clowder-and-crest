@@ -356,8 +356,14 @@ function showIntroStory(catName: string, onComplete: () => void): void {
   `;
 
   const sceneImg = document.createElement('img');
-  sceneImg.style.cssText = 'width:280px;max-height:160px;image-rendering:pixelated;margin-bottom:24px;border-radius:4px;opacity:0.4;object-fit:cover;';
+  sceneImg.style.cssText = 'width:280px;max-height:160px;image-rendering:pixelated;margin-bottom:16px;border-radius:4px;opacity:0.4;object-fit:cover;';
   overlay.appendChild(sceneImg);
+
+  // Wildcat sprite
+  const catImg = document.createElement('img');
+  catImg.src = 'assets/sprites/wildcat/south.png';
+  catImg.style.cssText = 'width:72px;height:72px;image-rendering:pixelated;margin-bottom:16px;display:none;';
+  overlay.appendChild(catImg);
 
   const textDiv = document.createElement('div');
   textDiv.style.cssText = 'color:#c4956a;font-family:Georgia,serif;font-size:16px;text-align:center;max-width:320px;line-height:1.7;min-height:80px;';
@@ -373,6 +379,16 @@ function showIntroStory(catName: string, onComplete: () => void): void {
   skipBtn.style.cssText = 'position:absolute;top:16px;right:16px;background:none;border:1px solid #3a3530;color:#6b5b3e;padding:6px 14px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer;';
   overlay.appendChild(skipBtn);
 
+  // Panel-specific SFX
+  const panelSounds: (string | null)[] = [
+    'day_bell',      // Storm — distant bell
+    null,            // Wildcat stumbles — cat appears, no extra sound
+    'purr',          // Pressed against wall — quiet purr
+    'job_accept',    // Notice on wall — quill scratch
+    null,            // Opportunity — silence, dramatic
+    'chapter',       // This is where it begins — fanfare
+  ];
+
   function showPanel(): void {
     if (panelIndex >= panels.length) {
       overlay.style.transition = 'opacity 0.5s';
@@ -383,6 +399,15 @@ function showIntroStory(catName: string, onComplete: () => void): void {
     const panel = panels[panelIndex];
     const sceneSrc = panel.scene === 'town' ? 'assets/sprites/scenes/town.png' : 'assets/sprites/scenes/guildhall.png';
     sceneImg.src = sceneSrc;
+
+    // Show wildcat on panels 1-4 (the character panels)
+    catImg.style.display = (panelIndex >= 1 && panelIndex <= 4) ? 'block' : 'none';
+
+    // Play SFX
+    const sfx = panelSounds[panelIndex];
+    if (sfx) {
+      setTimeout(() => playSfx(sfx, 0.35), 300);
+    }
 
     // Fade in text
     textDiv.style.opacity = '0';
