@@ -25,7 +25,7 @@ import { getPuzzleByDifficulty, generatePuzzle } from './systems/PuzzleGenerator
 import { addBondPoints, processDailyBonds, getAvailableConversation, markConversationViewed, getBondRank, getBondPairs } from './systems/BondSystem';
 import { checkChapterAdvance, checkRatPlagueResolution, getChapterName, getNextChapterHint } from './systems/ProgressionManager';
 import { startBgm, toggleMute, isMuted, switchToPuzzleMusic, switchToNormalMusic, pauseMusic, resumeMusic } from './systems/MusicManager';
-import { playSfx } from './systems/SfxManager';
+import { playSfx, toggleSfxMute, isSfxMuted } from './systems/SfxManager';
 import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDayEnd, pauseDayTimer, resumeDayTimer, isPaused } from './systems/DayTimer';
 import conversationsData from './data/conversations.json';
 
@@ -143,7 +143,7 @@ function switchScene(target: string, data?: object): void {
 }
 
 // ──── Day Timer Callback ────
-function showDayTransition(day: number, recap?: { foodCost: number; stationedEarned: number; events: string[] }): void {
+function showDayTransition(day: number, recap?: { foodCost: number; stationedEarned: number; events: string[]; fishRemaining?: number }): void {
   playSfx('day_bell', 0.4);
   const overlay = document.createElement('div');
   overlay.style.cssText = `
@@ -156,6 +156,7 @@ function showDayTransition(day: number, recap?: { foodCost: number; stationedEar
     const lines: string[] = [];
     if (recap.foodCost > 0) lines.push(`Upkeep: -${recap.foodCost} fish`);
     if (recap.stationedEarned > 0) lines.push(`Stationed: +${recap.stationedEarned} fish`);
+    if (recap.fishRemaining !== undefined) lines.push(`Fish remaining: ${recap.fishRemaining}`);
     for (const e of recap.events) lines.push(e);
     if (lines.length > 0) {
       recapHtml = `<div style="color:#8b7355;font-family:Georgia,serif;font-size:11px;margin-top:12px;text-align:center;max-width:280px">${lines.join('<br>')}</div>`;
@@ -807,8 +808,8 @@ eventBus.on('puzzle-quit', ({ jobId, catId }: any = {}) => {
   setTimeout(() => suggestEndDay(), 1500);
 });
 
-function advanceDay(): { foodCost: number; stationedEarned: number; events: string[] } {
-  if (!gameState) return { foodCost: 0, stationedEarned: 0, events: [] };
+function advanceDay(): { foodCost: number; stationedEarned: number; events: string[]; fishRemaining: number } {
+  if (!gameState) return { foodCost: 0, stationedEarned: 0, events: [], fishRemaining: 0 };
   gameState.day++;
 
   // Reset day timer and worked cats
@@ -879,7 +880,7 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
   updateStatusBar();
 
   const events = stationedResults.filter((r) => r.event).map((r) => r.event!);
-  return { foodCost, stationedEarned: stationedTotal, events };
+  return { foodCost, stationedEarned: stationedTotal, events, fishRemaining: gameState.fish };
 }
 
 interface ResultInfo {
@@ -1037,6 +1038,7 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
       <div class="conversation-speaker" id="conv-speaker"></div>
       <div class="conversation-text" id="conv-text"></div>
       <div class="conversation-advance">Tap to continue</div>
+      <button id="conv-skip" style="position:absolute;top:10px;right:16px;background:none;border:1px solid #3a3530;color:#6b5b3e;padding:4px 10px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer">Skip</button>
     </div>
   `;
 
@@ -1073,8 +1075,18 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
 
   showLine();
 
-  overlay.addEventListener('click', () => {
+  overlay.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).id === 'conv-skip') return;
     showLine();
+  });
+
+  document.getElementById('conv-skip')!.addEventListener('click', (e) => {
+    e.stopPropagation();
+    overlay.remove();
+    markConversationViewed(gameState!, breedA, breedB, rank);
+    saveGame(gameState!);
+    showToast(`Bond deepened: ${nameA} & ${nameB}`);
+    switchScene('TownScene');
   });
 }
 
@@ -1267,6 +1279,7 @@ function showMenuPanel(): void {
     <button class="menu-btn" id="menu-save">Save Game</button>
     <button class="menu-btn" id="menu-furniture">Furniture Shop</button>
     <button class="menu-btn" id="menu-mute">${isMuted() ? 'Unmute Music' : 'Mute Music'}</button>
+    <button class="menu-btn" id="menu-mute-sfx">${isSfxMuted() ? 'Unmute Sound Effects' : 'Mute Sound Effects'}</button>
     <button class="menu-btn" id="menu-export">Export Save</button>
     <button class="menu-btn" id="menu-import">Import Save</button>
     <button class="menu-btn danger" id="menu-delete">Delete Save</button>
@@ -1291,6 +1304,13 @@ function showMenuPanel(): void {
     panel.remove();
     showMenuPanel();
     showToast(muted ? 'Music muted' : 'Music unmuted');
+  });
+
+  document.getElementById('menu-mute-sfx')!.addEventListener('click', () => {
+    const muted = toggleSfxMute();
+    panel.remove();
+    showMenuPanel();
+    showToast(muted ? 'Sound effects muted' : 'Sound effects unmuted');
   });
 
   document.getElementById('menu-export')!.addEventListener('click', () => {

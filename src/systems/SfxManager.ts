@@ -1,6 +1,6 @@
 // Simple HTML5 Audio SFX player (works outside Phaser scenes)
 const sfxCache = new Map<string, HTMLAudioElement>();
-let sfxMuted = false;
+let sfxMuted = localStorage.getItem('clowder_sfx_muted') === '1';
 
 function getAudio(key: string): HTMLAudioElement | null {
   if (sfxCache.has(key)) return sfxCache.get(key)!;
@@ -30,6 +30,12 @@ export function playSfx(key: string, volume = 0.5): void {
   audio.play().catch(() => {});
 }
 
-export function setSfxMuted(muted: boolean): void {
-  sfxMuted = muted;
+export function toggleSfxMute(): boolean {
+  sfxMuted = !sfxMuted;
+  localStorage.setItem('clowder_sfx_muted', sfxMuted ? '1' : '0');
+  return sfxMuted;
+}
+
+export function isSfxMuted(): boolean {
+  return sfxMuted;
 }

@@ -83,4 +83,8 @@
 [x] - Fishing tutorial on first play (hold to reel, keep hook in zone)
 [x] - CC BY-NC-SA 4.0 license added
 [x] - Google Analytics installed
+[x] - Sleeping animations for all 5 breeds on beds (10 frames, looping)
+[x] - Separate music and SFX mute toggles in menu
+[x] - Skip dialogue button in conversations
+[x] - Fish remaining shown in day transition recap
 [x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview
