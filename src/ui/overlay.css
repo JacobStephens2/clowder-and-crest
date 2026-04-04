@@ -541,6 +541,7 @@ html, body {
   z-index: 25;
   padding: 50px 20px 80px;
   font-family: Georgia, serif;
+  overflow-y: auto;
 }
 
 .menu-overlay h2 {

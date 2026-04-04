@@ -1143,29 +1143,56 @@ function showFurnitureShop(): void {
 
     document.getElementById('shop-close')!.addEventListener('click', () => panel.remove());
 
+    const placeFurniture = (item: typeof items[number], targetRoom: string) => {
+      if (!spendFish(gameState!, item.cost)) return;
+
+      gameState!.furniture.push({
+        furnitureId: item.id,
+        room: targetRoom,
+        gridX: gameState!.furniture.filter((f) => f.room === targetRoom).length % 5,
+        gridY: Math.floor(gameState!.furniture.filter((f) => f.room === targetRoom).length / 5),
+      });
+
+      saveGame(gameState!);
+      const roomLabel = targetRoom === 'sleeping' ? 'Sleeping Quarters' : targetRoom === 'kitchen' ? 'Kitchen' : 'Operations';
+      showToast(`Placed ${item.name} in ${roomLabel}!`);
+      panel.remove();
+      showFurnitureShop();
+    };
+
     panel.querySelectorAll('.shop-item:not(.disabled)').forEach((el) => {
       el.addEventListener('click', () => {
         const itemId = el.getAttribute('data-item-id')!;
         const item = items.find((it) => it.id === itemId)!;
 
-        if (spendFish(gameState!, item.cost)) {
-          const targetRoom = item.room === 'any'
-            ? (gameState!.rooms.find((r) => r.unlocked)?.id ?? 'sleeping')
-            : item.room;
-
-          gameState!.furniture.push({
-            furnitureId: item.id,
-            room: targetRoom,
-            gridX: gameState!.furniture.filter((f) => f.room === targetRoom).length % 5,
-            gridY: Math.floor(gameState!.furniture.filter((f) => f.room === targetRoom).length / 5),
-          });
-
-          saveGame(gameState!);
-          showToast(`Placed ${item.name}!`);
-
-          // Refresh shop
-          panel.remove();
-          showFurnitureShop();
+        if (item.room !== 'any') {
+          placeFurniture(item, item.room);
+        } else {
+          // Let the player choose which room
+          const unlockedRooms = gameState!.rooms.filter((r) => r.unlocked);
+          if (unlockedRooms.length === 1) {
+            placeFurniture(item, unlockedRooms[0].id);
+          } else {
+            const roomPicker = document.createElement('div');
+            roomPicker.className = 'assign-overlay';
+            roomPicker.innerHTML = `
+              <button class="panel-close" id="room-pick-close">&times;</button>
+              <h2>Place ${item.name}</h2>
+              <div style="color:#8b7355;margin-bottom:12px">Choose a room:</div>
+              ${unlockedRooms.map((r) => {
+                const label = r.id === 'sleeping' ? 'Sleeping Quarters' : r.id === 'kitchen' ? 'Kitchen' : 'Operations';
+                return `<button class="menu-btn room-pick-btn" data-room="${r.id}">${label}</button>`;
+              }).join('')}
+            `;
+            overlayLayer.appendChild(roomPicker);
+            document.getElementById('room-pick-close')!.addEventListener('click', () => roomPicker.remove());
+            roomPicker.querySelectorAll('.room-pick-btn').forEach((btn) => {
+              btn.addEventListener('click', () => {
+                roomPicker.remove();
+                placeFurniture(item, btn.getAttribute('data-room')!);
+              });
+            });
+          }
         }
       });
     });

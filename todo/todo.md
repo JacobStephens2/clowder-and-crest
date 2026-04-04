@@ -10,6 +10,7 @@
 [x] - modify the art for the straw bed so it doesn't have a cat in it (regenerated empty bed)
 [x] - show furniture art in the furniture shop (sprite previews in shop cards)
 [x] - let the player place cats into particular rooms of the guild hall (room dropdown in Cats panel)
-[] - ensure the player can scroll through the furniture shop on web / desktop
-[] - when the player buys something from the furniture shop, let them choose which room it should go into, then in that room, let them choose where to place it
-[] - prevent the number of moves noted when a player is solving a puzzle from being obscured by the header in the view (the one showing fish, day, chapter)
+[x] - ensure the player can scroll through the furniture shop on web / desktop (overflow-y: auto)
+[x] - when the player buys something from the furniture shop, let them choose which room (room picker overlay)
+[x] - prevent the number of moves noted when a player is solving a puzzle from being obscured by the header
+[] - put an image of the cat on a job on the cat block in the rush hour puzzle if that job is a rush hour puzzle

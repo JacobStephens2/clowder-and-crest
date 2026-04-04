@@ -118,15 +118,15 @@ export class PuzzleScene extends Phaser.Scene {
       });
     });
 
-    // Move counter text
-    this.add.text(GAME_WIDTH / 2, 40, 'Moves: 0', {
+    // Move counter text (below status bar)
+    this.add.text(GAME_WIDTH / 2, 55, 'Moves: 0', {
       fontFamily: 'Georgia, serif',
       fontSize: '18px',
       color: '#c4956a',
     }).setOrigin(0.5).setName('moveText');
 
     // Min moves display
-    this.add.text(GAME_WIDTH / 2, 62, `Target: ${this.config.minMoves} moves`, {
+    this.add.text(GAME_WIDTH / 2, 77, `Target: ${this.config.minMoves} moves`, {
       fontFamily: 'Georgia, serif',
       fontSize: '13px',
       color: '#6b5b3e',
