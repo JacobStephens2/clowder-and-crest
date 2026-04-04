@@ -21,6 +21,8 @@ import { getJob, getStatMatchScore, generateDailyJobs, type JobDef } from './sys
 import { getPuzzleByDifficulty, generatePuzzle } from './systems/PuzzleGenerator';
 import { addBondPoints, processDailyBonds, getAvailableConversation, markConversationViewed, getBondRank, getBondPairs } from './systems/BondSystem';
 import { checkChapterAdvance, checkRatPlagueResolution, getChapterName } from './systems/ProgressionManager';
+import { startBgm, toggleMute, isMuted } from './systems/MusicManager';
+import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDayEnd } from './systems/DayTimer';
 import conversationsData from './data/conversations.json';
 
 // ──── Game State ────
@@ -95,95 +97,17 @@ function switchScene(target: string, data?: object): void {
   game.scene.start(target, data);
 }
 
-// ──── Background Music ────
-const BGM_TRACKS = [
-  'assets/audio/guildhall.mp3',
-  'assets/audio/castle_halls.mp3',
-  'assets/audio/dawn_parapets.mp3',
-  'assets/audio/market_stalls.mp3',
-  'assets/audio/guildhall_2.mp3',
-  'assets/audio/castle_halls_2.mp3',
-  'assets/audio/dawn_parapets_2.mp3',
-  'assets/audio/market_stalls_2.mp3',
-];
-let bgmAudio: HTMLAudioElement | null = null;
-let bgmMuted = localStorage.getItem('clowder_bgm_muted') === '1';
-let bgmTrackIndex = -1;
-
-function pickNextTrack(): string {
-  let next: number;
-  do {
-    next = Math.floor(Math.random() * BGM_TRACKS.length);
-  } while (next === bgmTrackIndex && BGM_TRACKS.length > 1);
-  bgmTrackIndex = next;
-  return BGM_TRACKS[next];
-}
-
-function playTrack(src: string): void {
-  if (bgmAudio) {
-    bgmAudio.pause();
-    bgmAudio.removeEventListener('ended', onTrackEnded);
+// ──── Day Timer Callback ────
+setOnDayEnd(() => {
+  if (!gameState) return;
+  advanceDay();
+  showToast('A new day dawns...');
+  const townOverlay = overlayLayer.querySelector('.town-overlay');
+  if (townOverlay) {
+    townOverlay.remove();
+    eventBus.emit('show-town-overlay');
   }
-  bgmAudio = new Audio(src);
-  bgmAudio.volume = 0.35;
-  bgmAudio.muted = bgmMuted;
-  bgmAudio.addEventListener('ended', onTrackEnded);
-  bgmAudio.play().catch(() => {
-    bgmAudio = null;
-  });
-}
-
-function onTrackEnded(): void {
-  playTrack(pickNextTrack());
-}
-
-function startBgm(): void {
-  if (bgmAudio) return;
-  playTrack(pickNextTrack());
-}
-
-// ──── Day Timer ────
-const DAY_DURATION = 5 * 60 * 1000; // 5 minutes per in-game day
-const TIME_PHASES = ['Dawn', 'Morning', 'Midday', 'Afternoon', 'Dusk', 'Night'];
-let dayTimerStart = 0;
-let dayTimerInterval: ReturnType<typeof setInterval> | null = null;
-const statusTime = document.getElementById('status-time')!;
-
-function startDayTimer(): void {
-  if (dayTimerInterval) clearInterval(dayTimerInterval);
-  dayTimerStart = Date.now();
-  updateTimeDisplay();
-  dayTimerInterval = setInterval(() => {
-    if (!gameState) return;
-    const elapsed = Date.now() - dayTimerStart;
-    if (elapsed >= DAY_DURATION) {
-      advanceDay();
-      dayTimerStart = Date.now();
-      showToast('A new day dawns...');
-      // Refresh the town overlay if it's open
-      const townOverlay = overlayLayer.querySelector('.town-overlay');
-      if (townOverlay) {
-        townOverlay.remove();
-        eventBus.emit('show-town-overlay');
-      }
-    }
-    updateTimeDisplay();
-  }, 1000);
-}
-
-function stopDayTimer(): void {
-  if (dayTimerInterval) {
-    clearInterval(dayTimerInterval);
-    dayTimerInterval = null;
-  }
-}
-
-function updateTimeDisplay(): void {
-  const elapsed = Date.now() - dayTimerStart;
-  const progress = Math.min(elapsed / DAY_DURATION, 1);
-  const phaseIndex = Math.min(Math.floor(progress * TIME_PHASES.length), TIME_PHASES.length - 1);
-  statusTime.textContent = TIME_PHASES[phaseIndex];
-}
+});
 
 // ──── Event Handlers ────
 
@@ -691,8 +615,7 @@ function advanceDay(): void {
   gameState.day++;
 
   // Reset day timer and worked cats
-  dayTimerStart = Date.now();
-  updateTimeDisplay();
+  resetDayTimer();
   catsWorkedToday.clear();
 
   // Daily food upkeep: 2 fish per cat
@@ -1029,7 +952,7 @@ function showMenuPanel(): void {
     </div>
     <button class="menu-btn" id="menu-save">Save Game</button>
     <button class="menu-btn" id="menu-furniture">Furniture Shop</button>
-    <button class="menu-btn" id="menu-mute">${bgmMuted ? 'Unmute Music' : 'Mute Music'}</button>
+    <button class="menu-btn" id="menu-mute">${isMuted() ? 'Unmute Music' : 'Mute Music'}</button>
     <button class="menu-btn" id="menu-export">Export Save</button>
     <button class="menu-btn" id="menu-import">Import Save</button>
     <button class="menu-btn danger" id="menu-delete">Delete Save</button>
@@ -1050,14 +973,10 @@ function showMenuPanel(): void {
   });
 
   document.getElementById('menu-mute')!.addEventListener('click', () => {
-    bgmMuted = !bgmMuted;
-    localStorage.setItem('clowder_bgm_muted', bgmMuted ? '1' : '0');
-    if (bgmAudio) {
-      bgmAudio.muted = bgmMuted;
-    }
+    const muted = toggleMute();
     panel.remove();
     showMenuPanel();
-    showToast(bgmMuted ? 'Music muted' : 'Music unmuted');
+    showToast(muted ? 'Music muted' : 'Music unmuted');
   });
 
   document.getElementById('menu-export')!.addEventListener('click', () => {
