@@ -126,7 +126,7 @@ if (pauseBtn) {
   });
 }
 
-// ──── Floating End Day Button (guild view) ────
+// ──── Floating Guild View UI ────
 const guildEndDayBtn = document.createElement('button');
 guildEndDayBtn.textContent = 'End Day';
 guildEndDayBtn.style.cssText = 'display:none;position:fixed;bottom:70px;left:50%;transform:translateX(-50%);padding:10px 28px;background:#2a2520;border:1px solid #6b5b3e;border-radius:8px;color:#c4956a;font-family:Georgia,serif;font-size:14px;cursor:pointer;z-index:500;';
@@ -140,6 +140,50 @@ guildEndDayBtn.addEventListener('click', () => {
   switchScene('GuildhallScene');
 });
 document.body.appendChild(guildEndDayBtn);
+
+// Floating wish banner for guild view
+const guildWishBanner = document.createElement('div');
+guildWishBanner.style.cssText = 'display:none;position:fixed;top:38px;left:50%;transform:translateX(-50%);width:340px;padding:8px 12px;background:rgba(42,37,32,0.95);border:1px solid #6b5b3e;border-radius:8px;z-index:500;font-family:Georgia,serif;';
+document.body.appendChild(guildWishBanner);
+
+function updateGuildWishBanner(): void {
+  if (!gameState) { guildWishBanner.style.display = 'none'; return; }
+  const wish = getDailyWish(gameState.day, gameState.cats);
+  if (!wish || gameState.flags[`wish_day_${gameState.day}`]) {
+    guildWishBanner.style.display = 'none';
+    return;
+  }
+  guildWishBanner.style.display = 'block';
+  guildWishBanner.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="color:#dda055;font-size:12px">\u{1F4AD} ${wish.catName}'s Wish</div>
+        <div style="color:#8b7355;font-size:10px;margin-top:2px">"${wish.wish}"</div>
+      </div>
+      <button id="guild-fulfill-wish" style="padding:4px 10px;background:#2a2520;border:1px solid #dda055;border-radius:4px;color:#dda055;font-size:11px;font-family:Georgia,serif;cursor:pointer;white-space:nowrap">5 fish</button>
+    </div>
+  `;
+  document.getElementById('guild-fulfill-wish')?.addEventListener('click', () => {
+    if (!gameState || gameState.fish < 5) { showToast('Not enough fish!'); return; }
+    gameState.flags[`wish_day_${gameState.day}`] = true;
+    gameState.fish -= 5;
+    const cat = gameState.cats.find((c) => c.id === wish.catId);
+    if (cat) {
+      if (wish.reward.includes('mood')) {
+        cat.mood = 'happy';
+      }
+      if (wish.reward.includes('bond')) {
+        for (const other of gameState.cats) {
+          if (other.id !== cat.id) addBondPoints(gameState, cat.breed, other.breed, 2);
+        }
+      }
+    }
+    saveGame(gameState);
+    updateStatusBar();
+    showToast(`${wish.catName} is delighted! ${wish.reward}`);
+    guildWishBanner.style.display = 'none';
+  });
+}
 
 // ──── UI Helpers ────
 let lastFishCount = -1;
@@ -180,8 +224,13 @@ function switchScene(target: string, data?: object): void {
     }
   }
   game.scene.start(target, data);
-  // Show floating end day button only on guild overview
+  // Show floating guild UI only on guild overview
   guildEndDayBtn.style.display = target === 'GuildhallScene' ? 'block' : 'none';
+  if (target === 'GuildhallScene') {
+    updateGuildWishBanner();
+  } else {
+    guildWishBanner.style.display = 'none';
+  }
 }
 
 // ──── Day Timer Callback ────
