@@ -30,10 +30,16 @@ export function generateDailyJobs(save: SaveData): JobDef[] {
 
   // Filter by chapter progression
   if (save.chapter < 2) {
+    // Chapter 1: only easy pest control
     available = available.filter((j) => j.category === 'pest_control' && j.difficulty === 'easy');
   } else if (save.chapter < 3) {
-    available = available.filter((j) => j.difficulty !== 'hard');
+    // Chapter 2: pest control + courier, no hard
+    available = available.filter((j) => ['pest_control', 'courier'].includes(j.category) && j.difficulty !== 'hard');
+  } else if (save.chapter < 4) {
+    // Chapter 3: all categories unlock, no hard for new ones
+    available = available.filter((j) => j.difficulty !== 'hard' || ['pest_control', 'courier'].includes(j.category));
   }
+  // Chapter 4+: everything available
 
   // Chapter 3 rat plague: add extra pest control jobs
   if (save.chapter === 3 && !save.flags.ratPlagueResolved) {
@@ -55,8 +61,10 @@ export function getStatMatchScore(cat: CatSaveData, job: JobDef): number {
   const traits = cat.traits ?? [];
   if (traits.includes('Brave') && job.difficulty === 'hard') score += 0.1;
   if (traits.includes('Lazy')) score -= 0.08;
-  if (traits.includes('Curious') && job.category === 'courier') score += 0.08;
-  if (traits.includes('Pious') && job.category === 'pest_control') score += 0.05;
+  if (traits.includes('Curious') && (job.category === 'courier' || job.category === 'detection')) score += 0.08;
+  if (traits.includes('Pious') && (job.category === 'pest_control' || job.category === 'sacred')) score += 0.08;
+  if (traits.includes('Brave') && job.category === 'guard') score += 0.08;
+  if (traits.includes('Loyal') && job.category === 'guard') score += 0.05;
   if (traits.includes('Night Owl')) score += 0.05;
   if (traits.includes('Skittish') && job.difficulty === 'hard') score -= 0.1;
   if (traits.includes('Loyal')) score += 0.03;

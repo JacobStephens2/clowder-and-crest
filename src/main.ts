@@ -393,7 +393,10 @@ eventBus.on('show-town-overlay', () => {
 
   dailyJobs.forEach((job) => {
     const diffClass = `diff-${job.difficulty}`;
-    const catIcon = job.category === 'pest_control' ? '\u{1F400}' : '\u{1F4DC}';
+    const categoryIcons: Record<string, string> = {
+      pest_control: '\u{1F400}', courier: '\u{1F4DC}', guard: '\u{1F6E1}', sacred: '\u{1F54A}', detection: '\u{1F50D}',
+    };
+    const catIcon = categoryIcons[job.category] ?? '\u{1F43E}';
     const artFile = jobArtMap[job.puzzleSkin] ?? '';
     const artImg = artFile ? `<img src="assets/sprites/jobs/${artFile}.png" style="width:48px;height:48px;image-rendering:pixelated;border-radius:4px;margin-right:8px;flex-shrink:0" />` : '';
     html += `
@@ -650,16 +653,14 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
     overlay.remove();
     switchToPuzzleMusic();
 
-    // Pick minigame type: pest control jobs can get Chase, others get puzzles
+    // Pick minigame type based on job category
     const roll = Math.random();
+    const canChase = ['pest_control', 'detection'].includes(job.category);
     if (roll < 0.25) {
-      // Fishing minigame
       switchScene('FishingScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
-    } else if (job.category === 'pest_control' && roll < 0.50) {
-      // Chase minigame — cat hunts rat in a maze
+    } else if (canChase && roll < 0.50) {
       switchScene('ChaseScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
     } else if (roll < 0.75) {
-      // Sokoban
       switchScene('SokobanScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
     } else {
       // Rush Hour

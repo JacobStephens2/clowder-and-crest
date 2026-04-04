@@ -163,5 +163,104 @@
     "maxReward": 25,
     "puzzleSkin": "night",
     "description": "Deliver a sealed message through dark alleys after curfew."
+  },
+  {
+    "id": "estate_nightwatch",
+    "name": "Estate Nightwatch",
+    "category": "guard",
+    "difficulty": "easy",
+    "keyStats": ["endurance", "senses"],
+    "baseReward": 7,
+    "maxReward": 11,
+    "puzzleSkin": "manor",
+    "description": "Patrol a nobleman's estate through the night. Report anything unusual."
+  },
+  {
+    "id": "caravan_escort",
+    "name": "Caravan Escort",
+    "category": "guard",
+    "difficulty": "medium",
+    "keyStats": ["endurance", "hunting"],
+    "baseReward": 13,
+    "maxReward": 19,
+    "puzzleSkin": "market",
+    "description": "Escort a merchant caravan between towns. Bandits and wolves are a risk."
+  },
+  {
+    "id": "treasury_guard",
+    "name": "Treasury Guard",
+    "category": "guard",
+    "difficulty": "hard",
+    "keyStats": ["endurance", "senses", "hunting"],
+    "baseReward": 22,
+    "maxReward": 32,
+    "puzzleSkin": "castle",
+    "description": "Guard the lord's treasury overnight. Thieves are clever and persistent."
+  },
+  {
+    "id": "cathedral_vigil",
+    "name": "Cathedral Vigil",
+    "category": "sacred",
+    "difficulty": "easy",
+    "keyStats": ["senses", "charm"],
+    "baseReward": 6,
+    "maxReward": 10,
+    "puzzleSkin": "cathedral",
+    "description": "Keep watch over the cathedral relics through the night. A sacred duty."
+  },
+  {
+    "id": "relic_guardian",
+    "name": "Relic Guardian",
+    "category": "sacred",
+    "difficulty": "medium",
+    "keyStats": ["senses", "endurance"],
+    "baseReward": 12,
+    "maxReward": 18,
+    "puzzleSkin": "monastery",
+    "description": "Guard a holy relic during its procession through the town."
+  },
+  {
+    "id": "omen_reading",
+    "name": "Omen Reading",
+    "category": "sacred",
+    "difficulty": "hard",
+    "keyStats": ["senses", "intelligence", "charm"],
+    "baseReward": 19,
+    "maxReward": 28,
+    "puzzleSkin": "cathedral",
+    "description": "The abbot seeks guidance. Interpret the signs in the chapel smoke."
+  },
+  {
+    "id": "lost_object_recovery",
+    "name": "Lost Object Recovery",
+    "category": "detection",
+    "difficulty": "easy",
+    "keyStats": ["intelligence", "senses"],
+    "baseReward": 7,
+    "maxReward": 11,
+    "puzzleSkin": "market",
+    "description": "A merchant lost a valuable ring. Search the market square."
+  },
+  {
+    "id": "infestation_scout",
+    "name": "Infestation Scout",
+    "category": "detection",
+    "difficulty": "medium",
+    "keyStats": ["intelligence", "stealth"],
+    "baseReward": 12,
+    "maxReward": 17,
+    "puzzleSkin": "warehouse",
+    "description": "Map the rat tunnels beneath the granary district. Don't get caught."
+  },
+  {
+    "id": "mystery_investigation",
+    "name": "Mystery Investigation",
+    "category": "detection",
+    "difficulty": "hard",
+    "keyStats": ["intelligence", "senses", "stealth"],
+    "baseReward": 20,
+    "maxReward": 30,
+    "puzzleSkin": "manor",
+    "description": "The bishop's cat has gone missing. Follow the clues through the old quarter."
   }
 ]

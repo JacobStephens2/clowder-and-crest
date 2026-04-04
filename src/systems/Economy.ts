@@ -52,6 +52,27 @@ const STATION_EVENTS_COURIER = [
   '{cat} discovered a shortcut through the bell tower!',
 ];
 
+const STATION_EVENTS_GUARD = [
+  '{cat} scared off an intruder — the estate owner is grateful.',
+  'A quiet night. {cat} kept perfect watch.',
+  'Thieves tested the perimeter — {cat} held firm.',
+  '{cat} found a gap in the wall and reported it — bonus for vigilance!',
+];
+
+const STATION_EVENTS_SACRED = [
+  '{cat} sensed something stirring near the relics — false alarm, but good instincts.',
+  'The monks praised {cat}\'s devotion. Extra fish offered.',
+  'A pilgrim left an offering near {cat}\'s post.',
+  '{cat} dreamed of Saint Gertrude — the others say it\'s a good omen.',
+];
+
+const STATION_EVENTS_DETECTION = [
+  '{cat} uncovered a hidden passage beneath the market.',
+  'The trail went cold — {cat} had to start from scratch.',
+  '{cat} found the missing item! A generous reward.',
+  'A false lead cost time — {cat} doubled back and found the truth.',
+];
+
 export function collectStationedEarnings(save: SaveData): StationedResult[] {
   const results: StationedResult[] = [];
 
@@ -73,7 +94,11 @@ export function collectStationedEarnings(save: SaveData): StationedResult[] {
     // Station events (~20% chance per day)
     let event: string | undefined;
     if (Math.random() < 0.2) {
-      const events = job.category === 'pest_control' ? STATION_EVENTS_PEST : STATION_EVENTS_COURIER;
+      const eventMap: Record<string, string[]> = {
+        pest_control: STATION_EVENTS_PEST, courier: STATION_EVENTS_COURIER,
+        guard: STATION_EVENTS_GUARD, sacred: STATION_EVENTS_SACRED, detection: STATION_EVENTS_DETECTION,
+      };
+      const events = eventMap[job.category] ?? STATION_EVENTS_PEST;
       const template = events[Math.floor(Math.random() * events.length)];
       event = template.replace('{cat}', cat.name);
 
