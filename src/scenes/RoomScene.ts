@@ -21,9 +21,17 @@ function toWorld(col: number, row: number): { x: number; y: number } {
   };
 }
 
+function worldToGrid(wx: number, wy: number): { col: number; row: number } {
+  return {
+    col: Math.floor((wx - GRID_LEFT) / TILE_SIZE),
+    row: Math.floor((wy - GRID_TOP) / TILE_SIZE),
+  };
+}
+
 export class RoomScene extends Phaser.Scene {
   private roomId = 'sleeping';
   private openTiles: { col: number; row: number }[] = [];
+  private openTileSet = new Set<string>();
 
   constructor() {
     super({ key: 'RoomScene' });
@@ -66,13 +74,13 @@ export class RoomScene extends Phaser.Scene {
       color: '#c4956a',
     }).setOrigin(0.5);
 
-    this.drawRoom(save);
+    this.drawRoom();
     this.drawFurniture(save);
     this.drawCats(save);
     this.drawAmbience();
   }
 
-  private drawRoom(save: SaveData): void {
+  private drawRoom(): void {
     const gfx = this.add.graphics();
     const gridW = GRID_COLS * TILE_SIZE;
     const gridH = GRID_ROWS * TILE_SIZE;
@@ -84,51 +92,43 @@ export class RoomScene extends Phaser.Scene {
         gfx.fillStyle(shade);
         gfx.fillRect(GRID_LEFT + col * TILE_SIZE, GRID_TOP + row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
 
-        // Tile edges
         gfx.lineStyle(1, 0x3a3530, 0.12);
         gfx.strokeRect(GRID_LEFT + col * TILE_SIZE, GRID_TOP + row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
       }
     }
 
-    // Walls (thick borders on top and left)
+    // Walls
     const wallThickness = 8;
-    // Top wall
     gfx.fillStyle(0x2a2622);
     gfx.fillRect(GRID_LEFT - wallThickness, GRID_TOP - wallThickness, gridW + wallThickness * 2, wallThickness);
-    // Left wall
     gfx.fillStyle(0x262420);
     gfx.fillRect(GRID_LEFT - wallThickness, GRID_TOP - wallThickness, wallThickness, gridH + wallThickness * 2);
-    // Right wall
     gfx.fillStyle(0x242220);
     gfx.fillRect(GRID_LEFT + gridW, GRID_TOP - wallThickness, wallThickness, gridH + wallThickness * 2);
-    // Bottom wall
     gfx.fillStyle(0x282622);
     gfx.fillRect(GRID_LEFT - wallThickness, GRID_TOP + gridH, gridW + wallThickness * 2, wallThickness);
 
-    // Wall border lines
     gfx.lineStyle(1, 0x3a3530, 0.6);
     gfx.strokeRect(GRID_LEFT - wallThickness, GRID_TOP - wallThickness, gridW + wallThickness * 2, gridH + wallThickness * 2);
     gfx.strokeRect(GRID_LEFT, GRID_TOP, gridW, gridH);
 
-    // Window on top wall
+    // Window
     const winX = GRID_LEFT + gridW * 0.4;
     const winW = 40;
     gfx.fillStyle(0x1a2a3a, 0.6);
     gfx.fillRect(winX, GRID_TOP - wallThickness, winW, wallThickness);
     gfx.lineStyle(1, 0x4a4035, 0.8);
     gfx.strokeRect(winX, GRID_TOP - wallThickness, winW, wallThickness);
-    // Moonlight patch on floor
     gfx.fillStyle(0x8899aa, 0.03);
     gfx.fillRect(winX - 5, GRID_TOP, winW + 10, 60);
 
-    // Torch on right wall
+    // Torch
     const torchY = GRID_TOP + gridH * 0.3;
     const torchX = GRID_LEFT + gridW + wallThickness / 2;
     gfx.fillStyle(0x6b5b3e);
     gfx.fillRect(torchX - 2, torchY - 5, 4, 10);
     gfx.fillStyle(0xdda055, 0.7);
     gfx.fillCircle(torchX, torchY - 7, 3);
-    // Glow
     const torchGlow = this.add.circle(torchX, torchY - 7, 30, 0xdda055, 0.05);
     this.tweens.add({
       targets: torchGlow,
@@ -146,17 +146,10 @@ export class RoomScene extends Phaser.Scene {
     const allPlaced = save.furniture.filter((f) => f.room === this.roomId);
 
     const colors: Record<string, number> = {
-      straw_bed: 0x8b7355,
-      woolen_blanket: 0x6a5a7a,
-      cushioned_basket: 0x7a6a5a,
-      lantern: 0xdda055,
-      candle_stand: 0xccaa66,
-      scratching_post: 0x8a6a3a,
-      bookshelf: 0x5a4a3a,
-      rug_wool: 0x7a4a4a,
-      saints_icon: 0x7a7a8a,
-      fish_bone_mobile: 0x6a7a7a,
-      potted_catnip: 0x5a8a5a,
+      straw_bed: 0x8b7355, woolen_blanket: 0x6a5a7a, cushioned_basket: 0x7a6a5a,
+      lantern: 0xdda055, candle_stand: 0xccaa66, scratching_post: 0x8a6a3a,
+      bookshelf: 0x5a4a3a, rug_wool: 0x7a4a4a, saints_icon: 0x7a7a8a,
+      fish_bone_mobile: 0x6a7a7a, potted_catnip: 0x5a8a5a,
     };
 
     allPlaced.forEach((f) => {
@@ -167,37 +160,25 @@ export class RoomScene extends Phaser.Scene {
 
       const gfx = this.add.graphics();
       const size = TILE_SIZE - 8;
-
-      // Furniture as a rounded rectangle from above
       gfx.fillStyle(color);
       gfx.fillRoundedRect(x - size / 2, y - size / 2, size, size, 4);
       gfx.lineStyle(1, 0x3a3530, 0.5);
       gfx.strokeRoundedRect(x - size / 2, y - size / 2, size, size, 4);
 
-      // Label
       const label = f.furnitureId.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
       this.add.text(x, y, label, {
-        fontFamily: 'Georgia, serif',
-        fontSize: '6px',
-        color: '#ddd',
-        align: 'center',
-        wordWrap: { width: size - 4 },
+        fontFamily: 'Georgia, serif', fontSize: '6px', color: '#ddd',
+        align: 'center', wordWrap: { width: size - 4 },
       }).setOrigin(0.5);
 
-      // Glow effects for light sources
       if (f.furnitureId === 'lantern' || f.furnitureId === 'candle_stand') {
         const glow = this.add.circle(x, y, 24, 0xdda055, 0.05);
         this.tweens.add({
-          targets: glow,
-          alpha: { from: 0.03, to: 0.09 },
-          duration: 1500 + Math.random() * 500,
-          yoyo: true,
-          repeat: -1,
-          ease: 'Sine.easeInOut',
+          targets: glow, alpha: { from: 0.03, to: 0.09 },
+          duration: 1500 + Math.random() * 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
         });
       }
 
-      // Catnip leaves
       if (f.furnitureId === 'potted_catnip') {
         gfx.fillStyle(0x4a8a3a, 0.8);
         gfx.fillCircle(x - 4, y - 8, 4);
@@ -207,17 +188,19 @@ export class RoomScene extends Phaser.Scene {
     });
   }
 
-  // ── Cat wandering system ──
+  // ── Cat system ──
 
   private buildOpenTiles(save: SaveData): void {
     const usedPositions = new Set(
       save.furniture.filter((f) => f.room === this.roomId).map((f) => `${f.gridX % GRID_COLS},${f.gridY % GRID_ROWS}`)
     );
     this.openTiles = [];
+    this.openTileSet = new Set();
     for (let row = 0; row < GRID_ROWS; row++) {
       for (let col = 0; col < GRID_COLS; col++) {
         if (!usedPositions.has(`${col},${row}`)) {
           this.openTiles.push({ col, row });
+          this.openTileSet.add(`${col},${row}`);
         }
       }
     }
@@ -248,30 +231,144 @@ export class RoomScene extends Phaser.Scene {
     cats.forEach((cat, i) => {
       const startTile = this.pickRandomTile();
       const stationed = isCatStationed(save, cat.id);
-      const hasSprite = BREEDS_WITH_SPRITES.has(cat.breed);
+      const isPlayer = cat.id === 'player_wildcat';
 
       if (stationed) {
         const { x, y } = toWorld(startTile.col, startTile.row);
-        this.drawStationedCat(cat, x, y, hasSprite);
-      } else if (hasSprite) {
-        this.spawnWanderingSprite(cat, startTile, i);
+        this.drawStationedCat(cat, x, y);
+      } else if (isPlayer) {
+        this.spawnPlayerCat(cat, startTile);
       } else {
-        this.spawnWanderingFallback(cat, startTile, i);
+        this.spawnWanderingCat(cat, startTile, i);
       }
     });
   }
 
-  private spawnWanderingSprite(cat: SaveData['cats'][number], startTile: { col: number; row: number }, index: number): void {
+  private spawnPlayerCat(cat: SaveData['cats'][number], startTile: { col: number; row: number }): void {
     const { x, y } = toWorld(startTile.col, startTile.row);
+    const hasSprite = BREEDS_WITH_SPRITES.has(cat.breed);
 
     const shadow = this.add.graphics();
     shadow.fillStyle(0x000000, 0.2);
     shadow.fillEllipse(0, 0, 24, 8);
     shadow.setPosition(x, y + 12);
 
-    const sprite = this.add.sprite(x, y - 4, `${cat.breed}_idle_south`);
-    sprite.setScale(1.2);
-    sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+    // Player indicator — small golden diamond above the cat
+    const indicator = this.add.graphics();
+    indicator.fillStyle(0xdda055);
+    indicator.fillPoints([
+      new Phaser.Geom.Point(0, -4),
+      new Phaser.Geom.Point(4, 0),
+      new Phaser.Geom.Point(0, 4),
+      new Phaser.Geom.Point(-4, 0),
+    ], true);
+    indicator.setPosition(x, y - 30);
+
+    // Gentle pulse on the indicator
+    this.tweens.add({
+      targets: indicator,
+      scaleX: { from: 1, to: 1.3 },
+      scaleY: { from: 1, to: 1.3 },
+      alpha: { from: 1, to: 0.6 },
+      duration: 1000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    let sprite: Phaser.GameObjects.Sprite | null = null;
+    let fallbackGfx: Phaser.GameObjects.Graphics | null = null;
+
+    if (hasSprite) {
+      sprite = this.add.sprite(x, y - 4, `${cat.breed}_idle_south`);
+      sprite.setScale(1.2);
+      sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+    } else {
+      const color = parseInt((BREED_COLORS[cat.breed] ?? '#8b7355').replace('#', ''), 16);
+      fallbackGfx = this.add.graphics();
+      fallbackGfx.setPosition(x, y);
+      this.drawFallbackCatGraphics(fallbackGfx, color);
+    }
+
+    const nameTag = this.add.text(x, y + 18, `${cat.name} (you)`, {
+      fontFamily: 'Georgia, serif',
+      fontSize: '8px',
+      color: '#dda055',
+    }).setOrigin(0.5);
+
+    let currentTile = { ...startTile };
+    let isMoving = false;
+
+    // Tap floor to move player cat
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (isMoving) return;
+
+      // Convert pointer to world coordinates (accounting for camera zoom/offset)
+      const worldX = pointer.x / DPR + (GAME_WIDTH / 2 - GAME_WIDTH / (2));
+      const worldY = pointer.y / DPR + (GAME_HEIGHT / 2 - GAME_HEIGHT / (2));
+
+      const grid = worldToGrid(pointer.worldX, pointer.worldY);
+
+      // Check if the tile is within the grid and open
+      if (grid.col < 0 || grid.col >= GRID_COLS || grid.row < 0 || grid.row >= GRID_ROWS) return;
+      if (!this.openTileSet.has(`${grid.col},${grid.row}`)) return;
+      if (grid.col === currentTile.col && grid.row === currentTile.row) return;
+
+      isMoving = true;
+      const walkDir = this.getWalkDirection(currentTile.col, currentTile.row, grid.col, grid.row);
+      const dest = toWorld(grid.col, grid.row);
+      const distance = Math.abs(grid.col - currentTile.col) + Math.abs(grid.row - currentTile.row);
+      const duration = distance * 250;
+
+      if (sprite) {
+        const walkKey = `${cat.breed}_walk_${walkDir}`;
+        if (this.anims.exists(walkKey)) {
+          sprite.play(walkKey);
+        }
+        this.tweens.add({ targets: sprite, x: dest.x, y: dest.y - 4, duration, ease: 'Linear' });
+      }
+      if (fallbackGfx) {
+        this.tweens.add({ targets: fallbackGfx, x: dest.x, y: dest.y, duration, ease: 'Linear' });
+      }
+      this.tweens.add({ targets: shadow, x: dest.x, y: dest.y + 12, duration, ease: 'Linear' });
+      this.tweens.add({ targets: indicator, x: dest.x, y: dest.y - 30, duration, ease: 'Linear' });
+      this.tweens.add({
+        targets: nameTag, x: dest.x, y: dest.y + 18, duration, ease: 'Linear',
+        onComplete: () => {
+          currentTile = { col: grid.col, row: grid.row };
+          isMoving = false;
+          if (sprite) {
+            sprite.setTexture(`${cat.breed}_idle_${walkDir}`);
+            sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+            sprite.stop();
+          }
+        },
+      });
+    });
+  }
+
+  private spawnWanderingCat(cat: SaveData['cats'][number], startTile: { col: number; row: number }, index: number): void {
+    const { x, y } = toWorld(startTile.col, startTile.row);
+    const hasSprite = BREEDS_WITH_SPRITES.has(cat.breed);
+
+    const shadow = this.add.graphics();
+    shadow.fillStyle(0x000000, 0.2);
+    shadow.fillEllipse(0, 0, 24, 8);
+    shadow.setPosition(x, y + 12);
+
+    let sprite: Phaser.GameObjects.Sprite | null = null;
+    let fallbackGfx: Phaser.GameObjects.Graphics | null = null;
+
+    if (hasSprite) {
+      sprite = this.add.sprite(x, y - 4, `${cat.breed}_idle_south`);
+      sprite.setScale(1.2);
+      sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+    } else {
+      const color = parseInt((BREED_COLORS[cat.breed] ?? '#8b7355').replace('#', ''), 16);
+      fallbackGfx = this.add.graphics();
+      fallbackGfx.setPosition(x, y);
+      this.drawFallbackCatGraphics(fallbackGfx, color);
+    }
 
     const nameTag = this.add.text(x, y + 18, cat.name, {
       fontFamily: 'Georgia, serif',
@@ -283,63 +380,31 @@ export class RoomScene extends Phaser.Scene {
 
     const wanderToNext = () => {
       const idleTime = 2000 + Math.random() * 3000;
-      const dir = ['south', 'east', 'west', 'north'][Math.floor(Math.random() * 4)];
-      sprite.setTexture(`${cat.breed}_idle_${dir}`);
-      sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
-      sprite.stop();
+
+      if (sprite) {
+        const dir = ['south', 'east', 'west', 'north'][Math.floor(Math.random() * 4)];
+        sprite.setTexture(`${cat.breed}_idle_${dir}`);
+        sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        sprite.stop();
+      }
 
       this.time.delayedCall(idleTime, () => {
         const nextTile = this.pickRandomTile(currentTile);
         const walkDir = this.getWalkDirection(currentTile.col, currentTile.row, nextTile.col, nextTile.row);
         const dest = toWorld(nextTile.col, nextTile.row);
-        const walkKey = `${cat.breed}_walk_${walkDir}`;
+        const duration = 800 + Math.random() * 600;
 
-        if (this.anims.exists(walkKey)) {
-          sprite.play(walkKey);
+        if (sprite) {
+          const walkKey = `${cat.breed}_walk_${walkDir}`;
+          if (this.anims.exists(walkKey)) {
+            sprite.play(walkKey);
+          }
+          this.tweens.add({ targets: sprite, x: dest.x, y: dest.y - 4, duration, ease: 'Linear' });
         }
-
-        const duration = 800 + Math.random() * 600;
-        this.tweens.add({ targets: sprite, x: dest.x, y: dest.y - 4, duration, ease: 'Linear' });
+        if (fallbackGfx) {
+          this.tweens.add({ targets: fallbackGfx, x: dest.x, y: dest.y, duration, ease: 'Linear' });
+        }
         this.tweens.add({ targets: shadow, x: dest.x, y: dest.y + 12, duration, ease: 'Linear' });
-        this.tweens.add({
-          targets: nameTag, x: dest.x, y: dest.y + 18, duration, ease: 'Linear',
-          onComplete: () => { currentTile = { ...nextTile }; wanderToNext(); },
-        });
-      });
-    };
-
-    this.time.delayedCall(index * 500 + Math.random() * 1000, wanderToNext);
-  }
-
-  private spawnWanderingFallback(cat: SaveData['cats'][number], startTile: { col: number; row: number }, index: number): void {
-    const { x, y } = toWorld(startTile.col, startTile.row);
-    const color = parseInt((BREED_COLORS[cat.breed] ?? '#8b7355').replace('#', ''), 16);
-
-    const gfx = this.add.graphics();
-    gfx.setPosition(x, y);
-    this.drawFallbackCatGraphics(gfx, color);
-
-    const nameTag = this.add.text(x, y + 18, cat.name, {
-      fontFamily: 'Georgia, serif',
-      fontSize: '8px',
-      color: '#c4956a',
-    }).setOrigin(0.5);
-
-    let currentTile = { ...startTile };
-
-    const wanderToNext = () => {
-      const idleTime = 2000 + Math.random() * 3000;
-
-      this.tweens.add({
-        targets: gfx, y: gfx.y - 1.5, duration: 800, yoyo: true, ease: 'Sine.easeInOut',
-      });
-
-      this.time.delayedCall(idleTime, () => {
-        const nextTile = this.pickRandomTile(currentTile);
-        const dest = toWorld(nextTile.col, nextTile.row);
-        const duration = 800 + Math.random() * 600;
-
-        this.tweens.add({ targets: gfx, x: dest.x, y: dest.y, duration, ease: 'Linear' });
         this.tweens.add({
           targets: nameTag, x: dest.x, y: dest.y + 18, duration, ease: 'Linear',
           onComplete: () => { currentTile = { ...nextTile }; wanderToNext(); },
@@ -358,11 +423,9 @@ export class RoomScene extends Phaser.Scene {
     gfx.fillEllipse(0, 0, 18, 14);
     gfx.fillCircle(0, -10, 7);
 
-    // Ears
     gfx.fillTriangle(-6, -13, -3, -20, 0, -13);
     gfx.fillTriangle(6, -13, 3, -20, 0, -13);
 
-    // Eyes
     gfx.fillStyle(0xddcc88);
     gfx.fillCircle(-3, -11, 1.5);
     gfx.fillCircle(3, -11, 1.5);
@@ -371,7 +434,8 @@ export class RoomScene extends Phaser.Scene {
     gfx.fillCircle(3, -11, 0.7);
   }
 
-  private drawStationedCat(cat: SaveData['cats'][number], x: number, y: number, hasSprite: boolean): void {
+  private drawStationedCat(cat: SaveData['cats'][number], x: number, y: number): void {
+    const hasSprite = BREEDS_WITH_SPRITES.has(cat.breed);
     if (hasSprite) {
       const sprite = this.add.sprite(x, y - 4, `${cat.breed}_idle_south`);
       sprite.setScale(1.2);
