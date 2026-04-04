@@ -645,7 +645,7 @@ html, body {
 /* Town overlay */
 .town-overlay {
   position: absolute;
-  top: 240px;
+  top: min(240px, 30vh);
   left: 0;
   width: 100%;
   bottom: 64px;

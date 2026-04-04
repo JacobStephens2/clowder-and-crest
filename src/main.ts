@@ -357,7 +357,9 @@ eventBus.on('recruit-cat', (breedId: string) => {
   const breed = getBreed(breedId);
   if (!breed) return;
 
-  if (!spendFish(gameState, breed.recruitCost)) {
+  const repMod = getReputationRecruitModifier(gameState.reputationScore);
+  const adjustedCost = Math.floor(breed.recruitCost * repMod);
+  if (!spendFish(gameState, adjustedCost)) {
     showToast('Not enough fish!');
     return;
   }
@@ -430,6 +432,7 @@ eventBus.on('show-town-overlay', () => {
     ${plagueActive ? '<div style="background:#4a2020;color:#cc6666;padding:8px 12px;margin:0 12px 8px;border-radius:4px;font-size:12px;text-align:center;font-family:Georgia,serif">The Rat Plague ravages the town. Complete pest control jobs to end it.</div>' : ''}
     <div class="town-section-divider"></div>
     <div class="town-section-title">Job Board</div>
+    ${gameState.totalJobsCompleted < 3 ? '<div style="padding:0 12px 8px;font-size:11px;color:#6b5b3e;font-family:Georgia,serif">Accept a job and assign one of your cats to complete it. Solve puzzles to earn fish.</div>' : ''}
   `;
 
   // Job cards
@@ -506,6 +509,9 @@ eventBus.on('show-town-overlay', () => {
 
   html += `<div class="town-section-divider"></div>`;
   html += `<div class="town-section-title">Stray Cats Nearby</div>`;
+  if (gameState.cats.length === 1) {
+    html += `<div style="padding:0 12px 8px;font-size:11px;color:#6b5b3e;font-family:Georgia,serif">Complete jobs to earn fish, then recruit a second cat to grow your guild.</div>`;
+  }
 
   if (recruitable.length === 0) {
     html += `<div class="town-empty">All cats have joined the guild.</div>`;
@@ -1481,6 +1487,8 @@ function showCatPanel(): void {
 
   // Show bonds
   html += `<h3>Bonds</h3>`;
+  html += `<div style="font-size:10px;color:#555;margin-bottom:8px;padding:0 12px">Cats who work together build bonds. Higher bonds unlock conversations and stat bonuses.</div>`;
+  const thresholds = { acquaintance: 10, companion: 25, bonded: 50 };
   for (const [a, b] of getBondPairs()) {
     const catA = gameState.cats.find((c) => c.breed === a);
     const catB = gameState.cats.find((c) => c.breed === b);
@@ -1492,12 +1500,16 @@ function showCatPanel(): void {
     });
     const points = bond?.points ?? 0;
     const rank = getBondRank(points);
+    const rankColors: Record<string, string> = { stranger: '#555', acquaintance: '#8a8a4a', companion: '#6b8ea6', bonded: '#c4956a' };
+    const nextThreshold = rank === 'stranger' ? 10 : rank === 'acquaintance' ? 25 : rank === 'companion' ? 50 : null;
+    const progressText = nextThreshold ? ` — ${nextThreshold - points} pts to next rank` : ' — Max bond!';
 
     html += `<div class="cat-card" style="padding:8px 12px">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <span style="font-size:13px">${catA.name} & ${catB.name}</span>
-        <span style="font-size:12px;color:#8b7355">${rank} (${points}pts)</span>
+        <span style="font-size:12px;color:${rankColors[rank] ?? '#8b7355'}">${rank}</span>
       </div>
+      <div style="font-size:10px;color:#6b5b3e">${points} pts${progressText}</div>
     </div>`;
   }
 

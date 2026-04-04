@@ -177,13 +177,17 @@ export class GuildhallScene extends Phaser.Scene {
           this.drawCats({ ...save, cats: catsForRoom }, cx, y + ROOM_HEIGHT - 55);
         }
       } else {
-        // Locked room
-        this.add.rectangle(cx, y + ROOM_HEIGHT / 2, ROOM_WIDTH, ROOM_HEIGHT, 0x000000, 0.4);
+        // Locked room — visually distinct with dark overlay and lock icon
+        this.add.rectangle(cx, y + ROOM_HEIGHT / 2, ROOM_WIDTH, ROOM_HEIGHT, 0x0a0908, 0.6);
 
-        this.add.text(cx, y + ROOM_HEIGHT / 2 - 20, room.name, {
+        this.add.text(cx, y + ROOM_HEIGHT / 2 - 30, '\u{1F512}', {
+          fontSize: '20px',
+        }).setOrigin(0.5);
+
+        this.add.text(cx, y + ROOM_HEIGHT / 2 - 10, room.name, {
           fontFamily: 'Georgia, serif',
           fontSize: '15px',
-          color: '#666',
+          color: '#555',
         }).setOrigin(0.5);
 
         // Unlock button

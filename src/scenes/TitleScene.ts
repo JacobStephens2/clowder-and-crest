@@ -74,6 +74,13 @@ export class TitleScene extends Phaser.Scene {
       color: '#6b5b3e',
     }).setOrigin(0.5);
 
+    this.add.text(cx, 305, 'Recruit cats. Take jobs. Solve puzzles.\nBuild your guild from rags to riches.', {
+      fontFamily: 'Georgia, serif',
+      fontSize: '10px',
+      color: '#555',
+      align: 'center',
+    }).setOrigin(0.5);
+
     // Stone wall
     const wallGfx = this.add.graphics();
     wallGfx.fillStyle(0x2a2620, 0.8);
