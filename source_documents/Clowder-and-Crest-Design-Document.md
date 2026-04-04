@@ -392,7 +392,7 @@ Starting fish: 15. Second cat recruitable within first session (~15 min).
 |---|---|---|
 | 1 — The Stray | Game start | 1 cat, lean-to, basic pest control |
 | 2 — The Crew | 2nd cat + 5 jobs | Kitchen, courier jobs |
-| 3 — The Rat Plague | 200 fish + 3rd cat | Rat plague crisis, Operations Hall |
+| 3 — The Rat Plague | 200 fish + 3rd cat | Dramatic plague onset scene, escalating daily pressure (cat sickness, rising upkeep), progress bar, Operations Hall. Resolution: 5 pest control jobs + St. Rosalia procession scene |
 | 4 — The Name | 15 jobs + 4th cat | Guild name ceremony, 5th cat |
 | 5 — Established | 30 jobs + 5 cats | End of MVP content |
 
@@ -556,7 +556,7 @@ Repository: `https://github.com/JacobStephens2/clowder-and-crest`
 - **Wandering cats** in room view with directional walk animations
 - 15 furniture items with auto-placement on purchase
 - Fish economy with balanced income/costs
-- 5-chapter progression with Rat Plague as central crisis
+- 5-chapter progression with **Rat Plague as dramatic siege** (narrative onset/resolution scenes, daily escalation with cat sickness and rising upkeep, progress bar tracker)
 - **All 10 bond pairings** tracked with 30 pair conversations + 3 group conversations (33 total)
 - **Breed subtitles** in conversation portrait circles and speaker labels
 - **Cat renaming** from the Cats panel

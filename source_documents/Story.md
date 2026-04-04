@@ -56,19 +56,36 @@ The story follows Christopher Booker's **Rags to Riches** pattern: a protagonist
 
 **Setting:** The town is under siege. A great plague of rats descends — overwhelming granaries, fouling churches, and spreading sickness. The town square shows a red warning banner. Extra pest control jobs flood the board.
 
-**What happens:** The guild — still young and underequipped — must prove its worth. Guard, Sacred, and Detection job categories unlock but only at easy and medium difficulty. The Operations Hall can be unlocked. Station crisis events begin occurring. The pressure increases: more mouths to feed, more jobs to do, more at stake.
+**What happens:** The guild — still young and underequipped — must prove its worth against an existential threat. Guard, Sacred, and Detection job categories unlock. Station crisis events begin. But the plague itself is the crisis.
+
+**Plague onset** — a 5-panel narrative scene:
+> "The granary fell first. Rats poured from the walls like dark water, overrunning the flour stores in a single night."
+> "By morning, the cathedral cellar was lost. The monks fled to the upper floors. The market stalls were abandoned."
+> "The townsfolk whispered of St. Rosalia — how her bones once drove plague from Palermo. But there were no saints' bones here. Only cats."
+> "[The player's cat] gathered the guild. This was no ordinary job. This was a siege."
+> "Complete 5 pest control jobs to drive the rats from the town. The guild will be tested. Not every day will be easy."
+
+**Daily escalation** while the plague persists:
+- **Cat sickness** — 20% daily chance a random cat's mood drops. The plague wears on them.
+- **Rising upkeep** — +1 fish per 2 plague days on top of normal costs. The town's supplies dwindle.
+- **Progress tracker** — the town view shows a progress bar (rat nests cleared: 0/5) with a day counter.
 
 **The crisis draws on two saints:**
-- **St. Gertrude of Nivelles** — historically invoked against rats and mice, the unofficial patron saint of cats. She serves as the guild's spiritual guide.
-- **St. Rosalia of Palermo** — in 1624, a ship from Tunis brought plague to Sicily. The discovery and procession of Rosalia's relics ended it. In Clowder & Crest, it is the cats who drive the rat plague from the town, acting as earthly agents of the saints' intercession.
+- **St. Gertrude of Nivelles** — historically invoked against rats and mice, the unofficial patron saint of cats.
+- **St. Rosalia of Palermo** — in 1624, a ship from Tunis brought plague to Palermo. The discovery and procession of Rosalia's relics ended it.
 
-**Resolution:** Complete 5 pest control jobs during the plague era. The plague lifts. The town is saved.
+**Resolution** — a 5-panel narrative scene echoing St. Rosalia's procession:
+> "The last rat nest fell at dawn. The guild stood in the ruins of the granary, exhausted but unbroken."
+> "Word spread through the town like sunlight after a storm. The cats had done what no one else could."
+> "The monks emerged from the cathedral, carrying candles. The townsfolk lined the cobblestone streets."
+> "They walked in procession — [the player's cat] at the front — through every quarter the rats had touched. Like Rosalia's bones through the streets of Palermo."
+> "The plague was over. The guild had earned its name. And the town would not forget."
 
 **Group conversation trigger:** "After the Plague" — all five cats discuss what they endured and what it meant.
 
 **Progression trigger:** Complete 15 total jobs + recruit a fourth cat + resolve the Rat Plague.
 
-**Emotional arc:** Trial by fire. The moment where the guild discovers what it's made of. The bonds forged under pressure become permanent.
+**Emotional arc:** Trial by fire. The plague isn't a background event — it's a siege with daily consequences. Cats get sick, costs rise, and the progress bar is a constant reminder of what's at stake. The procession resolution mirrors the historical miracle of Palermo, giving the narrative its full weight.
 
 ---
 

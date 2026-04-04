@@ -20,6 +20,7 @@ A cozy medieval cat guild management game. Recruit cats, take jobs, solve puzzle
 - **Offline stationed earnings** — cats accumulate fish while you're away (capped)
 - **Real-time day cycle** (3-minute days) with Dawn-to-Night phases and time-of-day town art
 - **Economy** with chapter-scaling upkeep, stationed passive income, fish crisis mechanics
+- **Rat Plague siege** (Chapter 3) — dramatic narrative scenes, daily escalation (cat sickness, rising costs), progress bar, climactic St. Rosalia procession resolution
 - **Introductory story sequence** with rain ambience, music, and narrative panels
 - **Cat stats affect minigames** — Hunting adds time in rat chase
 - **Heraldic crest logo** on title screen, favicon, and guildhall
