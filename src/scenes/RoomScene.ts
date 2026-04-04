@@ -200,18 +200,64 @@ export class RoomScene extends Phaser.Scene {
         }).setOrigin(0.5);
       }
 
-      // Make furniture draggable for rearrangement
+      // Combined drag + interaction hitbox
       const dragHit = this.add.rectangle(x, y, size, size, 0x000000, 0)
         .setInteractive({ draggable: true, useHandCursor: true });
 
-      dragHit.on('drag', (_pointer: Phaser.Input.Pointer, dragX: number, dragY: number) => {
-        dragHit.setPosition(dragX, dragY);
-        // Move the visual (sprite or fallback) too
-        const spriteObj = this.children.getByName(`furn_sprite_${f.furnitureId}_${col}_${row}`) as Phaser.GameObjects.Sprite | null;
-        if (spriteObj) spriteObj.setPosition(dragX, dragY);
+      let dragStartPos = { x: 0, y: 0 };
+      let didDrag = false;
+
+      dragHit.on('dragstart', (pointer: Phaser.Input.Pointer) => {
+        dragStartPos = { x: pointer.x, y: pointer.y };
+        didDrag = false;
+      });
+
+      dragHit.on('drag', (pointer: Phaser.Input.Pointer, dragX: number, dragY: number) => {
+        const dist = Math.hypot(pointer.x - dragStartPos.x, pointer.y - dragStartPos.y);
+        if (dist > 8) didDrag = true;
+        if (didDrag) {
+          dragHit.setPosition(dragX, dragY);
+          const spriteObj = this.children.getByName(`furn_sprite_${f.furnitureId}_${col}_${row}`) as Phaser.GameObjects.Sprite | null;
+          if (spriteObj) spriteObj.setPosition(dragX, dragY);
+        }
       });
 
       dragHit.on('dragend', () => {
+        if (!didDrag) {
+          // Short click — trigger interaction instead
+          const interaction = INTERACTIVE_FURNITURE[f.furnitureId];
+          if (interaction && this.playerMoveTo) {
+            const fCol = col;
+            const fRow = row;
+            const neighbors = [
+              { col: fCol - 1, row: fRow }, { col: fCol + 1, row: fRow },
+              { col: fCol, row: fRow - 1 }, { col: fCol, row: fRow + 1 },
+            ].filter((t) => this.openTileSet.has(`${t.col},${t.row}`));
+            const target = this.openTileSet.has(`${fCol},${fRow}`)
+              ? { col: fCol, row: fRow }
+              : neighbors[0];
+            if (target) {
+              this.playerMoveTo(target.col, target.row, () => {
+                const animKey = interaction.anim ? `${this.playerBreed}_${interaction.anim}` : null;
+                if (animKey && this.playerSprite && this.anims.exists(animKey)) {
+                  this.playerSprite.play(animKey);
+                  this.playerSprite.once('animationcomplete', () => {
+                    this.playerSprite?.setTexture(`${this.playerBreed}_idle_south`);
+                    this.playerSprite?.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+                  });
+                }
+                const actionText = document.createElement('div');
+                actionText.className = 'toast';
+                actionText.textContent = `*${interaction.action}*`;
+                document.getElementById('overlay-layer')?.appendChild(actionText);
+                setTimeout(() => actionText.remove(), interaction.duration);
+              });
+            }
+          }
+          return;
+        }
+
+        // Actual drag — rearrange or move to another room
         const grid = worldToGrid(dragHit.x, dragHit.y);
         if (grid.col >= 0 && grid.col < GRID_COLS && grid.row >= 0 && grid.row < GRID_ROWS) {
           f.gridX = grid.col;
@@ -220,7 +266,6 @@ export class RoomScene extends Phaser.Scene {
           if (save) saveGame(save);
           this.scene.restart({ roomId: this.roomId });
         } else {
-          // Dragged off grid — offer to move to another room
           const save = getGameState();
           if (!save) { this.scene.restart({ roomId: this.roomId }); return; }
           const otherRooms = save.rooms.filter((r) => r.unlocked && r.id !== this.roomId);
@@ -228,10 +273,10 @@ export class RoomScene extends Phaser.Scene {
 
           const picker = document.createElement('div');
           picker.className = 'assign-overlay';
-          const label = f.furnitureId.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+          const fLabel = f.furnitureId.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
           picker.innerHTML = `
             <button class="panel-close" id="move-furn-close">&times;</button>
-            <h2>Move ${label}</h2>
+            <h2>Move ${fLabel}</h2>
             <div style="color:#8b7355;margin-bottom:12px">Move to another room?</div>
             ${otherRooms.map((r) => {
               const rLabel = r.id === 'sleeping' ? 'Sleeping Quarters' : r.id === 'kitchen' ? 'Kitchen' : 'Operations';
@@ -268,47 +313,6 @@ export class RoomScene extends Phaser.Scene {
           (c) => c instanceof Phaser.GameObjects.Sprite && (c as Phaser.GameObjects.Sprite).texture.key === spriteKey
         ) as Phaser.GameObjects.Sprite | undefined;
         if (spriteObj) spriteObj.setName(`furn_sprite_${f.furnitureId}_${col}_${row}`);
-      }
-
-      // Make interactive furniture clickable
-      const interaction = INTERACTIVE_FURNITURE[f.furnitureId];
-      if (interaction) {
-        const hitArea = this.add.rectangle(x, y, size, size, 0x000000, 0)
-          .setInteractive({ useHandCursor: true });
-        hitArea.on('pointerdown', () => {
-          // Find nearest walkable tile adjacent to this furniture
-          const fCol = col;
-          const fRow = row;
-          const neighbors = [
-            { col: fCol - 1, row: fRow }, { col: fCol + 1, row: fRow },
-            { col: fCol, row: fRow - 1 }, { col: fCol, row: fRow + 1 },
-          ].filter((t) => this.openTileSet.has(`${t.col},${t.row}`));
-
-          // If furniture is walkable, go directly on it
-          const target = this.openTileSet.has(`${fCol},${fRow}`)
-            ? { col: fCol, row: fRow }
-            : neighbors[0];
-
-          if (target && this.playerMoveTo) {
-            this.playerMoveTo(target.col, target.row, () => {
-              // Play interaction animation if available
-              const animKey = interaction.anim ? `${this.playerBreed}_${interaction.anim}` : null;
-              if (animKey && this.playerSprite && this.anims.exists(animKey)) {
-                this.playerSprite.play(animKey);
-                this.playerSprite.once('animationcomplete', () => {
-                  this.playerSprite?.setTexture(`${this.playerBreed}_idle_south`);
-                  this.playerSprite?.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
-                });
-              }
-              // Show interaction toast
-              const actionText = document.createElement('div');
-              actionText.className = 'toast';
-              actionText.textContent = `*${interaction.action}*`;
-              document.getElementById('overlay-layer')?.appendChild(actionText);
-              setTimeout(() => actionText.remove(), interaction.duration);
-            });
-          }
-        });
       }
 
       if (f.furnitureId === 'lantern' || f.furnitureId === 'candle_stand') {
