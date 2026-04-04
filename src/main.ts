@@ -6,6 +6,7 @@ import { GuildhallScene } from './scenes/GuildhallScene';
 import { TownScene } from './scenes/TownScene';
 import { PuzzleScene } from './scenes/PuzzleScene';
 import { SokobanScene } from './scenes/SokobanScene';
+import { ChaseScene } from './scenes/ChaseScene';
 import { RoomScene } from './scenes/RoomScene';
 import { eventBus } from './utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS, BREED_NAMES, STAT_NAMES } from './utils/constants';
@@ -49,7 +50,7 @@ const config: Phaser.Types.Core.GameConfig = {
     pixelArt: false,
     antialias: true,
   },
-  scene: [BootScene, TitleScene, GuildhallScene, TownScene, PuzzleScene, SokobanScene, RoomScene],
+  scene: [BootScene, TitleScene, GuildhallScene, TownScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene],
 };
 
 const game = new Phaser.Game(config);
@@ -98,7 +99,7 @@ function setActiveTab(scene: string): void {
 }
 
 function switchScene(target: string, data?: object): void {
-  const sceneKeys = ['GuildhallScene', 'TownScene', 'PuzzleScene', 'SokobanScene', 'TitleScene', 'RoomScene'];
+  const sceneKeys = ['GuildhallScene', 'TownScene', 'PuzzleScene', 'SokobanScene', 'ChaseScene', 'TitleScene', 'RoomScene'];
   for (const key of sceneKeys) {
     if (game.scene.isActive(key) || game.scene.isPaused(key)) {
       game.scene.stop(key);
@@ -561,10 +562,17 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
   document.getElementById('btn-do-puzzle')!.addEventListener('click', () => {
     overlay.remove();
     switchToPuzzleMusic();
-    // Randomly pick between Rush Hour and Sokoban
-    if (Math.random() < 0.5) {
+
+    // Pick minigame type: pest control jobs can get Chase, others get puzzles
+    const roll = Math.random();
+    if (job.category === 'pest_control' && roll < 0.33) {
+      // Chase minigame — cat hunts rat in a maze
+      switchScene('ChaseScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
+    } else if (roll < 0.66) {
+      // Sokoban
       switchScene('SokobanScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
     } else {
+      // Rush Hour
       const puzzle = generatePuzzle(job.difficulty) ?? getPuzzleByDifficulty(job.difficulty);
       if (!puzzle) {
         showToast('No puzzle available!');
@@ -626,7 +634,7 @@ function doAutoResolve(job: JobDef, cat: typeof gameState extends null ? never :
 }
 
 // Puzzle complete
-eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId }: any) => {
+eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId, bonusFish }: any) => {
   switchToNormalMusic();
   if (!gameState) return;
 
@@ -637,7 +645,8 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
     return;
   }
 
-  const reward = calculateReward(job.baseReward, job.maxReward, stars);
+  const baseReward = calculateReward(job.baseReward, job.maxReward, stars);
+  const reward = baseReward + (bonusFish ?? 0);
   earnFish(gameState, reward);
   gameState.totalJobsCompleted++;
   if (!gameState.completedJobs.includes(job.id)) {
