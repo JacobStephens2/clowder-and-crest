@@ -620,7 +620,23 @@ eventBus.on('show-town-overlay', () => {
       <div class="town-title">Town Square</div>
       <div class="town-day">Day ${gameState.day}</div>
     </div>
-    ${plagueActive ? '<div style="background:#4a2020;color:#cc6666;padding:8px 12px;margin:0 12px 8px;border-radius:4px;font-size:12px;text-align:center;font-family:Georgia,serif">The Rat Plague ravages the town. Complete pest control jobs to end it.</div>' : ''}
+    ${plagueActive ? (() => {
+      const pestDone = gameState.completedJobs.filter((id: string) =>
+        ['mill_mousing', 'granary_patrol', 'cathedral_mousing', 'warehouse_clearing', 'ship_hold',
+         'tavern_cellar', 'dockside_patrol', 'bakery_guard', 'castle_ratcatcher'].includes(id)
+      ).length;
+      const pre = gameState.flags.prePlaguePestJobs as unknown as number ?? 0;
+      const progress = Math.min(5, pestDone - pre);
+      const plagueDays = gameState.day - (gameState.flags.plagueDayStarted as unknown as number ?? gameState.day);
+      return `<div style="background:#4a2020;color:#cc6666;padding:10px 12px;margin:0 12px 8px;border-radius:4px;font-size:12px;text-align:center;font-family:Georgia,serif;border:1px solid #6a3030">
+        <strong>\u{1F400} THE RAT PLAGUE — Day ${plagueDays + 1}</strong><br>
+        <div style="margin:6px 0;font-size:11px">Rat nests cleared: ${progress}/5</div>
+        <div style="background:#2a1010;border-radius:3px;height:8px;margin:4px 0;overflow:hidden">
+          <div style="background:#cc6666;height:100%;width:${progress * 20}%;transition:width 0.3s"></div>
+        </div>
+        <div style="font-size:10px;color:#aa5555;margin-top:4px">Each day the plague persists, upkeep rises and cats may fall ill.</div>
+      </div>`;
+    })() : ''}
     <div class="town-section-divider"></div>
     <div class="town-section-title">Job Board</div>
     ${gameState.totalJobsCompleted < 3 ? '<div style="padding:0 12px 8px;font-size:11px;color:#6b5b3e;font-family:Georgia,serif">Accept a job and assign one of your cats to complete it. Solve puzzles to earn fish.</div>' : ''}
@@ -1294,6 +1310,40 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
       }
     } else {
       showToast(`Not enough fish to feed ${gameState.cats.length} cats! Cats may leave soon.`);
+    }
+  }
+
+  // Plague escalation — daily pressure while plague is active
+  if (gameState.flags.ratPlagueStarted && !gameState.flags.ratPlagueResolved) {
+    const plagueDays = gameState.day - (gameState.flags.plagueDayStarted as unknown as number ?? gameState.day);
+
+    // Plague sickness: each day, 20% chance a random cat's mood drops
+    if (Math.random() < 0.2) {
+      const healthyCats = gameState.cats.filter((c) => c.mood !== 'unhappy');
+      if (healthyCats.length > 0) {
+        const sickCat = healthyCats[Math.floor(Math.random() * healthyCats.length)];
+        if (sickCat.mood === 'happy') sickCat.mood = 'content';
+        else if (sickCat.mood === 'content') sickCat.mood = 'tired';
+        else sickCat.mood = 'unhappy';
+        showToast(`The plague weighs on ${sickCat.name}. Mood dropped.`);
+      }
+    }
+
+    // Escalating plague upkeep: +1 fish per 2 plague days
+    const plagueUpkeep = Math.floor(plagueDays / 2);
+    if (plagueUpkeep > 0) {
+      gameState.fish = Math.max(0, gameState.fish - plagueUpkeep);
+    }
+
+    // Show plague progress
+    const pestControlDone = gameState.completedJobs.filter((id) =>
+      ['mill_mousing', 'granary_patrol', 'cathedral_mousing', 'warehouse_clearing', 'ship_hold',
+       'tavern_cellar', 'dockside_patrol', 'bakery_guard', 'castle_ratcatcher'].includes(id)
+    ).length;
+    const prePlagueCount = gameState.flags.prePlaguePestJobs as unknown as number ?? 0;
+    const plagueProgress = Math.min(5, pestControlDone - prePlagueCount);
+    if (plagueProgress > 0 && plagueProgress < 5) {
+      showToast(`Plague progress: ${plagueProgress}/5 rat nests cleared. The town needs ${5 - plagueProgress} more.`);
     }
   }
 
@@ -2109,10 +2159,99 @@ eventBus.on('rat-plague-start', () => {
     gameState.flags.prePlaguePestJobs = gameState.completedJobs.filter((id) =>
       ['mill_mousing', 'granary_patrol', 'cathedral_mousing', 'warehouse_clearing', 'ship_hold'].includes(id)
     ).length as unknown as boolean;
+    gameState.flags.plagueDayStarted = gameState.day as unknown as boolean;
   }
-  showToast('A plague of rats descends upon the town!');
+
+  // Dramatic plague onset — narrative scene
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:#0a0908;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:30px;';
+
+  const plagueScenes = [
+    'The granary fell first. Rats poured from the walls like dark water, overrunning the flour stores in a single night.',
+    'By morning, the cathedral cellar was lost. The monks fled to the upper floors. The market stalls were abandoned.',
+    'The townsfolk whispered of St. Rosalia — how her bones once drove plague from Palermo. But there were no saints\' bones here. Only cats.',
+    `${gameState?.playerCatName ?? 'The wildcat'} gathered the guild. This was no ordinary job. This was a siege. The town\'s survival depended on them.`,
+    'Complete 5 pest control jobs to drive the rats from the town. The guild will be tested. Not every day will be easy.',
+  ];
+
+  let idx = 0;
+  const sceneImg = document.createElement('img');
+  sceneImg.src = 'assets/sprites/scenes/town_plague.png';
+  sceneImg.style.cssText = 'width:280px;max-height:160px;image-rendering:pixelated;margin-bottom:16px;border-radius:4px;opacity:0.5;object-fit:cover;';
+  overlay.appendChild(sceneImg);
+
+  const textDiv = document.createElement('div');
+  textDiv.style.cssText = 'color:#cc6666;font-family:Georgia,serif;font-size:15px;text-align:center;max-width:320px;line-height:1.7;min-height:60px;';
+  overlay.appendChild(textDiv);
+
+  const hint = document.createElement('div');
+  hint.style.cssText = 'color:#555;font-family:Georgia,serif;font-size:11px;margin-top:16px;';
+  hint.textContent = 'Tap to continue';
+  overlay.appendChild(hint);
+
+  const showScene = () => {
+    if (idx >= plagueScenes.length) {
+      overlay.style.transition = 'opacity 0.5s';
+      overlay.style.opacity = '0';
+      setTimeout(() => overlay.remove(), 500);
+      return;
+    }
+    textDiv.style.opacity = '0';
+    textDiv.textContent = plagueScenes[idx];
+    setTimeout(() => { textDiv.style.transition = 'opacity 0.5s'; textDiv.style.opacity = '1'; }, 50);
+    if (idx === 0) playSfx('thunder');
+    idx++;
+  };
+
+  showScene();
+  overlay.addEventListener('click', showScene);
+  document.body.appendChild(overlay);
 });
 
 eventBus.on('rat-plague-resolved', () => {
-  showToast('The rat plague is vanquished! The saints be praised!');
+  // Dramatic resolution — St. Rosalia's procession
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:#0a0908;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:30px;';
+
+  const catName = gameState?.playerCatName ?? 'The wildcat';
+  const resolutionScenes = [
+    'The last rat nest fell at dawn. The guild stood in the ruins of the granary, exhausted but unbroken.',
+    'Word spread through the town like sunlight after a storm. The cats had done what no one else could.',
+    'The monks emerged from the cathedral, carrying candles. The townsfolk lined the cobblestone streets.',
+    `They walked in procession — ${catName} at the front — through every quarter the rats had touched. Like Rosalia\'s bones through the streets of Palermo.`,
+    'The plague was over. The guild had earned its name. And the town would not forget.',
+  ];
+
+  let idx = 0;
+  const sceneImg = document.createElement('img');
+  sceneImg.src = 'assets/sprites/scenes/town_day.png';
+  sceneImg.style.cssText = 'width:280px;max-height:160px;image-rendering:pixelated;margin-bottom:16px;border-radius:4px;opacity:0.5;object-fit:cover;';
+  overlay.appendChild(sceneImg);
+
+  const textDiv = document.createElement('div');
+  textDiv.style.cssText = 'color:#c4956a;font-family:Georgia,serif;font-size:15px;text-align:center;max-width:320px;line-height:1.7;min-height:60px;';
+  overlay.appendChild(textDiv);
+
+  const hint = document.createElement('div');
+  hint.style.cssText = 'color:#555;font-family:Georgia,serif;font-size:11px;margin-top:16px;';
+  hint.textContent = 'Tap to continue';
+  overlay.appendChild(hint);
+
+  const showScene = () => {
+    if (idx >= resolutionScenes.length) {
+      overlay.style.transition = 'opacity 0.5s';
+      overlay.style.opacity = '0';
+      setTimeout(() => overlay.remove(), 500);
+      return;
+    }
+    textDiv.style.opacity = '0';
+    textDiv.textContent = resolutionScenes[idx];
+    setTimeout(() => { textDiv.style.transition = 'opacity 0.5s'; textDiv.style.opacity = '1'; }, 50);
+    if (idx === resolutionScenes.length - 1) playSfx('chapter');
+    idx++;
+  };
+
+  showScene();
+  overlay.addEventListener('click', showScene);
+  document.body.appendChild(overlay);
 });
