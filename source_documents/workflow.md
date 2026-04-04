@@ -1,0 +1,4 @@
+- git commit as you go in atomic commit style
+- update source_documents/Clowder-and-Crest-Design-Document.md as needed to reflect updates to the game
+- use the pixellab mcp to generate pixel art. Here's an overview of the available tools: https://api.pixellab.ai/mcp/docs
+- always continue working if there is more to do in the todo/todo.md file
