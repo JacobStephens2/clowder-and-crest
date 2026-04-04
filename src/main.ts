@@ -9,6 +9,7 @@ import { SokobanScene } from './scenes/SokobanScene';
 import { ChaseScene } from './scenes/ChaseScene';
 import { RoomScene } from './scenes/RoomScene';
 import { FishingScene } from './scenes/FishingScene';
+import { HuntScene } from './scenes/HuntScene';
 import { eventBus } from './utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS, BREED_NAMES, STAT_NAMES, ALL_BREED_IDS } from './utils/constants';
 import {
@@ -58,7 +59,7 @@ const config: Phaser.Types.Core.GameConfig = {
     pixelArt: false,
     antialias: true,
   },
-  scene: [BootScene, TitleScene, GuildhallScene, TownScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene],
+  scene: [BootScene, TitleScene, GuildhallScene, TownScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene, HuntScene],
 };
 
 const game = new Phaser.Game(config);
@@ -221,7 +222,7 @@ function setActiveTab(scene: string): void {
 }
 
 function switchScene(target: string, data?: object): void {
-  const sceneKeys = ['GuildhallScene', 'TownScene', 'PuzzleScene', 'SokobanScene', 'ChaseScene', 'FishingScene', 'TitleScene', 'RoomScene'];
+  const sceneKeys = ['GuildhallScene', 'TownScene', 'PuzzleScene', 'SokobanScene', 'ChaseScene', 'FishingScene', 'HuntScene', 'TitleScene', 'RoomScene'];
   for (const key of sceneKeys) {
     if (game.scene.isActive(key) || game.scene.isPaused(key)) {
       game.scene.stop(key);
@@ -1198,6 +1199,7 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
       <button class="btn-puzzle minigame-btn" data-game="sokoban" style="flex:1;min-width:140px">\u{1F4E6} Push Crates</button>
       ${['courier', 'guard'].includes(job.category) ? '<button class="btn-puzzle minigame-btn" data-game="fishing" style="flex:1;min-width:140px">\u{1F3A3} Fish</button>' : ''}
       ${['pest_control', 'detection', 'shadow'].includes(job.category) ? '<button class="btn-puzzle minigame-btn" data-game="chase" style="flex:1;min-width:140px">\u{1F400} Chase</button>' : ''}
+      ${job.category === 'pest_control' ? '<button class="btn-puzzle minigame-btn" data-game="hunt" style="flex:1;min-width:140px">\u{1F3AF} Hunt</button>' : ''}
     </div>
     <div style="margin-top:16px;padding-top:12px;border-top:1px solid #3a3530">
       ${cat.level >= 2
@@ -1232,6 +1234,9 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
         break;
       case 'sokoban':
         switchScene('SokobanScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
+        break;
+      case 'hunt':
+        switchScene('HuntScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id, catBreed: cat.breed });
         break;
       case 'puzzle':
       default: {
