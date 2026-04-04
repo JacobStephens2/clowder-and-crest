@@ -76,4 +76,8 @@
 [x] - Chase minigame fish rebalanced (25% dot placement instead of 100%)
 [x] - Bigger cat art in dialogues (72px portraits, 100px circles)
 [x] - Pause blocks gameplay (full-screen "Paused" overlay, tap to resume)
+[x] - Google Analytics tag installed (G-81TZVKST2W)
+[x] - Fishing minigame (reel-in mechanic, difficulty-scaled fish zone + speed)
+[x] - Job art on town cards (5 scene images: mill, market, cathedral, ship, monastery)
+[x] - Add more puzzle/minigame types (Fishing added as 4th type)
 [x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview

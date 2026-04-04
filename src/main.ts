@@ -8,6 +8,7 @@ import { PuzzleScene } from './scenes/PuzzleScene';
 import { SokobanScene } from './scenes/SokobanScene';
 import { ChaseScene } from './scenes/ChaseScene';
 import { RoomScene } from './scenes/RoomScene';
+import { FishingScene } from './scenes/FishingScene';
 import { eventBus } from './utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS, BREED_NAMES, STAT_NAMES } from './utils/constants';
 import {
@@ -51,7 +52,7 @@ const config: Phaser.Types.Core.GameConfig = {
     pixelArt: false,
     antialias: true,
   },
-  scene: [BootScene, TitleScene, GuildhallScene, TownScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene],
+  scene: [BootScene, TitleScene, GuildhallScene, TownScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene],
 };
 
 const game = new Phaser.Game(config);
@@ -132,7 +133,7 @@ function setActiveTab(scene: string): void {
 }
 
 function switchScene(target: string, data?: object): void {
-  const sceneKeys = ['GuildhallScene', 'TownScene', 'PuzzleScene', 'SokobanScene', 'ChaseScene', 'TitleScene', 'RoomScene'];
+  const sceneKeys = ['GuildhallScene', 'TownScene', 'PuzzleScene', 'SokobanScene', 'ChaseScene', 'FishingScene', 'TitleScene', 'RoomScene'];
   for (const key of sceneKeys) {
     if (game.scene.isActive(key) || game.scene.isPaused(key)) {
       game.scene.stop(key);
@@ -382,11 +383,22 @@ eventBus.on('show-town-overlay', () => {
   `;
 
   // Job cards
+  const jobArtMap: Record<string, string> = {
+    mill: 'mill', granary: 'mill', bakery: 'mill', tavern: 'mill',
+    cathedral: 'cathedral', warehouse: 'ship', ship: 'ship', docks: 'ship', castle: 'ship',
+    market: 'market', garden: 'monastery', monastery: 'monastery', tower: 'monastery',
+    manor: 'market', night: 'market',
+  };
+
   dailyJobs.forEach((job) => {
     const diffClass = `diff-${job.difficulty}`;
     const catIcon = job.category === 'pest_control' ? '\u{1F400}' : '\u{1F4DC}';
+    const artFile = jobArtMap[job.puzzleSkin] ?? '';
+    const artImg = artFile ? `<img src="assets/sprites/jobs/${artFile}.png" style="width:48px;height:48px;image-rendering:pixelated;border-radius:4px;margin-right:8px;flex-shrink:0" />` : '';
     html += `
-      <div class="town-job-card">
+      <div class="town-job-card" style="display:flex;gap:8px;align-items:center">
+        ${artImg}
+        <div style="flex:1">
         <div class="town-job-top">
           <span class="town-job-icon">${catIcon}</span>
           <span class="town-job-name">${job.name}</span>
@@ -397,6 +409,7 @@ eventBus.on('show-town-overlay', () => {
           <span class="town-job-reward">${job.baseReward}-${job.maxReward} Fish</span>
           <span class="town-job-stats">${job.keyStats.join(', ')}</span>
           <button class="town-job-accept" data-job-id="${job.id}">Accept</button>
+        </div>
         </div>
       </div>
     `;
@@ -638,10 +651,13 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
 
     // Pick minigame type: pest control jobs can get Chase, others get puzzles
     const roll = Math.random();
-    if (job.category === 'pest_control' && roll < 0.33) {
+    if (roll < 0.25) {
+      // Fishing minigame
+      switchScene('FishingScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
+    } else if (job.category === 'pest_control' && roll < 0.50) {
       // Chase minigame — cat hunts rat in a maze
       switchScene('ChaseScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
-    } else if (roll < 0.66) {
+    } else if (roll < 0.75) {
       // Sokoban
       switchScene('SokobanScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
     } else {

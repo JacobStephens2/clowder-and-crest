@@ -8,3 +8,8 @@ android/app/src/main/assets/public/
 android/app/src/main/assets/capacitor.config.json
 android/app/src/main/assets/capacitor.plugins.json
 *.apk
+.DS_Store
+screenshots/
+music/
+pixel_art/
+sound_effects/
