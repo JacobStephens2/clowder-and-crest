@@ -333,5 +333,52 @@
         { "speaker": "siamese", "text": "Of course. But a beautiful one." }
       ]
     }
+  ],
+  "group_guild_meeting": [
+    {
+      "rank": "group",
+      "title": "The Guild's Purpose",
+      "lines": [
+        { "speaker": "wildcat", "text": "We should talk about where this guild is headed." },
+        { "speaker": "russian_blue", "text": "We've come a long way from that first night in the storm." },
+        { "speaker": "tuxedo", "text": "The ledger agrees. Fish reserves are stable. Operations are... functional." },
+        { "speaker": "siamese", "text": "Functional? We're a family. The saints didn't bring us together for bookkeeping." },
+        { "speaker": "maine_coon", "text": "She's right. I didn't stay for the fish. I stayed for all of you." },
+        { "speaker": "wildcat", "text": "Then we agree. This guild is more than a business. It's a home." },
+        { "speaker": "russian_blue", "text": "...Home. Yes. That's what this is." }
+      ]
+    }
+  ],
+  "group_plague_aftermath": [
+    {
+      "rank": "group",
+      "title": "After the Plague",
+      "lines": [
+        { "speaker": "wildcat", "text": "The plague is behind us. The town is recovering." },
+        { "speaker": "maine_coon", "text": "I still smell them in the walls sometimes. The rats." },
+        { "speaker": "tuxedo", "text": "The granary stocks are rebuilding. Three weeks behind schedule, but improving." },
+        { "speaker": "siamese", "text": "I dreamed the procession again. Saint Rosalia's bones through the streets." },
+        { "speaker": "russian_blue", "text": "We did what the saints asked. We drove them out." },
+        { "speaker": "wildcat", "text": "Together. Every one of us. That's what made the difference." },
+        { "speaker": "maine_coon", "text": "Next time, I want to be at the front. Not guarding the door." },
+        { "speaker": "siamese", "text": "There won't be a next time. I've seen it." }
+      ]
+    }
+  ],
+  "group_celebration": [
+    {
+      "rank": "group",
+      "title": "A Feast of Fish",
+      "lines": [
+        { "speaker": "maine_coon", "text": "Is it true? A feast?" },
+        { "speaker": "tuxedo", "text": "I've allocated the budget. Three whole salmon." },
+        { "speaker": "siamese", "text": "Three! I could cry." },
+        { "speaker": "russian_blue", "text": "You will cry. You cry at everything." },
+        { "speaker": "siamese", "text": "That's because I feel things, unlike some cats I could name." },
+        { "speaker": "wildcat", "text": "Enough. Tonight we eat well. Tomorrow we work again. But tonight — we celebrate." },
+        { "speaker": "maine_coon", "text": "To the guild!" },
+        { "speaker": "russian_blue", "text": "To the guild." }
+      ]
+    }
   ]
 }

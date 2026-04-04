@@ -1118,10 +1118,96 @@ function checkAndShowConversation(): void {
     }
   }
 
+  // Check for group conversations (3+ cats with Companion+ bond to wildcat)
+  if (gameState.cats.length >= 3) {
+    const convos = conversationsData as Record<string, any[]>;
+    const groupKeys = Object.keys(convos).filter((k) => k.startsWith('group_'));
+    for (const key of groupKeys) {
+      const viewedKey = `group_${key}`;
+      if (!gameState.flags[viewedKey]) {
+        // Check trigger conditions
+        const shouldTrigger =
+          (key === 'group_guild_meeting' && gameState.cats.length >= 4 && gameState.totalJobsCompleted >= 10) ||
+          (key === 'group_plague_aftermath' && gameState.flags.ratPlagueResolved) ||
+          (key === 'group_celebration' && gameState.totalJobsCompleted >= 25);
+        if (shouldTrigger) {
+          gameState.flags[viewedKey] = true;
+          saveGame(gameState);
+          showGroupConversation(key);
+          return;
+        }
+      }
+    }
+  }
+
   switchScene('TownScene');
 
   // If all cats are busy, suggest ending the day
   setTimeout(() => suggestEndDay(), 500);
+}
+
+function showGroupConversation(key: string): void {
+  if (!gameState) return;
+  const convos = conversationsData as Record<string, Array<{ rank: string; title: string; lines: Array<{ speaker: string; text: string }> }>>;
+  const convoSet = convos[key];
+  if (!convoSet || convoSet.length === 0) { switchScene('TownScene'); return; }
+  const convo = convoSet[0];
+
+  let lineIndex = 0;
+  const overlay = document.createElement('div');
+  overlay.className = 'conversation-overlay';
+
+  // Show all cat portraits
+  const portraitsHtml = gameState.cats.slice(0, 5).map((cat) => {
+    const color = BREED_COLORS[cat.breed] ?? '#8b7355';
+    return `<div class="conversation-portrait" style="background:${color};width:60px;height:60px">
+      <img src="assets/sprites/${cat.breed}/south.png" style="width:48px;height:48px;image-rendering:pixelated" />
+      <div style="font-size:8px;margin-top:2px">${cat.name}</div>
+    </div>`;
+  }).join('');
+
+  overlay.innerHTML = `
+    <img src="assets/sprites/dialogues/guildhall.png" style="position:absolute;top:15%;left:50%;transform:translateX(-50%);width:200px;height:120px;image-rendering:pixelated;opacity:0.15;pointer-events:none" />
+    <div class="conversation-portraits" style="justify-content:center;gap:8px;flex-wrap:wrap">${portraitsHtml}</div>
+    <div class="conversation-textbox">
+      <div style="color:#c4956a;font-size:12px;margin-bottom:4px">${convo.title}</div>
+      <div class="conversation-speaker" id="conv-speaker"></div>
+      <div class="conversation-text" id="conv-text"></div>
+      <div class="conversation-advance">Tap to continue</div>
+      <button id="conv-skip" style="position:absolute;top:10px;right:16px;background:none;border:1px solid #3a3530;color:#6b5b3e;padding:4px 10px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer">Skip</button>
+    </div>
+  `;
+  overlayLayer.appendChild(overlay);
+
+  const speaker = document.getElementById('conv-speaker')!;
+  const text = document.getElementById('conv-text')!;
+
+  function showLine(): void {
+    if (lineIndex >= convo.lines.length) {
+      overlay.remove();
+      showToast('A guild moment to remember.');
+      switchScene('TownScene');
+      return;
+    }
+    const line = convo.lines[lineIndex];
+    const cat = gameState!.cats.find((c) => c.breed === line.speaker);
+    const name = cat?.name ?? BREED_NAMES[line.speaker] ?? line.speaker;
+    const breedName = BREED_NAMES[line.speaker] ?? line.speaker;
+    speaker.innerHTML = `${name} <span class="speaker-breed">${breedName}</span>`;
+    text.textContent = line.text;
+    lineIndex++;
+  }
+
+  showLine();
+  overlay.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).id === 'conv-skip') return;
+    showLine();
+  });
+  document.getElementById('conv-skip')!.addEventListener('click', (e) => {
+    e.stopPropagation();
+    overlay.remove();
+    switchScene('TownScene');
+  });
 }
 
 function showConversation(breedA: string, breedB: string, rank: string): void {
