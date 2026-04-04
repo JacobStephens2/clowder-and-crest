@@ -31,6 +31,7 @@ export class PuzzleScene extends Phaser.Scene {
   private jobId: string = '';
   private catId: string = '';
   private catBreed: string = 'wildcat';
+  private puzzleSkin: string = '';
 
   constructor() {
     super({ key: 'PuzzleScene' });
@@ -43,6 +44,8 @@ export class PuzzleScene extends Phaser.Scene {
     const save = getGameState();
     const cat = save?.cats.find((c) => c.id === this.catId);
     this.catBreed = cat?.breed ?? 'wildcat';
+    const job = getJob(this.jobId);
+    this.puzzleSkin = job?.puzzleSkin ?? '';
     this.moveCount = 0;
     this.moveHistory = [];
     this.blockSprites = [];
@@ -91,6 +94,31 @@ export class PuzzleScene extends Phaser.Scene {
       const rect = this.add.rectangle(px, py, w, h, color);
       rect.setStrokeStyle(1, 0x000000, 0.3);
       rect.setInteractive({ draggable: true });
+
+      // Themed block sprite overlay for non-target blocks
+      const skinToBlock: Record<string, string[]> = {
+        mill: ['block_flour_sack', 'block_crate'], granary: ['block_crate', 'block_barrel'],
+        bakery: ['block_flour_sack', 'block_crate'], tavern: ['block_barrel', 'block_crate'],
+        cathedral: ['block_pew', 'block_crate'], warehouse: ['block_crate', 'block_barrel'],
+        ship: ['block_barrel', 'block_crate'], docks: ['block_barrel', 'block_crate'],
+        castle: ['block_crate', 'block_barrel'], market: ['block_cart', 'block_crate'],
+        garden: ['block_crate'], monastery: ['block_pew', 'block_crate'],
+        tower: ['block_crate'], manor: ['block_cart', 'block_crate'],
+        night: ['block_crate', 'block_barrel'],
+      };
+      if (!block.isTarget) {
+        const blockKeys = skinToBlock[this.puzzleSkin] ?? ['block_crate'];
+        const blockKey = blockKeys[i % blockKeys.length];
+        if (this.textures.exists(blockKey)) {
+          const blockSprite = this.add.sprite(px, py, blockKey);
+          blockSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+          const scaleX = (w - 4) / blockSprite.width;
+          const scaleY = (h - 4) / blockSprite.height;
+          blockSprite.setScale(Math.min(scaleX, scaleY));
+          blockSprite.setDepth(1);
+          rect.on('drag', () => blockSprite.setPosition(rect.x, rect.y));
+        }
+      }
 
       const labelText = block.isTarget ? 'CAT' : '';
       const label = this.add.text(px, py, labelText, {

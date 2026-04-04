@@ -86,6 +86,16 @@ export class BootScene extends Phaser.Scene {
       this.load.image(`furniture_${id}`, `assets/sprites/furniture/${id}.png`);
     }
 
+    // Load dialogue scene art
+    for (const scene of ['guildhall', 'rooftop', 'granary']) {
+      this.load.image(`dialogue_${scene}`, `assets/sprites/dialogues/${scene}.png`);
+    }
+
+    // Load puzzle block sprites
+    for (const block of ['crate', 'barrel', 'flour_sack', 'cart', 'pew']) {
+      this.load.image(`block_${block}`, `assets/sprites/blocks/${block}.png`);
+    }
+
     // Load scene art
     this.load.image('scene_guildhall', 'assets/sprites/scenes/guildhall.png');
     this.load.image('scene_town', 'assets/sprites/scenes/town.png');
