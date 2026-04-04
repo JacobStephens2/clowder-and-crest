@@ -284,35 +284,31 @@ export class GuildhallScene extends Phaser.Scene {
       const fx = startX + col * (itemW + 8);
       const fy = y + row * 42;
 
-      // Furniture piece with themed colors
-      const furnitureColors: Record<string, number> = {
-        straw_bed: 0x6b5b3e,
-        woolen_blanket: 0x5a4a6a,
-        cushioned_basket: 0x6a5a4a,
-        fish_barrel: 0x4a5a6a,
-        herb_rack: 0x4a6a4a,
-        stone_hearth: 0x5a5a5a,
-        notice_board: 0x6a6a4a,
-        lantern: 0x8a7a4a,
-        candle_stand: 0x7a6a3a,
-        scratching_post: 0x7a5a3a,
-        bookshelf: 0x5a4a3a,
-        rug_wool: 0x6a4a4a,
-        saints_icon: 0x6a6a7a,
-        fish_bone_mobile: 0x5a6a6a,
-        potted_catnip: 0x4a6a4a,
-      };
-
-      const color = furnitureColors[f.furnitureId] ?? 0x5a4a3a;
-      this.add.rectangle(fx, fy, itemW - 4, 28, color).setStrokeStyle(1, 0x6b5b3e);
-      const label = f.furnitureId.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-      this.add.text(fx, fy, label, {
-        fontFamily: 'Georgia, serif',
-        fontSize: '7px',
-        color: '#bbb',
-        align: 'center',
-        wordWrap: { width: itemW - 8 },
-      }).setOrigin(0.5);
+      // Try to use the furniture sprite; fall back to colored rectangle
+      const spriteKey = `furniture_${f.furnitureId}`;
+      if (this.textures.exists(spriteKey)) {
+        const sprite = this.add.sprite(fx, fy, spriteKey);
+        sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        // Scale to fit within the item space
+        const maxDim = Math.max(sprite.width, sprite.height);
+        const scale = Math.min(1, (itemW - 8) / maxDim);
+        sprite.setScale(scale);
+      } else {
+        const furnitureColors: Record<string, number> = {
+          straw_bed: 0x6b5b3e, woolen_blanket: 0x5a4a6a, cushioned_basket: 0x6a5a4a,
+          fish_barrel: 0x4a5a6a, herb_rack: 0x4a6a4a, stone_hearth: 0x5a5a5a,
+          notice_board: 0x6a6a4a, lantern: 0x8a7a4a, candle_stand: 0x7a6a3a,
+          scratching_post: 0x7a5a3a, bookshelf: 0x5a4a3a, rug_wool: 0x6a4a4a,
+          saints_icon: 0x6a6a7a, fish_bone_mobile: 0x5a6a6a, potted_catnip: 0x4a6a4a,
+        };
+        const color = furnitureColors[f.furnitureId] ?? 0x5a4a3a;
+        this.add.rectangle(fx, fy, itemW - 4, 28, color).setStrokeStyle(1, 0x6b5b3e);
+        const label = f.furnitureId.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+        this.add.text(fx, fy, label, {
+          fontFamily: 'Georgia, serif', fontSize: '7px', color: '#bbb',
+          align: 'center', wordWrap: { width: itemW - 8 },
+        }).setOrigin(0.5);
+      }
     });
   }
 
