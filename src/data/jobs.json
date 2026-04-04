@@ -86,5 +86,82 @@
     "maxReward": 22,
     "puzzleSkin": "manor",
     "description": "Deliver a sealed letter past manor guards. Slide furniture and dodge guard dogs."
+  },
+  {
+    "id": "tavern_cellar",
+    "name": "Tavern Cellar",
+    "category": "pest_control",
+    "difficulty": "easy",
+    "keyStats": ["hunting", "senses"],
+    "baseReward": 5,
+    "maxReward": 9,
+    "puzzleSkin": "tavern",
+    "description": "Clear rats from the tavern cellar. Watch for spilled ale."
+  },
+  {
+    "id": "dockside_patrol",
+    "name": "Dockside Patrol",
+    "category": "pest_control",
+    "difficulty": "medium",
+    "keyStats": ["hunting", "stealth"],
+    "baseReward": 11,
+    "maxReward": 17,
+    "puzzleSkin": "docks",
+    "description": "Patrol the docks at night. Ship rats are bold and numerous."
+  },
+  {
+    "id": "bakery_guard",
+    "name": "Bakery Guard",
+    "category": "pest_control",
+    "difficulty": "easy",
+    "keyStats": ["hunting", "charm"],
+    "baseReward": 6,
+    "maxReward": 10,
+    "puzzleSkin": "bakery",
+    "description": "Protect the baker's flour stores from vermin overnight."
+  },
+  {
+    "id": "bell_tower_dispatch",
+    "name": "Bell Tower Dispatch",
+    "category": "courier",
+    "difficulty": "medium",
+    "keyStats": ["stealth", "senses"],
+    "baseReward": 11,
+    "maxReward": 16,
+    "puzzleSkin": "tower",
+    "description": "Carry a message to the bell ringer. Climb past pigeons and narrow ledges."
+  },
+  {
+    "id": "herbalist_delivery",
+    "name": "Herbalist Delivery",
+    "category": "courier",
+    "difficulty": "easy",
+    "keyStats": ["intelligence", "endurance"],
+    "baseReward": 6,
+    "maxReward": 9,
+    "puzzleSkin": "garden",
+    "description": "Bring herbs from the garden to the apothecary across town."
+  },
+  {
+    "id": "castle_ratcatcher",
+    "name": "Castle Ratcatcher",
+    "category": "pest_control",
+    "difficulty": "hard",
+    "keyStats": ["hunting", "stealth", "endurance"],
+    "baseReward": 20,
+    "maxReward": 30,
+    "puzzleSkin": "castle",
+    "description": "The castle lord's pantry is infested. Expectations are high."
+  },
+  {
+    "id": "night_courier",
+    "name": "Night Courier",
+    "category": "courier",
+    "difficulty": "hard",
+    "keyStats": ["stealth", "senses", "endurance"],
+    "baseReward": 18,
+    "maxReward": 25,
+    "puzzleSkin": "night",
+    "description": "Deliver a sealed message through dark alleys after curfew."
   }
 ]

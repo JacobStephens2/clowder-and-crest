@@ -107,27 +107,39 @@ function switchScene(target: string, data?: object): void {
 }
 
 // ──── Day Timer Callback ────
-function showDayTransition(day: number): void {
+function showDayTransition(day: number, recap?: { foodCost: number; stationedEarned: number; events: string[] }): void {
   const overlay = document.createElement('div');
   overlay.style.cssText = `
     position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     opacity:0;transition:opacity 0.5s;pointer-events:none;
   `;
+  let recapHtml = '';
+  if (recap) {
+    const lines: string[] = [];
+    if (recap.foodCost > 0) lines.push(`Food: -${recap.foodCost} fish`);
+    if (recap.stationedEarned > 0) lines.push(`Stationed: +${recap.stationedEarned} fish`);
+    for (const e of recap.events) lines.push(e);
+    if (lines.length > 0) {
+      recapHtml = `<div style="color:#8b7355;font-family:Georgia,serif;font-size:11px;margin-top:12px;text-align:center;max-width:280px">${lines.join('<br>')}</div>`;
+    }
+  }
   overlay.innerHTML = `
-    <div style="color:#c4956a;font-family:Georgia,serif;font-size:28px;margin-bottom:8px">Day ${day}</div>
+    <div style="color:#c4956a;font-family:Georgia,serif;font-size:28px;margin-bottom:4px">Day ${day}</div>
     <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:14px">A new day dawns...</div>
+    ${recapHtml}
   `;
   document.body.appendChild(overlay);
   requestAnimationFrame(() => { overlay.style.opacity = '1'; });
-  setTimeout(() => { overlay.style.opacity = '0'; }, 2000);
-  setTimeout(() => overlay.remove(), 2500);
+  const duration = recap && recap.events.length > 0 ? 3500 : 2000;
+  setTimeout(() => { overlay.style.opacity = '0'; }, duration);
+  setTimeout(() => overlay.remove(), duration + 500);
 }
 
 setOnDayEnd(() => {
   if (!gameState) return;
-  advanceDay();
-  showDayTransition(gameState.day);
+  const recap = advanceDay();
+  showDayTransition(gameState.day, recap);
   const townOverlay = overlayLayer.querySelector('.town-overlay');
   if (townOverlay) {
     townOverlay.remove();
@@ -435,8 +447,8 @@ eventBus.on('show-town-overlay', () => {
   // Wire up end day button
   document.getElementById('town-end-day')!.addEventListener('click', () => {
     overlay.remove();
-    advanceDay();
-    showDayTransition(gameState!.day);
+    const recap = advanceDay();
+    showDayTransition(gameState!.day, recap);
     checkAndShowConversation();
   });
 });
@@ -642,8 +654,8 @@ eventBus.on('puzzle-quit', () => {
   switchToNormalMusic();
 });
 
-function advanceDay(): void {
-  if (!gameState) return;
+function advanceDay(): { foodCost: number; stationedEarned: number; events: string[] } {
+  if (!gameState) return { foodCost: 0, stationedEarned: 0, events: [] };
   gameState.day++;
 
   // Reset day timer and worked cats
@@ -695,6 +707,9 @@ function advanceDay(): void {
   checkChapterAdvance(gameState);
   saveGame(gameState);
   updateStatusBar();
+
+  const events = stationedResults.filter((r) => r.event).map((r) => r.event!);
+  return { foodCost, stationedEarned: stationedTotal, events };
 }
 
 interface ResultInfo {

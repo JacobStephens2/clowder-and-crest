@@ -39,4 +39,7 @@
 [x] - ensure town view returns after closing job screen
 [x] - use puzzle music during puzzles (2 tracks, switches on enter/exit)
 [x] - Move furniture between rooms (drag off grid to get room picker dialog)
+[x] - Add more job templates (15 total, up from 8)
+[x] - Ideate and implement improvement (day recap with food/station/event summary in transition)
+[x] - Cats shown in assigned rooms on guildhall overview
 [x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview
