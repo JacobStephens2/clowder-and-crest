@@ -7,6 +7,7 @@ const CATEGORY_SHIFTS: Record<string, number> = {
   pest_control: 0,
   courier: 0,
   detection: -2,
+  shadow: -5,
 };
 
 export function applyReputationShift(save: SaveData, job: JobDef): void {

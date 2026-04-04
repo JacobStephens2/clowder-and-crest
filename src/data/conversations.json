@@ -380,5 +380,36 @@
         { "speaker": "russian_blue", "text": "To the guild." }
       ]
     }
+  ],
+  "group_shadow_crisis": [
+    {
+      "rank": "group",
+      "title": "What Have We Become?",
+      "lines": [
+        { "speaker": "russian_blue", "text": "I need to say something. And I need everyone to hear it." },
+        { "speaker": "wildcat", "text": "Go ahead." },
+        { "speaker": "russian_blue", "text": "The jobs we've been taking. The lockboxes. The sabotage. That's not why I joined." },
+        { "speaker": "siamese", "text": "The saints don't guide thieves. I've felt it — the silence where their voices used to be." },
+        { "speaker": "tuxedo", "text": "The ledger doesn't lie. We're earning more than ever. But the bonds between us are fraying." },
+        { "speaker": "maine_coon", "text": "I stayed because this was a family. If it's just a business, I can guard any barn." },
+        { "speaker": "wildcat", "text": "...I hear you. All of you. Maybe we lost our way." },
+        { "speaker": "russian_blue", "text": "It's not too late to choose differently. It never is." }
+      ]
+    }
+  ],
+  "group_noble_recognition": [
+    {
+      "rank": "group",
+      "title": "The Town's Gratitude",
+      "lines": [
+        { "speaker": "tuxedo", "text": "There's something at the door. A basket." },
+        { "speaker": "maine_coon", "text": "Fish! And dried herbs. And... is that a blanket?" },
+        { "speaker": "siamese", "text": "There's a note. 'For the guild that guards our town. With thanks.' No signature." },
+        { "speaker": "russian_blue", "text": "The baker's wife. I recognize her handwriting." },
+        { "speaker": "wildcat", "text": "We didn't do this for gifts." },
+        { "speaker": "siamese", "text": "No. But they gave them anyway. That's what trust looks like." },
+        { "speaker": "maine_coon", "text": "This is better than fish. This is home." }
+      ]
+    }
   ]
 }

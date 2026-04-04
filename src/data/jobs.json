@@ -328,5 +328,38 @@
     "maxReward": 18,
     "puzzleSkin": "warehouse",
     "description": "Map the network of passages beneath the old quarter. Don't get lost."
+  },
+  {
+    "id": "shadow_theft",
+    "name": "Merchant's Lockbox",
+    "category": "shadow",
+    "difficulty": "medium",
+    "keyStats": ["stealth", "intelligence"],
+    "baseReward": 25,
+    "maxReward": 40,
+    "puzzleSkin": "night",
+    "description": "A merchant left his lockbox unguarded. The contents could feed the guild for days. But is it right?"
+  },
+  {
+    "id": "shadow_sabotage",
+    "name": "Rival's Supplies",
+    "category": "shadow",
+    "difficulty": "hard",
+    "keyStats": ["stealth", "intelligence", "senses"],
+    "baseReward": 30,
+    "maxReward": 50,
+    "puzzleSkin": "night",
+    "description": "A rival organization stores supplies in the old quarter. Sabotage them — the guild needs the advantage."
+  },
+  {
+    "id": "crest_pilgrimage",
+    "name": "Saint's Vigil",
+    "category": "sacred",
+    "difficulty": "medium",
+    "keyStats": ["charm", "senses", "endurance"],
+    "baseReward": 10,
+    "maxReward": 15,
+    "puzzleSkin": "cathedral",
+    "description": "Keep vigil through the night at St. Gertrude's shrine. The faithful need a guardian. Pay is modest, but the saint remembers."
   }
 ]

@@ -620,6 +620,14 @@ eventBus.on('show-town-overlay', () => {
       <div class="town-title">Town Square</div>
       <div class="town-day">Day ${gameState.day}</div>
     </div>
+    ${(() => {
+      const rep = gameState.reputationScore;
+      if (rep >= 30) return '<div style="padding:2px 12px;font-size:10px;color:#4a8a4a;text-align:center;font-family:Georgia,serif;font-style:italic">The townsfolk smile as your cats pass. Children wave from doorways.</div>';
+      if (rep >= 10) return '<div style="padding:2px 12px;font-size:10px;color:#6b8ea6;text-align:center;font-family:Georgia,serif;font-style:italic">The town respects your guild. Merchants nod in greeting.</div>';
+      if (rep > -10) return '';
+      if (rep > -30) return '<div style="padding:2px 12px;font-size:10px;color:#8a6a4a;text-align:center;font-family:Georgia,serif;font-style:italic">People eye your cats warily. Some whisper behind closed shutters.</div>';
+      return '<div style="padding:2px 12px;font-size:10px;color:#8a4a4a;text-align:center;font-family:Georgia,serif;font-style:italic">Doors lock as your cats approach. The town fears what your guild has become.</div>';
+    })()}
     ${plagueActive ? (() => {
       const pestDone = gameState.completedJobs.filter((id: string) =>
         ['mill_mousing', 'granary_patrol', 'cathedral_mousing', 'warehouse_clearing', 'ship_hold',
@@ -657,7 +665,7 @@ eventBus.on('show-town-overlay', () => {
   dailyJobs.forEach((job) => {
     const diffClass = `diff-${job.difficulty}`;
     const categoryIcons: Record<string, string> = {
-      pest_control: '\u{1F400}', courier: '\u{1F4DC}', guard: '\u{1F6E1}', sacred: '\u{1F54A}', detection: '\u{1F50D}',
+      pest_control: '\u{1F400}', courier: '\u{1F4DC}', guard: '\u{1F6E1}', sacred: '\u{1F54A}', detection: '\u{1F50D}', shadow: '\u{1F5E1}',
     };
     const catIcon = categoryIcons[job.category] ?? '\u{1F43E}';
     const artFile = jobArtMap[job.puzzleSkin] ?? '';
@@ -1047,7 +1055,7 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
       <button class="btn-puzzle minigame-btn" data-game="puzzle" style="flex:1;min-width:140px">\u{1F9E9} Slide Blocks</button>
       <button class="btn-puzzle minigame-btn" data-game="sokoban" style="flex:1;min-width:140px">\u{1F4E6} Push Crates</button>
       <button class="btn-puzzle minigame-btn" data-game="fishing" style="flex:1;min-width:140px">\u{1F3A3} Fish</button>
-      ${['pest_control', 'detection'].includes(job.category) ? '<button class="btn-puzzle minigame-btn" data-game="chase" style="flex:1;min-width:140px">\u{1F400} Chase Rat</button>' : ''}
+      ${['pest_control', 'detection', 'shadow'].includes(job.category) ? '<button class="btn-puzzle minigame-btn" data-game="chase" style="flex:1;min-width:140px">\u{1F400} Chase</button>' : ''}
     </div>
     <div style="margin-top:16px;padding-top:12px;border-top:1px solid #3a3530">
       ${cat.level >= 2
@@ -1385,6 +1393,7 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
         guard: 'Intruders are breaching the perimeter!',
         sacred: 'Dark omens disturb the vigil!',
         detection: 'The suspect is about to flee!',
+        shadow: 'The guard patrol changed routes — the job is compromised!',
       };
       const msg = crisisMessages[crisisJob.category] ?? 'Trouble at the station!';
       setTimeout(() => {
@@ -1430,6 +1439,18 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
   if (repBondBonus !== 0) {
     for (const bond of gameState.bonds) {
       bond.points = Math.max(0, bond.points + repBondBonus);
+    }
+  }
+
+  // Shadow cat departure risk: 8% daily chance at Shadowed reputation
+  if (gameState.reputationScore <= -30 && gameState.cats.length > 1 && Math.random() < 0.08) {
+    const unhappy = gameState.cats.filter((c) => c.mood !== 'happy' && c.id !== 'player_wildcat');
+    if (unhappy.length > 0) {
+      const leaver = unhappy[Math.floor(Math.random() * unhappy.length)];
+      gameState.cats = gameState.cats.filter((c) => c.id !== leaver.id);
+      gameState.stationedCats = gameState.stationedCats.filter((s) => s.catId !== leaver.id);
+      playSfx('hiss');
+      showToast(`${leaver.name} left the guild. "I didn't sign up for this kind of work."`);
     }
   }
 
@@ -1554,7 +1575,9 @@ function checkAndShowConversation(): void {
         const shouldTrigger =
           (key === 'group_guild_meeting' && gameState.cats.length >= 4 && gameState.totalJobsCompleted >= 10) ||
           (key === 'group_plague_aftermath' && gameState.flags.ratPlagueResolved) ||
-          (key === 'group_celebration' && gameState.totalJobsCompleted >= 25);
+          (key === 'group_celebration' && gameState.totalJobsCompleted >= 25) ||
+          (key === 'group_shadow_crisis' && gameState.reputationScore <= -25 && gameState.cats.length >= 3) ||
+          (key === 'group_noble_recognition' && gameState.reputationScore >= 25 && gameState.cats.length >= 3);
         if (shouldTrigger) {
           gameState.flags[viewedKey] = true;
           saveGame(gameState);

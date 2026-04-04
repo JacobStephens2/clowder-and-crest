@@ -41,6 +41,16 @@ export function generateDailyJobs(save: SaveData): JobDef[] {
   }
   // Chapter 4+: everything available
 
+  // Reputation-gated jobs
+  // Shadow jobs only appear for Questionable/Shadowed guilds (score < -10)
+  if (save.reputationScore >= -10) {
+    available = available.filter((j) => j.category !== 'shadow');
+  }
+  // Saint's Vigil (crest_pilgrimage) only for Respected/Noble guilds (score >= 10)
+  if (save.reputationScore < 10) {
+    available = available.filter((j) => j.id !== 'crest_pilgrimage');
+  }
+
   // Chapter 3 rat plague: add extra pest control jobs
   if (save.chapter === 3 && !save.flags.ratPlagueResolved) {
     const pestJobs = available.filter((j) => j.category === 'pest_control');

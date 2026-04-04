@@ -73,6 +73,13 @@ const STATION_EVENTS_DETECTION = [
   'A false lead cost time — {cat} doubled back and found the truth.',
 ];
 
+const STATION_EVENTS_SHADOW = [
+  '{cat} slipped in and out unseen. The target never knew.',
+  'A close call — {cat} was nearly spotted. Extra caution needed.',
+  '{cat} found more than expected. A very profitable night.',
+  'The job went wrong — {cat} had to abandon the take and flee.',
+];
+
 export function collectStationedEarnings(save: SaveData): StationedResult[] {
   const results: StationedResult[] = [];
 
@@ -96,7 +103,7 @@ export function collectStationedEarnings(save: SaveData): StationedResult[] {
     if (Math.random() < 0.2) {
       const eventMap: Record<string, string[]> = {
         pest_control: STATION_EVENTS_PEST, courier: STATION_EVENTS_COURIER,
-        guard: STATION_EVENTS_GUARD, sacred: STATION_EVENTS_SACRED, detection: STATION_EVENTS_DETECTION,
+        guard: STATION_EVENTS_GUARD, sacred: STATION_EVENTS_SACRED, detection: STATION_EVENTS_DETECTION, shadow: STATION_EVENTS_SHADOW,
       };
       const events = eventMap[job.category] ?? STATION_EVENTS_PEST;
       const template = events[Math.floor(Math.random() * events.length)];
