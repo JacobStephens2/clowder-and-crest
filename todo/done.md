@@ -51,4 +51,5 @@
 [x] - Wildcat meow sound effect (random ~30% chance every 8-23s when idle in room)
 [x] - Cat availability indicator on town view (available/worked/stationed with color coding)
 [x] - Chase minigame: Pac-Man style rat chase in procedural maze (pest control jobs, 1/3 chance)
+[x] - ElevenLabs SFX: fish earn, block slide, purr, day bell, job accept, chapter fanfare, UI tap, cat hiss
 [x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview

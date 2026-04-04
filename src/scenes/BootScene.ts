@@ -59,6 +59,14 @@ export class BootScene extends Phaser.Scene {
 
     // Load sound effects
     this.load.audio('wildcat_meow', 'assets/audio/wildcat_meow.mp3');
+    this.load.audio('sfx_fish_earn', 'assets/sfx/fish_earn.mp3');
+    this.load.audio('sfx_block_slide', 'assets/sfx/block_slide.mp3');
+    this.load.audio('sfx_purr', 'assets/sfx/purr.mp3');
+    this.load.audio('sfx_day_bell', 'assets/sfx/day_bell.mp3');
+    this.load.audio('sfx_job_accept', 'assets/sfx/job_accept.mp3');
+    this.load.audio('sfx_chapter', 'assets/sfx/chapter_complete.mp3');
+    this.load.audio('sfx_tap', 'assets/sfx/ui_tap.mp3');
+    this.load.audio('sfx_hiss', 'assets/sfx/cat_hiss.mp3');
 
     // Load furniture sprites
     const furnitureIds = [

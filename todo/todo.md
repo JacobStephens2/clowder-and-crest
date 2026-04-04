@@ -1,1 +1,1 @@
-[] Install the Eleven Labs MCP server or API (https://github.com/elevenlabs/elevenlabs-mcp) (https://elevenlabs.io/docs/eleven-api/quickstart), here's the api key: sk_9e6a3d7d4ec2d032e5dd4a369bfeddbd5747b52d4f66d6ac, then use it to add sound effects to Clowder & Crest
+[] Prevent every cat from always being in every guild hall room. Sometimes when I look at the guild hall view for example, one of the cats may appear in the Kitchen, or in the Operations Hall if I have built those rooms

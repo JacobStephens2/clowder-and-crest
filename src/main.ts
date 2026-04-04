@@ -24,6 +24,7 @@ import { getPuzzleByDifficulty, generatePuzzle } from './systems/PuzzleGenerator
 import { addBondPoints, processDailyBonds, getAvailableConversation, markConversationViewed, getBondRank, getBondPairs } from './systems/BondSystem';
 import { checkChapterAdvance, checkRatPlagueResolution, getChapterName, getNextChapterHint } from './systems/ProgressionManager';
 import { startBgm, toggleMute, isMuted, switchToPuzzleMusic, switchToNormalMusic } from './systems/MusicManager';
+import { playSfx } from './systems/SfxManager';
 import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDayEnd } from './systems/DayTimer';
 import conversationsData from './data/conversations.json';
 
@@ -110,6 +111,7 @@ function switchScene(target: string, data?: object): void {
 
 // ──── Day Timer Callback ────
 function showDayTransition(day: number, recap?: { foodCost: number; stationedEarned: number; events: string[] }): void {
+  playSfx('day_bell', 0.4);
   const overlay = document.createElement('div');
   overlay.style.cssText = `
     position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;
@@ -478,6 +480,7 @@ eventBus.on('show-town-overlay', () => {
 
 // Job accept — show cat assignment overlay
 eventBus.on('job-accept', ({ job }: { job: JobDef }) => {
+  playSfx('job_accept');
   if (!gameState) return;
   showAssignOverlay(job);
 });
@@ -602,6 +605,7 @@ function doAutoResolve(job: JobDef, cat: typeof gameState extends null ? never :
   const reward = calculateAutoResolveReward(job.baseReward, job.maxReward, match);
 
   earnFish(gameState, reward);
+  playSfx('fish_earn');
   gameState.totalJobsCompleted++;
   if (!gameState.completedJobs.includes(job.id)) {
     gameState.completedJobs.push(job.id);
@@ -648,6 +652,8 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
   const baseReward = calculateReward(job.baseReward, job.maxReward, stars);
   const reward = baseReward + (bonusFish ?? 0);
   earnFish(gameState, reward);
+  playSfx('purr');
+  playSfx('fish_earn', 0.3);
   gameState.totalJobsCompleted++;
   if (!gameState.completedJobs.includes(job.id)) {
     gameState.completedJobs.push(job.id);
@@ -688,6 +694,7 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
 
 eventBus.on('puzzle-quit', ({ jobId, catId }: any = {}) => {
   switchToNormalMusic();
+  playSfx('hiss');
   if (!gameState) return;
 
   const cat = gameState.cats.find((c) => c.id === catId);
@@ -1287,6 +1294,7 @@ function showFurnitureShop(): void {
 
 // Chapter advance notifications
 eventBus.on('chapter-advance', (chapter: number) => {
+  playSfx('chapter');
   const name = getChapterName(chapter);
   showToast(`Chapter ${chapter}: ${name}`);
 });
