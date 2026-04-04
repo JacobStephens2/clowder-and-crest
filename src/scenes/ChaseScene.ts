@@ -3,6 +3,7 @@ import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
+import { playSfx } from '../systems/SfxManager';
 
 // ── Maze constants ──
 const COLS = 13;
@@ -432,6 +433,7 @@ export class ChaseScene extends Phaser.Scene {
 
     const bonusFish = this.dotsCollected;
 
+    playSfx('rat_caught');
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'Caught!', {
       fontFamily: 'Georgia, serif', fontSize: '32px', color: '#c4956a',
     }).setOrigin(0.5);

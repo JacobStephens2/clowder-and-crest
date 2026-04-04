@@ -3,6 +3,7 @@ import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
+import { playSfx } from '../systems/SfxManager';
 
 // ── Layout constants ──
 const BAR_HEIGHT = 360;
@@ -428,6 +429,7 @@ export class FishingScene extends Phaser.Scene {
     }
 
     // Show success text
+    playSfx('splash');
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20, 'Fish Caught!', {
       fontFamily: 'Georgia, serif', fontSize: '28px', color: '#c4956a',
     }).setOrigin(0.5);

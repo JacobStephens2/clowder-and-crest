@@ -390,6 +390,7 @@ function showRecruitNamePrompt(breedId: string, breedName: string): void {
     gameState!.cats.push(cat);
     saveGame(gameState!);
 
+    playSfx('recruit');
     showToast(`${name} the ${breedName} joined the guild!`);
     checkChapterAdvance(gameState!);
     saveGame(gameState!);
@@ -433,10 +434,10 @@ eventBus.on('show-town-overlay', () => {
 
   // Job cards
   const jobArtMap: Record<string, string> = {
-    mill: 'mill', granary: 'mill', bakery: 'mill', tavern: 'mill',
-    cathedral: 'cathedral', warehouse: 'ship', ship: 'ship', docks: 'ship', castle: 'ship',
+    mill: 'mill', granary: 'mill', bakery: 'mill', tavern: 'tavern',
+    cathedral: 'cathedral', warehouse: 'ship', ship: 'ship', docks: 'docks', castle: 'castle',
     market: 'market', garden: 'monastery', monastery: 'monastery', tower: 'monastery',
-    manor: 'market', night: 'market',
+    manor: 'castle', night: 'night',
   };
 
   dailyJobs.forEach((job) => {
@@ -950,7 +951,7 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
 eventBus.on('puzzle-quit', ({ jobId, catId }: any = {}) => {
   switchToNormalMusic();
   resumeDayTimer();
-  playSfx('hiss');
+  playSfx('fail');
   if (!gameState) return;
 
   const cat = gameState.cats.find((c) => c.id === catId);
@@ -1140,6 +1141,8 @@ function showResultOverlay(info: ResultInfo): void {
 
   const starsStr = '&#11088;'.repeat(info.stars) + '&#9734;'.repeat(3 - info.stars);
   const movesStr = info.moves != null ? `<br>Moves: ${info.moves} (target: ${info.minMoves})` : '';
+
+  playSfx('victory');
 
   overlay.innerHTML = `
     <h2>Puzzle Solved!</h2>
@@ -1750,6 +1753,7 @@ function showFurnitureShop(): void {
 
       saveGame(gameState!);
       const roomLabel = targetRoom === 'sleeping' ? 'Sleeping Quarters' : targetRoom === 'kitchen' ? 'Kitchen' : 'Operations';
+      playSfx('furniture');
       showToast(`Placed ${item.name} in ${roomLabel}!`);
       panel.remove();
       showFurnitureShop();

@@ -13,6 +13,12 @@ function getAudio(key: string): HTMLAudioElement | null {
     chapter: 'assets/sfx/chapter_complete.mp3',
     tap: 'assets/sfx/ui_tap.mp3',
     hiss: 'assets/sfx/cat_hiss.mp3',
+    victory: 'assets/sfx/victory.mp3',
+    recruit: 'assets/sfx/recruit.mp3',
+    furniture: 'assets/sfx/furniture_place.mp3',
+    rat_caught: 'assets/sfx/rat_caught.mp3',
+    fail: 'assets/sfx/fail.mp3',
+    splash: 'assets/sfx/fish_splash.mp3',
   };
   const path = paths[key];
   if (!path) return null;
