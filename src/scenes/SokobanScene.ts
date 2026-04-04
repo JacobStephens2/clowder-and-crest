@@ -585,6 +585,24 @@ export class SokobanScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Tutorial on first play
+    if (!localStorage.getItem('clowder_sokoban_tutorial')) {
+      localStorage.setItem('clowder_sokoban_tutorial', '1');
+      const t = document.createElement('div');
+      t.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
+      t.innerHTML = `
+        <div style="color:#c4956a;font-family:Georgia,serif;font-size:22px;margin-bottom:12px">Push Crates</div>
+        <div style="color:#8b7355;font-family:Georgia,serif;font-size:14px;text-align:center;max-width:280px;line-height:1.6">
+          Push crates onto the <strong style="color:#4a8a4a">green targets</strong>.<br><br>
+          Use <strong>WASD</strong>, <strong>arrow keys</strong>, or <strong>tap</strong> to move.<br><br>
+          You can only push — not pull. Don't get stuck!
+        </div>
+        <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:12px;margin-top:20px">Tap to start</div>
+      `;
+      t.addEventListener('click', () => t.remove());
+      document.body.appendChild(t);
+    }
+
     // Generate or pick a level
     this.level = getLevelForDifficulty(this.difficulty);
     this.playerPos = { ...this.level.playerStart };

@@ -57,6 +57,24 @@ export class PuzzleScene extends Phaser.Scene {
     this.cameras.main.setZoom(DPR);
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
+    // Tutorial on first play
+    if (!localStorage.getItem('clowder_puzzle_tutorial')) {
+      localStorage.setItem('clowder_puzzle_tutorial', '1');
+      const t = document.createElement('div');
+      t.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
+      t.innerHTML = `
+        <div style="color:#c4956a;font-family:Georgia,serif;font-size:22px;margin-bottom:12px">Slide Blocks</div>
+        <div style="color:#8b7355;font-family:Georgia,serif;font-size:14px;text-align:center;max-width:280px;line-height:1.6">
+          Slide blocks to clear a path for your <strong style="color:#c4956a">cat</strong> to reach the <strong style="color:#4a8a4a">exit</strong>.<br><br>
+          <strong>Drag</strong> blocks along their axis (horizontal or vertical).<br><br>
+          Fewer moves = more stars = bigger reward!
+        </div>
+        <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:12px;margin-top:20px">Tap to start</div>
+      `;
+      t.addEventListener('click', () => t.remove());
+      document.body.appendChild(t);
+    }
+
     // Draw grid background
     const gridPx = GRID_SIZE * TILE_SIZE;
     const offsetX = PUZZLE_OFFSET_X;
