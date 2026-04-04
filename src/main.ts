@@ -27,7 +27,7 @@ import { checkChapterAdvance, checkRatPlagueResolution, getChapterName, getNextC
 import { startBgm, toggleMute, isMuted, switchToPuzzleMusic, switchToNormalMusic, pauseMusic, resumeMusic } from './systems/MusicManager';
 import { playSfx, toggleSfxMute, isSfxMuted } from './systems/SfxManager';
 import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDayEnd, pauseDayTimer, resumeDayTimer, isPaused } from './systems/DayTimer';
-import { applyReputationShift, getReputationLabel, getReputationRecruitModifier } from './systems/ReputationSystem';
+import { applyReputationShift, getReputationLabel, getReputationRecruitModifier, getReputationBonuses } from './systems/ReputationSystem';
 import conversationsData from './data/conversations.json';
 
 // ──── Game State ────
@@ -36,6 +36,43 @@ const catsWorkedToday = new Set<string>();
 const jobsCompletedToday = new Set<string>();
 let cachedDailyJobs: ReturnType<typeof generateDailyJobs> | null = null;
 let cachedJobDay = -1;
+
+// ── Job combo tracking ──
+const jobCombos = new Map<string, { category: string; count: number; lastDay: number }>();
+
+function getComboMultiplier(catId: string, category: string, day: number): number {
+  const combo = jobCombos.get(catId);
+  if (combo && combo.category === category && combo.lastDay === day - 1) {
+    return 1 + Math.min(combo.count, 5) * 0.05; // up to 1.25x at 5-streak
+  }
+  return 1;
+}
+
+function updateCombo(catId: string, category: string, day: number): number {
+  const combo = jobCombos.get(catId);
+  let count = 1;
+  if (combo && combo.category === category && combo.lastDay === day - 1) {
+    count = combo.count + 1;
+  }
+  jobCombos.set(catId, { category, count, lastDay: day });
+  return count;
+}
+
+// ── Daily cat wish system ──
+function getDailyWish(day: number, cats: { id: string; name: string }[]): { catId: string; catName: string; wish: string; reward: string } | null {
+  if (cats.length < 2) return null;
+  const rng = (day * 7919) % cats.length; // deterministic per day
+  const cat = cats[rng];
+  const wishes = [
+    { wish: 'wants a fish treat', reward: '+5 mood' },
+    { wish: 'wants to explore a room', reward: '+2 bond' },
+    { wish: 'wants to scratch something', reward: '+1 agility' },
+    { wish: 'wants to nap in a warm spot', reward: '+3 mood' },
+    { wish: 'wants to play with a friend', reward: '+3 bond' },
+  ];
+  const pick = wishes[(day * 1013) % wishes.length];
+  return { catId: cat.id, catName: cat.name, ...pick };
+}
 
 export function getGameState(): SaveData | null {
   return gameState;
@@ -490,6 +527,20 @@ eventBus.on('show-town-overlay', () => {
     }
   }
 
+  // Daily cat wish
+  const wish = getDailyWish(gameState.day, gameState.cats);
+  if (wish && !gameState.flags[`wish_day_${gameState.day}`]) {
+    html += `<div class="town-section-divider"></div>`;
+    html += `<div class="town-job-card" style="border-left:3px solid #dda055;padding:8px 12px">
+      <div style="color:#dda055;font-size:13px;font-family:Georgia,serif">\u{1F4AD} ${wish.catName}'s Wish</div>
+      <div style="color:#8b7355;font-size:11px;margin:4px 0">"${wish.wish}"</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="color:#6b5b3e;font-size:10px">Reward: ${wish.reward}</span>
+        <button class="town-job-accept" id="fulfill-wish">Fulfill (5 fish)</button>
+      </div>
+    </div>`;
+  }
+
   // Cat availability indicator
   html += `<div class="town-section-divider"></div>`;
   html += `<div style="padding:0 12px 8px"><div style="color:#c4956a;font-size:14px;margin-bottom:6px;font-family:Georgia,serif">Your Cats</div>`;
@@ -574,6 +625,39 @@ eventBus.on('show-town-overlay', () => {
       overlay.remove();
       eventBus.emit('recruit-cat', breedId);
     });
+  });
+
+  // Wire up wish button
+  document.getElementById('fulfill-wish')?.addEventListener('click', () => {
+    if (!gameState || !spendFish(gameState, 5)) { showToast('Not enough fish!'); return; }
+    const wish = getDailyWish(gameState.day, gameState.cats);
+    if (!wish) return;
+    gameState.flags[`wish_day_${gameState.day}`] = true;
+    const cat = gameState.cats.find((c) => c.id === wish.catId);
+    if (cat) {
+      // Apply reward
+      if (wish.reward.includes('mood')) {
+        if (cat.mood === 'unhappy') cat.mood = 'tired';
+        else if (cat.mood === 'tired') cat.mood = 'content';
+        else cat.mood = 'happy';
+      }
+      if (wish.reward.includes('bond')) {
+        const playerCat = gameState.cats.find((c) => c.id === 'player_wildcat');
+        if (playerCat && cat.id !== playerCat.id) {
+          addBondPoints(gameState, playerCat.breed, cat.breed, 3);
+        }
+      }
+      if (wish.reward.includes('agility')) {
+        const statKey = 'hunting' as const;
+        cat.stats[statKey] = Math.min(10, cat.stats[statKey] + 1);
+      }
+    }
+    playSfx('purr');
+    showToast(`${wish.catName} is delighted! ${wish.reward}`);
+    saveGame(gameState);
+    updateStatusBar();
+    overlay.remove();
+    eventBus.emit('show-town-overlay');
   });
 
   // Wire up merchant buy buttons
@@ -775,12 +859,31 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
   }
 
   let baseReward = calculateReward(job.baseReward, job.maxReward, stars);
+
   // Lucky Fishbone bonus
   if (gameState.flags.luckyFishbone) {
     baseReward = Math.floor(baseReward * 1.2);
     delete gameState.flags.luckyFishbone;
     showToast('Lucky Fishbone activated! +20% reward.');
   }
+
+  // Reputation reward bonus
+  const repBonuses = getReputationBonuses(gameState.reputationScore);
+  if (repBonuses.rewardBonus !== 0) {
+    baseReward = Math.floor(baseReward * (1 + repBonuses.rewardBonus));
+  }
+
+  // Job combo multiplier
+  const comboMult = getComboMultiplier(cat.id, job.category, gameState.day);
+  if (comboMult > 1) {
+    baseReward = Math.floor(baseReward * comboMult);
+  }
+  const comboCount = updateCombo(cat.id, job.category, gameState.day);
+  if (comboCount >= 3) {
+    showToast(`${cat.name} is on a ${comboCount}-day ${job.category} streak! x${(1 + Math.min(comboCount, 5) * 0.05).toFixed(2)} reward`);
+    playSfx('purr');
+  }
+
   const reward = baseReward + (bonusFish ?? 0);
   earnFish(gameState, reward);
   playSfx('purr');
@@ -800,10 +903,17 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
   const xp = xpMap[job.difficulty] ?? 30;
   const leveled = addXp(cat, xp);
 
-  // Bond points
+  // Bond points (with rank-up celebration)
   for (const other of gameState.cats) {
     if (other.id !== cat.id) {
-      addBondPoints(gameState, cat.breed, other.breed, 3);
+      const result = addBondPoints(gameState, cat.breed, other.breed, 3);
+      if (result?.rankUp) {
+        const otherName = other.name;
+        setTimeout(() => {
+          playSfx('chapter');
+          showToast(`\u2764 ${cat.name} & ${otherName} reached ${result.newRank} rank!`);
+        }, 2000);
+      }
     }
   }
 
@@ -914,12 +1024,19 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
     }
   }
 
+  // Reputation passive bonus
+  const repBonuses = getReputationBonuses(gameState.reputationScore);
+  if (repBonuses.dailyFish !== 0) {
+    gameState.fish = Math.max(0, gameState.fish + repBonuses.dailyFish);
+  }
+
   // Collect stationed earnings
   const stationedResults = collectStationedEarnings(gameState);
   const stationedTotal = stationedResults.reduce((sum, r) => sum + r.earned, 0);
 
   // Build day summary
   const parts: string[] = [];
+  if (repBonuses.dailyFish > 0) parts.push(`Reputation: +${repBonuses.dailyFish} fish`);
   parts.push(`Upkeep: -${foodCost} fish`);
   if (stationedTotal > 0) {
     parts.push(`Stationed: +${stationedTotal} fish`);

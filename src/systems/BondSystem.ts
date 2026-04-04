@@ -29,14 +29,17 @@ function getOrCreateBond(save: SaveData, breedA: string, breedB: string): BondSa
   return bond;
 }
 
-export function addBondPoints(save: SaveData, breedA: string, breedB: string, points: number): void {
+export function addBondPoints(save: SaveData, breedA: string, breedB: string, points: number): { rankUp: boolean; newRank: BondRank } | null {
   // Only track bonds for defined pairs
   const isPair = BOND_PAIRS.some(
     ([a, b]) => bondKey(a, b) === bondKey(breedA, breedB)
   );
-  if (!isPair) return;
+  if (!isPair) return null;
   const bond = getOrCreateBond(save, breedA, breedB);
+  const oldRank = getBondRank(bond.points);
   bond.points += points;
+  const newRank = getBondRank(bond.points);
+  return { rankUp: newRank !== oldRank, newRank };
 }
 
 export function getBondRank(points: number): BondRank {

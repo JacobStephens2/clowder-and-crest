@@ -31,3 +31,12 @@ export function getReputationRecruitModifier(score: number): number {
   if (score > -30) return 1.1;
   return 1.2;
 }
+
+// Passive bonuses from reputation tier
+export function getReputationBonuses(score: number): { dailyFish: number; rewardBonus: number; moodProtection: boolean } {
+  if (score >= 30) return { dailyFish: 2, rewardBonus: 0.1, moodProtection: true };  // Noble
+  if (score >= 10) return { dailyFish: 1, rewardBonus: 0.05, moodProtection: false }; // Respected
+  if (score > -10) return { dailyFish: 0, rewardBonus: 0, moodProtection: false };     // Neutral
+  if (score > -30) return { dailyFish: 0, rewardBonus: -0.05, moodProtection: false }; // Questionable
+  return { dailyFish: -1, rewardBonus: -0.1, moodProtection: false };                  // Shadowed
+}
