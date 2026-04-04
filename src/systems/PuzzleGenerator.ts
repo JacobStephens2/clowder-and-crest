@@ -34,6 +34,109 @@ export function getAllPuzzles(): PuzzleConfig[] {
   return puzzles;
 }
 
+// ── Procedural puzzle generation ──
+
+function randomInt(min: number, max: number): number {
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+function cellsOccupied(blocks: PuzzleBlock[]): Set<string> {
+  const set = new Set<string>();
+  for (const b of blocks) {
+    for (let i = 0; i < b.length; i++) {
+      const cx = b.orientation === 'horizontal' ? b.x + i : b.x;
+      const cy = b.orientation === 'vertical' ? b.y + i : b.y;
+      set.add(`${cx},${cy}`);
+    }
+  }
+  return set;
+}
+
+function tryPlaceBlock(occupied: Set<string>, gridSize: number): PuzzleBlock | null {
+  const orientation = Math.random() < 0.5 ? 'horizontal' : 'vertical';
+  const length = Math.random() < 0.6 ? 2 : 3;
+
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const x = orientation === 'horizontal' ? randomInt(0, gridSize - length) : randomInt(0, gridSize - 1);
+    const y = orientation === 'vertical' ? randomInt(0, gridSize - length) : randomInt(0, gridSize - 1);
+
+    let fits = true;
+    for (let i = 0; i < length; i++) {
+      const cx = orientation === 'horizontal' ? x + i : x;
+      const cy = orientation === 'vertical' ? y + i : y;
+      if (occupied.has(`${cx},${cy}`)) { fits = false; break; }
+    }
+
+    if (fits) {
+      return { id: '', x, y, length, orientation, isTarget: false };
+    }
+  }
+  return null;
+}
+
+const DIFFICULTY_PARAMS: Record<string, { minBlocks: number; maxBlocks: number; minMoves: number; maxMoves: number }> = {
+  easy: { minBlocks: 4, maxBlocks: 6, minMoves: 3, maxMoves: 8 },
+  medium: { minBlocks: 6, maxBlocks: 9, minMoves: 6, maxMoves: 15 },
+  hard: { minBlocks: 8, maxBlocks: 12, minMoves: 10, maxMoves: 30 },
+};
+
+export function generatePuzzle(difficulty: 'easy' | 'medium' | 'hard'): PuzzleConfig | null {
+  const params = DIFFICULTY_PARAMS[difficulty];
+  const exitRow = randomInt(1, 4);
+
+  for (let gen = 0; gen < 50; gen++) {
+    const blocks: PuzzleBlock[] = [];
+
+    // Place target block (always horizontal on the exit row)
+    const targetX = randomInt(0, 2);
+    blocks.push({
+      id: 'cat',
+      x: targetX,
+      y: exitRow,
+      length: 2,
+      orientation: 'horizontal',
+      isTarget: true,
+    });
+
+    // Place obstacle blocks
+    const numBlocks = randomInt(params.minBlocks, params.maxBlocks);
+    const occupied = cellsOccupied(blocks);
+
+    for (let i = 0; i < numBlocks; i++) {
+      const block = tryPlaceBlock(occupied, 6);
+      if (block) {
+        block.id = `b${i}`;
+        blocks.push(block);
+        // Update occupied
+        for (let j = 0; j < block.length; j++) {
+          const cx = block.orientation === 'horizontal' ? block.x + j : block.x;
+          const cy = block.orientation === 'vertical' ? block.y + j : block.y;
+          occupied.add(`${cx},${cy}`);
+        }
+      }
+    }
+
+    const config: PuzzleConfig = {
+      id: `gen_${difficulty}_${Date.now()}_${gen}`,
+      difficulty,
+      minMoves: 0,
+      exitSide: 'right',
+      exitRow,
+      blocks,
+    };
+
+    // Verify solvability via BFS
+    const result = isSolvable(config);
+    if (result.solvable && result.minMoves >= params.minMoves && result.minMoves <= params.maxMoves) {
+      config.minMoves = result.minMoves;
+      return config;
+    }
+  }
+
+  // Fallback: return a hand-designed puzzle
+  return getPuzzleByDifficulty(difficulty) ?? null;
+}
+
 // BFS solver to verify puzzle solvability
 interface GridState {
   positions: Map<string, { x: number; y: number }>;

@@ -18,7 +18,7 @@ import {
 import { createCat, getBreed, addXp } from './systems/CatManager';
 import { earnFish, spendFish, calculateReward, calculateAutoResolveReward, collectStationedEarnings, isCatStationed } from './systems/Economy';
 import { getJob, getStatMatchScore, generateDailyJobs, type JobDef } from './systems/JobBoard';
-import { getPuzzleByDifficulty } from './systems/PuzzleGenerator';
+import { getPuzzleByDifficulty, generatePuzzle } from './systems/PuzzleGenerator';
 import { addBondPoints, processDailyBonds, getAvailableConversation, markConversationViewed, getBondRank, getBondPairs } from './systems/BondSystem';
 import { checkChapterAdvance, checkRatPlagueResolution, getChapterName } from './systems/ProgressionManager';
 import conversationsData from './data/conversations.json';
@@ -572,7 +572,7 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
 
   document.getElementById('btn-do-puzzle')!.addEventListener('click', () => {
     overlay.remove();
-    const puzzle = getPuzzleByDifficulty(job.difficulty);
+    const puzzle = generatePuzzle(job.difficulty) ?? getPuzzleByDifficulty(job.difficulty);
     if (!puzzle) {
       showToast('No puzzle available!');
       return;
