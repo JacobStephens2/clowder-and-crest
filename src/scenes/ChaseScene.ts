@@ -72,21 +72,33 @@ function generateMaze(): number[][] {
     }
   }
 
-  // Open some extra passages to make maze less linear
-  for (let i = 0; i < 8; i++) {
-    const r = 1 + Math.floor(Math.random() * (ROWS - 2));
-    const c = 1 + Math.floor(Math.random() * (COLS - 2));
-    if (grid[r][c] === WALL) {
-      // Only open if it connects two floor cells
-      const adjFloors = DIRS.filter(({ dr, dc }) => {
-        const nr = r + dr;
-        const nc = c + dc;
-        return nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && grid[nr][nc] === FLOOR;
-      });
-      if (adjFloors.length >= 2) {
-        grid[r][c] = FLOOR;
+  // Open extra passages aggressively to create multiple paths
+  // This ensures the player can always find an alternate route around the dog
+  let opened = 0;
+  const candidates: { r: number; c: number }[] = [];
+  for (let r = 1; r < ROWS - 1; r++) {
+    for (let c = 1; c < COLS - 1; c++) {
+      if (grid[r][c] === WALL) {
+        const adjFloors = DIRS.filter(({ dr, dc }) => {
+          const nr = r + dr;
+          const nc = c + dc;
+          return nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && grid[nr][nc] === FLOOR;
+        });
+        if (adjFloors.length >= 2) {
+          candidates.push({ r, c });
+        }
       }
     }
+  }
+  // Shuffle and open ~30% of candidates to create many alternate routes
+  for (let i = candidates.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+  }
+  const toOpen = Math.max(12, Math.floor(candidates.length * 0.3));
+  for (let i = 0; i < Math.min(toOpen, candidates.length); i++) {
+    grid[candidates[i].r][candidates[i].c] = FLOOR;
+    opened++;
   }
 
   return grid;

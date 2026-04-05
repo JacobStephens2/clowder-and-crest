@@ -18,4 +18,5 @@
 [x] where does the game have procedural generation / room for this? / room for LLM created content on the fly / on demand?
 [x] add terrain to some fight mini games
 [x] make it so that you can accept a job, but then you have to go to that location to do it
-[] have at least two paths to the rat in the rat chase game, this should help prevent cases where the player cannot get around the dog to get to the rat
+[x] have at least two paths to the rat in the rat chase game, this should help prevent cases where the player cannot get around the dog to get to the rat
+[x] add a furniture shop to the town map so the player can actually go to it to open it

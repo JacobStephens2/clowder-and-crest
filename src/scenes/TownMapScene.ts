@@ -41,6 +41,7 @@ const BUILDINGS: BuildingDef[] = [
   { id: 'market', name: 'Market', col: 6, row: 4, w: 2, h: 2, doorCol: 6, doorRow: 6, color: 0x2a2620, roofColor: 0x3a2e28 },
   { id: 'jobs', name: 'Job Board', col: 3, row: 3, w: 2, h: 1, doorCol: 4, doorRow: 4, color: 0x3a3530, roofColor: 0x4a4038 },
   { id: 'docks', name: 'Docks', col: 0, row: 7, w: 2, h: 2, doorCol: 1, doorRow: 7, color: 0x2a3028, roofColor: 0x3a4030 },
+  { id: 'carpenter', name: 'Carpenter', col: 3, row: 7, w: 2, h: 1, doorCol: 4, doorRow: 8, color: 0x3a2e22, roofColor: 0x4a3e28 },
   { id: 'mill', name: 'Mill', col: 6, row: 7, w: 2, h: 2, doorCol: 6, doorRow: 7, color: 0x2e2822, roofColor: 0x3e3828 },
 ];
 
@@ -370,6 +371,16 @@ export class TownMapScene extends Phaser.Scene {
         gfx.fillCircle(mx, my, 3);
         break;
       }
+      case 'carpenter': {
+        // Saw and wood planks
+        gfx.fillStyle(0x5a4a3a, 0.5);
+        gfx.fillRect(x + 6, y + h / 2 - 2, w - 12, 4); // workbench
+        // Wood planks
+        gfx.fillStyle(0x6a5a3a, 0.4);
+        gfx.fillRect(x + 8, y + 4, 14, 5);
+        gfx.fillRect(x + w - 22, y + 4, 14, 5);
+        break;
+      }
     }
   }
 
@@ -635,8 +646,10 @@ export class TownMapScene extends Phaser.Scene {
 
   private enterBuilding(b: BuildingDef): void {
     playSfx('tap', 0.3);
-    // All buildings open the town overlay (which has jobs, recruit, merchant, etc.)
-    // The overlay has its own close button to return to the map
-    eventBus.emit('show-town-overlay');
+    if (b.id === 'carpenter') {
+      eventBus.emit('show-furniture-shop');
+    } else {
+      eventBus.emit('show-town-overlay');
+    }
   }
 }

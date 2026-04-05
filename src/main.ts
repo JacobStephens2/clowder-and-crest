@@ -36,7 +36,7 @@ import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDay
 import { applyReputationShift, getReputationLabel, getReputationRecruitModifier, getReputationBonuses } from './systems/ReputationSystem';
 import { getComboMultiplier, updateCombo, getDailyWish, getCurrentFestival, trackEvent } from './systems/GameSystems';
 import { showNarrativeOverlay } from './ui/narrativeOverlay';
-import { initPanels, showCatPanel, showMenuPanel } from './ui/Panels';
+import { initPanels, showCatPanel, showMenuPanel, showFurnitureShop } from './ui/Panels';
 import { initConversations, checkAndShowConversation } from './ui/Conversations';
 
 // ──── Game State ────
@@ -345,6 +345,10 @@ eventBus.on('set-active-tab', setActiveTab);
 
 eventBus.on('close-town-overlay', () => {
   overlayLayer.querySelectorAll('.town-overlay').forEach((el) => el.remove());
+});
+
+eventBus.on('show-furniture-shop', () => {
+  showFurnitureShop();
 });
 
 eventBus.on('fish-changed', () => {
