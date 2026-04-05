@@ -269,6 +269,69 @@ export class RoomScene extends Phaser.Scene {
       repeat: -1,
       ease: 'Sine.easeInOut',
     });
+
+    // Room-specific environmental details
+    this.drawRoomDetails(gfx, gridW, gridH);
+  }
+
+  private drawRoomDetails(gfx: Phaser.GameObjects.Graphics, gridW: number, gridH: number): void {
+    switch (this.roomId) {
+      case 'sleeping': {
+        // Moon glow through window
+        gfx.fillStyle(0x8899bb, 0.04);
+        gfx.fillEllipse(GRID_LEFT + gridW * 0.4 + 20, GRID_TOP + 40, 80, 50);
+        // Cobwebs in corners
+        gfx.lineStyle(1, 0x4a4a4a, 0.15);
+        gfx.lineBetween(GRID_LEFT, GRID_TOP, GRID_LEFT + 25, GRID_TOP);
+        gfx.lineBetween(GRID_LEFT, GRID_TOP, GRID_LEFT, GRID_TOP + 25);
+        gfx.lineBetween(GRID_LEFT, GRID_TOP, GRID_LEFT + 18, GRID_TOP + 18);
+        // Straw scattered on floor
+        gfx.lineStyle(1, 0x6b5b3e, 0.12);
+        for (let i = 0; i < 8; i++) {
+          const sx = GRID_LEFT + 20 + Math.random() * (gridW - 40);
+          const sy = GRID_TOP + 20 + Math.random() * (gridH - 40);
+          gfx.lineBetween(sx, sy, sx + 6 + Math.random() * 8, sy + Math.random() * 4 - 2);
+        }
+        break;
+      }
+      case 'kitchen': {
+        // Smoke wisps from the hearth area (top-right)
+        for (let i = 0; i < 3; i++) {
+          const smokeX = GRID_LEFT + gridW * 0.75 + Math.random() * 30;
+          const smokeY = GRID_TOP + 20 + i * 15;
+          const smoke = this.add.ellipse(smokeX, smokeY, 8 + Math.random() * 6, 4, 0x555555, 0.08);
+          this.tweens.add({
+            targets: smoke, y: smokeY - 20, alpha: 0, duration: 3000 + Math.random() * 2000,
+            yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+          });
+        }
+        // Floor stains near center (cooking area)
+        gfx.fillStyle(0x3a2e22, 0.15);
+        gfx.fillEllipse(GRID_LEFT + gridW * 0.5, GRID_TOP + gridH * 0.6, 40, 25);
+        // Warm light from hearth
+        gfx.fillStyle(0xdda055, 0.03);
+        gfx.fillEllipse(GRID_LEFT + gridW * 0.75, GRID_TOP + 30, 60, 40);
+        break;
+      }
+      case 'operations': {
+        // Map / notice on the wall (top wall)
+        gfx.fillStyle(0x5a4a3a, 0.4);
+        gfx.fillRect(GRID_LEFT + gridW * 0.15, GRID_TOP - 8, 30, 7);
+        gfx.fillRect(GRID_LEFT + gridW * 0.6, GRID_TOP - 8, 40, 7);
+        // Ink splotches on floor
+        gfx.fillStyle(0x1a1a2a, 0.08);
+        gfx.fillCircle(GRID_LEFT + gridW * 0.3, GRID_TOP + gridH * 0.4, 5);
+        gfx.fillCircle(GRID_LEFT + gridW * 0.35, GRID_TOP + gridH * 0.42, 3);
+        // Quill marks / scratches on desk area
+        gfx.lineStyle(1, 0x2a2a3a, 0.1);
+        for (let i = 0; i < 4; i++) {
+          const qx = GRID_LEFT + gridW * 0.4 + Math.random() * 60;
+          const qy = GRID_TOP + gridH * 0.3 + Math.random() * 30;
+          gfx.lineBetween(qx, qy, qx + 10, qy + 3);
+        }
+        break;
+      }
+    }
   }
 
   private drawFurniture(save: SaveData): void {
