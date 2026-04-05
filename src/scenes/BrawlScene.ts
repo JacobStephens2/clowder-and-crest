@@ -49,6 +49,7 @@ export class BrawlScene extends Phaser.Scene {
   private hpBar!: Phaser.GameObjects.Graphics;
   private attackGfx!: Phaser.GameObjects.Graphics;
   private lastAttackTime = 0;
+  private invincibleTimer = 0;
 
   private rats: Rat[] = [];
   private wave = 0;
@@ -286,6 +287,15 @@ export class BrawlScene extends Phaser.Scene {
 
     this.catSprite.setPosition(this.catX, this.catY);
 
+    // Invincibility timer
+    if (this.invincibleTimer > 0) {
+      this.invincibleTimer -= dt;
+      // Flash cat sprite during invincibility
+      if (this.catSprite) this.catSprite.setAlpha(Math.sin(Date.now() * 0.02) > 0 ? 1 : 0.3);
+    } else if (this.catSprite) {
+      this.catSprite.setAlpha(1);
+    }
+
     // Update rats
     for (const rat of this.rats) {
       if (rat.stunTimer > 0) {
@@ -302,15 +312,30 @@ export class BrawlScene extends Phaser.Scene {
         const rspeed = rat.speed * 60 * dt;
         rat.x += (rdx / rdist) * rspeed;
         rat.y += (rdy / rdist) * rspeed;
-        rat.x = Phaser.Math.Clamp(rat.x, ARENA_LEFT + RAT_SIZE, ARENA_RIGHT - RAT_SIZE);
-        rat.y = Phaser.Math.Clamp(rat.y, ARENA_TOP + RAT_SIZE, ARENA_BOTTOM - RAT_SIZE);
       }
 
-      // Rat attacks cat on contact
+      // Rat separation — push apart from other rats
+      for (const other of this.rats) {
+        if (other === rat) continue;
+        const sx = rat.x - other.x;
+        const sy = rat.y - other.y;
+        const sd = Math.sqrt(sx * sx + sy * sy);
+        if (sd < RAT_SIZE * 2.5 && sd > 0) {
+          const push = 0.5;
+          rat.x += (sx / sd) * push;
+          rat.y += (sy / sd) * push;
+        }
+      }
+
+      rat.x = Phaser.Math.Clamp(rat.x, ARENA_LEFT + RAT_SIZE, ARENA_RIGHT - RAT_SIZE);
+      rat.y = Phaser.Math.Clamp(rat.y, ARENA_TOP + RAT_SIZE, ARENA_BOTTOM - RAT_SIZE);
+
+      // Rat attacks cat on contact (respects invincibility)
       rat.attackTimer -= dt;
-      if (rdist < RAT_SIZE + CAT_SIZE && rat.attackTimer <= 0) {
-        rat.attackTimer = 1.0; // 1 second between bites
+      if (rdist < RAT_SIZE + CAT_SIZE && rat.attackTimer <= 0 && this.invincibleTimer <= 0) {
+        rat.attackTimer = 1.0;
         this.catHp--;
+        this.invincibleTimer = 0.8; // brief invincibility after hit
         this.drawHpBar();
         this.cameras.main.flash(100, 80, 20, 20);
         playSfx('hiss', 0.4);
@@ -341,15 +366,21 @@ export class BrawlScene extends Phaser.Scene {
 
     playSfx('tap', 0.4);
 
-    // Draw attack slash
+    // Draw attack slash — filled arc wedge
     this.attackGfx.clear();
-    this.attackGfx.lineStyle(3, 0xdda055, 0.8);
-    this.attackGfx.beginPath();
     const slashStart = this.catFacing - ATTACK_ARC / 2;
     const slashEnd = this.catFacing + ATTACK_ARC / 2;
+    this.attackGfx.fillStyle(0xdda055, 0.25);
+    this.attackGfx.beginPath();
+    this.attackGfx.moveTo(this.catX, this.catY);
+    this.attackGfx.arc(this.catX, this.catY, ATTACK_RANGE, slashStart, slashEnd, false);
+    this.attackGfx.closePath();
+    this.attackGfx.fillPath();
+    this.attackGfx.lineStyle(2, 0xdda055, 0.7);
+    this.attackGfx.beginPath();
     this.attackGfx.arc(this.catX, this.catY, ATTACK_RANGE, slashStart, slashEnd, false);
     this.attackGfx.strokePath();
-    this.time.delayedCall(150, () => this.attackGfx.clear());
+    this.time.delayedCall(120, () => this.attackGfx.clear());
 
     // Check hits
     const toRemove: Rat[] = [];
@@ -381,10 +412,9 @@ export class BrawlScene extends Phaser.Scene {
         if (rat.hp <= 0) {
           toRemove.push(rat);
         } else {
-          // Flash red
-          const body = rat.gfx.getAt(0) as Phaser.GameObjects.Arc;
-          body.setFillStyle(0xcc4444);
-          this.time.delayedCall(150, () => body.setFillStyle(0x8a5a4a));
+          // Flash hit feedback
+          rat.gfx.setAlpha(0.4);
+          this.time.delayedCall(150, () => { if (rat.gfx.active) rat.gfx.setAlpha(1); });
         }
       }
     }
@@ -409,7 +439,16 @@ export class BrawlScene extends Phaser.Scene {
       if (this.wave >= this.totalWaves) {
         this.gameOver(true);
       } else {
-        this.time.delayedCall(1000, () => {
+        // Recover 1 HP between waves
+        if (this.catHp < this.catMaxHp) {
+          this.catHp = Math.min(this.catMaxHp, this.catHp + 1);
+          this.drawHpBar();
+        }
+        const cleared = this.add.text(GAME_WIDTH / 2, ARENA_TOP + ARENA_H / 2, 'Wave Cleared!', {
+          fontFamily: 'Georgia, serif', fontSize: '22px', color: '#4a8a4a',
+        }).setOrigin(0.5).setAlpha(0);
+        this.tweens.add({ targets: cleared, alpha: 1, duration: 300, yoyo: true, hold: 700, onComplete: () => cleared.destroy() });
+        this.time.delayedCall(1500, () => {
           if (!this.finished) this.spawnWave();
         });
       }
@@ -438,16 +477,21 @@ export class BrawlScene extends Phaser.Scene {
 
       const container = this.add.container(rx, ry);
 
-      // Rat body
-      const body = this.add.circle(0, 0, RAT_SIZE, 0x8a5a4a);
-      container.add(body);
-
-      // Eyes
-      const eye1 = this.add.circle(-3, -3, 2, 0xffffff);
-      const eye2 = this.add.circle(3, -3, 2, 0xffffff);
-      const pupil1 = this.add.circle(-3, -3, 1, 0x111111);
-      const pupil2 = this.add.circle(3, -3, 1, 0x111111);
-      container.add([eye1, eye2, pupil1, pupil2]);
+      // Rat body — use sprite if available
+      if (this.textures.exists('rat')) {
+        const ratSprite = this.add.sprite(0, 0, 'rat');
+        ratSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        ratSprite.setScale(0.8);
+        container.add(ratSprite);
+      } else {
+        const body = this.add.circle(0, 0, RAT_SIZE, 0x8a5a4a);
+        container.add(body);
+        const eye1 = this.add.circle(-3, -3, 2, 0xffffff);
+        const eye2 = this.add.circle(3, -3, 2, 0xffffff);
+        const pupil1 = this.add.circle(-3, -3, 1, 0x111111);
+        const pupil2 = this.add.circle(3, -3, 1, 0x111111);
+        container.add([eye1, eye2, pupil1, pupil2]);
+      }
 
       // HP indicator for tougher rats
       if (ratHp > 1) {
