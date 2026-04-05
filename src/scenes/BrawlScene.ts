@@ -4,6 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
+import { createDpad, showMinigameTutorial } from '../ui/sceneHelpers';
 
 // ── Arena layout ──
 const ARENA_LEFT = 20;
@@ -98,23 +99,14 @@ export class BrawlScene extends Phaser.Scene {
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
     // Tutorial
-    if (!localStorage.getItem('clowder_brawl_tutorial')) {
-      localStorage.setItem('clowder_brawl_tutorial', '1');
+    if (showMinigameTutorial(this, 'clowder_brawl_tutorial', 'Fight!',
+      `Rats are attacking! Fight them off.<br><br>
+      <strong>Move</strong> with WASD, arrows, or the d-pad.<br><br>
+      <strong>Attack</strong> by tapping the arena or pressing Space. You swipe in the direction you're facing.<br><br>
+      Survive all waves to complete the job!`,
+      () => { this.tutorialShowing = false; }
+    )) {
       this.tutorialShowing = true;
-      const t = document.createElement('div');
-      t.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
-      t.innerHTML = `
-        <div style="color:#c4956a;font-family:Georgia,serif;font-size:22px;margin-bottom:12px">Fight!</div>
-        <div style="color:#8b7355;font-family:Georgia,serif;font-size:14px;text-align:center;max-width:300px;line-height:1.6">
-          Rats are attacking! Fight them off.<br><br>
-          <strong>Move</strong> with WASD, arrows, or the d-pad.<br><br>
-          <strong>Attack</strong> by tapping the arena or pressing Space. You swipe in the direction you're facing.<br><br>
-          Survive all waves to complete the job!
-        </div>
-        <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:12px;margin-top:20px">Tap to start</div>
-      `;
-      t.addEventListener('click', () => { t.remove(); this.tutorialShowing = false; });
-      document.body.appendChild(t);
     }
 
     // Job name
@@ -190,34 +182,14 @@ export class BrawlScene extends Phaser.Scene {
 
     // D-pad
     const dpadY = ARENA_BOTTOM + 60;
-    const dpadX = GAME_WIDTH / 2;
-    const dpadSize = 40;
-    const dpadGap = 4;
-
-    let holdTimer: Phaser.Time.TimerEvent | null = null;
-    const setMoveDir = (dx: number, dy: number) => {
-      this.moveDir = { x: dx, y: dy };
-      if (dx !== 0 || dy !== 0) this.catFacing = Math.atan2(dy, dx);
-    };
-
-    const makeArrow = (x: number, y: number, dx: number, dy: number, label: string) => {
-      const btn = this.add.rectangle(x, y, dpadSize, dpadSize, 0x2a2520, 0.8);
-      btn.setStrokeStyle(1, 0x6b5b3e);
-      btn.setInteractive({ useHandCursor: true });
-      this.add.text(x, y, label, { fontSize: '18px', color: '#c4956a' }).setOrigin(0.5);
-      btn.on('pointerdown', () => {
-        setMoveDir(dx, dy);
-        holdTimer?.destroy();
-        holdTimer = this.time.addEvent({ delay: 50, callback: () => setMoveDir(dx, dy), loop: true });
-      });
-      btn.on('pointerup', () => { this.moveDir = { x: 0, y: 0 }; holdTimer?.destroy(); });
-      btn.on('pointerout', () => { this.moveDir = { x: 0, y: 0 }; holdTimer?.destroy(); });
-    };
-
-    makeArrow(dpadX, dpadY - dpadSize - dpadGap, 0, -1, '\u25B2');
-    makeArrow(dpadX, dpadY + dpadSize + dpadGap, 0, 1, '\u25BC');
-    makeArrow(dpadX - dpadSize - dpadGap, dpadY, -1, 0, '\u25C0');
-    makeArrow(dpadX + dpadSize + dpadGap, dpadY, 1, 0, '\u25B6');
+    createDpad(this, {
+      x: GAME_WIDTH / 2, y: dpadY,
+      onDirection: (dx, dy) => {
+        this.moveDir = { x: dx, y: dy };
+        if (dx !== 0 || dy !== 0) this.catFacing = Math.atan2(dy, dx);
+      },
+      holdRepeat: true, repeatInterval: 50,
+    });
 
     // Attack button
     const atkBtn = this.add.rectangle(GAME_WIDTH - 55, dpadY, 60, 60, 0x5a2a20, 0.8);

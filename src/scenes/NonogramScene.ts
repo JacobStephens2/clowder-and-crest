@@ -4,6 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
+import { showMinigameTutorial } from '../ui/sceneHelpers';
 
 // Grid sizes per difficulty
 const GRID_SIZES: Record<string, number> = { easy: 5, medium: 7, hard: 8 };
@@ -162,23 +163,14 @@ export class NonogramScene extends Phaser.Scene {
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
     // Tutorial
-    if (!localStorage.getItem('clowder_nonogram_tutorial')) {
-      localStorage.setItem('clowder_nonogram_tutorial', '1');
+    if (showMinigameTutorial(this, 'clowder_nonogram_tutorial', 'Nonogram',
+      `Fill in the grid to reveal a hidden pattern.<br><br>
+      The <strong>numbers</strong> on each row and column tell you how many consecutive cells to fill.<br><br>
+      Use the <strong>Fill/Mark</strong> toggle to switch between filling cells and marking empties.<br><br>
+      Fewer mistakes = more stars!`,
+      () => { this.tutorialShowing = false; }
+    )) {
       this.tutorialShowing = true;
-      const t = document.createElement('div');
-      t.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
-      t.innerHTML = `
-        <div style="color:#c4956a;font-family:Georgia,serif;font-size:22px;margin-bottom:12px">Nonogram</div>
-        <div style="color:#8b7355;font-family:Georgia,serif;font-size:14px;text-align:center;max-width:300px;line-height:1.6">
-          Fill in the grid to reveal a hidden pattern.<br><br>
-          The <strong>numbers</strong> on each row and column tell you how many consecutive cells to fill.<br><br>
-          Use the <strong>Fill/Mark</strong> toggle to switch between filling cells and marking empties.<br><br>
-          Fewer mistakes = more stars!
-        </div>
-        <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:12px;margin-top:20px">Tap to start</div>
-      `;
-      t.addEventListener('click', () => { t.remove(); this.tutorialShowing = false; });
-      document.body.appendChild(t);
     }
 
     // Job title

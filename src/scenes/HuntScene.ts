@@ -4,6 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
+import { createSceneButton, showMinigameTutorial } from '../ui/sceneHelpers';
 
 // ── Layout ──
 const FIELD_TOP = 160;
@@ -79,25 +80,13 @@ export class HuntScene extends Phaser.Scene {
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
     // Tutorial on first play
-    if (!localStorage.getItem('clowder_hunt_tutorial')) {
-      localStorage.setItem('clowder_hunt_tutorial', '1');
+    if (showMinigameTutorial(this, 'clowder_hunt_tutorial', 'Hunt the Rats!',
+      `Rats pop up from holes in the ground.<br><br>
+      <strong>Tap them</strong> before they disappear!<br><br>
+      Miss too many and the job fails. Your cat's <strong style="color:#c4956a">Hunting</strong> stat gives bonus time.`,
+      () => { this.tutorialShowing = false; }
+    )) {
       this.tutorialShowing = true;
-      const t = document.createElement('div');
-      t.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
-      t.innerHTML = `
-        <div style="color:#c4956a;font-family:Georgia,serif;font-size:22px;margin-bottom:12px">Hunt the Rats!</div>
-        <div style="color:#8b7355;font-family:Georgia,serif;font-size:14px;text-align:center;max-width:280px;line-height:1.6">
-          Rats pop up from holes in the ground.<br><br>
-          <strong>Tap them</strong> before they disappear!<br><br>
-          Miss too many and the job fails. Your cat's <strong style="color:#c4956a">Hunting</strong> stat gives bonus time.
-        </div>
-        <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:12px;margin-top:20px">Tap to start</div>
-      `;
-      t.addEventListener('click', () => {
-        t.remove();
-        this.tutorialShowing = false;
-      });
-      document.body.appendChild(t);
     }
 
     // Job name
@@ -151,7 +140,7 @@ export class HuntScene extends Phaser.Scene {
     }
 
     // Quit button
-    this.createButton(GAME_WIDTH / 2, FIELD_BOTTOM + 70, 'Quit', () => {
+    createSceneButton(this, GAME_WIDTH / 2, FIELD_BOTTOM + 70, 'Quit', () => {
       this.cleanup();
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
       eventBus.emit('navigate', 'TownScene');
@@ -353,15 +342,4 @@ export class HuntScene extends Phaser.Scene {
     this.activeRats = [];
   }
 
-  private createButton(x: number, y: number, label: string, onClick: () => void): void {
-    const bg = this.add.rectangle(x, y, 120, 36, 0x2a2520);
-    bg.setStrokeStyle(1, 0x6b5b3e);
-    bg.setInteractive({ useHandCursor: true });
-    const text = this.add.text(x, y, label, {
-      fontFamily: 'Georgia, serif', fontSize: '14px', color: '#c4956a',
-    }).setOrigin(0.5);
-    bg.on('pointerover', () => { bg.setFillStyle(0x3a3530); text.setColor('#ddb87a'); });
-    bg.on('pointerout', () => { bg.setFillStyle(0x2a2520); text.setColor('#c4956a'); });
-    bg.on('pointerdown', onClick);
-  }
 }
