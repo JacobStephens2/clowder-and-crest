@@ -927,42 +927,12 @@ eventBus.on('show-town-overlay', () => {
     }
   }
 
-  // Recruits
+  // Recruit hint — cats are found walking around the town map
   const ownedBreeds = new Set(gameState.cats.map((c) => c.breed));
-  const recruitable = [
-    { id: 'russian_blue', name: 'Russian Blue', cost: 30, color: '#6b8ea6' },
-    { id: 'tuxedo', name: 'Tuxedo', cost: 40, color: '#3c3c3c' },
-    { id: 'maine_coon', name: 'Maine Coon', cost: 50, color: '#c4956a' },
-    { id: 'siamese', name: 'Siamese', cost: 60, color: '#d4c5a9' },
-  ].filter((r) => !ownedBreeds.has(r.id));
-
-  html += `<div class="town-section-divider"></div>`;
-  html += `<div class="town-section-title">Stray Cats Nearby</div>`;
-  if (gameState.cats.length === 1) {
-    html += `<div style="padding:0 12px 8px;font-size:11px;color:#6b5b3e;font-family:Georgia,serif">Complete jobs to earn fish, then recruit a second cat to grow your guild.</div>`;
-  }
-
-  if (recruitable.length === 0) {
-    html += `<div class="town-empty">All cats have joined the guild.</div>`;
-  } else {
-    const repMod = getReputationRecruitModifier(gameState.reputationScore);
-    for (const recruit of recruitable) {
-      const adjustedCost = Math.floor(recruit.cost * repMod);
-      const canAfford = gameState.fish >= adjustedCost;
-      const discountLabel = repMod < 1 ? ' (reputation discount)' : repMod > 1 ? ' (reputation premium)' : '';
-      html += `
-        <div class="town-recruit-card">
-          <img src="assets/sprites/${recruit.id}/south.png" style="width:48px;height:48px;image-rendering:pixelated;border-radius:50%;background:${recruit.color}" />
-          <div class="town-recruit-info">
-            <div class="town-recruit-name">${recruit.name}</div>
-            <div class="town-recruit-cost">Wants to join for ${adjustedCost} Fish${discountLabel}</div>
-          </div>
-          <button class="town-recruit-btn ${canAfford ? '' : 'disabled'}" data-breed-id="${recruit.id}" data-cost="${adjustedCost}" ${canAfford ? '' : 'disabled'}>
-            ${canAfford ? 'Recruit' : `${adjustedCost} Fish`}
-          </button>
-        </div>
-      `;
-    }
+  const hasStrays = gameState.cats.length < 6 && ownedBreeds.size < 6;
+  if (hasStrays) {
+    html += `<div class="town-section-divider"></div>`;
+    html += `<div style="padding:8px 12px;font-size:11px;color:#6b5b3e;font-family:Georgia,serif;font-style:italic;text-align:center">Stray cats wander the town streets. Walk up to one to talk.</div>`;
   }
 
   // Daily cat wish
@@ -1070,14 +1040,6 @@ eventBus.on('show-town-overlay', () => {
   });
 
   // Wire up recruit buttons
-  overlay.querySelectorAll('.town-recruit-btn:not(.disabled)').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const breedId = btn.getAttribute('data-breed-id')!;
-      overlay.remove();
-      eventBus.emit('recruit-cat', breedId);
-    });
-  });
-
   // Wire up rest buttons
   overlay.querySelectorAll('.rest-cat-btn').forEach((btn) => {
     btn.addEventListener('click', () => {

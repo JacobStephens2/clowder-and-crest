@@ -12,3 +12,4 @@
 [x] winning fight mini games / jobs should count towards the resolution of the rat plague
 [x] the fight game still doesn't pause when the player clicks the pause button at the top
 [x] some of the rush hour puzzles seem too easy
+[x] remove recruitment from the job board menu, make the only way to do it going to talk to the cat in town
