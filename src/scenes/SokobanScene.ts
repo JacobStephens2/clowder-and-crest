@@ -626,17 +626,25 @@ export class SokobanScene extends Phaser.Scene {
         const py = OFFSET_Y + r * SOKOBAN_TILE + SOKOBAN_TILE / 2;
 
         if (this.level.grid[r][c] === WALL) {
-          // Wall: darker with a raised top effect
+          // Wall: stone block texture
           const wallBase = this.add.rectangle(px, py, SOKOBAN_TILE, SOKOBAN_TILE, WALL_COLOR);
           wallBase.setStrokeStyle(1, 0x111111, 0.5);
-          // Top highlight for depth
-          this.add.rectangle(px, py - 3, SOKOBAN_TILE - 2, SOKOBAN_TILE - 6, WALL_TOP_COLOR)
-            .setAlpha(0.6);
+          this.add.rectangle(px, py - 3, SOKOBAN_TILE - 2, SOKOBAN_TILE - 6, WALL_TOP_COLOR).setAlpha(0.6);
+          // Stone mortar lines
+          const wg = this.add.graphics();
+          wg.lineStyle(1, 0x1a1a1a, 0.2);
+          wg.lineBetween(px - SOKOBAN_TILE / 2, py, px + SOKOBAN_TILE / 2, py);
+          if ((r + c) % 2 === 0) wg.lineBetween(px, py - SOKOBAN_TILE / 2, px, py + SOKOBAN_TILE / 2);
         } else {
-          // Floor: checkerboard pattern
+          // Floor: wood plank texture
           const floorColor = (r + c) % 2 === 0 ? FLOOR_COLOR_A : FLOOR_COLOR_B;
           const tile = this.add.rectangle(px, py, SOKOBAN_TILE - 1, SOKOBAN_TILE - 1, floorColor);
           tile.setStrokeStyle(1, GRID_LINE_COLOR, 0.3);
+          // Plank lines
+          const fg = this.add.graphics();
+          fg.lineStyle(1, 0x1a1a18, 0.08);
+          fg.lineBetween(px - SOKOBAN_TILE / 2, py - 6, px + SOKOBAN_TILE / 2, py - 6);
+          fg.lineBetween(px - SOKOBAN_TILE / 2, py + 6, px + SOKOBAN_TILE / 2, py + 6);
           this.floorTiles.push(tile);
         }
       }
@@ -647,11 +655,20 @@ export class SokobanScene extends Phaser.Scene {
       const px = OFFSET_X + target.c * SOKOBAN_TILE + SOKOBAN_TILE / 2;
       const py = OFFSET_Y + target.r * SOKOBAN_TILE + SOKOBAN_TILE / 2;
 
-      // Diamond shape target marker
-      const marker = this.add.rectangle(px, py, SOKOBAN_TILE * 0.5, SOKOBAN_TILE * 0.5, TARGET_COLOR, 0.4);
-      marker.setAngle(45);
-      marker.setStrokeStyle(2, TARGET_COLOR, 0.7);
-      this.targetMarkers.push(marker);
+      // Target marker — fish sprite if available, else diamond
+      if (this.textures.exists('fish_sprite')) {
+        const fishTarget = this.add.sprite(px, py, 'fish_sprite');
+        fishTarget.setScale(0.5);
+        fishTarget.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        fishTarget.setAlpha(0.5);
+        fishTarget.setDepth(0);
+        this.targetMarkers.push(fishTarget as unknown as Phaser.GameObjects.Rectangle);
+      } else {
+        const marker = this.add.rectangle(px, py, SOKOBAN_TILE * 0.5, SOKOBAN_TILE * 0.5, TARGET_COLOR, 0.4);
+        marker.setAngle(45);
+        marker.setStrokeStyle(2, TARGET_COLOR, 0.7);
+        this.targetMarkers.push(marker);
+      }
     }
 
     // Draw crates
@@ -661,19 +678,27 @@ export class SokobanScene extends Phaser.Scene {
       const py = OFFSET_Y + crate.r * SOKOBAN_TILE + SOKOBAN_TILE / 2;
 
       const isOnTarget = this.level.targets.some(t => t.r === crate.r && t.c === crate.c);
-      const color = isOnTarget ? CRATE_ON_TARGET : CRATE_COLOR;
-      const rect = this.add.rectangle(px, py, SOKOBAN_TILE - 6, SOKOBAN_TILE - 6, color);
-      rect.setStrokeStyle(2, 0x000000, 0.4);
-      rect.setDepth(2);
 
-      // Cross detail on crate
-      const gfx = this.add.graphics();
-      gfx.lineStyle(2, 0x000000, 0.15);
-      gfx.lineBetween(px - 12, py - 12, px + 12, py + 12);
-      gfx.lineBetween(px + 12, py - 12, px - 12, py + 12);
-      gfx.setDepth(3);
-
-      this.crateSprites.push(rect);
+      // Use crate sprite if available
+      if (this.textures.exists('block_crate')) {
+        const crateSprite = this.add.sprite(px, py, 'block_crate');
+        crateSprite.setDisplaySize(SOKOBAN_TILE - 6, SOKOBAN_TILE - 6);
+        crateSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        crateSprite.setDepth(2);
+        if (isOnTarget) crateSprite.setTint(0x88cc88);
+        this.crateSprites.push(crateSprite as unknown as Phaser.GameObjects.Rectangle);
+      } else {
+        const color = isOnTarget ? CRATE_ON_TARGET : CRATE_COLOR;
+        const rect = this.add.rectangle(px, py, SOKOBAN_TILE - 6, SOKOBAN_TILE - 6, color);
+        rect.setStrokeStyle(2, 0x000000, 0.4);
+        rect.setDepth(2);
+        const gfx = this.add.graphics();
+        gfx.lineStyle(2, 0x000000, 0.15);
+        gfx.lineBetween(px - 12, py - 12, px + 12, py + 12);
+        gfx.lineBetween(px + 12, py - 12, px - 12, py + 12);
+        gfx.setDepth(3);
+        this.crateSprites.push(rect);
+      }
     }
 
     // Draw player cat
