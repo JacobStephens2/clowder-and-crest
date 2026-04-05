@@ -30,7 +30,7 @@ import { getJob, getStatMatchScore, generateDailyJobs, type JobDef } from './sys
 import { getPuzzleByDifficulty, generatePuzzle } from './systems/PuzzleGenerator';
 import { addBondPoints, processDailyBonds } from './systems/BondSystem';
 import { checkChapterAdvance, checkRatPlagueResolution, checkInquisitionResolution, getChapterName, getNextChapterHint } from './systems/ProgressionManager';
-import { startBgm, toggleMute, isMuted, switchToPuzzleMusic, switchToNormalMusic, pauseMusic, resumeMusic } from './systems/MusicManager';
+import { startBgm, toggleMute, isMuted, switchToPuzzleMusic, switchToFightMusic, switchToNormalMusic, pauseMusic, resumeMusic } from './systems/MusicManager';
 import { playSfx, toggleSfxMute, isSfxMuted } from './systems/SfxManager';
 import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDayEnd, pauseDayTimer, resumeDayTimer, isPaused } from './systems/DayTimer';
 import { applyReputationShift, getReputationLabel, getReputationRecruitModifier, getReputationBonuses } from './systems/ReputationSystem';
@@ -1283,7 +1283,7 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
   const startMinigame = (gameType: string) => {
     overlay.remove();
     overlayLayer.querySelectorAll('.town-overlay, .assign-overlay').forEach((el) => el.remove());
-    switchToPuzzleMusic();
+    if (gameType === 'brawl') { switchToFightMusic(); } else { switchToPuzzleMusic(); }
     pauseDayTimer();
 
     switch (gameType) {

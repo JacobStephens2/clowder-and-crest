@@ -14,12 +14,18 @@ const PUZZLE_TRACKS = [
   'assets/audio/puzzle_2.mp3',
 ];
 
+const FIGHT_TRACKS = [
+  'assets/audio/fight_1.mp3',
+  'assets/audio/fight_2.mp3',
+];
+
 let bgmAudio: HTMLAudioElement | null = null;
 let bgmMuted = localStorage.getItem('clowder_bgm_muted') === '1';
 let bgmTrackIndex = -1;
-let currentMode: 'normal' | 'puzzle' = 'normal';
+let currentMode: 'normal' | 'puzzle' | 'fight' = 'normal';
 
 function getTrackList(): string[] {
+  if (currentMode === 'fight') return FIGHT_TRACKS;
   return currentMode === 'puzzle' ? PUZZLE_TRACKS : BGM_TRACKS;
 }
 
@@ -59,6 +65,13 @@ export function startBgm(): void {
 export function switchToPuzzleMusic(): void {
   if (currentMode === 'puzzle') return;
   currentMode = 'puzzle';
+  bgmTrackIndex = -1;
+  playTrack(pickNextTrack());
+}
+
+export function switchToFightMusic(): void {
+  if (currentMode === 'fight') return;
+  currentMode = 'fight';
   bgmTrackIndex = -1;
   playTrack(pickNextTrack());
 }
