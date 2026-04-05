@@ -222,12 +222,28 @@ export class BrawlScene extends Phaser.Scene {
     // Pause button (top-right)
 
     // Tap to attack
+    // Attack button bounds for manual hit-testing (multi-touch compatible)
+    const atkBtnX = GAME_WIDTH - 55;
+    const atkBtnSize = 60;
+
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       const wx = pointer.x / DPR;
       const wy = pointer.y / DPR;
-      // Only attack taps inside arena
+
+      // Check attack button first (manual hit test for multi-touch)
+      if (Math.abs(wx - atkBtnX) < atkBtnSize / 2 && Math.abs(wy - joyY) < atkBtnSize / 2) {
+        this.attack();
+        return;
+      }
+
+      // Check joystick area
+      if (Math.sqrt((wx - joyX) ** 2 + (wy - joyY) ** 2) < joyRadius * 1.5) {
+        joyPointerId = pointer.id;
+        return;
+      }
+
+      // Arena taps — face toward tap and attack
       if (wx >= ARENA_LEFT && wx <= ARENA_RIGHT && wy >= ARENA_TOP && wy <= ARENA_BOTTOM) {
-        // Face toward tap point
         this.catFacing = Math.atan2(wy - this.catY, wx - this.catX);
         this.attack();
       }
@@ -243,12 +259,7 @@ export class BrawlScene extends Phaser.Scene {
     joyBase.setInteractive({ draggable: false, useHandCursor: true });
 
     // Joystick input via pointer tracking (tracks specific pointer for multi-touch)
-    const joyZone = this.add.zone(joyX, joyY, joyRadius * 3, joyRadius * 3);
-    joyZone.setInteractive({ useHandCursor: true });
     let joyPointerId = -1;
-    joyZone.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      joyPointerId = pointer.id;
-    });
     this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
       if (pointer.id === joyPointerId) {
         joyPointerId = -1;
@@ -274,12 +285,9 @@ export class BrawlScene extends Phaser.Scene {
       }
     });
 
-    // Attack button
-    const atkBtn = this.add.rectangle(GAME_WIDTH - 55, joyY, 60, 60, 0x5a2a20, 0.8);
-    atkBtn.setStrokeStyle(2, 0xcc6666);
-    atkBtn.setInteractive({ useHandCursor: true });
+    // Attack button (visual only — hit detection is in the global pointerdown handler)
+    this.add.rectangle(GAME_WIDTH - 55, joyY, 60, 60, 0x5a2a20, 0.8).setStrokeStyle(2, 0xcc6666);
     this.add.text(GAME_WIDTH - 55, joyY, '\u2694\uFE0F', { fontSize: '24px' }).setOrigin(0.5);
-    atkBtn.on('pointerdown', () => this.attack());
 
     // Quit button
     const quitBtn = this.add.rectangle(45, joyY, 60, 34, 0x2a2520);
