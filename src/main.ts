@@ -12,6 +12,7 @@ import { FishingScene } from './scenes/FishingScene';
 import { HuntScene } from './scenes/HuntScene';
 import { NonogramScene } from './scenes/NonogramScene';
 import { BrawlScene } from './scenes/BrawlScene';
+import { StealthScene } from './scenes/StealthScene';
 import { TownMapScene } from './scenes/TownMapScene';
 import { eventBus } from './utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS, BREED_NAMES, STAT_NAMES, ALL_BREED_IDS, SCENES } from './utils/constants';
@@ -73,7 +74,7 @@ const config: Phaser.Types.Core.GameConfig = {
   input: {
     activePointers: 2,
   },
-  scene: [BootScene, TitleScene, GuildhallScene, TownScene, TownMapScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene, HuntScene, NonogramScene, BrawlScene],
+  scene: [BootScene, TitleScene, GuildhallScene, TownScene, TownMapScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene, HuntScene, NonogramScene, BrawlScene, StealthScene],
 };
 
 const game = new Phaser.Game(config);
@@ -1253,13 +1254,13 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
             opts.push('<button class="btn-puzzle minigame-btn" data-game="fishing" style="flex:1;min-width:140px">\u{1F3A3} Vigil</button>');
             break;
           case 'detection':
-            // Pursuit: follow the suspect | Analysis: piece together the clues
+            // Pursuit: follow the suspect | Stealth: sneak and observe
             opts.push('<button class="btn-puzzle minigame-btn" data-game="chase" style="flex:1;min-width:140px">\u{1F400} Follow</button>');
-            opts.push('<button class="btn-puzzle minigame-btn" data-game="nonogram" style="flex:1;min-width:140px">\u{1F4DC} Decipher</button>');
+            opts.push('<button class="btn-puzzle minigame-btn" data-game="stealth" style="flex:1;min-width:140px">\u{1F43E} Stalk</button>');
             break;
           case 'shadow':
             // Stealth: sneak through undetected | Cracking: bypass security
-            opts.push('<button class="btn-puzzle minigame-btn" data-game="chase" style="flex:1;min-width:140px">\u{1F400} Sneak</button>');
+            opts.push('<button class="btn-puzzle minigame-btn" data-game="stealth" style="flex:1;min-width:140px">\u{1F43E} Sneak</button>');
             opts.push('<button class="btn-puzzle minigame-btn" data-game="nonogram" style="flex:1;min-width:140px">\u{1F4DC} Crack Code</button>');
             break;
         }
@@ -1305,6 +1306,9 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
         break;
       case 'nonogram':
         switchScene('NonogramScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
+        break;
+      case 'stealth':
+        switchScene('StealthScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id, catBreed: cat.breed });
         break;
       case 'brawl':
         switchScene('BrawlScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id, catBreed: cat.breed });

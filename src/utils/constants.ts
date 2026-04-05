@@ -65,4 +65,5 @@ export const SCENES = {
   HUNT: 'HuntScene',
   NONOGRAM: 'NonogramScene',
   BRAWL: 'BrawlScene',
+  STEALTH: 'StealthScene',
 } as const;
