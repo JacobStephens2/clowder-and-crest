@@ -156,16 +156,21 @@ export class BrawlScene extends Phaser.Scene {
       const or = 14;
       this.obstacles.push({ x: ox, y: oy, r: or });
 
-      // Draw barrel
-      const obsGfx = this.add.graphics();
-      obsGfx.fillStyle(0x4a3a28);
-      obsGfx.fillCircle(ox, oy, or);
-      obsGfx.lineStyle(1, 0x3a2a18);
-      obsGfx.strokeCircle(ox, oy, or);
-      // Barrel bands
-      obsGfx.lineStyle(1, 0x5a4a38, 0.5);
-      obsGfx.strokeCircle(ox, oy, or - 3);
-      obsGfx.strokeCircle(ox, oy, or - 7);
+      // Draw barrel — sprite if available, else procedural
+      if (this.textures.exists('barrel_sprite')) {
+        const barrelSprite = this.add.sprite(ox, oy, 'barrel_sprite');
+        barrelSprite.setScale(0.9);
+        barrelSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      } else {
+        const obsGfx = this.add.graphics();
+        obsGfx.fillStyle(0x4a3a28);
+        obsGfx.fillCircle(ox, oy, or);
+        obsGfx.lineStyle(1, 0x3a2a18);
+        obsGfx.strokeCircle(ox, oy, or);
+        obsGfx.lineStyle(1, 0x5a4a38, 0.5);
+        obsGfx.strokeCircle(ox, oy, or - 3);
+        obsGfx.strokeCircle(ox, oy, or - 7);
+      }
     }
 
     // Attack slash graphics (drawn on top)

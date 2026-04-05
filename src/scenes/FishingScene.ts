@@ -238,6 +238,12 @@ export class FishingScene extends Phaser.Scene {
     if (senses >= 5) bonuses.push(`Senses: wider zone`);
     const bonusText = bonuses.length > 0 ? ` (${bonuses.join(', ')})` : '';
 
+    // Fish sprite + name
+    if (this.textures.exists('fish_sprite')) {
+      const fishImg = this.add.sprite(GAME_WIDTH / 2 - 60, 48, 'fish_sprite');
+      fishImg.setScale(0.6);
+      fishImg.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+    }
     this.add.text(GAME_WIDTH / 2, 48, `Catch: ${fishName}${bonusText}`, {
       fontFamily: 'Georgia, serif', fontSize: '10px', color: '#6b5b3e',
     }).setOrigin(0.5);
