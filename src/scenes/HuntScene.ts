@@ -191,12 +191,19 @@ export class HuntScene extends Phaser.Scene {
     const hole = HOLES[holeIndex];
     this.totalSpawned++;
 
+    // 15% chance of golden bonus rat (worth +2), 10% chance of poison rat (costs a miss if caught)
+    const roll = Math.random();
+    const isGolden = roll < 0.15;
+    const isPoison = !isGolden && roll < 0.25;
+
     // Draw rat (sprite if available, otherwise graphics fallback)
     let gfx: Phaser.GameObjects.Graphics | Phaser.GameObjects.Sprite;
     if (this.textures.exists('rat')) {
       const ratSprite = this.add.sprite(hole.x, hole.y - 10, 'rat');
       ratSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
-      ratSprite.setScale(1.0);
+      ratSprite.setScale(isGolden ? 1.2 : 1.0);
+      if (isGolden) ratSprite.setTint(0xffd700);
+      if (isPoison) ratSprite.setTint(0x66aa66);
       gfx = ratSprite;
     } else {
       const ratGfx = this.add.graphics();
@@ -220,19 +227,36 @@ export class HuntScene extends Phaser.Scene {
     hitZone.on('pointerdown', () => {
       if (rat.caught || this.finished) return;
       rat.caught = true;
-      this.score++;
-      this.scoreText.setText(`Caught: ${this.score}`);
-      // Throttle catch sound to avoid annoying repetition
-      const now = Date.now();
-      if (now - this.lastCatchSfx > 500) {
-        playSfx('rat_caught', 0.4);
-        this.lastCatchSfx = now;
+
+      if (isPoison) {
+        // Poison rat — costs a miss!
+        this.missed++;
+        this.missText.setText(`Missed: ${this.missed}/${this.maxMisses}`);
+        playSfx('fail', 0.4);
+        this.cameras.main.flash(100, 50, 80, 50);
+        const warn = this.add.text(hole.x, hole.y - 30, 'Poison!', {
+          fontFamily: 'Georgia, serif', fontSize: '12px', color: '#66aa66',
+        }).setOrigin(0.5);
+        this.tweens.add({ targets: warn, y: hole.y - 50, alpha: 0, duration: 600, onComplete: () => warn.destroy() });
+        if (this.missed >= this.maxMisses) { gfx.destroy(); hitZone.destroy(); this.activeRats = this.activeRats.filter((r) => r !== rat); rat.timer.destroy(); this.failGame(); return; }
+      } else {
+        const points = isGolden ? 2 : 1;
+        this.score += points;
+        this.scoreText.setText(`Caught: ${this.score}`);
+        // Throttle catch sound
+        const now = Date.now();
+        if (now - this.lastCatchSfx > 500) {
+          playSfx(isGolden ? 'sparkle' : 'rat_caught', 0.4);
+          this.lastCatchSfx = now;
+        }
       }
 
       // Pop effect
       gfx.destroy();
-      const sparkle = this.add.text(hole.x, hole.y - 20, '+1', {
-        fontFamily: 'Georgia, serif', fontSize: '16px', color: '#4a8a4a',
+      const pointLabel = isGolden ? '+2!' : '+1';
+      const pointColor = isGolden ? '#ffd700' : '#4a8a4a';
+      const sparkle = this.add.text(hole.x, hole.y - 20, pointLabel, {
+        fontFamily: 'Georgia, serif', fontSize: isGolden ? '20px' : '16px', color: pointColor,
       }).setOrigin(0.5);
       this.tweens.add({
         targets: sparkle, y: hole.y - 50, alpha: 0, duration: 600,

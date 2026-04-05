@@ -265,6 +265,41 @@ export class ChaseScene extends Phaser.Scene {
     }
     this.totalDots = this.dots.length;
 
+    // Speed boost power-ups (2-3 green dots that give temporary speed)
+    const boostCount = this.difficulty === 'hard' ? 2 : 3;
+    const usedDotPositions = new Set(dotPositions.map((d) => `${d.r},${d.c}`));
+    let boostsPlaced = 0;
+    for (let r = 1; r < ROWS - 1 && boostsPlaced < boostCount; r++) {
+      for (let c = 1; c < COLS - 1 && boostsPlaced < boostCount; c++) {
+        if (this.grid[r][c] === FLOOR && !usedDotPositions.has(`${r},${c}`) && Math.random() < 0.08) {
+          const { x, y } = this.cellToWorld(r, c);
+          const boost = this.add.circle(x, y, 5, 0x44cc44, 0.8);
+          this.tweens.add({ targets: boost, scaleX: 1.3, scaleY: 1.3, duration: 500, yoyo: true, repeat: -1 });
+          // Store position for collision check
+          const br = r, bc = c;
+          this.time.addEvent({
+            delay: 200, loop: true,
+            callback: () => {
+              if (!boost.active || this.caught) return;
+              if (this.catPos.r === br && this.catPos.c === bc) {
+                boost.destroy();
+                // Bonus time from speed pickup
+                this.timeLeft += 3;
+                this.timerText.setText(`Time: ${this.timeLeft}s`);
+                this.timerText.setColor('#44cc44');
+                this.time.delayedCall(500, () => this.timerText.setColor('#c4956a'));
+                const bonusText = this.add.text(this.cellToWorld(br, bc).x, this.cellToWorld(br, bc).y - 10, '+3s', {
+                  fontFamily: 'Georgia, serif', fontSize: '12px', color: '#44cc44',
+                }).setOrigin(0.5);
+                this.tweens.add({ targets: bonusText, y: bonusText.y - 20, alpha: 0, duration: 600, onComplete: () => bonusText.destroy() });
+              }
+            },
+          });
+          boostsPlaced++;
+        }
+      }
+    }
+
     // Draw rat
     const ratWorld = this.cellToWorld(this.ratPos.r, this.ratPos.c);
     if (this.textures.exists('rat')) {

@@ -98,6 +98,7 @@ export class FishingScene extends Phaser.Scene {
   // Water ripple
   private waterRippleTimer = 0;
   private fishName = 'Fish';
+  private isRareCatch = false;
   private ripples: Phaser.GameObjects.Arc[] = [];
 
   constructor() {
@@ -225,8 +226,11 @@ export class FishingScene extends Phaser.Scene {
       hard: ['Pike', 'Salmon', 'Eel', 'Sturgeon'],
     };
     const fishList = fishTypes[this.difficulty] ?? fishTypes.easy;
-    const fishName = fishList[Math.floor(Math.random() * fishList.length)];
+    // 10% chance of a rare golden fish worth double
+    const isRareFish = Math.random() < 0.1;
+    const fishName = isRareFish ? 'Golden ' + fishList[Math.floor(Math.random() * fishList.length)] : fishList[Math.floor(Math.random() * fishList.length)];
     this.fishName = fishName;
+    if (isRareFish) this.isRareCatch = true;
 
     // Stat bonuses display
     const gameSave = getGameState();
@@ -483,10 +487,15 @@ export class FishingScene extends Phaser.Scene {
     }
 
     // Show success text
-    playSfx('splash');
+    playSfx(this.isRareCatch ? 'sparkle' : 'splash');
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20, `${this.fishName} Caught!`, {
-      fontFamily: 'Georgia, serif', fontSize: '28px', color: '#c4956a',
+      fontFamily: 'Georgia, serif', fontSize: '28px', color: this.isRareCatch ? '#ffd700' : '#c4956a',
     }).setOrigin(0.5);
+    if (this.isRareCatch) {
+      this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 40, 'Rare catch! Double value!', {
+        fontFamily: 'Georgia, serif', fontSize: '13px', color: '#ffd700',
+      }).setOrigin(0.5);
+    }
 
     const starLabel = stars === 3 ? '★★★' : stars === 2 ? '★★' : '★';
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 15, starLabel, {
@@ -501,6 +510,7 @@ export class FishingScene extends Phaser.Scene {
         stars,
         jobId: this.jobId,
         catId: this.catId,
+        bonusFish: this.isRareCatch ? 5 : 0,
       });
     });
   }
