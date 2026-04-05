@@ -12,6 +12,7 @@ import { FishingScene } from './scenes/FishingScene';
 import { HuntScene } from './scenes/HuntScene';
 import { NonogramScene } from './scenes/NonogramScene';
 import { BrawlScene } from './scenes/BrawlScene';
+import { TownMapScene } from './scenes/TownMapScene';
 import { eventBus } from './utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS, BREED_NAMES, STAT_NAMES, ALL_BREED_IDS } from './utils/constants';
 import {
@@ -69,7 +70,7 @@ const config: Phaser.Types.Core.GameConfig = {
     pixelArt: false,
     antialias: true,
   },
-  scene: [BootScene, TitleScene, GuildhallScene, TownScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene, HuntScene, NonogramScene, BrawlScene],
+  scene: [BootScene, TitleScene, GuildhallScene, TownScene, TownMapScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene, HuntScene, NonogramScene, BrawlScene],
 };
 
 const game = new Phaser.Game(config);
@@ -232,7 +233,7 @@ function setActiveTab(scene: string): void {
 }
 
 function switchScene(target: string, data?: object): void {
-  const sceneKeys = ['GuildhallScene', 'TownScene', 'PuzzleScene', 'SokobanScene', 'ChaseScene', 'FishingScene', 'HuntScene', 'NonogramScene', 'BrawlScene', 'TitleScene', 'RoomScene'];
+  const sceneKeys = ['GuildhallScene', 'TownScene', 'TownMapScene', 'PuzzleScene', 'SokobanScene', 'ChaseScene', 'FishingScene', 'HuntScene', 'NonogramScene', 'BrawlScene', 'TitleScene', 'RoomScene'];
   for (const key of sceneKeys) {
     if (game.scene.isActive(key) || game.scene.isPaused(key)) {
       game.scene.stop(key);
@@ -358,7 +359,7 @@ bottomBar.addEventListener('click', (e) => {
       switchScene('GuildhallScene');
       break;
     case 'town':
-      switchScene('TownScene');
+      switchScene('TownMapScene');
       break;
     case 'cats':
       showCatPanel();
@@ -760,7 +761,7 @@ function showRecruitNamePrompt(breedId: string, breedName: string): void {
     showToast(`${name} the ${breedName} joined the guild!`);
     checkChapterAdvance(gameState!);
     saveGame(gameState!);
-    switchScene('TownScene');
+    switchScene('TownMapScene');
   };
 
   submit.addEventListener('click', doSubmit);
@@ -1310,7 +1311,7 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
     gameState!.stationedCats.push({ catId: cat.id, jobId: job.id, dayStarted: gameState!.day });
     saveGame(gameState!);
     showToast(`${cat.name} stationed at ${job.name}`);
-    switchScene('TownScene');
+    switchScene('TownMapScene');
   });
 }
 

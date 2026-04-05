@@ -62,7 +62,7 @@ export function checkAndShowConversation(): void {
     }
   }
 
-  deps.switchScene('TownScene');
+  deps.switchScene('TownMapScene');
   setTimeout(() => deps.suggestEndDay(), 500);
 }
 
@@ -71,7 +71,7 @@ function showGroupConversation(key: string): void {
   if (!gameState) return;
   const convos = conversationsData as Record<string, Array<{ rank: string; title: string; lines: Array<{ speaker: string; text: string }> }>>;
   const convoSet = convos[key];
-  if (!convoSet || convoSet.length === 0) { deps.switchScene('TownScene'); return; }
+  if (!convoSet || convoSet.length === 0) { deps.switchScene('TownMapScene'); return; }
   const convo = convoSet[0];
 
   let lineIndex = 0;
@@ -106,7 +106,7 @@ function showGroupConversation(key: string): void {
     if (lineIndex >= convo.lines.length) {
       overlay.remove();
       deps.showToast('A guild moment to remember.');
-      deps.switchScene('TownScene');
+      deps.switchScene('TownMapScene');
       return;
     }
     const line = convo.lines[lineIndex];
@@ -126,7 +126,7 @@ function showGroupConversation(key: string): void {
   document.getElementById('conv-skip')!.addEventListener('click', (e) => {
     e.stopPropagation();
     overlay.remove();
-    deps.switchScene('TownScene');
+    deps.switchScene('TownMapScene');
   });
 }
 
@@ -202,7 +202,7 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
         deps.showToast(`${nameA} & ${nameB} have reached their deepest bond.`);
       }
 
-      deps.switchScene('TownScene');
+      deps.switchScene('TownMapScene');
       return;
     }
 
@@ -232,6 +232,6 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
     markConversationViewed(gameState!, breedA, breedB, rank);
     deps.saveGame(gameState!);
     deps.showToast(`Bond deepened: ${nameA} & ${nameB}`);
-    deps.switchScene('TownScene');
+    deps.switchScene('TownMapScene');
   });
 }
