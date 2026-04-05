@@ -7,8 +7,8 @@ A cozy medieval cat guild management game. Recruit cats, take jobs, solve puzzle
 ## Features
 
 - **6 cat breeds** with pixel art sprites, walk animations, and sleeping poses (Wildcat, Russian Blue, Tuxedo, Maine Coon, Siamese, Bengal)
-- **5 minigame types** — player chooses per job: Rush Hour sliding blocks, Sokoban crate pushing, rat chase maze, fishing, and rat hunting
-- **30 jobs** across 6 categories: Pest Control, Courier, Guard, Sacred, Detection, Shadow
+- **7 minigame types** — 2 choices per job category: Rush Hour, Sokoban, rat chase, fishing, rat hunting, brawl combat, and nonogram puzzles
+- **35 jobs** across 6 categories: Pest Control, Courier, Guard, Sacred, Detection, Shadow
 - **7 chapters** of narrative content — from stray to established guild, rival guild conflict, and Church Inquisition
 - **Guildhall with 3 rooms** — 15 furniture items with pixel art sprites, drag to rearrange, move between rooms
 - **Bond system** with 48 conversation scripts (45 pair + 3 group) across all 15 cat pairings, with narrative cliffhangers
@@ -17,7 +17,8 @@ A cozy medieval cat guild management game. Recruit cats, take jobs, solve puzzle
 - **Festival system** — 7 rotating themed bonus events every 7 days
 - **Station crisis events** requiring player intervention
 - **Job combo chains** for consecutive same-category work (+25% at 5-day streak)
-- **Daily cat wishes** with furniture requirements (need the right furniture to fulfill)
+- **Explorable town map** — walk your cat through streets, enter buildings, find stray cats to recruit
+- **Daily cat wishes** with furniture and room requirements
 - **Cat specialization** at level 5 — permanent +20% bonus to one job category
 - **Guild journal** — scrollable log of chapters, recruits, level-ups, bonds, and events
 - **Achievements** — 14 milestones tracking progress
@@ -29,9 +30,14 @@ A cozy medieval cat guild management game. Recruit cats, take jobs, solve puzzle
 - **Chapter 6: The Rival** — Silver Paws rival guild contests jobs, poaches cats, resolved through sustained competition
 - **Chapter 7: The Inquisition** — 5-day investigation by Bishop's Inquisitor, job choices determine verdict (Vindicated/Acquitted/Condemned)
 - **Introductory story sequence** with rain ambience, music, and narrative panels
-- **Cat stats affect minigames** — Hunting adds time in rat chase and hunt
-- **Guard dog** in chase minigame — patrols the maze, costs time if caught
+- **Cat stats affect all minigames** — Hunting (HP in brawl), Endurance (speed), Stealth (cooldown), Senses (range)
+- **Brawl minigame** — Zelda-style combat with waves, Rat King boss, powerups (Fish Bone, Catnip, Yarn Ball), virtual joystick with multi-touch
+- **Guard dog** in chase minigame — patrols the maze, instant game-over if caught
+- **Golden/poison rats** in hunt, **speed boosts** in chase, **rare golden fish** in fishing
 - **Breed-specific vocalizations** — pitch-shifted sounds for all 6 breeds
+- **Furniture stat boosts** — interact with furniture to gain +1 to a stat daily
+- **Starvation game over** — narrative ending if the guild collapses
+- **Fight music** — dedicated combat tracks for the brawl minigame
 - **Heraldic crest logo** on title screen, favicon, and guildhall
 - **12 music tracks** + 15 ElevenLabs sound effects + rain ambience
 - **Procedural puzzle generation** with BFS validation
