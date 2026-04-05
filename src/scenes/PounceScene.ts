@@ -162,6 +162,11 @@ export class PounceScene extends Phaser.Scene {
     this.events.once('shutdown', () => {
       this.time.removeAllEvents();
       this.tweens.killAll();
+      // Clean up Matter.js physics bodies
+      const bodies = this.matter.world.getAllBodies();
+      for (const body of bodies) {
+        this.matter.world.remove(body);
+      }
     });
 
     eventBus.emit('show-ui');

@@ -699,6 +699,10 @@ function showTutorial(): void {
 // Game loaded
 eventBus.on('game-loaded', (save: SaveData) => {
   gameState = save;
+  acceptedJob = null; // Clear any stale accepted job from a previous save
+  catsWorkedToday.clear();
+  jobsCompletedToday.clear();
+  cachedDailyJobs = null;
   updateStatusBar();
   startBgm();
   startDayTimer();
@@ -1521,6 +1525,7 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
   catsWorkedToday.clear();
   jobsCompletedToday.clear();
   cachedDailyJobs = null;
+  acceptedJob = null; // Clear stale accepted job when day changes
 
   // Daily upkeep scales with chapter and cat levels
   const unlockedRooms = gameState.rooms.filter((r) => r.unlocked).length;
@@ -1582,8 +1587,7 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
       ],
       image: 'assets/sprites/scenes/town.png',
       onComplete: () => {
-        // Return to title — game over
-        gameState = null;
+        // Return to title — game over (don't null gameState to avoid race with pending callbacks)
         stopDayTimer();
         switchScene('TitleScene');
       },
