@@ -71,6 +71,8 @@ export class BrawlScene extends Phaser.Scene {
   private gamePaused = false;
   private pauseOverlay: HTMLDivElement | null = null;
   private obstacles: { x: number; y: number; r: number }[] = [];
+  private powerup: { x: number; y: number; type: string; gfx: Phaser.GameObjects.Text } | null = null;
+  private powerupTimer = 0;
 
   constructor() {
     super({ key: 'BrawlScene' });
@@ -325,6 +327,9 @@ export class BrawlScene extends Phaser.Scene {
 
     this.catSprite.setPosition(this.catX, this.catY);
 
+    // Check powerup pickup
+    this.checkPowerupPickup();
+
     // Invincibility timer
     if (this.invincibleTimer > 0) {
       this.invincibleTimer -= dt;
@@ -524,6 +529,8 @@ export class BrawlScene extends Phaser.Scene {
           fontFamily: 'Georgia, serif', fontSize: '22px', color: '#4a8a4a',
         }).setOrigin(0.5).setAlpha(0);
         this.tweens.add({ targets: cleared, alpha: 1, duration: 300, yoyo: true, hold: 700, onComplete: () => cleared.destroy() });
+        // Spawn a powerup between waves
+        this.spawnPowerup();
         this.time.delayedCall(1500, () => {
           if (!this.finished) this.spawnWave();
         });
@@ -616,6 +623,59 @@ export class BrawlScene extends Phaser.Scene {
 
     // Label
     this.hpBar.fillStyle(0xc4956a);
+  }
+
+  private spawnPowerup(): void {
+    // Remove old powerup
+    this.powerup?.gfx.destroy();
+    this.powerup = null;
+
+    const types = [
+      { type: 'fishbone', icon: '\uD83D\uDC1F', label: 'Fish Bone — bigger swipe!' },
+      { type: 'catnip', icon: '\uD83C\uDF3F', label: 'Catnip — speed boost!' },
+      { type: 'yarn', icon: '\uD83E\uDDF6', label: 'Yarn Ball — stun all rats!' },
+    ];
+    const pick = types[Math.floor(Math.random() * types.length)];
+
+    const px = ARENA_LEFT + 40 + Math.random() * (ARENA_W - 80);
+    const py = ARENA_TOP + 40 + Math.random() * (ARENA_H - 80);
+
+    const gfx = this.add.text(px, py, pick.icon, { fontSize: '24px' }).setOrigin(0.5);
+    this.tweens.add({ targets: gfx, y: py - 4, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
+    this.powerup = { x: px, y: py, type: pick.type, gfx };
+  }
+
+  private checkPowerupPickup(): void {
+    if (!this.powerup) return;
+    const dx = this.catX - this.powerup.x;
+    const dy = this.catY - this.powerup.y;
+    if (Math.sqrt(dx * dx + dy * dy) > CAT_SIZE + 12) return;
+
+    const type = this.powerup.type;
+    this.powerup.gfx.destroy();
+    this.powerup = null;
+    playSfx('sparkle', 0.5);
+
+    const label = this.add.text(GAME_WIDTH / 2, ARENA_TOP + 20,
+      type === 'fishbone' ? 'Fish Bone! Bigger swipe!' : type === 'catnip' ? 'Catnip! Speed boost!' : 'Yarn Ball! Rats stunned!',
+      { fontFamily: 'Georgia, serif', fontSize: '13px', color: '#dda055' }
+    ).setOrigin(0.5);
+    this.time.delayedCall(1500, () => label.destroy());
+
+    if (type === 'fishbone') {
+      const origRange = this.attackRange;
+      this.attackRange *= 1.5;
+      this.time.delayedCall(8000, () => { this.attackRange = origRange; });
+    } else if (type === 'catnip') {
+      const origSpeed = this.catSpeed;
+      this.catSpeed *= 1.6;
+      this.time.delayedCall(6000, () => { this.catSpeed = origSpeed; });
+    } else if (type === 'yarn') {
+      for (const rat of this.rats) {
+        rat.stunTimer = 3.0;
+      }
+    }
   }
 
   private gameOver(won: boolean): void {

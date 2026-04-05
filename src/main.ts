@@ -1482,6 +1482,11 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
     }
   }
 
+  // Check plague resolution immediately after pest control jobs
+  if (job.category === 'pest_control') {
+    checkRatPlagueResolution(gameState);
+  }
+
   saveGame(gameState);
 
   showResultOverlay({
