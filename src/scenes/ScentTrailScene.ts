@@ -79,8 +79,18 @@ export class ScentTrailScene extends Phaser.Scene {
     this.drawGrid();
     this.spawnCat();
 
-    // Reveal starting tile
+    // Reveal starting tile and adjacent tiles
     this.revealTile(this.catPos.r, this.catPos.c);
+    this.revealTile(this.catPos.r - 1, this.catPos.c);
+    this.revealTile(this.catPos.r, this.catPos.c + 1);
+    this.revealTile(this.catPos.r, this.catPos.c - 1);
+
+    // General direction hint
+    const dirHint = this.targetC > this.catPos.c ? 'east' : this.targetC < this.catPos.c ? 'west' : '';
+    const vertHint = this.targetR < this.catPos.r ? 'north' : 'south';
+    this.add.text(GAME_WIDTH / 2, 75, `The scent drifts ${vertHint}${dirHint ? '-' + dirHint : ''}...`, {
+      fontFamily: 'Georgia, serif', fontSize: '10px', color: '#6b5b3e', fontStyle: 'italic',
+    }).setOrigin(0.5);
 
     // Controls
     if (this.input.keyboard) {
@@ -166,9 +176,15 @@ export class ScentTrailScene extends Phaser.Scene {
           row.push(null as any);
           textRow.push(null as any);
         } else {
-          // Fog tile
-          const tile = this.add.rectangle(x, y, TILE - 1, TILE - 1, 0x1a1a2a);
+          // Fog tile with subtle variation
+          const fogShade = 0x1a1a2a + ((r * 3 + c * 7) % 8) * 0x010101;
+          const tile = this.add.rectangle(x, y, TILE - 1, TILE - 1, fogShade);
           tile.setStrokeStyle(1, 0x2a2a3a, 0.3);
+          // Fog particle hint
+          if (Math.random() < 0.15) {
+            const mist = this.add.ellipse(x + Math.random() * 10 - 5, y, 12, 4, 0x3a3a4a, 0.15);
+            this.tweens.add({ targets: mist, alpha: 0.05, duration: 2000, yoyo: true, repeat: -1 });
+          }
           row.push(tile);
 
           const scentText = this.add.text(x, y, '', {

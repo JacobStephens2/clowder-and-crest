@@ -71,6 +71,10 @@ export class RitualScene extends Phaser.Scene {
       fontFamily: 'Georgia, serif', fontSize: '13px', color: '#8b7355',
     }).setOrigin(0.5);
 
+    // Progress bar
+    this.add.rectangle(GAME_WIDTH / 2, 72, 200, 6, 0x2a2520).setStrokeStyle(1, 0x3a3530).setName('progressBg');
+    this.add.rectangle(GAME_WIDTH / 2 - 100, 72, 0, 6, 0x4a8a4a).setOrigin(0, 0.5).setName('progressFill');
+
     this.livesText = this.add.text(20, 55, `Lives: ${this.lives}`, {
       fontFamily: 'Georgia, serif', fontSize: '12px', color: '#cc6666',
     });
@@ -141,6 +145,8 @@ export class RitualScene extends Phaser.Scene {
     }
     this.round++;
     this.roundText.setText(`Round: ${this.round}/${this.targetRounds}`);
+    const fill = this.children.getByName('progressFill') as Phaser.GameObjects.Rectangle;
+    if (fill) fill.width = 200 * (this.round / this.targetRounds);
     this.playerInput = [];
     this.phase = 'showing';
 
@@ -166,13 +172,15 @@ export class RitualScene extends Phaser.Scene {
     const idx = this.sequence[this.showIdx];
     const candle = this.candles[idx];
 
-    // Flash the candle
-    candle.glow.setAlpha(0.8);
+    // Flash the candle — longer highlight for easier memorization
+    candle.glow.setAlpha(0.9);
+    candle.glow.setScale(1.3);
     playSfx('tap', 0.3);
-    this.time.delayedCall(500, () => {
+    this.time.delayedCall(700, () => {
       candle.glow.setAlpha(0.15);
+      candle.glow.setScale(1);
       this.showIdx++;
-      this.time.delayedCall(300, () => this.showNextInSequence());
+      this.time.delayedCall(400, () => this.showNextInSequence());
     });
   }
 

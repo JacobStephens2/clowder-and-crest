@@ -23,6 +23,8 @@ export class HeistScene extends Phaser.Scene {
   private finished = false;
   private tutorialShowing = false;
   private timerText!: Phaser.GameObjects.Text;
+  private movesText!: Phaser.GameObjects.Text;
+  private moveCount = 0;
   private ringGfx!: Phaser.GameObjects.Graphics;
 
   constructor() { super({ key: 'HeistScene' }); }
@@ -92,6 +94,10 @@ export class HeistScene extends Phaser.Scene {
       eventBus.emit('navigate', 'TownMapScene');
     });
 
+    this.movesText = this.add.text(20, 55, 'Moves: 0', {
+      fontFamily: 'Georgia, serif', fontSize: '12px', color: '#8b7355',
+    });
+
     // Alignment indicator at top
     this.add.text(GAME_WIDTH / 2, 85, '\u25BC', {
       fontSize: '18px', color: '#dda055',
@@ -113,8 +119,14 @@ export class HeistScene extends Phaser.Scene {
       // Find which ring was tapped (outermost first)
       for (let i = this.rings.length - 1; i >= 0; i--) {
         const r = this.rings[i];
-        if (Math.abs(dist - r.radius) < 18) {
+        if (Math.abs(dist - r.radius) < 20) {
           this.rotateRing(i, 1);
+          // Flash the tapped ring
+          this.ringGfx.lineStyle(10, 0xdda055, 0.4);
+          this.ringGfx.beginPath();
+          this.ringGfx.arc(cx, cy, r.radius, 0, Math.PI * 2);
+          this.ringGfx.strokePath();
+          this.time.delayedCall(100, () => this.drawRings());
           break;
         }
       }
@@ -143,6 +155,8 @@ export class HeistScene extends Phaser.Scene {
   private rotateRing(idx: number, dir: number): void {
     const ring = this.rings[idx];
     ring.rotation = (ring.rotation + dir + ring.notches) % ring.notches;
+    this.moveCount++;
+    this.movesText.setText(`Moves: ${this.moveCount}`);
     playSfx('tap', 0.3);
 
     // Rotate linked ring in opposite direction

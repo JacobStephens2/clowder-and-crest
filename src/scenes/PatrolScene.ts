@@ -110,6 +110,13 @@ export class PatrolScene extends Phaser.Scene {
       const lantern: Lantern = { x: lx, y: ly, brightness: 1, dimRate, glow, flame, zone, isTrap };
       this.lanterns.push(lantern);
 
+      // Trap lanterns flicker red
+      if (isTrap) {
+        this.tweens.add({
+          targets: flame, alpha: 0.3, duration: 400, yoyo: true, repeat: -1,
+        });
+      }
+
       zone.on('pointerdown', () => {
         if (this.finished || this.tutorialShowing) return;
         if (isTrap) {
@@ -126,6 +133,10 @@ export class PatrolScene extends Phaser.Scene {
         } else {
           lantern.brightness = 1;
           playSfx('tap', 0.3);
+          // Flash bright on relight
+          flame.setScale(1.4);
+          glow.setAlpha(0.6);
+          this.time.delayedCall(150, () => { flame.setScale(1); glow.setAlpha(0.3); });
         }
       });
     }

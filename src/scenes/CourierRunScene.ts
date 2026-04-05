@@ -92,6 +92,10 @@ export class CourierRunScene extends Phaser.Scene {
       fontFamily: 'Georgia, serif', fontSize: '12px', color: '#4a8a4a',
     }).setOrigin(1, 0);
 
+    // Progress bar
+    this.add.rectangle(GAME_WIDTH / 2, 240, 300, 6, 0x2a2520).setStrokeStyle(1, 0x3a3530);
+    this.add.rectangle(GAME_WIDTH / 2 - 150, 240, 0, 6, 0x4a8a4a).setOrigin(0, 0.5).setName('runProgress');
+
     this.add.text(GAME_WIDTH - 30, 75, 'Quit', {
       fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8b7355',
     }).setOrigin(0.5).setInteractive({ useHandCursor: true }).on('pointerdown', () => {
@@ -163,6 +167,8 @@ export class CourierRunScene extends Phaser.Scene {
     this.distance += this.scrollSpeed * dt * 60;
     const pct = Math.min(100, Math.floor((this.distance / this.targetDistance) * 100));
     this.distText.setText(`${pct}%`);
+    const progressBar = this.children.getByName('runProgress') as Phaser.GameObjects.Rectangle;
+    if (progressBar) progressBar.width = 300 * (pct / 100);
 
     // Spawn obstacles
     this.spawnTimer -= dt;
@@ -231,9 +237,19 @@ export class CourierRunScene extends Phaser.Scene {
   private spawnObstacle(): void {
     const lane = Math.floor(Math.random() * LANE_COUNT);
     const x = GAME_WIDTH + 30;
-    const obs = this.add.rectangle(x, LANE_Y[lane], 30, 30, 0x4a3a28);
-    obs.setStrokeStyle(1, 0x3a2a18);
-    this.obstacles.push({ x, lane, width: 30, gfx: obs, active: true });
+    let gfx: Phaser.GameObjects.Rectangle | Phaser.GameObjects.Sprite;
+    if (this.textures.exists('barrel_sprite') && Math.random() < 0.5) {
+      const barrel = this.add.sprite(x, LANE_Y[lane], 'barrel_sprite');
+      barrel.setScale(0.8);
+      barrel.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      gfx = barrel;
+    } else {
+      const colors = [0x4a3a28, 0x3a4a28, 0x4a2a2a, 0x2a3a4a];
+      const obs = this.add.rectangle(x, LANE_Y[lane], 30, 30, colors[Math.floor(Math.random() * colors.length)]);
+      obs.setStrokeStyle(1, 0x2a2018);
+      gfx = obs;
+    }
+    this.obstacles.push({ x, lane, width: 30, gfx, active: true });
   }
 
   private spawnFish(): void {
