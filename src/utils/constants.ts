@@ -66,4 +66,5 @@ export const SCENES = {
   NONOGRAM: 'NonogramScene',
   BRAWL: 'BrawlScene',
   STEALTH: 'StealthScene',
+  POUNCE: 'PounceScene',
 } as const;

@@ -146,7 +146,7 @@ export class NonogramScene extends Phaser.Scene {
     this.difficulty = data?.difficulty ?? 'easy';
     // First nonogram ever? Make it a small 4x4 intro puzzle
     const hasCompletedNonogram = localStorage.getItem('clowder_nonogram_completed');
-    this.gridSize = hasCompletedNonogram ? (GRID_SIZES[this.difficulty] ?? 5) : 4;
+    this.gridSize = hasCompletedNonogram ? (GRID_SIZES[this.difficulty] ?? 5) : 3;
     this.solved = false;
     this.mistakes = 0;
     this.fillMode = true;

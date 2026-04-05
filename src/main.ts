@@ -13,6 +13,7 @@ import { HuntScene } from './scenes/HuntScene';
 import { NonogramScene } from './scenes/NonogramScene';
 import { BrawlScene } from './scenes/BrawlScene';
 import { StealthScene } from './scenes/StealthScene';
+import { PounceScene } from './scenes/PounceScene';
 import { TownMapScene } from './scenes/TownMapScene';
 import { eventBus } from './utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS, BREED_NAMES, STAT_NAMES, ALL_BREED_IDS, SCENES } from './utils/constants';
@@ -74,7 +75,7 @@ const config: Phaser.Types.Core.GameConfig = {
   input: {
     activePointers: 2,
   },
-  scene: [BootScene, TitleScene, GuildhallScene, TownScene, TownMapScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene, HuntScene, NonogramScene, BrawlScene, StealthScene],
+  scene: [BootScene, TitleScene, GuildhallScene, TownScene, TownMapScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene, HuntScene, NonogramScene, BrawlScene, StealthScene, PounceScene],
 };
 
 const game = new Phaser.Game(config);
@@ -1244,9 +1245,9 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
             opts.push('<button class="btn-puzzle minigame-btn" data-game="fishing" style="flex:1;min-width:140px">\u{1F3A3} River Route</button>');
             break;
           case 'guard':
-            // Combat: fight off intruders | Strategy: block the entry points
+            // Combat: fight off intruders | Pounce: launch at targets
             opts.push('<button class="btn-puzzle minigame-btn" data-game="brawl" style="flex:1;min-width:140px">\u{2694}\u{FE0F} Fight</button>');
-            opts.push('<button class="btn-puzzle minigame-btn" data-game="puzzle" style="flex:1;min-width:140px">\u{1F9E9} Barricade</button>');
+            opts.push('<button class="btn-puzzle minigame-btn" data-game="pounce" style="flex:1;min-width:140px">\u{1F43E} Pounce</button>');
             break;
           case 'sacred':
             // Contemplation: decipher sacred patterns | Meditation: patient focus
@@ -1309,6 +1310,9 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
         break;
       case 'stealth':
         switchScene('StealthScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id, catBreed: cat.breed });
+        break;
+      case 'pounce':
+        switchScene('PounceScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id, catBreed: cat.breed });
         break;
       case 'brawl':
         switchScene('BrawlScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id, catBreed: cat.breed });
