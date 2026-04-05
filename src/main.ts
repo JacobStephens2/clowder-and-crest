@@ -698,6 +698,104 @@ function showTutorial(): void {
   document.body.appendChild(bubble);
 }
 
+function showGuildReport(save: SaveData): void {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,9,8,0.95);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:24px;';
+
+  // Gather intel
+  const chapterName = getChapterName(save.chapter);
+  const repLabel = getReputationLabel(save.reputationScore);
+  const catUpkeep = save.cats.reduce((sum, c) => sum + 2 + Math.max(0, c.level - 1), 0);
+  const roomUpkeep = save.rooms.filter(r => r.unlocked).length;
+  const totalUpkeep = catUpkeep + roomUpkeep + Math.max(0, save.chapter - 1) * 2;
+  const stationedCount = save.stationedCats.length;
+  const progressHint = getNextChapterHint(save);
+
+  // Find strongest cat
+  const strongest = [...save.cats].sort((a, b) => {
+    const totalA = Object.values(a.stats).reduce((s, v) => s + v, 0);
+    const totalB = Object.values(b.stats).reduce((s, v) => s + v, 0);
+    return totalB - totalA;
+  })[0];
+  const strongestBreed = BREED_NAMES[strongest?.breed ?? ''] ?? strongest?.breed ?? '';
+
+  // Current situation analysis
+  const lines: string[] = [];
+
+  // Status line
+  lines.push(`<div style="color:#c4956a;font-size:18px;margin-bottom:4px">Guild Report</div>`);
+  lines.push(`<div style="color:#6b5b3e;font-size:11px;margin-bottom:16px">Chapter ${save.chapter}: ${chapterName} | Day ${save.day}</div>`);
+
+  // Core stats
+  lines.push(`<div style="color:#8b7355;font-size:13px;margin-bottom:8px">${save.cats.length} cats | ${save.fish} fish | ${repLabel} reputation</div>`);
+
+  // Strongest cat
+  if (strongest) {
+    const specLabel = strongest.specialization ? ` (${strongest.specialization})` : '';
+    lines.push(`<div style="font-size:12px;color:#c4956a;margin-bottom:6px">Strongest: <strong>${strongest.name}</strong> the ${strongestBreed}, Lv.${strongest.level}${specLabel}</div>`);
+  }
+
+  // Economy
+  const netDaily = (stationedCount * 2) - totalUpkeep;
+  const econColor = netDaily >= 0 ? '#4a8a4a' : '#cc6666';
+  lines.push(`<div style="font-size:11px;color:${econColor};margin-bottom:6px">Daily balance: ${netDaily >= 0 ? '+' : ''}${netDaily} fish/day (upkeep: ${totalUpkeep}, stationed income: ~${stationedCount * 2})</div>`);
+
+  // Fish warning
+  if (save.fish < totalUpkeep * 2) {
+    lines.push(`<div style="font-size:11px;color:#cc6666;margin-bottom:6px">\u26A0 Low on fish — you can only cover ${Math.floor(save.fish / Math.max(1, totalUpkeep))} more day${save.fish >= totalUpkeep ? 's' : ''} of upkeep.</div>`);
+  }
+
+  // Active events
+  if (save.flags.ratPlagueStarted && !save.flags.ratPlagueResolved) {
+    const progress = Number(save.flags.plaguePestDone ?? 0);
+    lines.push(`<div style="font-size:11px;color:#cc6666;margin-bottom:6px">\u{1F400} The Rat Plague is active — ${progress}/5 pest jobs completed. Take PLAGUE-marked jobs to resolve it.</div>`);
+  }
+  if (save.flags.inquisitionStarted && !save.flags.inquisitionResolved) {
+    const inqStart = Number(save.flags.inquisitionDayStarted ?? save.day);
+    const daysLeft = Math.max(0, 5 - (save.day - inqStart));
+    lines.push(`<div style="font-size:11px;color:#bb88cc;margin-bottom:6px">The Inquisitor is watching — ${daysLeft} days remain. Sacred/Guard jobs earn favor.</div>`);
+  }
+  if (save.chapter >= 6 && !save.flags.rivalDefeated) {
+    const rivalInf = Number(save.flags.rivalInfluence ?? 0);
+    lines.push(`<div style="font-size:11px;color:#cc8844;margin-bottom:6px">The Silver Paws are contesting jobs — influence: ${rivalInf}. Complete contested jobs to push them out.</div>`);
+  }
+
+  // Chapter goal
+  if (progressHint) {
+    lines.push(`<div style="font-size:11px;color:#6b8ea6;margin-bottom:6px;font-style:italic">Next chapter: ${progressHint}</div>`);
+  }
+
+  // Pressing need
+  const unlockedRoomIds = save.rooms.filter(r => r.unlocked).map(r => r.id);
+  const lockedRooms = save.rooms.filter(r => !r.unlocked);
+  if (lockedRooms.length > 0) {
+    const nextRoom = lockedRooms[0];
+    const roomCosts: Record<string, number> = { kitchen: 50, operations: 100 };
+    const cost = roomCosts[nextRoom.id] ?? 0;
+    if (cost > 0 && save.fish < cost) {
+      const roomNames: Record<string, string> = { kitchen: 'Kitchen & Pantry', operations: 'Operations Hall' };
+      lines.push(`<div style="font-size:11px;color:#8b7355;margin-bottom:6px">Tip: The ${roomNames[nextRoom.id] ?? nextRoom.id} costs ${cost} fish to unlock.</div>`);
+    }
+  }
+
+  // Suggestion
+  if (save.cats.length < 6) {
+    lines.push(`<div style="font-size:11px;color:#8b7355;margin-bottom:6px">Look for stray cats in town to recruit.</div>`);
+  } else if (stationedCount === 0) {
+    lines.push(`<div style="font-size:11px;color:#8b7355;margin-bottom:6px">Tip: Station level 2+ cats at jobs for passive daily income.</div>`);
+  }
+
+  overlay.innerHTML = `
+    <div style="max-width:340px;text-align:center;font-family:Georgia,serif">
+      ${lines.join('')}
+      <div style="color:#555;font-size:10px;margin-top:16px">Tap to begin</div>
+    </div>
+  `;
+
+  overlay.addEventListener('click', () => overlay.remove());
+  document.body.appendChild(overlay);
+}
+
 // Game loaded
 eventBus.on('game-loaded', (save: SaveData) => {
   gameState = save;
@@ -732,8 +830,11 @@ eventBus.on('game-loaded', (save: SaveData) => {
     }
   }
 
-  // Welcome back message
-  if (save.totalJobsCompleted > 0 && !save.lastPlayedTimestamp) {
+  // Show Guild Report if away 24+ hours, otherwise a welcome toast
+  const hoursAwaySinceLastPlay = save.lastPlayedTimestamp ? (Date.now() - save.lastPlayedTimestamp) / (1000 * 60 * 60) : 0;
+  if (hoursAwaySinceLastPlay >= 24 && save.totalJobsCompleted > 0) {
+    setTimeout(() => showGuildReport(save), 800);
+  } else if (save.totalJobsCompleted > 0) {
     const catNames = save.cats.slice(0, 3).map((c) => c.name).join(', ');
     setTimeout(() => showToast(`Welcome back! ${catNames}${save.cats.length > 3 ? ` and ${save.cats.length - 3} others` : ''} await your orders.`), 500);
   }
@@ -741,7 +842,7 @@ eventBus.on('game-loaded', (save: SaveData) => {
   // Warn if can't afford today's upkeep
   const unlockedRooms = save.rooms.filter((r) => r.unlocked).length;
   const dailyCost = save.cats.reduce((sum, c) => sum + 2 + Math.max(0, c.level - 1), 0) + unlockedRooms;
-  if (save.fish < dailyCost && save.cats.length > 1) {
+  if (save.fish < dailyCost && save.cats.length > 1 && hoursAwaySinceLastPlay < 24) {
     setTimeout(() => {
       showToast(`Warning: You have ${save.fish} fish but need ${dailyCost} for today's upkeep. Earn fish or a cat may leave!`);
     }, 2500);
