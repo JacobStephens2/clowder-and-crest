@@ -4,7 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS } from '../utils/constants';
 import { getGameState } from '../main';
 import type { SaveData } from '../systems/SaveManager';
 import { getCurrentFestival } from '../systems/GameSystems';
-import { getChapterName } from '../systems/ProgressionManager';
+import { getChapterName, getNextChapterHint } from '../systems/ProgressionManager';
 
 import { ALL_BREED_IDS } from '../utils/constants';
 const BREEDS_WITH_SPRITES = new Set(ALL_BREED_IDS as readonly string[]);
@@ -76,6 +76,18 @@ export class GuildhallScene extends Phaser.Scene {
       fontSize: '12px',
       color: '#6b5b3e',
     }).setOrigin(0.5);
+
+    // Chapter progress hint
+    const progressHint = getNextChapterHint(save);
+    if (progressHint) {
+      this.add.text(GAME_WIDTH / 2, 90, progressHint, {
+        fontFamily: 'Georgia, serif',
+        fontSize: '9px',
+        color: '#6b8ea6',
+        wordWrap: { width: ROOM_WIDTH - 20 },
+        align: 'center',
+      }).setOrigin(0.5, 0);
+    }
 
     // Festival indicator
     const festival = getCurrentFestival(save.day);

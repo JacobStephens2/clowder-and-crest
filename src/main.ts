@@ -278,12 +278,18 @@ function showDayTransition(day: number, recap?: { foodCost: number; stationedEar
     <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:14px">A new day dawns...</div>
     ${recapHtml}
     ${previewHtml}
+    <div style="color:#555;font-family:Georgia,serif;font-size:11px;margin-top:20px">Tap to continue</div>
   `;
   document.body.appendChild(overlay);
-  requestAnimationFrame(() => { overlay.style.opacity = '1'; });
-  const duration = recap && recap.events.length > 0 ? 3500 : 2000;
-  setTimeout(() => { overlay.style.opacity = '0'; }, duration);
-  setTimeout(() => overlay.remove(), duration + 500);
+  requestAnimationFrame(() => {
+    overlay.style.opacity = '1';
+    overlay.style.pointerEvents = 'auto';
+    overlay.style.cursor = 'pointer';
+  });
+  overlay.addEventListener('click', () => {
+    overlay.style.opacity = '0';
+    setTimeout(() => overlay.remove(), 500);
+  });
 }
 
 setOnDayEnd(() => {
@@ -2335,6 +2341,7 @@ function showMenuPanel(): void {
     <button class="menu-btn" id="menu-mute-sfx">${isSfxMuted() ? 'Unmute Sound Effects' : 'Mute Sound Effects'}</button>
     <button class="menu-btn" id="menu-export">Export Save</button>
     <button class="menu-btn" id="menu-import">Import Save</button>
+    <button class="menu-btn" id="menu-quit-title">Quit to Title Screen</button>
     <button class="menu-btn danger" id="menu-restart">Restart Game</button>
     <button class="menu-btn danger" id="menu-delete">Delete Save</button>
   `;
@@ -2474,6 +2481,16 @@ function showMenuPanel(): void {
     input.click();
   });
 
+  document.getElementById('menu-quit-title')!.addEventListener('click', () => {
+    if (gameState) saveGame(gameState);
+    stopDayTimer();
+    gameState = null;
+    overlayLayer.querySelectorAll('.menu-overlay, .town-overlay, .assign-overlay').forEach((el) => el.remove());
+    guildEndDayBtn.style.display = 'none';
+    guildWishBanner.style.display = 'none';
+    switchScene('TitleScene');
+  });
+
   document.getElementById('menu-restart')!.addEventListener('click', () => {
     if (confirm('Restart the game? Your current save will be deleted and you will start fresh.')) {
       deleteSave();
@@ -2601,6 +2618,14 @@ eventBus.on('chapter-advance', (chapter: number) => {
   trackEvent('chapter_advance', { chapter, name });
   if (gameState) addJournalEntry(gameState, `Chapter ${chapter}: ${name}`, 'chapter');
   showToast(`Chapter ${chapter}: ${name}`);
+
+  // Show next chapter goals after a moment
+  if (gameState) {
+    const hint = getNextChapterHint(gameState);
+    if (hint) {
+      setTimeout(() => showToast(hint), 3000);
+    }
+  }
 
   // Chapter 5 endgame acknowledgment
   if (chapter === 5) {

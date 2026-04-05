@@ -154,7 +154,7 @@ export class ChaseScene extends Phaser.Scene {
   private ratTimer: Phaser.Time.TimerEvent | null = null;
   private dogTimer: Phaser.Time.TimerEvent | null = null;
   private dogPos = { r: 6, c: 6 };
-  private dogGfx!: Phaser.GameObjects.Graphics;
+  private dogGfx!: Phaser.GameObjects.Text;
   private dogStunned = false;
   private moveCount = 0;
   private timeLeft = 60;
@@ -298,12 +298,23 @@ export class ChaseScene extends Phaser.Scene {
     const dpadSize = 40;
     const dpadGap = 4;
 
+    let holdTimer: Phaser.Time.TimerEvent | null = null;
     const makeArrow = (x: number, y: number, dr: number, dc: number, label: string) => {
       const btn = this.add.rectangle(x, y, dpadSize, dpadSize, 0x2a2520, 0.8);
       btn.setStrokeStyle(1, 0x6b5b3e);
       btn.setInteractive({ useHandCursor: true });
       this.add.text(x, y, label, { fontSize: '18px', color: '#c4956a' }).setOrigin(0.5);
-      btn.on('pointerdown', () => { if (!this.caught) this.moveCat(dr, dc); });
+      btn.on('pointerdown', () => {
+        if (!this.caught) this.moveCat(dr, dc);
+        holdTimer?.destroy();
+        holdTimer = this.time.addEvent({
+          delay: 180,
+          callback: () => { if (!this.caught) this.moveCat(dr, dc); },
+          loop: true,
+        });
+      });
+      btn.on('pointerup', () => holdTimer?.destroy());
+      btn.on('pointerout', () => holdTimer?.destroy());
     };
 
     makeArrow(dpadX, dpadY - dpadSize - dpadGap, -1, 0, '\u25B2'); // Up
@@ -579,32 +590,7 @@ export class ChaseScene extends Phaser.Scene {
     }
 
     const { x, y } = this.cellToWorld(this.dogPos.r, this.dogPos.c);
-    this.dogGfx = this.add.graphics();
-    this.drawDog(x, y);
-  }
-
-  private drawDog(x: number, y: number): void {
-    this.dogGfx.clear();
-    if (this.dogStunned) {
-      this.dogGfx.fillStyle(0x555555, 0.4);
-    } else {
-      // Dog body (brown)
-      this.dogGfx.fillStyle(0x8B6914);
-    }
-    this.dogGfx.fillRoundedRect(x - 8, y - 5, 16, 12, 3);
-    // Head
-    this.dogGfx.fillCircle(x, y - 7, 5);
-    // Eyes
-    this.dogGfx.fillStyle(0xffffff);
-    this.dogGfx.fillCircle(x - 2, y - 8, 1.5);
-    this.dogGfx.fillCircle(x + 2, y - 8, 1.5);
-    this.dogGfx.fillStyle(0x111111);
-    this.dogGfx.fillCircle(x - 2, y - 8, 0.8);
-    this.dogGfx.fillCircle(x + 2, y - 8, 0.8);
-    // Ears
-    this.dogGfx.fillStyle(this.dogStunned ? 0x444444 : 0x6B4E0A);
-    this.dogGfx.fillTriangle(x - 5, y - 10, x - 3, y - 14, x - 1, y - 10);
-    this.dogGfx.fillTriangle(x + 5, y - 10, x + 3, y - 14, x + 1, y - 10);
+    this.dogGfx = this.add.text(x, y, '\uD83D\uDC15', { fontSize: '20px' }).setOrigin(0.5);
   }
 
   private moveDog(): void {
@@ -635,7 +621,7 @@ export class ChaseScene extends Phaser.Scene {
       if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && this.grid[nr][nc] === FLOOR) {
         this.dogPos = { r: nr, c: nc };
         const dest = this.cellToWorld(nr, nc);
-        this.drawDog(dest.x, dest.y);
+        this.tweens.add({ targets: this.dogGfx, x: dest.x, y: dest.y, duration: 150, ease: 'Linear' });
         break;
       }
     }
@@ -647,29 +633,26 @@ export class ChaseScene extends Phaser.Scene {
   }
 
   private dogCaughtCat(): void {
-    // Dog catches cat: lose 8 seconds, dog is stunned briefly
+    if (this.caught) return;
+    this.caught = true;
+    this.moveTimer?.destroy();
+    this.ratTimer?.destroy();
+    this.dogTimer?.destroy();
+
     playSfx('hiss');
-    this.timeLeft = Math.max(1, this.timeLeft - 8);
-    this.timerText.setText(`Time: ${this.timeLeft}s`);
-    this.timerText.setColor('#cc4444');
-    this.time.delayedCall(500, () => this.timerText.setColor('#c4956a'));
+    this.cameras.main.flash(300, 139, 69, 19, false);
 
-    // Flash warning
-    this.cameras.main.flash(200, 139, 69, 19, false);
-
-    const warn = this.add.text(GAME_WIDTH / 2, MAZE_Y - 10, 'Guard dog! -8 seconds', {
-      fontFamily: 'Georgia, serif', fontSize: '13px', color: '#cc6666',
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20, 'Caught by the guard dog!', {
+      fontFamily: 'Georgia, serif', fontSize: '22px', color: '#cc6666',
     }).setOrigin(0.5);
-    this.time.delayedCall(1500, () => warn.destroy());
 
-    // Stun dog for 3 seconds
-    this.dogStunned = true;
-    const { x, y } = this.cellToWorld(this.dogPos.r, this.dogPos.c);
-    this.drawDog(x, y);
-    this.time.delayedCall(3000, () => {
-      this.dogStunned = false;
-      const pos = this.cellToWorld(this.dogPos.r, this.dogPos.c);
-      this.drawDog(pos.x, pos.y);
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 15, 'The job is lost...', {
+      fontFamily: 'Georgia, serif', fontSize: '13px', color: '#8b7355',
+    }).setOrigin(0.5);
+
+    this.time.delayedCall(2000, () => {
+      eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
+      eventBus.emit('navigate', 'TownScene');
     });
   }
 

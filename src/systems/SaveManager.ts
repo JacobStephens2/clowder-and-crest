@@ -152,6 +152,58 @@ export function hasSave(): boolean {
   return localStorage.getItem(SAVE_KEY) !== null;
 }
 
+// ── Multi-slot save support ──
+const SLOT_PREFIX = 'clowder_save_slot_';
+
+export function saveToSlot(slot: number, data: SaveData): void {
+  try {
+    data.lastPlayedTimestamp = Date.now();
+    localStorage.setItem(`${SLOT_PREFIX}${slot}`, JSON.stringify(data));
+  } catch (e) {
+    console.error(`Failed to save to slot ${slot}:`, e);
+  }
+}
+
+export function loadFromSlot(slot: number): SaveData | null {
+  try {
+    const raw = localStorage.getItem(`${SLOT_PREFIX}${slot}`);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as SaveData;
+    // Apply same migration as loadGame
+    if (!data.stationedCats) data.stationedCats = [];
+    if (!data.bonds) data.bonds = [];
+    if (!data.flags) data.flags = {};
+    if (!data.availableRecruits) data.availableRecruits = [];
+    if (!data.puzzlesCompleted) data.puzzlesCompleted = {};
+    if (data.totalFishEarned === undefined) data.totalFishEarned = 0;
+    if (data.totalJobsCompleted === undefined) data.totalJobsCompleted = 0;
+    if (data.reputationScore === undefined) data.reputationScore = 0;
+    if (!data.journal) data.journal = [];
+    for (const cat of data.cats ?? []) {
+      if (cat.assignedRoom === undefined) cat.assignedRoom = undefined;
+    }
+    data.version = SAVE_VERSION;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+export function deleteSlot(slot: number): void {
+  localStorage.removeItem(`${SLOT_PREFIX}${slot}`);
+}
+
+export function getSlotSummary(slot: number): { name: string; day: number; chapter: number; cats: number } | null {
+  try {
+    const raw = localStorage.getItem(`${SLOT_PREFIX}${slot}`);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    return { name: data.playerCatName ?? 'Unknown', day: data.day ?? 1, chapter: data.chapter ?? 1, cats: data.cats?.length ?? 1 };
+  } catch {
+    return null;
+  }
+}
+
 export function addJournalEntry(save: SaveData, text: string, type: JournalEntry['type']): void {
   save.journal.push({ day: save.day, text, type });
   // Keep journal to a reasonable size (last 100 entries)
