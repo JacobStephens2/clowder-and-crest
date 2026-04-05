@@ -14,7 +14,7 @@ import { NonogramScene } from './scenes/NonogramScene';
 import { BrawlScene } from './scenes/BrawlScene';
 import { TownMapScene } from './scenes/TownMapScene';
 import { eventBus } from './utils/events';
-import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS, BREED_NAMES, STAT_NAMES, ALL_BREED_IDS } from './utils/constants';
+import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS, BREED_NAMES, STAT_NAMES, ALL_BREED_IDS, SCENES } from './utils/constants';
 import {
   type SaveData,
   createDefaultSave,
@@ -271,7 +271,7 @@ function setActiveTab(scene: string): void {
 }
 
 function switchScene(target: string, data?: object): void {
-  const sceneKeys = ['GuildhallScene', 'TownScene', 'TownMapScene', 'PuzzleScene', 'SokobanScene', 'ChaseScene', 'FishingScene', 'HuntScene', 'NonogramScene', 'BrawlScene', 'TitleScene', 'RoomScene'];
+  const sceneKeys = Object.values(SCENES);
   for (const key of sceneKeys) {
     if (game.scene.isActive(key) || game.scene.isPaused(key)) {
       game.scene.stop(key);

@@ -49,3 +49,20 @@ export const CHAPTER_TRIGGERS = [
   { chapter: 6, jobs: 50, cats: 5, fish: 500 },
   { chapter: 7, jobs: 70, cats: 5, fish: 800 },
 ];
+
+// Scene keys — use these instead of string literals to prevent typo bugs
+export const SCENES = {
+  BOOT: 'BootScene',
+  TITLE: 'TitleScene',
+  GUILDHALL: 'GuildhallScene',
+  TOWN: 'TownScene',
+  TOWN_MAP: 'TownMapScene',
+  PUZZLE: 'PuzzleScene',
+  SOKOBAN: 'SokobanScene',
+  CHASE: 'ChaseScene',
+  ROOM: 'RoomScene',
+  FISHING: 'FishingScene',
+  HUNT: 'HuntScene',
+  NONOGRAM: 'NonogramScene',
+  BRAWL: 'BrawlScene',
+} as const;
