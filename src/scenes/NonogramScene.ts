@@ -7,7 +7,7 @@ import { playSfx } from '../systems/SfxManager';
 import { showMinigameTutorial } from '../ui/sceneHelpers';
 
 // Grid sizes per difficulty
-const GRID_SIZES: Record<string, number> = { easy: 5, medium: 7, hard: 8 };
+const GRID_SIZES: Record<string, number> = { easy: 5, medium: 6, hard: 7 };
 
 // Layout
 const CLUE_SPACE = 60; // space for clue numbers
@@ -150,7 +150,7 @@ export class NonogramScene extends Phaser.Scene {
     const maxGridWidth = GAME_WIDTH - CLUE_SPACE - 20;
     const maxGridHeight = GAME_HEIGHT - GRID_TOP - CLUE_SPACE - 140;
     this.cellSize = Math.floor(Math.min(maxGridWidth / this.gridSize, maxGridHeight / this.gridSize));
-    this.cellSize = Math.min(this.cellSize, 48);
+    this.cellSize = Math.min(this.cellSize, 56);
 
     const gridPx = this.gridSize * (this.cellSize + CELL_GAP);
     this.gridLeft = Math.floor((GAME_WIDTH - gridPx) / 2 + CLUE_SPACE / 2);
@@ -233,7 +233,7 @@ export class NonogramScene extends Phaser.Scene {
   }
 
   private drawRowClues(): void {
-    const fontSize = this.gridSize >= 8 ? '9px' : '11px';
+    const fontSize = this.gridSize >= 7 ? '10px' : '13px';
     for (let r = 0; r < this.gridSize; r++) {
       const y = this.gridTop + r * (this.cellSize + CELL_GAP) + this.cellSize / 2;
       const clue = this.rowClues[r];
@@ -248,7 +248,7 @@ export class NonogramScene extends Phaser.Scene {
   }
 
   private drawColClues(): void {
-    const fontSize = this.gridSize >= 8 ? '9px' : '11px';
+    const fontSize = this.gridSize >= 7 ? '10px' : '13px';
     for (let c = 0; c < this.gridSize; c++) {
       const x = this.gridLeft + c * (this.cellSize + CELL_GAP) + this.cellSize / 2;
       const clue = this.colClues[c];
@@ -295,7 +295,7 @@ export class NonogramScene extends Phaser.Scene {
       const x = this.gridLeft + c * (this.cellSize + CELL_GAP) + this.cellSize / 2;
       const y = this.gridTop + r * (this.cellSize + CELL_GAP) + this.cellSize / 2;
       this.cellMarks[r][c] = this.add.text(x, y, '\u2717', {
-        fontFamily: 'Georgia, serif', fontSize: `${Math.floor(this.cellSize * 0.5)}px`, color: '#6b5b3e',
+        fontFamily: 'Georgia, serif', fontSize: `${Math.floor(this.cellSize * 0.55)}px`, color: '#6b5b3e',
       }).setOrigin(0.5);
     } else if (!show && this.cellMarks[r][c]) {
       this.cellMarks[r][c]!.destroy();
