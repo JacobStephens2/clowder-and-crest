@@ -213,7 +213,7 @@ export class FishingScene extends Phaser.Scene {
     // ── Job name ──
     const job = getJob(this.jobId);
     if (job) {
-      this.add.text(GAME_WIDTH / 2, 30, job.name, {
+      this.add.text(GAME_WIDTH / 2, 30, `${job.name} (${this.difficulty})`, {
         fontFamily: 'Georgia, serif', fontSize: '14px', color: '#8b7355',
       }).setOrigin(0.5);
     }

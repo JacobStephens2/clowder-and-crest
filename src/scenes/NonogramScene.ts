@@ -192,7 +192,7 @@ export class NonogramScene extends Phaser.Scene {
 
     // Job title
     const job = getJob(this.jobId);
-    this.add.text(GAME_WIDTH / 2, 30, job?.name ?? 'Nonogram', {
+    this.add.text(GAME_WIDTH / 2, 30, (`${job?.name ?? 'Nonogram'} (${this.difficulty})`), {
       fontFamily: 'Georgia, serif', fontSize: '16px', color: '#c4956a',
     }).setOrigin(0.5);
 

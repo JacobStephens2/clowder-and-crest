@@ -10,5 +10,7 @@ index-C0OXO78h.js:2      Phaser v3.80.1 (WebGL | Web Audio)  https://phaser.io
 recruit.mp3:1  GET https://clowder.stephens.page/assets/sfx/recruit.mp3 500 (Internal Server Error)
 `
 [x] add a big rat enemy type to the fight game
-[] if a job was taken and failed, don't put it right back on the job board, leave it's absence as a consequence of failure
-[] show the job difficulty while the player is doing the job
+[x] if a job was taken and failed, don't put it right back on the job board, leave it's absence as a consequence of failure
+[x] show the job difficulty while the player is doing the job
+[x] prevent days from turning over to the next day during a job
+[] enable boosting cat stats by interacting with furniture in the guild

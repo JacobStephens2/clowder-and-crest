@@ -133,7 +133,7 @@ export class BrawlScene extends Phaser.Scene {
 
     // Job name
     const job = getJob(this.jobId);
-    this.add.text(GAME_WIDTH / 2, 30, job?.name ?? 'Rat Fight', {
+    this.add.text(GAME_WIDTH / 2, 30, (`${job?.name ?? 'Rat Fight'} (${this.difficulty})`), {
       fontFamily: 'Georgia, serif', fontSize: '16px', color: '#c4956a',
     }).setOrigin(0.5);
 

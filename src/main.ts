@@ -1467,7 +1467,8 @@ eventBus.on('puzzle-quit', ({ jobId, catId }: any = {}) => {
   const cat = gameState.cats.find((c) => c.id === catId);
   const job = getJob(jobId);
 
-  // Failure penalty: cat is used for the day, mood drops, lose some fish
+  // Failure penalty: cat is used for the day, mood drops, lose some fish, job removed from board
+  if (jobId) jobsCompletedToday.add(jobId);
   if (cat) {
     catsWorkedToday.add(cat.id);
     if (cat.mood === 'happy') cat.mood = 'content';
