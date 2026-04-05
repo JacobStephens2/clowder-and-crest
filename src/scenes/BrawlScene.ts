@@ -72,6 +72,8 @@ export class BrawlScene extends Phaser.Scene {
   private pauseOverlay: HTMLDivElement | null = null;
   private obstacles: { x: number; y: number; r: number }[] = [];
   private powerup: { x: number; y: number; type: string; gfx: Phaser.GameObjects.Text } | null = null;
+  private joyConfig: { x: number; y: number; radius: number; knob: Phaser.GameObjects.Arc; pointerId: number } | null = null;
+  private atkBtnBounds: { x: number; y: number; size: number } | null = null;
   private powerupTimer = 0;
 
   constructor() {
@@ -119,6 +121,9 @@ export class BrawlScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#1c1b19');
     this.cameras.main.setZoom(DPR);
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
+
+    // Enable multi-touch (joystick + attack simultaneously)
+    this.input.addPointer(1);
 
     // Tutorial
     if (showMinigameTutorial(this, 'clowder_brawl_tutorial', 'Fight!',
@@ -221,25 +226,27 @@ export class BrawlScene extends Phaser.Scene {
 
     // Pause button (top-right)
 
-    // Tap to attack
-    // Attack button bounds for manual hit-testing (multi-touch compatible)
-    const atkBtnX = GAME_WIDTH - 55;
-    const atkBtnSize = 60;
-
+    // Tap handling — manual hit-testing for multi-touch reliability
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       const wx = pointer.x / DPR;
       const wy = pointer.y / DPR;
 
-      // Check attack button first (manual hit test for multi-touch)
-      if (Math.abs(wx - atkBtnX) < atkBtnSize / 2 && Math.abs(wy - joyY) < atkBtnSize / 2) {
-        this.attack();
-        return;
+      // Check attack button first
+      if (this.atkBtnBounds) {
+        const ab = this.atkBtnBounds;
+        if (Math.abs(wx - ab.x) < ab.size / 2 && Math.abs(wy - ab.y) < ab.size / 2) {
+          this.attack();
+          return;
+        }
       }
 
       // Check joystick area
-      if (Math.sqrt((wx - joyX) ** 2 + (wy - joyY) ** 2) < joyRadius * 1.5) {
-        joyPointerId = pointer.id;
-        return;
+      if (this.joyConfig) {
+        const jc = this.joyConfig;
+        if (Math.sqrt((wx - jc.x) ** 2 + (wy - jc.y) ** 2) < jc.radius * 1.5) {
+          this.joyConfig.pointerId = pointer.id;
+          return;
+        }
       }
 
       // Arena taps — face toward tap and attack
@@ -258,36 +265,15 @@ export class BrawlScene extends Phaser.Scene {
     const joyKnob = this.add.circle(joyX, joyY, 14, 0x6b5b3e, 0.8);
     joyBase.setInteractive({ draggable: false, useHandCursor: true });
 
-    // Joystick input via pointer tracking (tracks specific pointer for multi-touch)
-    let joyPointerId = -1;
-    this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
-      if (pointer.id === joyPointerId) {
-        joyPointerId = -1;
-        joyKnob.setPosition(joyX, joyY);
-        this.moveDir = { x: 0, y: 0 };
-      }
-    });
-    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-      if (pointer.id !== joyPointerId) return;
-      const dx = pointer.x / DPR - joyX;
-      const dy = pointer.y / DPR - joyY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const clampDist = Math.min(dist, joyRadius);
-      if (dist > 5) {
-        const nx = dx / dist * clampDist;
-        const ny = dy / dist * clampDist;
-        joyKnob.setPosition(joyX + nx, joyY + ny);
-        this.moveDir = { x: dx / dist, y: dy / dist };
-        this.catFacing = Math.atan2(dy, dx);
-      } else {
-        joyKnob.setPosition(joyX, joyY);
-        this.moveDir = { x: 0, y: 0 };
-      }
-    });
+    // Joystick + attack — poll-based for multi-touch reliability
+    // Store refs for polling in update()
+    this.joyConfig = { x: joyX, y: joyY, radius: joyRadius, knob: joyKnob, pointerId: -1 };
 
-    // Attack button (visual only — hit detection is in the global pointerdown handler)
-    this.add.rectangle(GAME_WIDTH - 55, joyY, 60, 60, 0x5a2a20, 0.8).setStrokeStyle(2, 0xcc6666);
-    this.add.text(GAME_WIDTH - 55, joyY, '\u2694\uFE0F', { fontSize: '24px' }).setOrigin(0.5);
+    // Attack button (visual only — hit detection in global pointerdown)
+    const atkBtnX = GAME_WIDTH - 55;
+    this.add.rectangle(atkBtnX, joyY, 60, 60, 0x5a2a20, 0.8).setStrokeStyle(2, 0xcc6666);
+    this.add.text(atkBtnX, joyY, '\u2694\uFE0F', { fontSize: '24px' }).setOrigin(0.5);
+    this.atkBtnBounds = { x: atkBtnX, y: joyY, size: 60 };
 
     // Quit button
     const quitBtn = this.add.rectangle(45, joyY, 60, 34, 0x2a2520);
@@ -316,6 +302,40 @@ export class BrawlScene extends Phaser.Scene {
   update(_time: number, delta: number): void {
     if (this.finished || this.tutorialShowing || this.gamePaused) return;
     const dt = delta / 1000;
+
+    // Poll joystick — check the tracked pointer's current position each frame
+    if (this.joyConfig && this.joyConfig.pointerId >= 0) {
+      const jc = this.joyConfig;
+      // Find the pointer by checking all active pointers
+      const pointers = [this.input.pointer1, this.input.pointer2, this.input.activePointer];
+      let found = false;
+      for (const p of pointers) {
+        if (p && p.id === jc.pointerId) {
+          if (p.isDown) {
+            const pdx = p.x / DPR - jc.x;
+            const pdy = p.y / DPR - jc.y;
+            const pdist = Math.sqrt(pdx * pdx + pdy * pdy);
+            const clampDist = Math.min(pdist, jc.radius);
+            if (pdist > 5) {
+              jc.knob.setPosition(jc.x + (pdx / pdist) * clampDist, jc.y + (pdy / pdist) * clampDist);
+              this.moveDir = { x: pdx / pdist, y: pdy / pdist };
+              this.catFacing = Math.atan2(pdy, pdx);
+            } else {
+              jc.knob.setPosition(jc.x, jc.y);
+              this.moveDir = { x: 0, y: 0 };
+            }
+            found = true;
+          }
+          break;
+        }
+      }
+      if (!found) {
+        // Pointer released
+        jc.pointerId = -1;
+        jc.knob.setPosition(jc.x, jc.y);
+        this.moveDir = { x: 0, y: 0 };
+      }
+    }
 
     // Keyboard movement
     let kx = 0, ky = 0;
