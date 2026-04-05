@@ -245,6 +245,11 @@ export class NonogramScene extends Phaser.Scene {
       eventBus.emit('navigate', 'TownMapScene');
     });
 
+    // Clean up on scene stop (prevent timer/tween memory leaks)
+    this.events.once('shutdown', () => {
+      this.time.removeAllEvents();
+      this.tweens.killAll();
+    });
     eventBus.emit('show-ui');
     eventBus.emit('set-active-tab', 'TownScene');
   }

@@ -409,6 +409,11 @@ export class ChaseScene extends Phaser.Scene {
       loop: true,
     });
 
+    // Clean up on scene stop (prevent timer/tween memory leaks)
+    this.events.once('shutdown', () => {
+      this.time.removeAllEvents();
+      this.tweens.killAll();
+    });
     eventBus.emit('show-ui');
   }
 

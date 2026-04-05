@@ -133,10 +133,6 @@ export function loadGame(): SaveData | null {
     if (data.totalJobsCompleted === undefined) data.totalJobsCompleted = 0;
     if (data.reputationScore === undefined) data.reputationScore = 0;
     if (!data.journal) data.journal = [];
-    // Ensure cats have assignedRoom field
-    for (const cat of data.cats ?? []) {
-      if (cat.assignedRoom === undefined) cat.assignedRoom = undefined;
-    }
     data.version = SAVE_VERSION;
     return data;
   } catch {
@@ -179,9 +175,6 @@ export function loadFromSlot(slot: number): SaveData | null {
     if (data.totalJobsCompleted === undefined) data.totalJobsCompleted = 0;
     if (data.reputationScore === undefined) data.reputationScore = 0;
     if (!data.journal) data.journal = [];
-    for (const cat of data.cats ?? []) {
-      if (cat.assignedRoom === undefined) cat.assignedRoom = undefined;
-    }
     data.version = SAVE_VERSION;
     return data;
   } catch {

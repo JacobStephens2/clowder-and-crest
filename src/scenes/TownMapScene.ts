@@ -192,6 +192,12 @@ export class TownMapScene extends Phaser.Scene {
       });
     }
 
+    // Clean up timers and tweens when scene stops (prevents memory leaks)
+    this.events.once('shutdown', () => {
+      this.time.removeAllEvents();
+      this.tweens.killAll();
+    });
+
     eventBus.emit('show-ui');
     eventBus.emit('set-active-tab', 'town');
   }

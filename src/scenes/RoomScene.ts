@@ -65,6 +65,13 @@ export class RoomScene extends Phaser.Scene {
     const save = getGameState();
     if (!save) return;
 
+    // Clean up on scene stop
+    this.events.once('shutdown', () => {
+      this.time.removeAllEvents();
+      this.tweens.killAll();
+      this.input.keyboard?.removeAllListeners();
+    });
+
     eventBus.emit('show-ui');
     eventBus.emit('set-active-tab', 'guildhall');
 

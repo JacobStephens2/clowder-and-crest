@@ -173,6 +173,11 @@ export class TitleScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // Hide overlays on title
+    this.events.once('shutdown', () => {
+      this.time.removeAllEvents();
+      this.tweens.killAll();
+    });
+
     eventBus.emit('hide-ui');
   }
 

@@ -325,6 +325,11 @@ export class FishingScene extends Phaser.Scene {
       this.isReeling = false;
     });
 
+    // Clean up on scene stop (prevent timer/tween memory leaks)
+    this.events.once('shutdown', () => {
+      this.time.removeAllEvents();
+      this.tweens.killAll();
+    });
     eventBus.emit('show-ui');
   }
 

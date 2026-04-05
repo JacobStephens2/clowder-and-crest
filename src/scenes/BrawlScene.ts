@@ -295,6 +295,11 @@ export class BrawlScene extends Phaser.Scene {
     // Start first wave
     this.time.delayedCall(500, () => this.spawnWave());
 
+    // Clean up on scene stop (prevent timer/tween memory leaks)
+    this.events.once('shutdown', () => {
+      this.time.removeAllEvents();
+      this.tweens.killAll();
+    });
     eventBus.emit('show-ui');
     eventBus.emit('set-active-tab', 'TownScene');
   }
