@@ -1229,29 +1229,36 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
     <div class="assign-choice" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center">
       ${(() => {
         // Each category gets exactly 2 thematic minigame choices
+        // One action-oriented, one puzzle-oriented — creates a real decision
         const opts: string[] = [];
         switch (job.category) {
           case 'pest_control':
+            // Action: chase rats through the building | Reflex: whack rats popping from holes
+            opts.push('<button class="btn-puzzle minigame-btn" data-game="chase" style="flex:1;min-width:140px">\u{1F400} Chase</button>');
             opts.push('<button class="btn-puzzle minigame-btn" data-game="hunt" style="flex:1;min-width:140px">\u{1F3AF} Hunt</button>');
-            opts.push('<button class="btn-puzzle minigame-btn" data-game="brawl" style="flex:1;min-width:140px">\u{2694}\u{FE0F} Fight</button>');
             break;
           case 'courier':
-            opts.push('<button class="btn-puzzle minigame-btn" data-game="chase" style="flex:1;min-width:140px">\u{1F400} Street Run</button>');
-            opts.push('<button class="btn-puzzle minigame-btn" data-game="nonogram" style="flex:1;min-width:140px">\u{1F4DC} Read Map</button>');
+            // Navigation: push through crowded alleys | Patience: wait for the right moment
+            opts.push('<button class="btn-puzzle minigame-btn" data-game="sokoban" style="flex:1;min-width:140px">\u{1F4E6} Navigate</button>');
+            opts.push('<button class="btn-puzzle minigame-btn" data-game="fishing" style="flex:1;min-width:140px">\u{1F3A3} River Route</button>');
             break;
           case 'guard':
+            // Combat: fight off intruders | Strategy: block the entry points
             opts.push('<button class="btn-puzzle minigame-btn" data-game="brawl" style="flex:1;min-width:140px">\u{2694}\u{FE0F} Fight</button>');
-            opts.push('<button class="btn-puzzle minigame-btn" data-game="fishing" style="flex:1;min-width:140px">\u{1F3A3} Dock Patrol</button>');
+            opts.push('<button class="btn-puzzle minigame-btn" data-game="puzzle" style="flex:1;min-width:140px">\u{1F9E9} Barricade</button>');
             break;
           case 'sacred':
+            // Contemplation: decipher sacred patterns | Meditation: patient focus
             opts.push('<button class="btn-puzzle minigame-btn" data-game="nonogram" style="flex:1;min-width:140px">\u{1F4DC} Read Signs</button>');
-            opts.push('<button class="btn-puzzle minigame-btn" data-game="puzzle" style="flex:1;min-width:140px">\u{1F9E9} Arrange</button>');
+            opts.push('<button class="btn-puzzle minigame-btn" data-game="fishing" style="flex:1;min-width:140px">\u{1F3A3} Vigil</button>');
             break;
           case 'detection':
-            opts.push('<button class="btn-puzzle minigame-btn" data-game="nonogram" style="flex:1;min-width:140px">\u{1F4DC} Decipher</button>');
+            // Pursuit: follow the suspect | Analysis: piece together the clues
             opts.push('<button class="btn-puzzle minigame-btn" data-game="chase" style="flex:1;min-width:140px">\u{1F400} Follow</button>');
+            opts.push('<button class="btn-puzzle minigame-btn" data-game="nonogram" style="flex:1;min-width:140px">\u{1F4DC} Decipher</button>');
             break;
           case 'shadow':
+            // Stealth: sneak through undetected | Cracking: bypass security
             opts.push('<button class="btn-puzzle minigame-btn" data-game="chase" style="flex:1;min-width:140px">\u{1F400} Sneak</button>');
             opts.push('<button class="btn-puzzle minigame-btn" data-game="nonogram" style="flex:1;min-width:140px">\u{1F4DC} Crack Code</button>');
             break;
