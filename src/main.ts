@@ -11,6 +11,7 @@ import { RoomScene } from './scenes/RoomScene';
 import { FishingScene } from './scenes/FishingScene';
 import { HuntScene } from './scenes/HuntScene';
 import { NonogramScene } from './scenes/NonogramScene';
+import { BrawlScene } from './scenes/BrawlScene';
 import { eventBus } from './utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS, BREED_NAMES, STAT_NAMES, ALL_BREED_IDS } from './utils/constants';
 import {
@@ -61,7 +62,7 @@ const config: Phaser.Types.Core.GameConfig = {
     pixelArt: false,
     antialias: true,
   },
-  scene: [BootScene, TitleScene, GuildhallScene, TownScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene, HuntScene, NonogramScene],
+  scene: [BootScene, TitleScene, GuildhallScene, TownScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene, HuntScene, NonogramScene, BrawlScene],
 };
 
 const game = new Phaser.Game(config);
@@ -224,7 +225,7 @@ function setActiveTab(scene: string): void {
 }
 
 function switchScene(target: string, data?: object): void {
-  const sceneKeys = ['GuildhallScene', 'TownScene', 'PuzzleScene', 'SokobanScene', 'ChaseScene', 'FishingScene', 'HuntScene', 'NonogramScene', 'TitleScene', 'RoomScene'];
+  const sceneKeys = ['GuildhallScene', 'TownScene', 'PuzzleScene', 'SokobanScene', 'ChaseScene', 'FishingScene', 'HuntScene', 'NonogramScene', 'BrawlScene', 'TitleScene', 'RoomScene'];
   for (const key of sceneKeys) {
     if (game.scene.isActive(key) || game.scene.isPaused(key)) {
       game.scene.stop(key);
@@ -1215,6 +1216,7 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
       ${job.category === 'guard' ? '<button class="btn-puzzle minigame-btn" data-game="fishing" style="flex:1;min-width:140px">\u{1F3A3} Dock Patrol</button>' : ''}
       ${['pest_control', 'courier', 'detection', 'shadow'].includes(job.category) ? '<button class="btn-puzzle minigame-btn" data-game="chase" style="flex:1;min-width:140px">\u{1F400} ${job.category === "courier" ? "Street Run" : job.category === "shadow" ? "Sneak" : "Chase"}</button>' : ''}
       ${job.category === 'pest_control' ? '<button class="btn-puzzle minigame-btn" data-game="hunt" style="flex:1;min-width:140px">\u{1F3AF} Hunt</button>' : ''}
+      ${['pest_control', 'guard'].includes(job.category) ? '<button class="btn-puzzle minigame-btn" data-game="brawl" style="flex:1;min-width:140px">\u{2694}\u{FE0F} Fight</button>' : ''}
       ${['sacred', 'detection', 'shadow'].includes(job.category) ? '<button class="btn-puzzle minigame-btn" data-game="nonogram" style="flex:1;min-width:140px">\u{1F4DC} ${job.category === "shadow" ? "Crack Code" : job.category === "detection" ? "Decipher" : "Read Signs"}</button>' : ''}
     </div>
     <div style="margin-top:16px;padding-top:12px;border-top:1px solid #3a3530">
@@ -1256,6 +1258,9 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
         break;
       case 'nonogram':
         switchScene('NonogramScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
+        break;
+      case 'brawl':
+        switchScene('BrawlScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id, catBreed: cat.breed });
         break;
       case 'puzzle':
       default: {
