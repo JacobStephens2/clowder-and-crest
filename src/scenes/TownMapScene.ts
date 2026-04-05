@@ -5,6 +5,7 @@ import { getGameState } from '../main';
 import { getCurrentPhase } from '../systems/DayTimer';
 import { createDpad } from '../ui/sceneHelpers';
 import { playSfx } from '../systems/SfxManager';
+import { getAvailableRecruits } from '../systems/CatManager';
 
 // ── Grid layout ──
 const COLS = 8;
@@ -102,6 +103,7 @@ export class TownMapScene extends Phaser.Scene {
   private buildingLabels: Map<string, Phaser.GameObjects.Text> = new Map();
   private promptText: Phaser.GameObjects.Text | null = null;
   private activeDoor: BuildingDef | null = null;
+  private strayCats: { breed: string; col: number; row: number; sprite: Phaser.GameObjects.Sprite; nameLabel: Phaser.GameObjects.Text }[] = [];
 
   constructor() {
     super({ key: 'TownMapScene' });
@@ -131,6 +133,9 @@ export class TownMapScene extends Phaser.Scene {
 
     // Spawn a few wandering NPC cats
     this.spawnNPCCats();
+
+    // Spawn recruitable stray cats
+    this.spawnStrayCats();
 
     // Controls
     this.setupControls();
@@ -480,6 +485,74 @@ export class TownMapScene extends Phaser.Scene {
     }
   }
 
+  private spawnStrayCats(): void {
+    const save = getGameState();
+    if (!save) return;
+    this.strayCats = [];
+
+    const recruits = getAvailableRecruits(save);
+    if (recruits.length === 0) return;
+
+    // Find walkable tiles away from player and buildings
+    const pathTiles: { col: number; row: number }[] = [];
+    for (let r = 2; r < ROWS - 2; r++) {
+      for (let c = 1; c < COLS - 1; c++) {
+        if (this.grid[r][c] === PATH && !(r === this.playerPos.row && c === this.playerPos.col)) {
+          pathTiles.push({ col: c, row: r });
+        }
+      }
+    }
+
+    // Place up to 2 stray cats
+    const count = Math.min(2, recruits.length, pathTiles.length);
+    for (let i = 0; i < count; i++) {
+      const breed = recruits[i];
+      const tileIdx = Math.floor(Math.random() * pathTiles.length);
+      const tile = pathTiles[tileIdx];
+      pathTiles.splice(tileIdx, 1);
+
+      const { x, y } = toWorld(tile.col, tile.row);
+      const idleKey = `${breed.id}_idle_south`;
+
+      let sprite: Phaser.GameObjects.Sprite;
+      if (this.textures.exists(idleKey)) {
+        sprite = this.add.sprite(x, y, idleKey);
+        sprite.setScale(0.75);
+        sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      } else {
+        // Fallback — won't have sprite but still trackable
+        sprite = this.add.sprite(x, y, 'pixel');
+      }
+
+      // Breed name label above the stray
+      const nameLabel = this.add.text(x, y - 22, `Stray ${breed.name}`, {
+        fontFamily: 'Georgia, serif', fontSize: '8px', color: '#dda055',
+      }).setOrigin(0.5);
+
+      // Question mark indicator
+      const qMark = this.add.text(x, y - 32, '?', {
+        fontFamily: 'Georgia, serif', fontSize: '14px', color: '#dda055',
+      }).setOrigin(0.5);
+      this.tweens.add({
+        targets: qMark, y: y - 36, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      });
+
+      this.strayCats.push({ breed: breed.id, col: tile.col, row: tile.row, sprite, nameLabel });
+
+      // Gentle idle animation
+      this.time.addEvent({
+        delay: 4000 + Math.random() * 3000,
+        callback: () => {
+          const dirs = ['south', 'north', 'east', 'west'];
+          const dir = dirs[Math.floor(Math.random() * dirs.length)];
+          const key = `${breed.id}_idle_${dir}`;
+          if (this.textures.exists(key)) sprite.setTexture(key);
+        },
+        loop: true,
+      });
+    }
+  }
+
   private setupControls(): void {
     if (this.input.keyboard) {
       this.input.keyboard.on('keydown', (e: KeyboardEvent) => {
@@ -614,6 +687,26 @@ export class TownMapScene extends Phaser.Scene {
     if (this.activeDoor) {
       const label = this.buildingLabels.get(this.activeDoor.id);
       if (label) label.setColor('#c4956a');
+    }
+
+    // Check for stray cat proximity — trigger recruit when standing next to one
+    for (const stray of this.strayCats) {
+      const dist = Math.abs(this.playerPos.col - stray.col) + Math.abs(this.playerPos.row - stray.row);
+      if (dist <= 1) {
+        if (this.promptText) {
+          this.promptText.setText(`Talk to stray ${stray.breed}`);
+          this.promptText.setAlpha(1);
+        }
+        // If standing on the same tile, trigger recruit
+        if (dist === 0) {
+          eventBus.emit('recruit-cat', stray.breed);
+          // Remove the stray from the map
+          stray.sprite.destroy();
+          stray.nameLabel.destroy();
+          this.strayCats = this.strayCats.filter((s) => s !== stray);
+        }
+        return; // Don't show building prompt if near a stray
+      }
     }
   }
 
