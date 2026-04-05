@@ -124,6 +124,8 @@ export function loadGame(): SaveData | null {
     if (!raw) return null;
     const data = JSON.parse(raw) as SaveData;
     // Migrate saves forward instead of destroying them
+    if (!Array.isArray(data.cats)) data.cats = [];
+    if (!Array.isArray(data.rooms)) data.rooms = [{ id: 'sleeping', unlocked: true }, { id: 'kitchen', unlocked: false }, { id: 'operations', unlocked: false }];
     if (!data.stationedCats) data.stationedCats = [];
     if (!data.bonds) data.bonds = [];
     if (!data.flags) data.flags = {};
@@ -166,6 +168,8 @@ export function loadFromSlot(slot: number): SaveData | null {
     if (!raw) return null;
     const data = JSON.parse(raw) as SaveData;
     // Apply same migration as loadGame
+    if (!Array.isArray(data.cats)) data.cats = [];
+    if (!Array.isArray(data.rooms)) data.rooms = [{ id: 'sleeping', unlocked: true }, { id: 'kitchen', unlocked: false }, { id: 'operations', unlocked: false }];
     if (!data.stationedCats) data.stationedCats = [];
     if (!data.bonds) data.bonds = [];
     if (!data.flags) data.flags = {};

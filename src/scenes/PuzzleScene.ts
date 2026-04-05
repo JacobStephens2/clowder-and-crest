@@ -221,6 +221,11 @@ export class PuzzleScene extends Phaser.Scene {
       eventBus.emit('navigate', 'TownMapScene');
     });
 
+    this.events.once('shutdown', () => {
+      this.time.removeAllEvents();
+      this.tweens.killAll();
+    });
+
     eventBus.emit('show-ui');
   }
 

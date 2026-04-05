@@ -796,6 +796,12 @@ export class SokobanScene extends Phaser.Scene {
     makeArrow(dpadX - dpadSize - dpadGap, dpadY, 'left', '\u25C0');
     makeArrow(dpadX + dpadSize + dpadGap, dpadY, 'right', '\u25B6');
 
+    this.events.once('shutdown', () => {
+      this.time.removeAllEvents();
+      this.tweens.killAll();
+      this.input.keyboard?.removeAllListeners();
+    });
+
     eventBus.emit('show-ui');
   }
 
