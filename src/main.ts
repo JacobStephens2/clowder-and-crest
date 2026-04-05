@@ -336,6 +336,10 @@ eventBus.on('show-ui', () => {
 
 eventBus.on('set-active-tab', setActiveTab);
 
+eventBus.on('close-town-overlay', () => {
+  overlayLayer.querySelectorAll('.town-overlay').forEach((el) => el.remove());
+});
+
 eventBus.on('fish-changed', () => {
   updateStatusBar();
 });

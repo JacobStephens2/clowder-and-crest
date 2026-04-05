@@ -516,6 +516,9 @@ export class TownMapScene extends Phaser.Scene {
     this.playerPos = { col: nc, row: nr };
     const dest = toWorld(nc, nr);
 
+    // Close any open town overlay when the player moves
+    eventBus.emit('close-town-overlay');
+
     // Walk animation
     const dir = Math.abs(dx) > Math.abs(dy)
       ? (dx > 0 ? 'east' : 'west')
