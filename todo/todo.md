@@ -15,4 +15,7 @@
 [x] increase the base attack radius or the hit box in the fight game, as i felt like rats were in my hit box, but yet they weren't getting hit
 [x] open the town map view after a mini game or puzzle / job is resolved
 [x] make sure the rat chase / pac man games can always be completed successfully. I had one where it seemed like there was no path around the dog to get to the rat, so I lost without a chance of winning
-[] where does the game have procedural generation / room for this? / room for LLM created content on the fly / on demand?
+[x] where does the game have procedural generation / room for this? / room for LLM created content on the fly / on demand?
+[x] add terrain to some fight mini games
+[x] make it so that you can accept a job, but then you have to go to that location to do it
+[] have at least two paths to the rat in the rat chase game, this should help prevent cases where the player cannot get around the dog to get to the rat

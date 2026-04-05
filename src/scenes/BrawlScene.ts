@@ -64,6 +64,7 @@ export class BrawlScene extends Phaser.Scene {
   private moveDir = { x: 0, y: 0 };
   private keys: Record<string, boolean> = {};
   private tutorialShowing = false;
+  private obstacles: { x: number; y: number; r: number }[] = [];
 
   constructor() {
     super({ key: 'BrawlScene' });
@@ -142,6 +143,29 @@ export class BrawlScene extends Phaser.Scene {
         ARENA_TOP + 20 + Math.random() * (ARENA_H - 40),
         2 + Math.random() * 3
       );
+    }
+
+    // Terrain obstacles (barrels/crates) — 2-4 obstacles depending on difficulty
+    this.obstacles = [];
+    const obstacleCount = this.difficulty === 'hard' ? 4 : this.difficulty === 'medium' ? 3 : 2;
+    for (let i = 0; i < obstacleCount; i++) {
+      const ox = ARENA_LEFT + 40 + Math.random() * (ARENA_W - 80);
+      const oy = ARENA_TOP + 40 + Math.random() * (ARENA_H - 80);
+      // Don't place too close to center (player spawn)
+      if (Math.abs(ox - GAME_WIDTH / 2) < 50 && Math.abs(oy - (ARENA_TOP + ARENA_H / 2)) < 50) continue;
+      const or = 14;
+      this.obstacles.push({ x: ox, y: oy, r: or });
+
+      // Draw barrel
+      const obsGfx = this.add.graphics();
+      obsGfx.fillStyle(0x4a3a28);
+      obsGfx.fillCircle(ox, oy, or);
+      obsGfx.lineStyle(1, 0x3a2a18);
+      obsGfx.strokeCircle(ox, oy, or);
+      // Barrel bands
+      obsGfx.lineStyle(1, 0x5a4a38, 0.5);
+      obsGfx.strokeCircle(ox, oy, or - 3);
+      obsGfx.strokeCircle(ox, oy, or - 7);
     }
 
     // Attack slash graphics (drawn on top)
@@ -257,6 +281,17 @@ export class BrawlScene extends Phaser.Scene {
       }
     }
 
+    // Obstacle collision for cat
+    for (const obs of this.obstacles) {
+      const odx = this.catX - obs.x;
+      const ody = this.catY - obs.y;
+      const od = Math.sqrt(odx * odx + ody * ody);
+      if (od < obs.r + CAT_SIZE && od > 0) {
+        this.catX = obs.x + (odx / od) * (obs.r + CAT_SIZE);
+        this.catY = obs.y + (ody / od) * (obs.r + CAT_SIZE);
+      }
+    }
+
     this.catSprite.setPosition(this.catX, this.catY);
 
     // Invincibility timer
@@ -301,6 +336,17 @@ export class BrawlScene extends Phaser.Scene {
 
       rat.x = Phaser.Math.Clamp(rat.x, ARENA_LEFT + RAT_SIZE, ARENA_RIGHT - RAT_SIZE);
       rat.y = Phaser.Math.Clamp(rat.y, ARENA_TOP + RAT_SIZE, ARENA_BOTTOM - RAT_SIZE);
+
+      // Obstacle collision for rats
+      for (const obs of this.obstacles) {
+        const ox = rat.x - obs.x;
+        const oy = rat.y - obs.y;
+        const od = Math.sqrt(ox * ox + oy * oy);
+        if (od < obs.r + RAT_SIZE && od > 0) {
+          rat.x = obs.x + (ox / od) * (obs.r + RAT_SIZE);
+          rat.y = obs.y + (oy / od) * (obs.r + RAT_SIZE);
+        }
+      }
 
       // Rat attacks cat on contact (respects invincibility)
       rat.attackTimer -= dt;
