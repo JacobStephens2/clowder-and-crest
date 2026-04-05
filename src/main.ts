@@ -936,24 +936,6 @@ eventBus.on('show-town-overlay', () => {
     html += `<div style="padding:8px 12px;font-size:11px;color:#6b5b3e;font-family:Georgia,serif;font-style:italic;text-align:center">Stray cats wander the town streets. Walk up to one to talk.</div>`;
   }
 
-  // Daily cat wish
-  const wish = getDailyWish(gameState.day, gameState.cats, gameState.furniture.map(f => f.furnitureId));
-  if (wish && !gameState.flags[`wish_day_${gameState.day}`]) {
-    html += `<div class="town-section-divider"></div>`;
-    const needsFurniture = wish.requiresFurniture;
-    const FURNITURE_NAMES: Record<string, string> = { straw_bed: 'Straw Bed', fish_barrel: 'Fish Barrel', scratching_post: 'Scratching Post', potted_catnip: 'Potted Catnip' };
-    html += `<div class="town-job-card" style="border-left:3px solid ${needsFurniture ? '#6b5b3e' : '#dda055'};padding:8px 12px">
-      <div style="color:#dda055;font-size:13px;font-family:Georgia,serif">\u{1F4AD} ${wish.catName}'s Wish</div>
-      <div style="color:#8b7355;font-size:11px;margin:4px 0">"${wish.wish}"</div>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="color:#6b5b3e;font-size:10px">Reward: ${wish.reward}</span>
-        ${needsFurniture
-          ? `<span style="font-size:10px;color:#8b5b3e">Needs: ${FURNITURE_NAMES[needsFurniture] ?? needsFurniture}</span>`
-          : `<button class="town-job-accept" id="fulfill-wish">Fulfill (5 fish)</button>`}
-      </div>
-    </div>`;
-  }
-
   // Cat availability indicator
   html += `<div class="town-section-divider"></div>`;
   html += `<div style="padding:0 12px 8px"><div style="color:#c4956a;font-size:14px;margin-bottom:6px;font-family:Georgia,serif">Your Cats</div>`;
@@ -1058,39 +1040,6 @@ eventBus.on('show-town-overlay', () => {
       overlay.remove();
       eventBus.emit('show-town-overlay');
     });
-  });
-
-  // Wire up wish button
-  document.getElementById('fulfill-wish')?.addEventListener('click', () => {
-    if (!gameState || !spendFish(gameState, 5)) { showToast('Not enough fish!'); return; }
-    const wish = getDailyWish(gameState.day, gameState.cats, gameState.furniture.map(f => f.furnitureId));
-    if (!wish) return;
-    gameState.flags[`wish_day_${gameState.day}`] = true;
-    const cat = gameState.cats.find((c) => c.id === wish.catId);
-    if (cat) {
-      // Apply reward
-      if (wish.reward.includes('mood')) {
-        if (cat.mood === 'unhappy') cat.mood = 'tired';
-        else if (cat.mood === 'tired') cat.mood = 'content';
-        else cat.mood = 'happy';
-      }
-      if (wish.reward.includes('bond')) {
-        const playerCat = gameState.cats.find((c) => c.id === 'player_wildcat');
-        if (playerCat && cat.id !== playerCat.id) {
-          addBondPoints(gameState, playerCat.breed, cat.breed, 3);
-        }
-      }
-      if (wish.reward.includes('agility')) {
-        const statKey = 'hunting' as const;
-        cat.stats[statKey] = Math.min(10, cat.stats[statKey] + 1);
-      }
-    }
-    playSfx('sparkle');
-    showToast(`${wish.catName} is delighted! ${wish.reward}`);
-    saveGame(gameState);
-    updateStatusBar();
-    overlay.remove();
-    eventBus.emit('show-town-overlay');
   });
 
   // Wire up merchant buy buttons
