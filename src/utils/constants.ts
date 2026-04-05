@@ -66,4 +66,9 @@ export const SCENES = {
   BRAWL: 'BrawlScene',
   STEALTH: 'StealthScene',
   POUNCE: 'PounceScene',
+  PATROL: 'PatrolScene',
+  RITUAL: 'RitualScene',
+  SCENT_TRAIL: 'ScentTrailScene',
+  HEIST: 'HeistScene',
+  COURIER_RUN: 'CourierRunScene',
 } as const;

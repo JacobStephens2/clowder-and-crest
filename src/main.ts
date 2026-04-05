@@ -13,6 +13,11 @@ import { NonogramScene } from './scenes/NonogramScene';
 import { BrawlScene } from './scenes/BrawlScene';
 import { StealthScene } from './scenes/StealthScene';
 import { PounceScene } from './scenes/PounceScene';
+import { PatrolScene } from './scenes/PatrolScene';
+import { RitualScene } from './scenes/RitualScene';
+import { ScentTrailScene } from './scenes/ScentTrailScene';
+import { HeistScene } from './scenes/HeistScene';
+import { CourierRunScene } from './scenes/CourierRunScene';
 import { TownMapScene } from './scenes/TownMapScene';
 import { eventBus } from './utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS, BREED_NAMES, STAT_NAMES, ALL_BREED_IDS, SCENES } from './utils/constants';
@@ -79,7 +84,7 @@ const config: Phaser.Types.Core.GameConfig = {
   input: {
     activePointers: 2,
   },
-  scene: [BootScene, TitleScene, GuildhallScene, TownMapScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene, HuntScene, NonogramScene, BrawlScene, StealthScene, PounceScene],
+  scene: [BootScene, TitleScene, GuildhallScene, TownMapScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene, HuntScene, NonogramScene, BrawlScene, StealthScene, PounceScene, PatrolScene, RitualScene, ScentTrailScene, HeistScene, CourierRunScene],
 };
 
 const game = new Phaser.Game(config);
@@ -1367,34 +1372,43 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
           }
         };
 
+        // Unlock schedule: each chapter introduces 2 new minigames
+        // Ch.1: Chase + Hunt          Ch.2: Sokoban + Courier Run
+        // Ch.3: Brawl + Patrol        Ch.4: Nonogram + Ritual + Scent Trail
+        // Ch.5: Slide Blocks + Fishing Ch.6: Pounce + Heist    Ch.7: Stealth
         switch (job.category) {
           case 'pest_control':
             add('chase', '\u{1F400} Chase', 1);
             add('hunt', '\u{1F3AF} Hunt', 1);
             break;
           case 'courier':
+            add('courier_run', '\u{1F3C3} Sprint', 2);
             add('sokoban', '\u{1F4E6} Navigate', 2);
             add('puzzle', '\u{1F9E9} Slide Blocks', 5);
             break;
           case 'guard':
+            add('patrol', '\u{1F56F}\u{FE0F} Patrol', 3);
             add('brawl', '\u{2694}\u{FE0F} Fight', 3);
             add('pounce', '\u{1F43E} Pounce', 6);
             break;
           case 'sacred':
+            add('ritual', '\u{1F56F}\u{FE0F} Ritual', 4);
+            add('fishing', '\u{1F3A3} Vigil', 5);
             add('nonogram', '\u{1F4DC} Read Signs', 4);
-            add('fishing', '\u{1F3A3} Vigil', 3);
             break;
           case 'detection':
             add('chase', '\u{1F400} Follow', 1);
+            add('scent_trail', '\u{1F43E} Track', 4);
             add('stealth', '\u{1F43E} Stalk', 7);
             break;
           case 'shadow':
+            add('heist', '\u{1F510} Pick Lock', 6);
             add('stealth', '\u{1F43E} Sneak', 7);
             add('nonogram', '\u{1F4DC} Crack Code', 4);
             break;
         }
 
-        // If chapter gates removed all options, always offer Chase as fallback
+        // Fallback: always offer at least Chase
         if (opts.length === 0) {
           add('chase', '\u{1F400} Chase', 1);
         }
@@ -1443,6 +1457,21 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
         break;
       case 'stealth':
         switchScene('StealthScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id, catBreed: cat.breed });
+        break;
+      case 'patrol':
+        switchScene('PatrolScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
+        break;
+      case 'ritual':
+        switchScene('RitualScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
+        break;
+      case 'scent_trail':
+        switchScene('ScentTrailScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
+        break;
+      case 'heist':
+        switchScene('HeistScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id });
+        break;
+      case 'courier_run':
+        switchScene('CourierRunScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id, catBreed: cat.breed });
         break;
       case 'pounce':
         switchScene('PounceScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id, catBreed: cat.breed });
@@ -2151,12 +2180,12 @@ eventBus.on('chapter-advance', (chapter: number) => {
 
   // Announce new minigame unlock
   const newMinigame: Record<number, string> = {
-    2: 'New approach unlocked: Navigate (Sokoban) for courier jobs!',
-    3: 'New approaches unlocked: Fight (Brawl) and Fishing!',
-    4: 'New approach unlocked: Nonogram puzzles!',
-    5: 'New approach unlocked: Slide Blocks (Rush Hour)!',
-    6: 'New approach unlocked: Pounce (physics catapult)!',
-    7: 'New approach unlocked: Stealth!',
+    2: 'New approaches: Sprint (courier run) and Navigate (Sokoban)!',
+    3: 'New approaches: Patrol (lanterns) and Fight (brawl)!',
+    4: 'New approaches: Ritual (memory), Scent Trail, and Nonogram!',
+    5: 'New approaches: Slide Blocks and Vigil (fishing)!',
+    6: 'New approaches: Pounce (catapult) and Pick Lock (heist)!',
+    7: 'New approach: Stealth!',
   };
   if (newMinigame[chapter]) {
     setTimeout(() => showToast(newMinigame[chapter]), 2000);
