@@ -35,6 +35,7 @@ import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDay
 import { applyReputationShift, getReputationLabel, getReputationRecruitModifier, getReputationBonuses } from './systems/ReputationSystem';
 import { getComboMultiplier, updateCombo, getDailyWish, getCurrentFestival, trackEvent } from './systems/GameSystems';
 import conversationsData from './data/conversations.json';
+import { showNarrativeOverlay } from './ui/narrativeOverlay';
 
 // ──── Game State ────
 let gameState: SaveData | null = null;
@@ -2642,77 +2643,33 @@ eventBus.on('chapter-advance', (chapter: number) => {
 
   // Chapter 5 endgame acknowledgment
   if (chapter === 5) {
-    setTimeout(() => {
-      const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:#0a0908;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:30px;';
-      const catName = gameState?.playerCatName ?? 'The wildcat';
-      const repLabel = getReputationLabel(gameState?.reputationScore ?? 0);
-      const scenes = [
-        `The lean-to behind the grain market is long gone. In its place stands a guildhall — warm, furnished, and full of life.`,
+    const catName = gameState?.playerCatName ?? 'The wildcat';
+    const repLabel = getReputationLabel(gameState?.reputationScore ?? 0);
+    setTimeout(() => showNarrativeOverlay({
+      scenes: [
+        'The lean-to behind the grain market is long gone. In its place stands a guildhall — warm, furnished, and full of life.',
         `${catName} looks around the hall. Five cats, each with their own story, their own strength. A clowder.`,
-        `The town knows their names now. The merchants wave. The monks nod. Even the children leave fish by the door.`,
+        'The town knows their names now. The merchants wave. The monks nod. Even the children leave fish by the door.',
         `From a stray in a storm to ${repLabel === 'Noble' ? 'the most trusted guild in town' : repLabel === 'Shadowed' ? 'a guild that operates in the shadows, feared and wealthy' : 'a guild that has earned its place'}.`,
         `This is what ${catName} built. Not just a guild — a home.\n\nThank you for playing Clowder & Crest.`,
-      ];
-      let idx = 0;
-      const img = document.createElement('img');
-      img.src = 'assets/sprites/crest.png';
-      img.style.cssText = 'width:96px;height:96px;image-rendering:pixelated;margin-bottom:20px;opacity:0.8;';
-      overlay.appendChild(img);
-      const text = document.createElement('div');
-      text.style.cssText = 'color:#c4956a;font-family:Georgia,serif;font-size:15px;text-align:center;max-width:320px;line-height:1.7;white-space:pre-line;';
-      overlay.appendChild(text);
-      const hint = document.createElement('div');
-      hint.style.cssText = 'color:#555;font-size:11px;margin-top:16px;font-family:Georgia,serif;';
-      hint.textContent = 'Tap to continue';
-      overlay.appendChild(hint);
-      const show = () => {
-        if (idx >= scenes.length) { overlay.style.transition = 'opacity 0.5s'; overlay.style.opacity = '0'; setTimeout(() => overlay.remove(), 500); return; }
-        text.style.opacity = '0'; text.textContent = scenes[idx];
-        setTimeout(() => { text.style.transition = 'opacity 0.5s'; text.style.opacity = '1'; }, 50);
-        if (idx === scenes.length - 1) playSfx('chapter');
-        idx++;
-      };
-      show();
-      overlay.addEventListener('click', show);
-      document.body.appendChild(overlay);
-    }, 2000);
+      ],
+      image: 'assets/sprites/crest.png',
+      onScene: (i) => { if (i === 4) playSfx('chapter'); },
+    }), 2000);
   }
 
   // Chapter 6: The Rival — narrative scene
   if (chapter === 6) {
-    setTimeout(() => {
-      const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:#0a0908;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:30px;';
-      const scenes = [
+    setTimeout(() => showNarrativeOverlay({
+      scenes: [
         'Word arrived at dawn. A second guild had entered the town.',
         'They called themselves the Silver Paws — sleek, well-funded, and hungry for work.',
         'Their agents were already at the job board, undercutting prices and charming merchants.',
         `${gameState?.playerCatName ?? 'The wildcat'} watched from across the square. This was no longer about survival. This was about legacy.`,
         'Contested jobs will appear on the board. Complete them before the Silver Paws do — or risk losing everything you\'ve built.',
-      ];
-      let idx = 0;
-      const img = document.createElement('img');
-      img.src = 'assets/sprites/scenes/town_day.png';
-      img.style.cssText = 'width:280px;max-height:160px;image-rendering:pixelated;margin-bottom:16px;border-radius:4px;opacity:0.5;';
-      overlay.appendChild(img);
-      const text = document.createElement('div');
-      text.style.cssText = 'color:#c4956a;font-family:Georgia,serif;font-size:15px;text-align:center;max-width:320px;line-height:1.7;';
-      overlay.appendChild(text);
-      const hint = document.createElement('div');
-      hint.style.cssText = 'color:#555;font-size:11px;margin-top:16px;font-family:Georgia,serif;';
-      hint.textContent = 'Tap to continue';
-      overlay.appendChild(hint);
-      const show = () => {
-        if (idx >= scenes.length) { overlay.style.transition = 'opacity 0.5s'; overlay.style.opacity = '0'; setTimeout(() => overlay.remove(), 500); return; }
-        text.style.opacity = '0'; text.textContent = scenes[idx];
-        setTimeout(() => { text.style.transition = 'opacity 0.5s'; text.style.opacity = '1'; }, 50);
-        idx++;
-      };
-      show();
-      overlay.addEventListener('click', show);
-      document.body.appendChild(overlay);
-    }, 1000);
+      ],
+      image: 'assets/sprites/scenes/town_day.png',
+    }), 1000);
   }
 });
 
@@ -2725,150 +2682,54 @@ eventBus.on('rat-plague-start', () => {
     addJournalEntry(gameState, 'The Rat Plague has begun. The town is under siege.', 'event');
   }
 
-  // Dramatic plague onset — narrative scene
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:#0a0908;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:30px;';
-
-  const plagueScenes = [
-    'The granary fell first. Rats poured from the walls like dark water, overrunning the flour stores in a single night.',
-    'By morning, the cathedral cellar was lost. The monks fled to the upper floors. The market stalls were abandoned.',
-    'The townsfolk whispered of St. Rosalia — how her bones once drove plague from Palermo. But there were no saints\' bones here. Only cats.',
-    `${gameState?.playerCatName ?? 'The wildcat'} gathered the guild. This was no ordinary job. This was a siege. The town\'s survival depended on them.`,
-    'Complete 5 pest control jobs to drive the rats from the town. The guild will be tested. Not every day will be easy.',
-  ];
-
-  let idx = 0;
-  const sceneImg = document.createElement('img');
-  sceneImg.src = 'assets/sprites/scenes/town_plague.png';
-  sceneImg.style.cssText = 'width:280px;max-height:160px;image-rendering:pixelated;margin-bottom:16px;border-radius:4px;opacity:0.5;object-fit:cover;';
-  overlay.appendChild(sceneImg);
-
-  const textDiv = document.createElement('div');
-  textDiv.style.cssText = 'color:#cc6666;font-family:Georgia,serif;font-size:15px;text-align:center;max-width:320px;line-height:1.7;min-height:60px;';
-  overlay.appendChild(textDiv);
-
-  const hint = document.createElement('div');
-  hint.style.cssText = 'color:#555;font-family:Georgia,serif;font-size:11px;margin-top:16px;';
-  hint.textContent = 'Tap to continue';
-  overlay.appendChild(hint);
-
-  const showScene = () => {
-    if (idx >= plagueScenes.length) {
-      overlay.style.transition = 'opacity 0.5s';
-      overlay.style.opacity = '0';
-      setTimeout(() => overlay.remove(), 500);
-      return;
-    }
-    textDiv.style.opacity = '0';
-    textDiv.textContent = plagueScenes[idx];
-    setTimeout(() => { textDiv.style.transition = 'opacity 0.5s'; textDiv.style.opacity = '1'; }, 50);
-    if (idx === 0) playSfx('thunder');
-    idx++;
-  };
-
-  showScene();
-  overlay.addEventListener('click', showScene);
-  document.body.appendChild(overlay);
+  showNarrativeOverlay({
+    scenes: [
+      'The granary fell first. Rats poured from the walls like dark water, overrunning the flour stores in a single night.',
+      'By morning, the cathedral cellar was lost. The monks fled to the upper floors. The market stalls were abandoned.',
+      'The townsfolk whispered of St. Rosalia — how her bones once drove plague from Palermo. But there were no saints\' bones here. Only cats.',
+      `${gameState?.playerCatName ?? 'The wildcat'} gathered the guild. This was no ordinary job. This was a siege. The town's survival depended on them.`,
+      'Complete 5 pest control jobs to drive the rats from the town. The guild will be tested. Not every day will be easy.',
+    ],
+    image: 'assets/sprites/scenes/town_plague.png',
+    onScene: (i) => { if (i === 0) playSfx('thunder'); },
+  });
 });
 
 eventBus.on('rat-plague-resolved', () => {
   if (gameState) addJournalEntry(gameState, 'The Rat Plague has been resolved! The town is saved.', 'event');
-  // Dramatic resolution — St. Rosalia's procession
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:#0a0908;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:30px;';
-
   const catName = gameState?.playerCatName ?? 'The wildcat';
-  const resolutionScenes = [
-    'The last rat nest fell at dawn. The guild stood in the ruins of the granary, exhausted but unbroken.',
-    'Word spread through the town like sunlight after a storm. The cats had done what no one else could.',
-    'The monks emerged from the cathedral, carrying candles. The townsfolk lined the cobblestone streets.',
-    `They walked in procession — ${catName} at the front — through every quarter the rats had touched. Like Rosalia\'s bones through the streets of Palermo.`,
-    'The plague was over. The guild had earned its name. And the town would not forget.',
-  ];
-
-  let idx = 0;
-  const sceneImg = document.createElement('img');
-  sceneImg.src = 'assets/sprites/scenes/town_day.png';
-  sceneImg.style.cssText = 'width:280px;max-height:160px;image-rendering:pixelated;margin-bottom:16px;border-radius:4px;opacity:0.5;object-fit:cover;';
-  overlay.appendChild(sceneImg);
-
-  const textDiv = document.createElement('div');
-  textDiv.style.cssText = 'color:#c4956a;font-family:Georgia,serif;font-size:15px;text-align:center;max-width:320px;line-height:1.7;min-height:60px;';
-  overlay.appendChild(textDiv);
-
-  const hint = document.createElement('div');
-  hint.style.cssText = 'color:#555;font-family:Georgia,serif;font-size:11px;margin-top:16px;';
-  hint.textContent = 'Tap to continue';
-  overlay.appendChild(hint);
-
-  const showScene = () => {
-    if (idx >= resolutionScenes.length) {
-      overlay.style.transition = 'opacity 0.5s';
-      overlay.style.opacity = '0';
-      setTimeout(() => overlay.remove(), 500);
-      return;
-    }
-    textDiv.style.opacity = '0';
-    textDiv.textContent = resolutionScenes[idx];
-    setTimeout(() => { textDiv.style.transition = 'opacity 0.5s'; textDiv.style.opacity = '1'; }, 50);
-    if (idx === resolutionScenes.length - 1) playSfx('chapter');
-    idx++;
-  };
-
-  showScene();
-  overlay.addEventListener('click', showScene);
-  document.body.appendChild(overlay);
+  showNarrativeOverlay({
+    scenes: [
+      'The last rat nest fell at dawn. The guild stood in the ruins of the granary, exhausted but unbroken.',
+      'Word spread through the town like sunlight after a storm. The cats had done what no one else could.',
+      'The monks emerged from the cathedral, carrying candles. The townsfolk lined the cobblestone streets.',
+      `They walked in procession — ${catName} at the front — through every quarter the rats had touched. Like Rosalia's bones through the streets of Palermo.`,
+      'The plague was over. The guild had earned its name. And the town would not forget.',
+    ],
+    image: 'assets/sprites/scenes/town_day.png',
+    onScene: (i) => { if (i === 4) playSfx('chapter'); },
+  });
 });
 
 // Inquisition narrative scenes
 eventBus.on('inquisition-start', () => {
   if (gameState) addJournalEntry(gameState, 'The Bishop\'s Inquisitor has arrived to investigate the guild.', 'event');
 
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:#0a0908;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:30px;';
-
   const catName = gameState?.playerCatName ?? 'The wildcat';
   const repLabel = getReputationLabel(gameState?.reputationScore ?? 0);
   const lens = repLabel === 'Shadowed' ? 'hostile' : repLabel === 'Noble' ? 'respectful' : 'cautious';
 
-  const scenes = [
-    'A black-robed figure appeared at the guildhall gate at dawn. Behind him, two monks with ledgers.',
-    `"I am Brother Aldric, sent by His Excellency the Bishop. I am here to determine... what you are."`,
-    `He looked at ${catName} with ${lens} eyes. "Are you servants of the saints? Or something... else?"`,
-    `"For five days, I will observe. I will question your cats. I will watch what work you do."`,
-    `"Choose your jobs wisely. Sacred work speaks well of you. Shadow work... does not."`,
-  ];
-
-  let idx = 0;
-  const img = document.createElement('img');
-  img.src = 'assets/sprites/scenes/guildhall.png';
-  img.style.cssText = 'width:280px;image-rendering:pixelated;margin-bottom:16px;border-radius:4px;opacity:0.4;';
-  overlay.appendChild(img);
-  const txt = document.createElement('div');
-  txt.style.cssText = 'color:#c4956a;font-family:Georgia,serif;font-size:15px;text-align:center;max-width:320px;line-height:1.7;';
-  overlay.appendChild(txt);
-  const inqHint = document.createElement('div');
-  inqHint.style.cssText = 'color:#555;font-size:11px;margin-top:16px;font-family:Georgia,serif;';
-  inqHint.textContent = 'Tap to continue';
-  overlay.appendChild(inqHint);
-
-  const showInqScene = () => {
-    if (idx >= scenes.length) {
-      overlay.style.transition = 'opacity 0.5s';
-      overlay.style.opacity = '0';
-      setTimeout(() => overlay.remove(), 500);
-      return;
-    }
-    txt.style.opacity = '0';
-    txt.textContent = scenes[idx];
-    setTimeout(() => { txt.style.transition = 'opacity 0.5s'; txt.style.opacity = '1'; }, 50);
-    if (idx === 0) playSfx('thunder');
-    idx++;
-  };
-
-  showInqScene();
-  overlay.addEventListener('click', showInqScene);
-  document.body.appendChild(overlay);
+  showNarrativeOverlay({
+    scenes: [
+      'A black-robed figure appeared at the guildhall gate at dawn. Behind him, two monks with ledgers.',
+      `"I am Brother Aldric, sent by His Excellency the Bishop. I am here to determine... what you are."`,
+      `He looked at ${catName} with ${lens} eyes. "Are you servants of the saints? Or something... else?"`,
+      `"For five days, I will observe. I will question your cats. I will watch what work you do."`,
+      `"Choose your jobs wisely. Sacred work speaks well of you. Shadow work... does not."`,
+    ],
+    image: 'assets/sprites/scenes/guildhall.png',
+    onScene: (i) => { if (i === 0) playSfx('thunder'); },
+  });
 });
 
 eventBus.on('inquisition-verdict', (verdict: string) => {
@@ -2913,43 +2774,15 @@ eventBus.on('inquisition-verdict', (verdict: string) => {
 
   playSfx('chapter');
 
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:#0a0908;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:30px;';
-
-  let idx = 0;
-  const img = document.createElement('img');
-  img.src = 'assets/sprites/scenes/guildhall.png';
-  img.style.cssText = 'width:280px;image-rendering:pixelated;margin-bottom:16px;border-radius:4px;opacity:0.4;';
-  overlay.appendChild(img);
-  const txt = document.createElement('div');
-  txt.style.cssText = 'color:#c4956a;font-family:Georgia,serif;font-size:15px;text-align:center;max-width:320px;line-height:1.7;';
-  overlay.appendChild(txt);
-  const verdictHint = document.createElement('div');
-  verdictHint.style.cssText = 'color:#555;font-size:11px;margin-top:16px;font-family:Georgia,serif;';
-  verdictHint.textContent = 'Tap to continue';
-  overlay.appendChild(verdictHint);
-
-  const showVerdictScene = () => {
-    if (idx >= scenes.length) {
-      overlay.style.transition = 'opacity 0.5s';
-      overlay.style.opacity = '0';
-      setTimeout(() => {
-        overlay.remove();
-        if (verdict === 'condemned' && gameState && gameState.cats.length > 1) {
-          showExileChoice();
-        }
-      }, 500);
-      return;
-    }
-    txt.style.opacity = '0';
-    txt.textContent = scenes[idx];
-    setTimeout(() => { txt.style.transition = 'opacity 0.5s'; txt.style.opacity = '1'; }, 50);
-    idx++;
-  };
-
-  showVerdictScene();
-  overlay.addEventListener('click', showVerdictScene);
-  document.body.appendChild(overlay);
+  showNarrativeOverlay({
+    scenes,
+    image: 'assets/sprites/scenes/guildhall.png',
+    onComplete: () => {
+      if (verdict === 'condemned' && gameState && gameState.cats.length > 1) {
+        showExileChoice();
+      }
+    },
+  });
 });
 
 function showExileChoice(): void {
