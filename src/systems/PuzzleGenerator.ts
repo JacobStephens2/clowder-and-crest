@@ -75,9 +75,9 @@ function tryPlaceBlock(occupied: Set<string>, gridSize: number): PuzzleBlock | n
 }
 
 const DIFFICULTY_PARAMS: Record<string, { minBlocks: number; maxBlocks: number; minMoves: number; maxMoves: number }> = {
-  easy: { minBlocks: 4, maxBlocks: 6, minMoves: 3, maxMoves: 8 },
-  medium: { minBlocks: 6, maxBlocks: 9, minMoves: 6, maxMoves: 15 },
-  hard: { minBlocks: 8, maxBlocks: 12, minMoves: 10, maxMoves: 30 },
+  easy: { minBlocks: 5, maxBlocks: 7, minMoves: 5, maxMoves: 12 },
+  medium: { minBlocks: 7, maxBlocks: 10, minMoves: 8, maxMoves: 18 },
+  hard: { minBlocks: 9, maxBlocks: 12, minMoves: 12, maxMoves: 30 },
 };
 
 export function generatePuzzle(difficulty: 'easy' | 'medium' | 'hard'): PuzzleConfig | null {

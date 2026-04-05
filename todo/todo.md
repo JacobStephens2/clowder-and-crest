@@ -10,4 +10,5 @@
 [x] the first nonogram I encountered was 8x8 and would have taken a while, maybe make the first one the player encounters smaller, and the resolution seemed a bit low too. I wonder if this nonogram game would be better rendered by HTML than by Phaser.
 [x] add something the cat can pickup in the fight game that gives a new cat themed weapon
 [x] winning fight mini games / jobs should count towards the resolution of the rat plague
-[] the fight game still doesn't pause when the player clicks the pause button at the top
+[x] the fight game still doesn't pause when the player clicks the pause button at the top
+[x] some of the rush hour puzzles seem too easy

@@ -5,6 +5,7 @@ import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
 import { createDpad, showMinigameTutorial } from '../ui/sceneHelpers';
+import { isPaused } from '../systems/DayTimer';
 
 // ── Arena layout ──
 const ARENA_LEFT = 20;
@@ -274,7 +275,7 @@ export class BrawlScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
-    if (this.finished || this.tutorialShowing || this.gamePaused) return;
+    if (this.finished || this.tutorialShowing || this.gamePaused || isPaused()) return;
     const dt = delta / 1000;
 
     // Keyboard movement
