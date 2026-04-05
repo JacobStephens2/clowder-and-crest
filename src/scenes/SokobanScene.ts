@@ -754,6 +754,27 @@ export class SokobanScene extends Phaser.Scene {
       }
     });
 
+    // Swipe gesture for mobile
+    let swipeStart: { x: number; y: number } | null = null;
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      swipeStart = { x: pointer.x / DPR, y: pointer.y / DPR };
+    });
+    this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+      if (!swipeStart || this.solved || this.inputLocked) { swipeStart = null; return; }
+      const endX = pointer.x / DPR;
+      const endY = pointer.y / DPR;
+      const dx = endX - swipeStart.x;
+      const dy = endY - swipeStart.y;
+      swipeStart = null;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 30) return; // too short — let tap handler deal with it
+      if (Math.abs(dx) > Math.abs(dy)) {
+        this.tryMove(dx > 0 ? 'right' : 'left');
+      } else {
+        this.tryMove(dy > 0 ? 'down' : 'up');
+      }
+    });
+
     // Virtual d-pad for mobile (below the grid)
     const dpadY = OFFSET_Y + GRID_PX + 100;
     const dpadX = GAME_WIDTH / 2;
