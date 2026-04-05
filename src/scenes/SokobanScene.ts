@@ -727,13 +727,16 @@ export class SokobanScene extends Phaser.Scene {
       });
     }
 
-    // Tap/click input for movement
+    // Tap/click input for movement (on the grid only)
     this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
       if (this.solved || this.inputLocked) return;
 
-      // Convert pointer to grid coords relative to player
       const worldX = pointer.x / DPR;
       const worldY = pointer.y / DPR;
+
+      // Only accept taps within the puzzle grid area
+      if (worldX < OFFSET_X || worldX > OFFSET_X + GRID_PX ||
+          worldY < OFFSET_Y || worldY > OFFSET_Y + GRID_PX) return;
 
       const playerPx = OFFSET_X + this.playerPos.c * SOKOBAN_TILE + SOKOBAN_TILE / 2;
       const playerPy = OFFSET_Y + this.playerPos.r * SOKOBAN_TILE + SOKOBAN_TILE / 2;
@@ -741,16 +744,36 @@ export class SokobanScene extends Phaser.Scene {
       const dx = worldX - playerPx;
       const dy = worldY - playerPy;
 
-      // Ignore taps too close to the player (dead zone)
-      if (Math.abs(dx) < SOKOBAN_TILE * 0.3 && Math.abs(dy) < SOKOBAN_TILE * 0.3) return;
+      // Larger dead zone to prevent accidental moves
+      if (Math.abs(dx) < SOKOBAN_TILE * 0.5 && Math.abs(dy) < SOKOBAN_TILE * 0.5) return;
 
-      // Determine direction based on largest axis
       if (Math.abs(dx) > Math.abs(dy)) {
         this.tryMove(dx > 0 ? 'right' : 'left');
       } else {
         this.tryMove(dy > 0 ? 'down' : 'up');
       }
     });
+
+    // Virtual d-pad for mobile (below the grid)
+    const dpadY = OFFSET_Y + GRID_PX + 100;
+    const dpadX = GAME_WIDTH / 2;
+    const dpadSize = 44;
+    const dpadGap = 4;
+
+    const makeArrow = (x: number, y: number, dir: string, label: string) => {
+      const btn = this.add.rectangle(x, y, dpadSize, dpadSize, 0x2a2520, 0.8);
+      btn.setStrokeStyle(1, 0x6b5b3e);
+      btn.setInteractive({ useHandCursor: true });
+      this.add.text(x, y, label, { fontSize: '20px', color: '#c4956a' }).setOrigin(0.5);
+      btn.on('pointerdown', () => {
+        if (!this.solved && !this.inputLocked) this.tryMove(dir);
+      });
+    };
+
+    makeArrow(dpadX, dpadY - dpadSize - dpadGap, 'up', '\u25B2');
+    makeArrow(dpadX, dpadY + dpadSize + dpadGap, 'down', '\u25BC');
+    makeArrow(dpadX - dpadSize - dpadGap, dpadY, 'left', '\u25C0');
+    makeArrow(dpadX + dpadSize + dpadGap, dpadY, 'right', '\u25B6');
 
     eventBus.emit('show-ui');
   }
