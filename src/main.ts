@@ -279,6 +279,8 @@ function switchScene(target: string, data?: object): void {
       game.scene.stop(key);
     }
   }
+  // Clean up any orphaned scene overlays (tutorials, pause screens)
+  document.querySelectorAll('[style*="z-index: 9999"], [style*="z-index:9999"]').forEach((el) => el.remove());
   game.scene.start(target, data);
   // Show floating guild UI only on guild overview
   guildEndDayBtn.style.display = target === 'GuildhallScene' ? 'block' : 'none';

@@ -299,6 +299,7 @@ export class BrawlScene extends Phaser.Scene {
     this.events.once('shutdown', () => {
       this.time.removeAllEvents();
       this.tweens.killAll();
+      this.pauseOverlay?.remove();
     });
     eventBus.emit('show-ui');
     eventBus.emit('set-active-tab', 'town');
