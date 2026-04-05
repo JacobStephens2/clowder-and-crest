@@ -735,12 +735,12 @@ export class TownMapScene extends Phaser.Scene {
       this.playerSprite.play(walkKey);
     }
 
-    // Move sprite
+    // Move sprite — smooth easing
     if (this.playerSprite) {
       this.tweens.add({
         targets: this.playerSprite,
         x: dest.x, y: dest.y,
-        duration: 180,
+        duration: 160,
         ease: 'Linear',
         onComplete: () => {
           this.isMoving = false;
@@ -760,8 +760,8 @@ export class TownMapScene extends Phaser.Scene {
       this.tweens.add({
         targets: this.playerIndicator,
         x: dest.x, y: dest.y - 20,
-        duration: 180,
-        ease: 'Linear',
+        duration: 160,
+        ease: 'Sine.easeInOut',
         onComplete: () => {
           this.tweens.add({
             targets: this.playerIndicator,
@@ -814,10 +814,10 @@ export class TownMapScene extends Phaser.Scene {
       if (label) label.setColor('#c4956a');
     }
 
-    // Check for stray cat proximity — show prompt when adjacent, tap to recruit
+    // Check for stray cat proximity — show prompt when nearby, tap to recruit
     for (const stray of this.strayCats) {
       const dist = Math.abs(this.playerPos.col - stray.col) + Math.abs(this.playerPos.row - stray.row);
-      if (dist <= 1) {
+      if (dist <= 2) {
         if (this.promptText) {
           this.promptText.setText(`Tap to talk to stray`);
           this.promptText.setAlpha(1);
