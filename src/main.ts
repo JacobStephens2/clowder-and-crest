@@ -861,10 +861,24 @@ eventBus.on('show-town-overlay', () => {
 
   const plagueActive = gameState.flags.ratPlagueStarted && !gameState.flags.ratPlagueResolved;
 
+  // Calculate daily budget summary
+  const catUpkeep = gameState.cats.reduce((sum, c) => sum + 2 + Math.max(0, c.level - 1), 0);
+  const roomUpkeep = gameState.rooms.filter(r => r.unlocked).length;
+  const chapterCost = Math.max(0, gameState.chapter - 1) * 2;
+  const totalUpkeep = catUpkeep + roomUpkeep + chapterCost;
+  const stationedIncome = gameState.stationedCats.length > 0 ? gameState.stationedCats.length * 2 : 0;
+  const netDaily = stationedIncome - totalUpkeep;
+  const netColor = netDaily >= 0 ? '#4a8a4a' : '#cc6666';
+
   let html = `
     <div class="town-header">
       <div class="town-title">Town Square</div>
       <div class="town-day">Day ${gameState.day}</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:4px 12px;font-size:10px;font-family:Georgia,serif;color:#6b5b3e;background:rgba(42,37,32,0.4);margin:0 12px 8px;border-radius:4px">
+      <span>Upkeep: -${totalUpkeep}/day</span>
+      <span>Stationed: +${stationedIncome}/day</span>
+      <span style="color:${netColor};font-weight:bold">Net: ${netDaily >= 0 ? '+' : ''}${netDaily}/day</span>
     </div>
     ${(() => {
       const rep = gameState.reputationScore;
