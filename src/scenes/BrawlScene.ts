@@ -242,18 +242,22 @@ export class BrawlScene extends Phaser.Scene {
     const joyKnob = this.add.circle(joyX, joyY, 14, 0x6b5b3e, 0.8);
     joyBase.setInteractive({ draggable: false, useHandCursor: true });
 
-    // Joystick input via pointer tracking
+    // Joystick input via pointer tracking (tracks specific pointer for multi-touch)
     const joyZone = this.add.zone(joyX, joyY, joyRadius * 3, joyRadius * 3);
     joyZone.setInteractive({ useHandCursor: true });
-    let joyActive = false;
-    joyZone.on('pointerdown', () => { joyActive = true; });
-    this.input.on('pointerup', () => {
-      joyActive = false;
-      joyKnob.setPosition(joyX, joyY);
-      this.moveDir = { x: 0, y: 0 };
+    let joyPointerId = -1;
+    joyZone.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      joyPointerId = pointer.id;
+    });
+    this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+      if (pointer.id === joyPointerId) {
+        joyPointerId = -1;
+        joyKnob.setPosition(joyX, joyY);
+        this.moveDir = { x: 0, y: 0 };
+      }
     });
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-      if (!joyActive) return;
+      if (pointer.id !== joyPointerId) return;
       const dx = pointer.x / DPR - joyX;
       const dy = pointer.y / DPR - joyY;
       const dist = Math.sqrt(dx * dx + dy * dy);

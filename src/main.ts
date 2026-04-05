@@ -70,6 +70,9 @@ const config: Phaser.Types.Core.GameConfig = {
     pixelArt: false,
     antialias: true,
   },
+  input: {
+    activePointers: 2,
+  },
   scene: [BootScene, TitleScene, GuildhallScene, TownScene, TownMapScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene, HuntScene, NonogramScene, BrawlScene],
 };
 
