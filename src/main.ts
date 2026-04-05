@@ -1354,40 +1354,49 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
     <div style="font-size:11px;color:#6b5b3e;margin-bottom:8px;text-align:center">Choose your approach:</div>
     <div class="assign-choice" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center">
       ${(() => {
-        // Each category gets exactly 2 thematic minigame choices
-        // One action-oriented, one puzzle-oriented — creates a real decision
+        // Minigame choices: 2 per category, staggered by chapter unlock
+        // Ch.1: Chase | Ch.2: +Sokoban | Ch.3: +Brawl,Fishing
+        // Ch.4: +Nonogram | Ch.5: +Hunt | Ch.6: +Pounce | Ch.7: +Stealth
+        const ch = gameState?.chapter ?? 1;
         const opts: string[] = [];
+
+        // Helper: only show if chapter requirement met
+        const add = (game: string, label: string, minChapter: number) => {
+          if (ch >= minChapter) {
+            opts.push(`<button class="btn-puzzle minigame-btn" data-game="${game}" style="flex:1;min-width:140px">${label}</button>`);
+          }
+        };
+
         switch (job.category) {
           case 'pest_control':
-            // Action: chase rats through the building | Reflex: whack rats popping from holes
-            opts.push('<button class="btn-puzzle minigame-btn" data-game="chase" style="flex:1;min-width:140px">\u{1F400} Chase</button>');
-            opts.push('<button class="btn-puzzle minigame-btn" data-game="hunt" style="flex:1;min-width:140px">\u{1F3AF} Hunt</button>');
+            add('chase', '\u{1F400} Chase', 1);
+            add('hunt', '\u{1F3AF} Hunt', 5);
             break;
           case 'courier':
-            // Navigation: push through crowded alleys | Patience: wait for the right moment
-            opts.push('<button class="btn-puzzle minigame-btn" data-game="sokoban" style="flex:1;min-width:140px">\u{1F4E6} Navigate</button>');
-            opts.push('<button class="btn-puzzle minigame-btn" data-game="fishing" style="flex:1;min-width:140px">\u{1F3A3} River Route</button>');
+            add('sokoban', '\u{1F4E6} Navigate', 2);
+            add('fishing', '\u{1F3A3} River Route', 3);
             break;
           case 'guard':
-            // Combat: fight off intruders | Pounce: launch at targets
-            opts.push('<button class="btn-puzzle minigame-btn" data-game="brawl" style="flex:1;min-width:140px">\u{2694}\u{FE0F} Fight</button>');
-            opts.push('<button class="btn-puzzle minigame-btn" data-game="pounce" style="flex:1;min-width:140px">\u{1F43E} Pounce</button>');
+            add('brawl', '\u{2694}\u{FE0F} Fight', 3);
+            add('pounce', '\u{1F43E} Pounce', 6);
             break;
           case 'sacred':
-            // Contemplation: decipher sacred patterns | Meditation: patient focus
-            opts.push('<button class="btn-puzzle minigame-btn" data-game="nonogram" style="flex:1;min-width:140px">\u{1F4DC} Read Signs</button>');
-            opts.push('<button class="btn-puzzle minigame-btn" data-game="fishing" style="flex:1;min-width:140px">\u{1F3A3} Vigil</button>');
+            add('nonogram', '\u{1F4DC} Read Signs', 4);
+            add('fishing', '\u{1F3A3} Vigil', 3);
             break;
           case 'detection':
-            // Pursuit: follow the suspect | Stealth: sneak and observe
-            opts.push('<button class="btn-puzzle minigame-btn" data-game="chase" style="flex:1;min-width:140px">\u{1F400} Follow</button>');
-            opts.push('<button class="btn-puzzle minigame-btn" data-game="stealth" style="flex:1;min-width:140px">\u{1F43E} Stalk</button>');
+            add('chase', '\u{1F400} Follow', 1);
+            add('stealth', '\u{1F43E} Stalk', 7);
             break;
           case 'shadow':
-            // Stealth: sneak through undetected | Cracking: bypass security
-            opts.push('<button class="btn-puzzle minigame-btn" data-game="stealth" style="flex:1;min-width:140px">\u{1F43E} Sneak</button>');
-            opts.push('<button class="btn-puzzle minigame-btn" data-game="nonogram" style="flex:1;min-width:140px">\u{1F4DC} Crack Code</button>');
+            add('stealth', '\u{1F43E} Sneak', 7);
+            add('nonogram', '\u{1F4DC} Crack Code', 4);
             break;
+        }
+
+        // If chapter gates removed all options, always offer Chase as fallback
+        if (opts.length === 0) {
+          add('chase', '\u{1F400} Chase', 1);
         }
         return opts.join('\n      ');
       })()}
@@ -2140,11 +2149,25 @@ eventBus.on('chapter-advance', (chapter: number) => {
   if (gameState) addJournalEntry(gameState, `Chapter ${chapter}: ${name}`, 'chapter');
   showToast(`Chapter ${chapter}: ${name}`);
 
+  // Announce new minigame unlock
+  const newMinigame: Record<number, string> = {
+    2: 'New approach unlocked: Navigate (Sokoban) for courier jobs!',
+    3: 'New approaches unlocked: Fight (Brawl) and Fishing!',
+    4: 'New approach unlocked: Nonogram puzzles!',
+    5: 'New approach unlocked: Hunt (whack-a-mole)!',
+    6: 'New approach unlocked: Pounce (physics catapult)!',
+    7: 'New approach unlocked: Stealth!',
+  };
+  if (newMinigame[chapter]) {
+    setTimeout(() => showToast(newMinigame[chapter]), 2000);
+    if (gameState) addJournalEntry(gameState, newMinigame[chapter], 'event');
+  }
+
   // Show next chapter goals after a moment
   if (gameState) {
     const hint = getNextChapterHint(gameState);
     if (hint) {
-      setTimeout(() => showToast(hint), 3000);
+      setTimeout(() => showToast(hint), 4000);
     }
   }
 
