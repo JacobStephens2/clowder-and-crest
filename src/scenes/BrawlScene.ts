@@ -220,10 +220,6 @@ export class BrawlScene extends Phaser.Scene {
     }
 
     // Pause button (top-right)
-    const pauseBtn = this.add.text(GAME_WIDTH - 20, 30, '||', {
-      fontFamily: 'Georgia, serif', fontSize: '16px', color: '#8b7355',
-    }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
-    pauseBtn.on('pointerdown', () => this.togglePause());
 
     // Tap to attack
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
@@ -291,6 +287,12 @@ export class BrawlScene extends Phaser.Scene {
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
       eventBus.emit('navigate', 'TownMapScene');
     });
+
+    // Pause button
+    const pauseBtn = this.add.text(GAME_WIDTH - 20, 30, '||', {
+      fontFamily: 'Georgia, serif', fontSize: '16px', color: '#8b7355',
+    }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
+    pauseBtn.on('pointerdown', () => this.togglePause());
 
     // Start first wave
     this.time.delayedCall(500, () => this.spawnWave());
