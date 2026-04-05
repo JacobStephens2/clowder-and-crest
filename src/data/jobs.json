@@ -352,6 +352,28 @@
     "description": "A rival organization stores supplies in the old quarter. Sabotage them — the guild needs the advantage."
   },
   {
+    "id": "shadow_eavesdrop",
+    "name": "Tavern Eavesdrop",
+    "category": "shadow",
+    "difficulty": "easy",
+    "keyStats": ["stealth", "senses"],
+    "baseReward": 18,
+    "maxReward": 30,
+    "puzzleSkin": "tavern",
+    "description": "Listen in on a private conversation at the tavern. The information is worth more than fish."
+  },
+  {
+    "id": "shadow_forgery",
+    "name": "Forged Papers",
+    "category": "shadow",
+    "difficulty": "hard",
+    "keyStats": ["intelligence", "stealth", "charm"],
+    "baseReward": 35,
+    "maxReward": 55,
+    "puzzleSkin": "night",
+    "description": "Forge travel documents for a desperate family. Illegal — but the right thing to do. Probably."
+  },
+  {
     "id": "crest_pilgrimage",
     "name": "Saint's Vigil",
     "category": "sacred",
