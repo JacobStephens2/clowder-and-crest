@@ -99,7 +99,7 @@ export class TitleScene extends Phaser.Scene {
 
     // Pixel art cat sitting on wall — random breed and direction
     const breeds = ['wildcat', 'russian_blue', 'tuxedo', 'maine_coon', 'siamese', 'bengal'];
-    const dirs = ['south', 'north', 'east', 'west'];
+    const dirs = ['south', 'east', 'west'];
     const titleBreed = breeds[Math.floor(Math.random() * breeds.length)];
     const titleDir = dirs[Math.floor(Math.random() * dirs.length)];
     const titleKey = `${titleBreed}_idle_${titleDir}`;
