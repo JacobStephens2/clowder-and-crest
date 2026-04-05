@@ -8,33 +8,9 @@ Cat guild management game with Rush Hour sliding block puzzles. Built with Phase
 npm run dev          # Start Vite dev server on port 3200
 npm run build        # Type-check + production build to dist/
 npm run preview      # Preview production build locally
-npm run ota:publish  # Build + zip dist/ + write updates/manifest.json
-npm run release      # Alias for ota:publish
 ```
 
 Build output goes to `dist/`, which Apache serves directly.
-
-## OTA Updates (Capacitor)
-
-The Android APK ships with bundled web assets but checks for updates on launch via `@capgo/capacitor-updater` in manual mode. No app store reinstall needed.
-
-**How it works:**
-1. App launches, `src/systems/OtaUpdater.ts` runs
-2. Fetches `https://clowder.stephens.page/updates/manifest.json`
-3. Compares `manifest.version` against `__APP_VERSION__` (from package.json at build time)
-4. If newer, downloads the zip, stages it via `CapacitorUpdater.next()`
-5. Update activates on next app background or restart
-
-**To push an update:**
-1. Make changes, bump `version` in `package.json`
-2. Run `npm run ota:publish`
-3. That's it — installed apps pick it up on next launch
-
-**Files:**
-- `dist/updates/manifest.json` — version + zip URL
-- `dist/updates/<version>.zip` — zipped dist/ contents
-- `scripts/ota-publish.sh` — build script
-- `src/systems/OtaUpdater.ts` — client-side update checker
 
 ## Architecture
 
@@ -77,7 +53,6 @@ src/
 │   ├── SfxManager.ts        # 16 sound effects
 │   ├── ReputationSystem.ts  # Crest/Shadow scoring, recruit cost modifiers, tier bonuses
 │   ├── GameSystems.ts       # Combos, daily wishes, festivals, analytics
-│   └── OtaUpdater.ts        # Capacitor OTA update checker
 ├── ui/
 │   ├── overlay.css          # All HTML overlay styles
 │   ├── Panels.ts            # Cat panel, menu, rename prompt, furniture shop

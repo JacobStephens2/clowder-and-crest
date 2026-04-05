@@ -1,5 +1,4 @@
 import Phaser from 'phaser';
-import { checkForUpdates } from './systems/OtaUpdater';
 import { BootScene } from './scenes/BootScene';
 import { TitleScene } from './scenes/TitleScene';
 import { GuildhallScene } from './scenes/GuildhallScene';
@@ -86,7 +85,6 @@ const config: Phaser.Types.Core.GameConfig = {
 const game = new Phaser.Game(config);
 
 // ──── OTA Updates (Capacitor only, silent) ────
-checkForUpdates();
 
 // ──── Keyboard shortcuts ────
 window.addEventListener('keydown', (e) => {
