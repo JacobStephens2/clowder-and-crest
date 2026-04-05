@@ -5,3 +5,5 @@
 [x] Consider /var/www/clowder.stephens.page/todo/ideas/new-library-for-games-or-puzzles.md for either refinement to an existing game or system, or to add a new mini game or puzzle or something
 [x] look in /var/www/clowder.stephens.page for files that can be deleted and delete them
 [x] add another mini game or puzzle or way of completing jobs, brainstorm partly taking the documents into /var/www/clowder.stephens.page/source_documents into account
+[x] make dialogue with full screen art like Fire Emblem does it (keep the Clowder & Crest style though), here are inspiration screenshots: /var/www/clowder.stephens.page/todo/dialogue-full-screen-style-inspiration
+[] look for places to add art and sound effects

@@ -159,26 +159,30 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
   const portraitImgA = `<img src="assets/sprites/${breedA}/south.png" style="width:72px;height:72px;image-rendering:pixelated;margin-bottom:4px" />`;
   const portraitImgB = `<img src="assets/sprites/${breedB}/south.png" style="width:72px;height:72px;image-rendering:pixelated;margin-bottom:4px" />`;
 
+  // Fire Emblem-style layout: full-screen background, large portraits, bottom text box
+  overlay.style.cssText = 'position:fixed;inset:0;background:#0a0908;z-index:9999;cursor:pointer;overflow:hidden;';
+
   overlay.innerHTML = `
-    <img src="assets/sprites/dialogues/${sceneArt}.png" style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:420px;image-rendering:pixelated;opacity:0.25;pointer-events:none" />
-    <div class="conversation-portraits">
-      <div class="conversation-portrait" id="portrait-left" style="background:${colorA}">
-        ${portraitImgA}
-        <div class="portrait-name">${nameA}</div>
-        <div class="portrait-breed">${breedNameA}</div>
-      </div>
-      <div class="conversation-portrait" id="portrait-right" style="background:${colorB}">
-        ${portraitImgB}
-        <div class="portrait-name">${nameB}</div>
-        <div class="portrait-breed">${breedNameB}</div>
-      </div>
+    <!-- Full-screen scene background -->
+    <img src="assets/sprites/dialogues/${sceneArt}.png" style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:100%;height:100%;object-fit:cover;image-rendering:pixelated;opacity:0.3;pointer-events:none" />
+
+    <!-- Large character portraits — left and right -->
+    <div id="portrait-left" style="position:absolute;bottom:140px;left:10px;transition:opacity 0.2s,transform 0.2s;transform-origin:bottom left">
+      <img src="assets/sprites/${breedA}/south.png" style="width:120px;height:120px;image-rendering:pixelated;filter:drop-shadow(2px 4px 6px rgba(0,0,0,0.5))" />
     </div>
-    <div class="conversation-textbox">
-      <div class="conversation-speaker" id="conv-speaker"></div>
-      <div class="conversation-text" id="conv-text"></div>
-      <div class="conversation-advance">Tap to continue</div>
-      <button id="conv-skip" style="position:absolute;top:10px;right:16px;background:none;border:1px solid #3a3530;color:#6b5b3e;padding:4px 10px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer">Skip</button>
+    <div id="portrait-right" style="position:absolute;bottom:140px;right:10px;transition:opacity 0.2s,transform 0.2s;transform-origin:bottom right">
+      <img src="assets/sprites/${breedB}/south.png" style="width:120px;height:120px;image-rendering:pixelated;filter:drop-shadow(2px 4px 6px rgba(0,0,0,0.5))" />
     </div>
+
+    <!-- Text box at bottom -->
+    <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(10,9,8,0.95) 20%);padding:20px 20px 30px;min-height:130px">
+      <div id="conv-speaker" style="color:#c4956a;font-family:Georgia,serif;font-size:15px;margin-bottom:6px;font-weight:bold"></div>
+      <div id="conv-text" style="color:#d4c5a9;font-family:Georgia,serif;font-size:14px;line-height:1.6"></div>
+      <div style="color:#555;font-family:Georgia,serif;font-size:10px;margin-top:8px;text-align:right">Tap to continue</div>
+    </div>
+
+    <!-- Skip button -->
+    <button id="conv-skip" style="position:absolute;top:12px;right:12px;background:rgba(42,37,32,0.7);border:1px solid #3a3530;color:#6b5b3e;padding:6px 14px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer;z-index:10">Skip</button>
   `;
 
   deps.overlayLayer.appendChild(overlay);
@@ -210,11 +214,14 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
     const isA = line.speaker === breedA;
     const speakerName = isA ? nameA : nameB;
     const speakerBreed = isA ? breedNameA : breedNameB;
-    speaker.innerHTML = `${speakerName} <span class="speaker-breed">${speakerBreed}</span>`;
+    speaker.innerHTML = `${speakerName} <span style="font-size:11px;color:#8b7355;font-weight:normal;margin-left:6px">${speakerBreed}</span>`;
     text.textContent = line.text;
 
-    portraitLeft.classList.toggle('speaking', isA);
-    portraitRight.classList.toggle('speaking', !isA);
+    // Fire Emblem style: active speaker bright + scaled up, inactive dimmed
+    portraitLeft.style.opacity = isA ? '1' : '0.4';
+    portraitLeft.style.transform = isA ? 'scale(1.05)' : 'scale(0.9)';
+    portraitRight.style.opacity = isA ? '0.4' : '1';
+    portraitRight.style.transform = isA ? 'scale(0.9)' : 'scale(1.05)';
 
     lineIndex++;
   }
