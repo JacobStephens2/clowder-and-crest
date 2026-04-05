@@ -4,6 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT, ALL_BREED_IDS } from '../utils/constants'
 import { getGameState } from '../main';
 import { getCurrentPhase } from '../systems/DayTimer';
 import { createDpad } from '../ui/sceneHelpers';
+import { playSfx } from '../systems/SfxManager';
 
 // ── Grid layout ──
 const COLS = 8;
@@ -624,26 +625,9 @@ export class TownMapScene extends Phaser.Scene {
   }
 
   private enterBuilding(b: BuildingDef): void {
-    // Emit location-specific events that main.ts handles
-    switch (b.id) {
-      case 'jobs':
-        eventBus.emit('show-town-overlay', { section: 'jobs' });
-        break;
-      case 'market':
-        eventBus.emit('show-town-overlay', { section: 'recruit' });
-        break;
-      case 'tavern':
-        eventBus.emit('show-town-overlay', { section: 'all' });
-        break;
-      case 'cathedral':
-      case 'castle':
-      case 'docks':
-      case 'mill':
-        eventBus.emit('show-town-overlay', { section: 'jobs' });
-        break;
-      default:
-        eventBus.emit('show-town-overlay');
-        break;
-    }
+    playSfx('tap', 0.3);
+    // All buildings open the town overlay (which has jobs, recruit, merchant, etc.)
+    // The overlay has its own close button to return to the map
+    eventBus.emit('show-town-overlay');
   }
 }

@@ -154,7 +154,7 @@ export class ChaseScene extends Phaser.Scene {
   private ratTimer: Phaser.Time.TimerEvent | null = null;
   private dogTimer: Phaser.Time.TimerEvent | null = null;
   private dogPos = { r: 6, c: 6 };
-  private dogGfx!: Phaser.GameObjects.Text;
+  private dogGfx!: Phaser.GameObjects.GameObject & { x: number; y: number; setPosition: (x: number, y: number) => void };
   private dogStunned = false;
   private moveCount = 0;
   private timeLeft = 60;
@@ -580,7 +580,7 @@ export class ChaseScene extends Phaser.Scene {
         if (this.grid[r][c] === FLOOR) {
           const distCat = Math.abs(r - this.catPos.r) + Math.abs(c - this.catPos.c);
           const distRat = Math.abs(r - this.ratPos.r) + Math.abs(c - this.ratPos.c);
-          if (distCat > 4 && distRat > 3) floors.push({ r, c });
+          if (distCat > 6 && distRat > 4) floors.push({ r, c });
         }
       }
     }
@@ -590,30 +590,37 @@ export class ChaseScene extends Phaser.Scene {
     }
 
     const { x, y } = this.cellToWorld(this.dogPos.r, this.dogPos.c);
-    this.dogGfx = this.add.text(x, y, '\uD83D\uDC15', { fontSize: '20px' }).setOrigin(0.5);
+    if (this.textures.exists('dog')) {
+      const dogSprite = this.add.sprite(x, y, 'dog');
+      dogSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      dogSprite.setScale(0.85);
+      this.dogGfx = dogSprite;
+    } else {
+      this.dogGfx = this.add.text(x, y, '\uD83D\uDC15', { fontSize: '20px' }).setOrigin(0.5);
+    }
   }
 
   private moveDog(): void {
     if (this.caught || this.dogStunned) return;
 
-    // Dog chases the cat using simple pathfinding
-    const dr = this.catPos.r - this.dogPos.r;
-    const dc = this.catPos.c - this.dogPos.c;
-
-    // Try to move toward cat, prefer the larger axis
+    // Dog patrols semi-randomly — 40% chance to move toward cat, 60% random
+    // This makes the dog an avoidable hazard rather than an unavoidable pursuer
     const moves: { dr: number; dc: number }[] = [];
-    if (Math.abs(dr) >= Math.abs(dc)) {
-      if (dr !== 0) moves.push({ dr: dr > 0 ? 1 : -1, dc: 0 });
-      if (dc !== 0) moves.push({ dr: 0, dc: dc > 0 ? 1 : -1 });
-    } else {
-      if (dc !== 0) moves.push({ dr: 0, dc: dc > 0 ? 1 : -1 });
-      if (dr !== 0) moves.push({ dr: dr > 0 ? 1 : -1, dc: 0 });
+    if (Math.random() < 0.4) {
+      // Move toward cat
+      const dr = this.catPos.r - this.dogPos.r;
+      const dc = this.catPos.c - this.dogPos.c;
+      if (Math.abs(dr) >= Math.abs(dc)) {
+        if (dr !== 0) moves.push({ dr: dr > 0 ? 1 : -1, dc: 0 });
+        if (dc !== 0) moves.push({ dr: 0, dc: dc > 0 ? 1 : -1 });
+      } else {
+        if (dc !== 0) moves.push({ dr: 0, dc: dc > 0 ? 1 : -1 });
+        if (dr !== 0) moves.push({ dr: dr > 0 ? 1 : -1, dc: 0 });
+      }
     }
-    // Add random perpendicular move
-    if (moves.length === 0 || Math.random() < 0.2) {
-      const rndDir = DIRS[Math.floor(Math.random() * DIRS.length)];
-      moves.push({ dr: rndDir.dr, dc: rndDir.dc });
-    }
+    // Always add a random direction as fallback
+    const rndDir = DIRS[Math.floor(Math.random() * DIRS.length)];
+    moves.push({ dr: rndDir.dr, dc: rndDir.dc });
 
     for (const m of moves) {
       const nr = this.dogPos.r + m.dr;
@@ -624,6 +631,12 @@ export class ChaseScene extends Phaser.Scene {
         this.tweens.add({ targets: this.dogGfx, x: dest.x, y: dest.y, duration: 150, ease: 'Linear' });
         break;
       }
+    }
+
+    // Bark when close to cat (within 3 tiles)
+    const distToCat = Math.abs(this.dogPos.r - this.catPos.r) + Math.abs(this.dogPos.c - this.catPos.c);
+    if (distToCat <= 3 && Math.random() < 0.3) {
+      playSfx('bark', 0.3);
     }
 
     // Check collision with cat
@@ -639,6 +652,7 @@ export class ChaseScene extends Phaser.Scene {
     this.ratTimer?.destroy();
     this.dogTimer?.destroy();
 
+    playSfx('bark', 0.6);
     playSfx('hiss');
     this.cameras.main.flash(300, 139, 69, 19, false);
 

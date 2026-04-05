@@ -1242,10 +1242,10 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
       ${['courier', 'guard', 'sacred'].includes(job.category) ? '<button class="btn-puzzle minigame-btn" data-game="puzzle" style="flex:1;min-width:140px">\u{1F9E9} Slide Blocks</button>' : ''}
       ${['pest_control', 'guard'].includes(job.category) ? '<button class="btn-puzzle minigame-btn" data-game="sokoban" style="flex:1;min-width:140px">\u{1F4E6} Push Crates</button>' : ''}
       ${job.category === 'guard' ? '<button class="btn-puzzle minigame-btn" data-game="fishing" style="flex:1;min-width:140px">\u{1F3A3} Dock Patrol</button>' : ''}
-      ${['pest_control', 'courier', 'detection', 'shadow'].includes(job.category) ? '<button class="btn-puzzle minigame-btn" data-game="chase" style="flex:1;min-width:140px">\u{1F400} ${job.category === "courier" ? "Street Run" : job.category === "shadow" ? "Sneak" : "Chase"}</button>' : ''}
+      ${['pest_control', 'courier', 'detection', 'shadow'].includes(job.category) ? `<button class="btn-puzzle minigame-btn" data-game="chase" style="flex:1;min-width:140px">\u{1F400} ${job.category === 'courier' ? 'Street Run' : job.category === 'shadow' ? 'Sneak' : 'Chase'}</button>` : ''}
       ${job.category === 'pest_control' ? '<button class="btn-puzzle minigame-btn" data-game="hunt" style="flex:1;min-width:140px">\u{1F3AF} Hunt</button>' : ''}
       ${['pest_control', 'guard'].includes(job.category) ? '<button class="btn-puzzle minigame-btn" data-game="brawl" style="flex:1;min-width:140px">\u{2694}\u{FE0F} Fight</button>' : ''}
-      ${['sacred', 'detection', 'shadow'].includes(job.category) ? '<button class="btn-puzzle minigame-btn" data-game="nonogram" style="flex:1;min-width:140px">\u{1F4DC} ${job.category === "shadow" ? "Crack Code" : job.category === "detection" ? "Decipher" : "Read Signs"}</button>' : ''}
+      ${['sacred', 'detection', 'shadow'].includes(job.category) ? `<button class="btn-puzzle minigame-btn" data-game="nonogram" style="flex:1;min-width:140px">\u{1F4DC} ${job.category === 'shadow' ? 'Crack Code' : job.category === 'detection' ? 'Decipher' : 'Read Signs'}</button>` : ''}
     </div>
     <div style="margin-top:16px;padding-top:12px;border-top:1px solid #3a3530">
       ${cat.level >= 2

@@ -26,6 +26,7 @@ function getAudio(key: string): HTMLAudioElement | null {
     alarm: 'assets/sfx/alarm.mp3',
     crate_push: 'assets/sfx/crate_push.mp3',
     merchant: 'assets/sfx/merchant.mp3',
+    bark: 'assets/sfx/bark.mp3',
   };
   const path = paths[key];
   if (!path) return null;
