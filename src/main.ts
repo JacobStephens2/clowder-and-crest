@@ -403,7 +403,7 @@ function showIntroStory(catName: string, onComplete: () => void): void {
       scene: 'town',
     },
     {
-      text: `A lone wildcat — thin, soaked, and hungry — stumbled through the market square, seeking shelter from the downpour.`,
+      text: `${catName} — thin, soaked, and hungry — stumbled through the market square, seeking shelter from the downpour.`,
       scene: 'town',
     },
     {
@@ -411,7 +411,7 @@ function showIntroStory(catName: string, onComplete: () => void): void {
       scene: 'guildhall',
     },
     {
-      text: `On the market wall nearby, a notice fluttered in the wind: "PEST CONTROL NEEDED — Payment in fish."`,
+      text: `On the market wall nearby, a notice fluttered in the wind: "PEST CONTROL NEEDED — Payment in fish." ${catName}'s ears perked up.`,
       scene: 'guildhall',
     },
     {
@@ -419,7 +419,7 @@ function showIntroStory(catName: string, onComplete: () => void): void {
       scene: 'guildhall',
     },
     {
-      text: `Every guild starts somewhere. This one starts here — a stray, a storm, and a lean-to behind the grain market.`,
+      text: `Every guild starts somewhere. ${catName}'s starts here — a stray, a storm, and a lean-to behind the grain market.`,
       scene: 'town',
     },
   ];

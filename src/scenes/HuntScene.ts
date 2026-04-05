@@ -68,8 +68,8 @@ export class HuntScene extends Phaser.Scene {
     const state = getGameState();
     const cat = state?.cats.find((c) => c.id === this.catId);
     // Hunting stat gives more time
-    const huntingBonus = Math.min(10, (cat?.stats?.hunting ?? 5) - 3);
-    this.timeLeft = (this.difficulty === 'hard' ? 30 : this.difficulty === 'medium' ? 35 : 40) + huntingBonus;
+    const huntingBonus = Math.min(5, (cat?.stats?.hunting ?? 5) - 3);
+    this.timeLeft = (this.difficulty === 'hard' ? 18 : this.difficulty === 'medium' ? 22 : 25) + huntingBonus;
     this.maxMisses = this.difficulty === 'hard' ? 3 : this.difficulty === 'medium' ? 4 : 5;
   }
 
@@ -172,7 +172,7 @@ export class HuntScene extends Phaser.Scene {
     });
 
     // Spawn rats
-    const spawnDelay = this.difficulty === 'hard' ? 800 : this.difficulty === 'medium' ? 1100 : 1400;
+    const spawnDelay = this.difficulty === 'hard' ? 700 : this.difficulty === 'medium' ? 900 : 1100;
     this.spawnTimer = this.time.addEvent({
       delay: spawnDelay,
       callback: () => {
@@ -297,8 +297,8 @@ export class HuntScene extends Phaser.Scene {
     this.finished = true;
     this.cleanup();
 
-    const stars = this.score >= 8 && this.missed <= 1 ? 3
-      : this.score >= 5 && this.missed <= 3 ? 2 : 1;
+    const stars = this.score >= 6 && this.missed <= 1 ? 3
+      : this.score >= 4 && this.missed <= 2 ? 2 : 1;
 
     playSfx('victory');
 
