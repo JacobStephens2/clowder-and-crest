@@ -3,7 +3,7 @@ import { checkForUpdates } from './systems/OtaUpdater';
 import { BootScene } from './scenes/BootScene';
 import { TitleScene } from './scenes/TitleScene';
 import { GuildhallScene } from './scenes/GuildhallScene';
-import { TownScene } from './scenes/TownScene';
+// TownScene replaced by TownMapScene — kept as file but removed from config
 import { PuzzleScene } from './scenes/PuzzleScene';
 import { SokobanScene } from './scenes/SokobanScene';
 import { ChaseScene } from './scenes/ChaseScene';
@@ -33,7 +33,7 @@ import { getPuzzleByDifficulty, generatePuzzle } from './systems/PuzzleGenerator
 import { addBondPoints, processDailyBonds } from './systems/BondSystem';
 import { checkChapterAdvance, checkRatPlagueResolution, checkInquisitionResolution, getChapterName, getNextChapterHint } from './systems/ProgressionManager';
 import { startBgm, toggleMute, isMuted, switchToPuzzleMusic, switchToFightMusic, switchToNormalMusic, pauseMusic, resumeMusic } from './systems/MusicManager';
-import { playSfx, toggleSfxMute, isSfxMuted } from './systems/SfxManager';
+import { playSfx } from './systems/SfxManager';
 import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDayEnd, pauseDayTimer, resumeDayTimer, isPaused } from './systems/DayTimer';
 import { applyReputationShift, getReputationLabel, getReputationRecruitModifier, getReputationBonuses } from './systems/ReputationSystem';
 import { getComboMultiplier, updateCombo, getDailyWish, getCurrentFestival, trackEvent } from './systems/GameSystems';
@@ -75,7 +75,7 @@ const config: Phaser.Types.Core.GameConfig = {
   input: {
     activePointers: 2,
   },
-  scene: [BootScene, TitleScene, GuildhallScene, TownScene, TownMapScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene, HuntScene, NonogramScene, BrawlScene, StealthScene, PounceScene],
+  scene: [BootScene, TitleScene, GuildhallScene, TownMapScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene, HuntScene, NonogramScene, BrawlScene, StealthScene, PounceScene],
 };
 
 const game = new Phaser.Game(config);
@@ -1201,7 +1201,7 @@ function showAssignOverlay(job: JobDef): void {
 
   document.getElementById('assign-close')!.addEventListener('click', () => {
     overlay.remove();
-    // Refresh town overlay if we're on TownScene
+    // Refresh town overlay if closed from assign screen
     if (!overlayLayer.querySelector('.town-overlay')) {
       eventBus.emit('show-town-overlay');
     }

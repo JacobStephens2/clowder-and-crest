@@ -55,7 +55,6 @@ export const SCENES = {
   BOOT: 'BootScene',
   TITLE: 'TitleScene',
   GUILDHALL: 'GuildhallScene',
-  TOWN: 'TownScene',
   TOWN_MAP: 'TownMapScene',
   PUZZLE: 'PuzzleScene',
   SOKOBAN: 'SokobanScene',

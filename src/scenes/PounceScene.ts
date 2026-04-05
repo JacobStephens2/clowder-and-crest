@@ -165,7 +165,7 @@ export class PounceScene extends Phaser.Scene {
     });
 
     eventBus.emit('show-ui');
-    eventBus.emit('set-active-tab', 'TownScene');
+    eventBus.emit('set-active-tab', 'town');
   }
 
   private buildTarget(): void {

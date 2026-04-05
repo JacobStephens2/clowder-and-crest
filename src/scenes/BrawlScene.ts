@@ -301,7 +301,7 @@ export class BrawlScene extends Phaser.Scene {
       this.tweens.killAll();
     });
     eventBus.emit('show-ui');
-    eventBus.emit('set-active-tab', 'TownScene');
+    eventBus.emit('set-active-tab', 'town');
   }
 
   update(_time: number, delta: number): void {

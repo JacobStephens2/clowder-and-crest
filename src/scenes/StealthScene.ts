@@ -145,7 +145,7 @@ export class StealthScene extends Phaser.Scene {
     });
 
     eventBus.emit('show-ui');
-    eventBus.emit('set-active-tab', 'TownScene');
+    eventBus.emit('set-active-tab', 'town');
   }
 
   private generateLevel(): void {

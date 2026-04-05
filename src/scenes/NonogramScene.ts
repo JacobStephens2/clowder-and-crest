@@ -251,7 +251,7 @@ export class NonogramScene extends Phaser.Scene {
       this.tweens.killAll();
     });
     eventBus.emit('show-ui');
-    eventBus.emit('set-active-tab', 'TownScene');
+    eventBus.emit('set-active-tab', 'town');
   }
 
   private drawRowClues(): void {
