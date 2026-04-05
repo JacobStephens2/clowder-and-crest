@@ -23,8 +23,8 @@
 [x] in order to recruit a cat, show them walking around the town, and make the player talk to them to recruit them (still require the payment)
 [x] use the /var/www/clowder.stephens.page/music/fight tracks for the fight background music
 [x] ensure every part of the game has some pixel art unique to that part of the game
-[] in the [cat] appears screen, present an option to deny entry to the cat
-[] sometimes in trying to accept a job I get this in the console and can't accept it `clowder.stephens.page/:20  GET https://www.googletagmanager.com/gtag/js?id=G-81TZVKST2W net::ERR_BLOCKED_BY_CLIENT
+[x] in the [cat] appears screen, present an option to deny entry to the cat
+[x] sometimes in trying to accept a job I get this in the console and can't accept it `clowder.stephens.page/:20  GET https://www.googletagmanager.com/gtag/js?id=G-81TZVKST2W net::ERR_BLOCKED_BY_CLIENT
 index-DYiVPUgx.js:2      Phaser v3.80.1 (WebGL | Web Audio)  https://phaser.io
 index-DYiVPUgx.js:6 Uncaught TypeError: Cannot read properties of undefined (reading 'sys')
     at initialize.setTexture (index-DYiVPUgx.js:6:27380)
@@ -110,3 +110,5 @@ t @ index-DYiVPUgx.js:4
 requestAnimationFrame
 t @ index-DYiVPUgx.js:4
 `
+[x] ensure there is a way to close the town job board when it opens
+[] ensure the rat fight game can be paused

@@ -737,24 +737,28 @@ eventBus.on('recruit-cat', (breedId: string) => {
 
   const repMod = getReputationRecruitModifier(gameState.reputationScore);
   const adjustedCost = Math.floor(breed.recruitCost * repMod);
-  if (!spendFish(gameState, adjustedCost)) {
-    showToast('Not enough fish!');
-    return;
-  }
 
-  showRecruitNamePrompt(breedId, breed.name);
+  showRecruitNamePrompt(breedId, breed.name, adjustedCost);
 });
 
-function showRecruitNamePrompt(breedId: string, breedName: string): void {
+function showRecruitNamePrompt(breedId: string, breedName: string, cost: number): void {
   const prompt = document.createElement('div');
   prompt.className = 'name-prompt-overlay';
   const color = BREED_COLORS[breedId] ?? '#8b7355';
+  const spriteExists = (ALL_BREED_IDS as readonly string[]).includes(breedId);
+  const avatarHtml = spriteExists
+    ? `<img src="assets/sprites/${breedId}/south.png" style="width:64px;height:64px;image-rendering:pixelated;border-radius:50%;background:${color};border:2px solid #6b5b3e;margin-bottom:16px" />`
+    : `<div style="width:60px;height:60px;border-radius:50%;background:${color};border:2px solid #6b5b3e;margin-bottom:16px"></div>`;
   prompt.innerHTML = `
-    <div style="width:60px;height:60px;border-radius:50%;background:${color};border:2px solid #6b5b3e;margin-bottom:16px"></div>
+    ${avatarHtml}
     <h2>A ${breedName} appears</h2>
     <p>A stray ${breedName} wants to join the guild. What will you call them?</p>
+    <div style="color:#8b7355;font-size:11px;margin-bottom:8px">Cost: ${cost} fish (you have ${gameState?.fish ?? 0})</div>
     <input type="text" id="recruit-name-input" placeholder="${breedName}" maxlength="20" autocomplete="off" />
-    <button id="recruit-name-submit">Welcome to the guild</button>
+    <div style="display:flex;gap:8px;margin-top:8px;justify-content:center">
+      <button id="recruit-name-submit" style="flex:1">Welcome (${cost} fish)</button>
+      <button id="recruit-deny" style="flex:1;background:#2a2520;border:1px solid #3a3530;color:#6b5b3e">Turn away</button>
+    </div>
   `;
   overlayLayer.appendChild(prompt);
 
@@ -762,7 +766,16 @@ function showRecruitNamePrompt(breedId: string, breedName: string): void {
   const submit = document.getElementById('recruit-name-submit')!;
   input.focus();
 
+  document.getElementById('recruit-deny')!.addEventListener('click', () => {
+    prompt.remove();
+    showToast(`The stray ${breedName} wanders off...`);
+  });
+
   const doSubmit = () => {
+    if (!gameState || !spendFish(gameState, cost)) {
+      showToast('Not enough fish!');
+      return;
+    }
     const name = input.value.trim() || breedName;
     prompt.remove();
 
@@ -794,6 +807,13 @@ eventBus.on('show-town-overlay', () => {
 
   const overlay = document.createElement('div');
   overlay.className = 'town-overlay';
+
+  // Close button
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'panel-close';
+  closeBtn.textContent = '\u00D7';
+  closeBtn.addEventListener('click', () => overlay.remove());
+  overlay.appendChild(closeBtn);
 
   // Cache daily jobs per day, filter out completed ones
   if (!cachedDailyJobs || cachedJobDay !== gameState.day) {

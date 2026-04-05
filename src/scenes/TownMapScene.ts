@@ -467,10 +467,12 @@ export class TownMapScene extends Phaser.Scene {
                 const dest = toWorld(nc, nr);
                 const walkDir = Math.abs(d.dc) > Math.abs(d.dr) ? (d.dc > 0 ? 'east' : 'west') : (d.dr > 0 ? 'south' : 'north');
                 const walkKey = `${breed}_walk_${walkDir}`;
+                if (!npc.active) return;
                 if (this.anims.exists(walkKey)) npc.play(walkKey);
                 this.tweens.add({
                   targets: npc, x: dest.x, y: dest.y, duration: 600, ease: 'Linear',
                   onComplete: () => {
+                    if (!npc.active) return;
                     const idleDir = `${breed}_idle_${walkDir}`;
                     if (this.textures.exists(idleDir)) { npc.stop(); npc.setTexture(idleDir); }
                   },
@@ -545,6 +547,7 @@ export class TownMapScene extends Phaser.Scene {
         callback: () => {
           const dirs = ['south', 'north', 'east', 'west'];
           const dir = dirs[Math.floor(Math.random() * dirs.length)];
+          if (!sprite.active) return;
           const key = `${breed.id}_idle_${dir}`;
           if (this.textures.exists(key)) sprite.setTexture(key);
         },
