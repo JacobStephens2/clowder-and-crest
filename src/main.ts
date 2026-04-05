@@ -57,6 +57,11 @@ function numFlag(key: string): number {
   return Number(gameState?.flags[key] ?? 0);
 }
 
+/** Escape HTML entities in user-provided strings to prevent injection. */
+function esc(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 // ──── Phaser Game ────
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -206,7 +211,7 @@ function updateGuildWishBanner(): void {
   guildWishBanner.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div>
-        <div style="color:#dda055;font-size:12px">\u{1F4AD} ${wish.catName}'s Wish</div>
+        <div style="color:#dda055;font-size:12px">\u{1F4AD} ${esc(wish.catName)}'s Wish</div>
         <div style="color:#8b7355;font-size:10px;margin-top:2px">"${wish.wish}"</div>
       </div>
       ${actionHtml}
@@ -229,7 +234,7 @@ function updateGuildWishBanner(): void {
     }
     saveGame(gameState);
     updateStatusBar();
-    showToast(`${wish.catName} is delighted! ${wish.reward}`);
+    showToast(`${esc(wish.catName)} is delighted! ${wish.reward}`);
     guildWishBanner.style.display = 'none';
   });
 }
@@ -1070,7 +1075,7 @@ eventBus.on('show-town-overlay', () => {
         <div class="town-stationed-card">
           <div class="town-stationed-avatar" style="background:${color}"></div>
           <div class="town-stationed-info">
-            <div class="town-stationed-name">${cat.name} — ${job.name}</div>
+            <div class="town-stationed-name">${esc(cat.name)} — ${job.name}</div>
             <div class="town-stationed-detail">~${dailyEarn} fish/day | ${daysWorked} day${daysWorked !== 1 ? 's' : ''} worked</div>
           </div>
         </div>
@@ -1099,7 +1104,7 @@ eventBus.on('show-town-overlay', () => {
     const breedName = BREED_NAMES[cat.breed] ?? cat.breed;
     const canRest = available && cat.mood !== 'happy';
     html += `<div style="background:rgba(42,37,32,0.6);padding:4px 8px;border-radius:4px;font-size:11px;font-family:Georgia,serif;border-left:3px solid ${statusColor};display:flex;align-items:center;gap:6px">
-      <span style="color:#c4956a">${cat.name}</span>
+      <span style="color:#c4956a">${esc(cat.name)}</span>
       <span style="color:${statusColor};font-size:9px">${statusText}</span>
       ${canRest ? `<button class="rest-cat-btn" data-cat-id="${cat.id}" style="font-size:9px;padding:1px 6px;background:#2a3530;border:1px solid #4a6a4a;color:#4a8a4a;border-radius:3px;cursor:pointer;margin-left:auto">Rest</button>` : ''}
     </div>`;
@@ -1185,7 +1190,7 @@ eventBus.on('show-town-overlay', () => {
       else if (cat.mood === 'tired') cat.mood = 'happy';
       else if (cat.mood === 'content') cat.mood = 'happy';
       playSfx('purr');
-      showToast(`${cat.name} spent the day resting. Mood: ${cat.mood}`);
+      showToast(`${esc(cat.name)} spent the day resting. Mood: ${cat.mood}`);
       saveGame(gameState!);
       overlay.remove();
       eventBus.emit('show-town-overlay');
@@ -1217,7 +1222,7 @@ eventBus.on('show-town-overlay', () => {
         const stats = ['hunting', 'stealth', 'intelligence', 'endurance', 'charm', 'senses'] as const;
         const stat = stats[Math.floor(Math.random() * stats.length)];
         cat.stats[stat] = Math.min(10, cat.stats[stat] + 1);
-        showToast(`${cat.name}'s ${stat} increased to ${cat.stats[stat]}!`);
+        showToast(`${esc(cat.name)}'s ${stat} increased to ${cat.stats[stat]}!`);
       } else if (itemId === 'blessing') {
         gameState!.flags.saintBlessing = true;
         showToast('Saint\'s Blessing protects your cats from the next mood drop.');
@@ -1308,7 +1313,7 @@ function showAssignOverlay(job: JobDef): void {
       <button class="assign-cat-btn" data-cat-index="${catIndex}">
         ${spriteImg}
         <div style="flex:1">
-          <div style="color:#c4956a">${cat.name} <span style="font-size:11px;color:#6b5b3e">${BREED_NAMES[cat.breed] ?? cat.breed}</span>${cat.specialization ? ` <span style="font-size:10px;color:${cat.specialization === job.category ? '#6b8ea6' : '#6b5b3e'}">${SPECIALIZATION_CATEGORIES[cat.specialization]?.icon ?? ''} ${SPECIALIZATION_CATEGORIES[cat.specialization]?.name ?? ''}</span>` : ''}</div>
+          <div style="color:#c4956a">${esc(cat.name)} <span style="font-size:11px;color:#6b5b3e">${BREED_NAMES[cat.breed] ?? cat.breed}</span>${cat.specialization ? ` <span style="font-size:10px;color:${cat.specialization === job.category ? '#6b8ea6' : '#6b5b3e'}">${SPECIALIZATION_CATEGORIES[cat.specialization]?.icon ?? ''} ${SPECIALIZATION_CATEGORIES[cat.specialization]?.name ?? ''}</span>` : ''}</div>
           <div style="font-size:12px;color:${matchColor};font-weight:bold">Match: ${matchPct}%</div>
           <div style="font-size:10px;color:#777">${statDetails}</div>
           ${traitEffects.length > 0 ? `<div style="font-size:10px;color:#8b7355">${traitEffects.join(' | ')}</div>` : ''}
@@ -1347,7 +1352,7 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
   overlay.innerHTML = `
     <button class="panel-close" id="choice-close">&times;</button>
     <h2>${job.name}</h2>
-    <div class="job-desc">${cat.name} the ${BREED_NAMES[cat.breed] ?? cat.breed} is ready.</div>
+    <div class="job-desc">${esc(cat.name)} the ${BREED_NAMES[cat.breed] ?? cat.breed} is ready.</div>
     <div style="font-size:11px;color:#6b5b3e;margin-bottom:8px;text-align:center">Choose your approach:</div>
     <div class="assign-choice" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center">
       ${(() => {
@@ -1458,7 +1463,7 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
     overlay.remove();
     gameState!.stationedCats.push({ catId: cat.id, jobId: job.id, dayStarted: gameState!.day });
     saveGame(gameState!);
-    showToast(`${cat.name} stationed at ${job.name}`);
+    showToast(`${esc(cat.name)} stationed at ${job.name}`);
     switchScene('TownMapScene');
   });
 }
@@ -1514,7 +1519,7 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
   }
   const comboCount = updateCombo(cat.id, job.category, gameState.day);
   if (comboCount >= 3) {
-    showToast(`${cat.name} is on a ${comboCount}-day ${job.category} streak! x${(1 + Math.min(comboCount, 5) * 0.05).toFixed(2)} reward`);
+    showToast(`${esc(cat.name)} is on a ${comboCount}-day ${job.category} streak! x${(1 + Math.min(comboCount, 5) * 0.05).toFixed(2)} reward`);
     playSfx('purr');
   }
 
@@ -1544,7 +1549,7 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
   if (repXpBonus !== 0) xp = Math.max(1, Math.floor(xp * (1 + repXpBonus)));
   const leveled = addXp(cat, xp);
   if (leveled) {
-    addJournalEntry(gameState, `${cat.name} reached level ${cat.level}!`, 'level');
+    addJournalEntry(gameState, `${esc(cat.name)} reached level ${cat.level}!`, 'level');
   }
 
   // Bond points (with rank-up celebration)
@@ -1553,10 +1558,10 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
       const result = addBondPoints(gameState, cat.breed, other.breed, 3);
       if (result?.rankUp) {
         const otherName = other.name;
-        addJournalEntry(gameState, `${cat.name} & ${otherName} reached ${result.newRank} rank.`, 'bond');
+        addJournalEntry(gameState, `${esc(cat.name)} & ${otherName} reached ${result.newRank} rank.`, 'bond');
         setTimeout(() => {
           playSfx('chapter');
-          showToast(`\u2764 ${cat.name} & ${otherName} reached ${result.newRank} rank!`);
+          showToast(`\u2764 ${esc(cat.name)} & ${otherName} reached ${result.newRank} rank!`);
         }, 2000);
       }
     }
@@ -1697,9 +1702,9 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
   if (gameState.cats.length === 1 && gameState.fish === 0 && gameState.cats[0].mood === 'unhappy') {
     showNarrativeOverlay({
       scenes: [
-        `${gameState.playerCatName} sat alone in the cold guildhall. The fish stores were empty. The other cats had gone.`,
+        `${esc(gameState.playerCatName)} sat alone in the cold guildhall. The fish stores were empty. The other cats had gone.`,
         'The lean-to behind the grain market felt smaller than ever. No food. No guild. No home.',
-        `${gameState.playerCatName} slipped out through the market gate before dawn. Perhaps another town. Perhaps another chance.`,
+        `${esc(gameState.playerCatName)} slipped out through the market gate before dawn. Perhaps another town. Perhaps another chance.`,
         'The guild is lost. But every story has another chapter...',
       ],
       image: 'assets/sprites/scenes/town.png',
@@ -2169,7 +2174,7 @@ eventBus.on('chapter-advance', (chapter: number) => {
         'Word arrived at dawn. A second guild had entered the town.',
         'They called themselves the Silver Paws — sleek, well-funded, and hungry for work.',
         'Their agents were already at the job board, undercutting prices and charming merchants.',
-        `${gameState?.playerCatName ?? 'The wildcat'} watched from across the square. This was no longer about survival. This was about legacy.`,
+        `${esc(gameState?.playerCatName ?? 'The wildcat')} watched from across the square. This was no longer about survival. This was about legacy.`,
         'Contested jobs will appear on the board. Complete them before the Silver Paws do — or risk losing everything you\'ve built.',
       ],
       image: 'assets/sprites/scenes/town_day.png',
@@ -2192,7 +2197,7 @@ eventBus.on('rat-plague-start', () => {
       'The granary fell first. Rats poured from the walls like dark water, overrunning the flour stores in a single night.',
       'By morning, the cathedral cellar was lost. The monks fled to the upper floors. The market stalls were abandoned.',
       'The townsfolk whispered of St. Rosalia — how her bones once drove plague from Palermo. But there were no saints\' bones here. Only cats.',
-      `${gameState?.playerCatName ?? 'The wildcat'} gathered the guild. This was no ordinary job. This was a siege. The town's survival depended on them.`,
+      `${esc(gameState?.playerCatName ?? 'The wildcat')} gathered the guild. This was no ordinary job. This was a siege. The town's survival depended on them.`,
       'Complete 5 pest control jobs to drive the rats from the town. The guild will be tested. Not every day will be easy.',
     ],
     image: 'assets/sprites/scenes/town_plague.png',
@@ -2299,7 +2304,7 @@ function showExileChoice(): void {
   const buttons = exilable.map((cat) => {
     const breedName = BREED_NAMES[cat.breed] ?? cat.breed;
     return `<button class="exile-btn" data-cat-id="${cat.id}" style="display:flex;align-items:center;gap:8px;padding:10px 16px;margin:4px 0;width:100%;background:rgba(80,30,30,0.4);border:1px solid #8b4444;border-radius:6px;color:#cc8888;font-size:13px;cursor:pointer;font-family:Georgia,serif">
-      ${cat.name} the ${breedName} (Lv.${cat.level})
+      ${esc(cat.name)} the ${breedName} (Lv.${cat.level})
     </button>`;
   }).join('');
 
@@ -2320,12 +2325,12 @@ function showExileChoice(): void {
       const catId = (btn as HTMLElement).dataset.catId!;
       const cat = gameState!.cats.find((c) => c.id === catId);
       if (cat) {
-        addJournalEntry(gameState!, `${cat.name} was exiled by the Inquisitor's decree.`, 'event');
+        addJournalEntry(gameState!, `${esc(cat.name)} was exiled by the Inquisitor's decree.`, 'event');
         gameState!.cats = gameState!.cats.filter((c) => c.id !== catId);
         gameState!.stationedCats = gameState!.stationedCats.filter((s) => s.catId !== catId);
         saveGame(gameState!);
         playSfx('cat_sad');
-        showToast(`${cat.name} has been exiled from the guild.`);
+        showToast(`${esc(cat.name)} has been exiled from the guild.`);
       }
       overlay.remove();
     });

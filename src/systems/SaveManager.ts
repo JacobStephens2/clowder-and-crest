@@ -109,12 +109,25 @@ export function createDefaultSave(playerCatName: string): SaveData {
   };
 }
 
+let saveFailCount = 0;
+
 export function saveGame(data: SaveData): void {
   try {
     data.lastPlayedTimestamp = Date.now();
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    saveFailCount = 0;
   } catch (e) {
+    saveFailCount++;
     console.error('Failed to save game:', e);
+    // Notify player on first failure (avoid spamming)
+    if (saveFailCount === 1) {
+      const warn = document.createElement('div');
+      warn.className = 'toast';
+      warn.style.color = '#cc6666';
+      warn.textContent = 'Save failed — storage may be full. Export your save from the menu.';
+      document.getElementById('overlay-layer')?.appendChild(warn);
+      setTimeout(() => warn.remove(), 5000);
+    }
   }
 }
 

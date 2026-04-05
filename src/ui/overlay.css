@@ -276,15 +276,6 @@ html, body {
   overflow: visible;
 }
 
-.portrait-name {
-  font-size: 11px;
-}
-
-.portrait-breed {
-  font-size: 8px;
-  opacity: 0.6;
-  margin-top: 2px;
-}
 
 .conversation-portrait.speaking {
   border-color: #c4956a;
@@ -804,69 +795,6 @@ html, body {
 .town-stationed-detail {
   font-size: 10px;
   color: #6b8b6b;
-}
-
-.town-recruit-card {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #2a2520;
-  border: 1px solid #3a3530;
-  border-radius: 6px;
-  padding: 8px 12px;
-  margin-bottom: 8px;
-}
-
-.town-recruit-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px solid #6b5b3e;
-  flex-shrink: 0;
-}
-
-.town-recruit-info {
-  flex: 1;
-}
-
-.town-recruit-name {
-  font-size: 14px;
-  color: #c4956a;
-}
-
-.town-recruit-cost {
-  font-size: 10px;
-  color: #888;
-}
-
-.town-recruit-btn {
-  padding: 6px 14px;
-  background: #3a5a3a;
-  border: 1px solid #4a6a4a;
-  border-radius: 4px;
-  color: #ddd;
-  font-family: Georgia, serif;
-  font-size: 11px;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.town-recruit-btn:active {
-  background: #4a6a4a;
-}
-
-.town-recruit-btn.disabled {
-  background: #333;
-  border-color: #444;
-  color: #555;
-  cursor: default;
-}
-
-.town-empty {
-  text-align: center;
-  font-size: 13px;
-  color: #555;
-  padding: 8px 0;
 }
 
 .town-end-day {
