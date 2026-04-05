@@ -1370,11 +1370,11 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
         switch (job.category) {
           case 'pest_control':
             add('chase', '\u{1F400} Chase', 1);
-            add('hunt', '\u{1F3AF} Hunt', 5);
+            add('hunt', '\u{1F3AF} Hunt', 1);
             break;
           case 'courier':
             add('sokoban', '\u{1F4E6} Navigate', 2);
-            add('fishing', '\u{1F3A3} River Route', 3);
+            add('puzzle', '\u{1F9E9} Slide Blocks', 5);
             break;
           case 'guard':
             add('brawl', '\u{2694}\u{FE0F} Fight', 3);
@@ -2154,7 +2154,7 @@ eventBus.on('chapter-advance', (chapter: number) => {
     2: 'New approach unlocked: Navigate (Sokoban) for courier jobs!',
     3: 'New approaches unlocked: Fight (Brawl) and Fishing!',
     4: 'New approach unlocked: Nonogram puzzles!',
-    5: 'New approach unlocked: Hunt (whack-a-mole)!',
+    5: 'New approach unlocked: Slide Blocks (Rush Hour)!',
     6: 'New approach unlocked: Pounce (physics catapult)!',
     7: 'New approach unlocked: Stealth!',
   };
