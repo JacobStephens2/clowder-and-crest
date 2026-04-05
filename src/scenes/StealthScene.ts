@@ -28,6 +28,7 @@ interface Guard {
   c: number;
   dir: number; // 0=north, 1=east, 2=south, 3=west
   gfx: Phaser.GameObjects.Graphics;
+  sprite?: Phaser.GameObjects.Sprite;
   visionGfx: Phaser.GameObjects.Graphics;
   patrolPath: { r: number; c: number }[];
   patrolIdx: number;
@@ -235,9 +236,18 @@ export class StealthScene extends Phaser.Scene {
       const gfx = this.add.graphics();
       const visionGfx = this.add.graphics();
 
+      // Guard sprite if available
+      let guardSprite: Phaser.GameObjects.Sprite | undefined;
+      const { x: gx, y: gy } = this.toWorld(gc, gr);
+      if (this.textures.exists('guard')) {
+        guardSprite = this.add.sprite(gx, gy, 'guard');
+        guardSprite.setScale(0.9);
+        guardSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      }
+
       const guard: Guard = {
         r: gr, c: gc, dir: Math.floor(Math.random() * 4),
-        gfx, visionGfx, patrolPath: path, patrolIdx: 0,
+        gfx, sprite: guardSprite, visionGfx, patrolPath: path, patrolIdx: 0,
       };
       this.guards.push(guard);
       this.drawGuard(guard);
@@ -248,14 +258,16 @@ export class StealthScene extends Phaser.Scene {
     const x = GRID_LEFT + guard.c * TILE + TILE / 2;
     const y = GRID_TOP + guard.r * TILE + TILE / 2;
 
-    guard.gfx.clear();
-    guard.gfx.fillStyle(0xcc6666);
-    guard.gfx.fillCircle(x, y, 8);
-    // Eye direction
+    // Position guard sprite or draw fallback
+    if (guard.sprite) {
+      guard.sprite.setPosition(x, y);
+    } else {
+      guard.gfx.clear();
+      guard.gfx.fillStyle(0xcc6666);
+      guard.gfx.fillCircle(x, y, 8);
+    }
     const dirs = [{ dx: 0, dy: -1 }, { dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }];
     const d = dirs[guard.dir];
-    guard.gfx.fillStyle(0xffffff);
-    guard.gfx.fillCircle(x + d.dx * 4, y + d.dy * 4, 3);
 
     // Vision cone
     guard.visionGfx.clear();
@@ -302,7 +314,11 @@ export class StealthScene extends Phaser.Scene {
     this.isMoving = true;
     this.catPos = { r: nr, c: nc };
     this.moveCount++;
+    const wasInGrass = this.inGrass;
     this.inGrass = this.grid[nr][nc] === GRASS;
+    // Sound feedback
+    if (this.inGrass && !wasInGrass) playSfx('purr', 0.2);
+    playSfx('tap', 0.15);
 
     const dest = this.toWorld(nc, nr);
     const dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'east' : 'west') : (dy > 0 ? 'south' : 'north');

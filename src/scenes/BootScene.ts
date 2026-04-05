@@ -123,6 +123,7 @@ export class BootScene extends Phaser.Scene {
     // Load rat, dog, fish, and barrel sprites
     this.load.image('rat', 'assets/sprites/rat.png');
     this.load.image('dog', 'assets/sprites/dog.png');
+    this.load.image('guard', 'assets/sprites/guard.png');
     this.load.image('fish_sprite', 'assets/sprites/fish.png');
     this.load.image('barrel_sprite', 'assets/sprites/barrel.png');
 
