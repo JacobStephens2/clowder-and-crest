@@ -19,3 +19,4 @@
 [x] remove wishes from the town board, showing them only in the guild view
 [x] try to match room placement to wishes, so if the Maine Coon wants to scratch something for example, require that cat to be placed in the room with the scratching post
 [x] resolve the bug in the rush hour puzzles where if you drag your cat to the exit, it can resolve, even if the path to the exit is not clear
+[x] I don't know how solvable the nonograms are, some seem very tough, as I got one with a 5x5 grid where there were 1's along the entire top and 1's along the entire side except for one row which had a 2 at the end.

@@ -48,10 +48,25 @@ function generateSolution(size: number): boolean[][] {
     const allColsFull = Array.from({ length: size }, (_, c) => grid.every((row) => row[c])).some(Boolean);
     if (allRowsFull || allColsFull) continue;
 
-    // Ensure at least some multi-group clues for interest
+    // Ensure clues are constraining enough to be solvable by logic
     const rowClues = grid.map((row) => getClues(row));
-    const hasMultiGroup = rowClues.some((c) => c.length >= 2);
-    if (size >= 5 && !hasMultiGroup) continue;
+    const colClues = Array.from({ length: size }, (_, c) =>
+      getClues(grid.map((row) => row[c]))
+    );
+
+    // Reject if too many rows or columns have only [1] clues (ambiguous)
+    const weakRows = rowClues.filter((c) => c.length === 1 && c[0] === 1).length;
+    const weakCols = colClues.filter((c) => c.length === 1 && c[0] === 1).length;
+    if (weakRows > size * 0.5 || weakCols > size * 0.5) continue;
+
+    // Require at least some clues with values >= 2 (constraining)
+    const strongRows = rowClues.filter((c) => c.some((v) => v >= 2)).length;
+    const strongCols = colClues.filter((c) => c.some((v) => v >= 2)).length;
+    if (strongRows < 2 || strongCols < 2) continue;
+
+    // Require at least one multi-group clue for interest
+    const hasMultiGroup = rowClues.some((c) => c.length >= 2) || colClues.some((c) => c.length >= 2);
+    if (!hasMultiGroup) continue;
 
     return grid;
   }
