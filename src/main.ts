@@ -168,15 +168,43 @@ function updateGuildWishBanner(): void {
   guildWishBanner.style.display = 'block';
   const needsFurn = wish.requiresFurniture;
   const FURN_NAMES: Record<string, string> = { straw_bed: 'Straw Bed', fish_barrel: 'Fish Barrel', scratching_post: 'Scratching Post', potted_catnip: 'Potted Catnip' };
+
+  // Check if the cat is in a room with the required furniture
+  let roomMismatch = false;
+  if (!needsFurn) {
+    const wishCat = gameState.cats.find((c) => c.id === wish.catId);
+    const catRoom = wishCat?.assignedRoom ?? 'sleeping';
+    const furnInRoom = gameState.furniture.filter((f) => f.room === catRoom).map((f) => f.furnitureId);
+    // Check if the wish's furniture (from the wish type) is in the cat's room
+    const wishFurnMap: Record<string, string> = {
+      'wants a fish treat': 'fish_barrel',
+      'wants to scratch something': 'scratching_post',
+      'wants to nap in a warm spot': 'straw_bed',
+      'wants to play with a friend': 'potted_catnip',
+    };
+    const requiredInRoom = wishFurnMap[wish.wish];
+    if (requiredInRoom && !furnInRoom.includes(requiredInRoom)) {
+      roomMismatch = true;
+    }
+  }
+
+  let actionHtml: string;
+  if (needsFurn) {
+    actionHtml = `<span style="font-size:10px;color:#8b5b3e;white-space:nowrap">Needs: ${FURN_NAMES[needsFurn] ?? needsFurn}</span>`;
+  } else if (roomMismatch) {
+    const wishCat = gameState.cats.find((c) => c.id === wish.catId);
+    actionHtml = `<span style="font-size:9px;color:#8b5b3e;white-space:nowrap">Move ${wishCat?.name ?? 'cat'} to the right room</span>`;
+  } else {
+    actionHtml = `<button id="guild-fulfill-wish" style="padding:4px 10px;background:#2a2520;border:1px solid #dda055;border-radius:4px;color:#dda055;font-size:11px;font-family:Georgia,serif;cursor:pointer;white-space:nowrap">5 fish</button>`;
+  }
+
   guildWishBanner.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div>
         <div style="color:#dda055;font-size:12px">\u{1F4AD} ${wish.catName}'s Wish</div>
         <div style="color:#8b7355;font-size:10px;margin-top:2px">"${wish.wish}"</div>
       </div>
-      ${needsFurn
-        ? `<span style="font-size:10px;color:#8b5b3e;white-space:nowrap">Needs: ${FURN_NAMES[needsFurn] ?? needsFurn}</span>`
-        : `<button id="guild-fulfill-wish" style="padding:4px 10px;background:#2a2520;border:1px solid #dda055;border-radius:4px;color:#dda055;font-size:11px;font-family:Georgia,serif;cursor:pointer;white-space:nowrap">5 fish</button>`}
+      ${actionHtml}
     </div>
   `;
   document.getElementById('guild-fulfill-wish')?.addEventListener('click', () => {

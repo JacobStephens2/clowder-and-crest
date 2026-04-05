@@ -236,8 +236,9 @@ export class PuzzleScene extends Phaser.Scene {
       const minPx = offsetX + minX * TILE_SIZE + block.length * TILE_SIZE / 2;
       const maxPx = offsetX + maxX * TILE_SIZE + block.length * TILE_SIZE / 2;
 
-      // Allow target block to go past grid edge for win
-      const actualMax = block.isTarget && this.config.exitSide === 'right'
+      // Allow target block to go past grid edge for win — but ONLY if path is clear to the edge
+      const pathClearToEdge = block.isTarget && this.config.exitSide === 'right' && maxX >= GRID_SIZE - block.length;
+      const actualMax = pathClearToEdge
         ? offsetX + 6 * TILE_SIZE + block.length * TILE_SIZE / 2
         : maxPx;
 
@@ -305,12 +306,15 @@ export class PuzzleScene extends Phaser.Scene {
       newGridPos = Math.round((sprite.rect.x - offsetX - block.length * TILE_SIZE / 2) / TILE_SIZE);
       newGridPos = Phaser.Math.Clamp(newGridPos, this.getMinPos(block, 'left'), this.getMaxPos(block, 'right'));
 
-      // Check win: target exits grid
+      // Check win: target exits grid (only if path was actually clear)
       if (block.isTarget && this.config.exitSide === 'right') {
-        const rawGridPos = (sprite.rect.x - offsetX - block.length * TILE_SIZE / 2) / TILE_SIZE;
-        if (rawGridPos > GRID_SIZE - block.length + 0.5) {
-          this.winPuzzle(sprite);
-          return;
+        const maxPos = this.getMaxPos(block, 'right');
+        if (maxPos >= GRID_SIZE - block.length) {
+          const rawGridPos = (sprite.rect.x - offsetX - block.length * TILE_SIZE / 2) / TILE_SIZE;
+          if (rawGridPos > GRID_SIZE - block.length + 0.5) {
+            this.winPuzzle(sprite);
+            return;
+          }
         }
       }
 

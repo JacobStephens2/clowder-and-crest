@@ -17,4 +17,5 @@
 [x] add swipe animations for the fight game
 [x] put a note / indicator on jobs which will progress the resolution of the rat plague. I'm having a tough time sometimes knowing what will help move that along
 [x] remove wishes from the town board, showing them only in the guild view
-[] try to match room placement to wishes, so if the Maine Coon wants to scratch something for example, require that cat to be placed in the room with the scratching post
+[x] try to match room placement to wishes, so if the Maine Coon wants to scratch something for example, require that cat to be placed in the room with the scratching post
+[x] resolve the bug in the rush hour puzzles where if you drag your cat to the exit, it can resolve, even if the path to the exit is not clear
