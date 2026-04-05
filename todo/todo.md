@@ -15,3 +15,4 @@
 [x] remove recruitment from the job board menu, make the only way to do it going to talk to the cat in town
 [x] remove the furniture shop from the menu, make the only way to get to it by going to the carpenter on the town map
 [x] add swipe animations for the fight game
+[x] put a note / indicator on jobs which will progress the resolution of the rat plague. I'm having a tough time sometimes knowing what will help move that along

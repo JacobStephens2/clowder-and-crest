@@ -887,6 +887,7 @@ eventBus.on('show-town-overlay', () => {
           <span class="town-job-icon">${catIcon}</span>
           <span class="town-job-name">${job.name}</span>
           ${isContested ? '<span style="font-size:9px;color:#cc6666;margin-left:4px">\u2694 CONTESTED</span>' : ''}
+          ${plagueActive && job.category === 'pest_control' ? '<span style="font-size:9px;color:#cc8844;margin-left:4px">\u{1F400} PLAGUE</span>' : ''}
           <span class="town-job-diff ${diffClass}">${job.difficulty}</span>
         </div>
         <div class="town-job-desc">${getJobFlavor(job.id, job.category, gameState!.day) || job.description}</div>
