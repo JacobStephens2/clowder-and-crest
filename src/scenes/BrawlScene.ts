@@ -64,6 +64,8 @@ export class BrawlScene extends Phaser.Scene {
   private moveDir = { x: 0, y: 0 };
   private keys: Record<string, boolean> = {};
   private tutorialShowing = false;
+  private gamePaused = false;
+  private pauseOverlay: HTMLDivElement | null = null;
   private obstacles: { x: number; y: number; r: number }[] = [];
 
   constructor() {
@@ -191,11 +193,18 @@ export class BrawlScene extends Phaser.Scene {
       this.input.keyboard.on('keydown', (e: KeyboardEvent) => {
         this.keys[e.key] = true;
         if (e.key === ' ') this.attack();
+        if (e.key === 'Escape') this.togglePause();
       });
       this.input.keyboard.on('keyup', (e: KeyboardEvent) => {
         this.keys[e.key] = false;
       });
     }
+
+    // Pause button (top-right)
+    const pauseBtn = this.add.text(GAME_WIDTH - 20, 30, '||', {
+      fontFamily: 'Georgia, serif', fontSize: '16px', color: '#8b7355',
+    }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
+    pauseBtn.on('pointerdown', () => this.togglePause());
 
     // Tap to attack
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
@@ -246,7 +255,7 @@ export class BrawlScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
-    if (this.finished || this.tutorialShowing) return;
+    if (this.finished || this.tutorialShowing || this.gamePaused) return;
     const dt = delta / 1000;
 
     // Keyboard movement
@@ -379,6 +388,24 @@ export class BrawlScene extends Phaser.Scene {
     if (a > Math.PI / 4 && a <= 3 * Math.PI / 4) return 'south';
     if (a > -3 * Math.PI / 4 && a <= -Math.PI / 4) return 'north';
     return 'west';
+  }
+
+  private togglePause(): void {
+    if (this.finished) return;
+    this.gamePaused = !this.gamePaused;
+    if (this.gamePaused) {
+      this.pauseOverlay = document.createElement('div');
+      this.pauseOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
+      this.pauseOverlay.innerHTML = `
+        <div style="color:#c4956a;font-family:Georgia,serif;font-size:28px;margin-bottom:12px">Paused</div>
+        <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:12px">Tap to resume</div>
+      `;
+      this.pauseOverlay.addEventListener('click', () => this.togglePause());
+      document.body.appendChild(this.pauseOverlay);
+    } else {
+      this.pauseOverlay?.remove();
+      this.pauseOverlay = null;
+    }
   }
 
   private attack(): void {

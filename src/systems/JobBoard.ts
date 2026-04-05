@@ -108,6 +108,53 @@ export function getStatMatchScore(cat: CatSaveData, job: JobDef): number {
   return Math.max(0, Math.min(1, score));
 }
 
+// Procedural job flavor text — varies each day for repeat jobs
+const JOB_FLAVOR: Record<string, string[]> = {
+  pest_control: [
+    'The scratching in the walls is getting louder.',
+    'Droppings found near the food stores again.',
+    'A bold rat was spotted in broad daylight.',
+    'The merchant is desperate — rats chewed through his best grain sack.',
+  ],
+  courier: [
+    'An urgent message needs delivering before sunset.',
+    'The recipient is impatient — speed is essential.',
+    'The route passes through narrow alleys. Stay alert.',
+    'A sealed letter, heavy with wax. Someone important awaits.',
+  ],
+  guard: [
+    'Strange noises were heard last night near the perimeter.',
+    'The night watch reported shadows moving near the gate.',
+    'A valuable shipment arrives today. Extra vigilance required.',
+    'The previous guard fell asleep on duty. Do better.',
+  ],
+  sacred: [
+    'The candles have been flickering without wind.',
+    'The faithful gather tonight. Your presence brings comfort.',
+    'An old monk claims to have seen an omen in the smoke.',
+    'The relics must be watched. Not all visitors are pilgrims.',
+  ],
+  detection: [
+    'Something doesn\'t add up in the merchant\'s ledger.',
+    'A trail of muddy pawprints leads somewhere unexpected.',
+    'The witness keeps changing their story.',
+    'Follow the scent. Trust your senses.',
+  ],
+  shadow: [
+    'The target leaves at dusk. Be ready.',
+    'No one can know you were here.',
+    'The guild needs this done. Don\'t ask questions.',
+    'A necessary evil. The fish will ease your conscience.',
+  ],
+};
+
+export function getJobFlavor(jobId: string, category: string, day: number): string {
+  const pool = JOB_FLAVOR[category];
+  if (!pool || pool.length === 0) return '';
+  const hash = (day * 31 + jobId.length * 17) % pool.length;
+  return pool[hash];
+}
+
 export function getDifficultyThreshold(difficulty: string): number {
   switch (difficulty) {
     case 'easy': return 4;

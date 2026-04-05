@@ -26,7 +26,7 @@ import {
 } from './systems/SaveManager';
 import { createCat, getBreed, addXp } from './systems/CatManager';
 import { earnFish, spendFish, calculateReward, collectStationedEarnings, isCatStationed } from './systems/Economy';
-import { getJob, getStatMatchScore, generateDailyJobs, type JobDef } from './systems/JobBoard';
+import { getJob, getStatMatchScore, generateDailyJobs, getJobFlavor, type JobDef } from './systems/JobBoard';
 import { getPuzzleByDifficulty, generatePuzzle } from './systems/PuzzleGenerator';
 import { addBondPoints, processDailyBonds } from './systems/BondSystem';
 import { checkChapterAdvance, checkRatPlagueResolution, checkInquisitionResolution, getChapterName, getNextChapterHint } from './systems/ProgressionManager';
@@ -890,7 +890,7 @@ eventBus.on('show-town-overlay', () => {
           ${isContested ? '<span style="font-size:9px;color:#cc6666;margin-left:4px">\u2694 CONTESTED</span>' : ''}
           <span class="town-job-diff ${diffClass}">${job.difficulty}</span>
         </div>
-        <div class="town-job-desc">${job.description}</div>
+        <div class="town-job-desc">${getJobFlavor(job.id, job.category, gameState!.day) || job.description}</div>
         <div class="town-job-bottom">
           <span class="town-job-reward">${job.baseReward}-${job.maxReward} Fish</span>
           <span class="town-job-stats">${job.keyStats.join(', ')}</span>
@@ -1274,13 +1274,37 @@ function showChoiceOverlay(job: JobDef, catIndex: number): void {
     <div class="job-desc">${cat.name} the ${BREED_NAMES[cat.breed] ?? cat.breed} is ready.</div>
     <div style="font-size:11px;color:#6b5b3e;margin-bottom:8px;text-align:center">Choose your approach:</div>
     <div class="assign-choice" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center">
-      ${['courier', 'guard', 'sacred'].includes(job.category) ? '<button class="btn-puzzle minigame-btn" data-game="puzzle" style="flex:1;min-width:140px">\u{1F9E9} Slide Blocks</button>' : ''}
-      ${['pest_control', 'guard'].includes(job.category) ? '<button class="btn-puzzle minigame-btn" data-game="sokoban" style="flex:1;min-width:140px">\u{1F4E6} Push Crates</button>' : ''}
-      ${['courier', 'guard'].includes(job.category) ? `<button class="btn-puzzle minigame-btn" data-game="fishing" style="flex:1;min-width:140px">\u{1F3A3} ${job.category === 'courier' ? 'River Route' : 'Dock Patrol'}</button>` : ''}
-      ${['pest_control', 'courier', 'detection', 'shadow'].includes(job.category) ? `<button class="btn-puzzle minigame-btn" data-game="chase" style="flex:1;min-width:140px">\u{1F400} ${job.category === 'courier' ? 'Street Run' : job.category === 'shadow' ? 'Sneak' : 'Chase'}</button>` : ''}
-      ${job.category === 'pest_control' ? '<button class="btn-puzzle minigame-btn" data-game="hunt" style="flex:1;min-width:140px">\u{1F3AF} Hunt</button>' : ''}
-      ${['pest_control', 'guard'].includes(job.category) ? '<button class="btn-puzzle minigame-btn" data-game="brawl" style="flex:1;min-width:140px">\u{2694}\u{FE0F} Fight</button>' : ''}
-      ${['courier', 'sacred', 'detection', 'shadow'].includes(job.category) ? `<button class="btn-puzzle minigame-btn" data-game="nonogram" style="flex:1;min-width:140px">\u{1F4DC} ${job.category === 'shadow' ? 'Crack Code' : job.category === 'courier' ? 'Read Map' : job.category === 'detection' ? 'Decipher' : 'Read Signs'}</button>` : ''}
+      ${(() => {
+        // Each category gets exactly 2 thematic minigame choices
+        const opts: string[] = [];
+        switch (job.category) {
+          case 'pest_control':
+            opts.push('<button class="btn-puzzle minigame-btn" data-game="hunt" style="flex:1;min-width:140px">\u{1F3AF} Hunt</button>');
+            opts.push('<button class="btn-puzzle minigame-btn" data-game="brawl" style="flex:1;min-width:140px">\u{2694}\u{FE0F} Fight</button>');
+            break;
+          case 'courier':
+            opts.push('<button class="btn-puzzle minigame-btn" data-game="chase" style="flex:1;min-width:140px">\u{1F400} Street Run</button>');
+            opts.push('<button class="btn-puzzle minigame-btn" data-game="nonogram" style="flex:1;min-width:140px">\u{1F4DC} Read Map</button>');
+            break;
+          case 'guard':
+            opts.push('<button class="btn-puzzle minigame-btn" data-game="brawl" style="flex:1;min-width:140px">\u{2694}\u{FE0F} Fight</button>');
+            opts.push('<button class="btn-puzzle minigame-btn" data-game="fishing" style="flex:1;min-width:140px">\u{1F3A3} Dock Patrol</button>');
+            break;
+          case 'sacred':
+            opts.push('<button class="btn-puzzle minigame-btn" data-game="nonogram" style="flex:1;min-width:140px">\u{1F4DC} Read Signs</button>');
+            opts.push('<button class="btn-puzzle minigame-btn" data-game="puzzle" style="flex:1;min-width:140px">\u{1F9E9} Arrange</button>');
+            break;
+          case 'detection':
+            opts.push('<button class="btn-puzzle minigame-btn" data-game="nonogram" style="flex:1;min-width:140px">\u{1F4DC} Decipher</button>');
+            opts.push('<button class="btn-puzzle minigame-btn" data-game="chase" style="flex:1;min-width:140px">\u{1F400} Follow</button>');
+            break;
+          case 'shadow':
+            opts.push('<button class="btn-puzzle minigame-btn" data-game="chase" style="flex:1;min-width:140px">\u{1F400} Sneak</button>');
+            opts.push('<button class="btn-puzzle minigame-btn" data-game="nonogram" style="flex:1;min-width:140px">\u{1F4DC} Crack Code</button>');
+            break;
+        }
+        return opts.join('\n      ');
+      })()}
     </div>
     <div style="margin-top:16px;padding-top:12px;border-top:1px solid #3a3530">
       ${cat.level >= 2
