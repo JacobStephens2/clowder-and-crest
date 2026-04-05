@@ -211,9 +211,16 @@ function updateStatusBar(): void {
   statusDay.textContent = `Day ${gameState.day}`;
   statusChapter.textContent = `Ch. ${gameState.chapter}`;
 
-  // Flash fish count on change
+  // Animate fish count on change
   if (prevFish >= 0 && prevFish !== gameState.fish) {
-    statusFish.style.color = gameState.fish > prevFish ? '#4a8a4a' : '#aa4444';
+    const gained = gameState.fish > prevFish;
+    statusFish.style.color = gained ? '#4a8a4a' : '#aa4444';
+    statusFish.style.transform = 'scale(1.3)';
+    statusFish.style.transition = 'transform 0.15s ease-out';
+    setTimeout(() => {
+      statusFish.style.transform = 'scale(1)';
+      statusFish.style.transition = 'transform 0.3s ease-in, color 0.5s';
+    }, 150);
     setTimeout(() => { statusFish.style.color = ''; }, 800);
   }
 }
@@ -1873,8 +1880,13 @@ function showResultOverlay(info: ResultInfo): void {
   playSfx('victory');
   trackEvent('job_completed', { stars: info.stars, reward: info.reward, job: info.jobName });
 
+  // Celebration for 3-star wins
+  if (info.stars === 3) {
+    playSfx('chapter', 0.3);
+  }
+
   overlay.innerHTML = `
-    <h2>Puzzle Solved!</h2>
+    <h2>${info.stars === 3 ? '\u2728 Perfect! \u2728' : 'Puzzle Solved!'}</h2>
     ${starsStr ? `<div class="result-stars">${starsStr}</div>` : ''}
     <div class="result-details">
       <strong>${info.jobName}</strong><br>

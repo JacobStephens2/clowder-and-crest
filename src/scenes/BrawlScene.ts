@@ -17,8 +17,8 @@ const ARENA_BOTTOM = ARENA_TOP + ARENA_H;
 // ── Cat stats ──
 const CAT_SPEED = 2.5;
 const CAT_SIZE = 16;
-const ATTACK_RANGE = 40;
-const ATTACK_ARC = Math.PI * 0.6; // 108 degree swing
+const ATTACK_RANGE = 52;
+const ATTACK_ARC = Math.PI * 0.8; // 144 degree swing
 const ATTACK_COOLDOWN = 400; // ms
 
 // ── Rat stats ──

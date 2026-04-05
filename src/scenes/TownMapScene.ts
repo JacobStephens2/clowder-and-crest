@@ -580,6 +580,12 @@ export class TownMapScene extends Phaser.Scene {
       }
     }
 
+    // Auto-enter the Job Board when stepping on its door tile
+    if (this.activeDoor && this.activeDoor.id === 'jobs' &&
+        this.playerPos.col === this.activeDoor.doorCol && this.playerPos.row === this.activeDoor.doorRow) {
+      this.enterBuilding(this.activeDoor);
+    }
+
     if (this.promptText) {
       if (this.activeDoor) {
         this.promptText.setText(`Enter ${this.activeDoor.name}`);
