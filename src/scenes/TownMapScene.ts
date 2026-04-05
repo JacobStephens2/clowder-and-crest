@@ -92,7 +92,7 @@ function toWorld(col: number, row: number): { x: number; y: number } {
 
 export class TownMapScene extends Phaser.Scene {
   private grid: number[][] = [];
-  private playerPos = { col: 4, row: 9 };
+  private playerPos = { col: 4, row: 8 };
   private playerSprite: Phaser.GameObjects.Sprite | null = null;
   private playerIndicator: Phaser.GameObjects.Graphics | null = null;
   private isMoving = false;
@@ -149,6 +149,24 @@ export class TownMapScene extends Phaser.Scene {
     this.promptText = this.add.text(GAME_WIDTH / 2, GRID_TOP + GRID_H + 8, '', {
       fontFamily: 'Georgia, serif', fontSize: '12px', color: '#c4956a',
     }).setOrigin(0.5).setAlpha(0);
+
+    // Ambient mist
+    for (let i = 0; i < 4; i++) {
+      const mist = this.add.ellipse(
+        GRID_LEFT + Math.random() * GRID_W,
+        GRID_TOP + GRID_H * 0.6 + Math.random() * GRID_H * 0.4,
+        40 + Math.random() * 30, 8, 0x1c1b19, 0.2
+      );
+      this.tweens.add({
+        targets: mist,
+        x: mist.x + 30 + Math.random() * 20,
+        alpha: 0,
+        duration: 6000 + Math.random() * 4000,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
 
     eventBus.emit('show-ui');
     eventBus.emit('set-active-tab', 'town');
@@ -215,16 +233,28 @@ export class TownMapScene extends Phaser.Scene {
 
       // Roof accent
       gfx.fillStyle(b.roofColor);
-      gfx.fillRect(x + 2, y + 2, w - 4, 6);
+      gfx.fillRect(x + 2, y + 2, w - 4, 8);
 
-      // Door marker
+      // Building-specific details
+      this.drawBuildingDetails(gfx, b, x, y, w, h);
+
+      // Door glow (torch light at entrance)
       const doorX = GRID_LEFT + b.doorCol * TILE + TILE / 2;
       const doorY = GRID_TOP + b.doorRow * TILE + TILE / 2;
-      gfx.fillStyle(0xdda055, 0.3);
-      gfx.fillCircle(doorX, doorY, 4);
+      gfx.fillStyle(0xdda055, 0.12);
+      gfx.fillCircle(doorX, doorY, 16);
+      gfx.fillStyle(0xdda055, 0.25);
+      gfx.fillCircle(doorX, doorY, 6);
+
+      // Torch flicker animation
+      const torch = this.add.circle(doorX, doorY - 2, 3, 0xdda055, 0.5);
+      this.tweens.add({
+        targets: torch, alpha: 0.2, scaleX: 0.7, scaleY: 0.7,
+        duration: 400 + Math.random() * 200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      });
 
       // Building name
-      const labelY = y + h / 2;
+      const labelY = y + h / 2 + 4;
       const label = this.add.text(x + w / 2, labelY, b.name, {
         fontFamily: 'Georgia, serif',
         fontSize: b.id === 'jobs' ? '9px' : '10px',
@@ -238,15 +268,107 @@ export class TownMapScene extends Phaser.Scene {
       const hitZone = this.add.zone(x + w / 2, y + h / 2, w, h);
       hitZone.setInteractive({ useHandCursor: true });
       hitZone.on('pointerdown', () => {
-        // Check if player is adjacent to the door
         const dist = Math.abs(this.playerPos.col - b.doorCol) + Math.abs(this.playerPos.row - b.doorRow);
-        if (dist <= 1) {
+        if (dist <= 2) {
           this.enterBuilding(b);
         } else {
-          // Walk toward the door first
           this.walkToThenEnter(b);
         }
       });
+    }
+  }
+
+  private drawBuildingDetails(gfx: Phaser.GameObjects.Graphics, b: BuildingDef, x: number, y: number, w: number, h: number): void {
+    switch (b.id) {
+      case 'cathedral': {
+        // Steeple / cross
+        const cx = x + w / 2;
+        gfx.fillStyle(b.roofColor);
+        gfx.fillTriangle(cx - 15, y + 10, cx, y - 6, cx + 15, y + 10);
+        gfx.fillStyle(0x6b5b3e, 0.6);
+        gfx.fillRect(cx - 1, y - 12, 3, 10);
+        gfx.fillRect(cx - 4, y - 8, 9, 2);
+        // Stained glass window
+        gfx.fillStyle(0x4a5a6a, 0.25);
+        gfx.fillCircle(cx, y + h / 2, 8);
+        gfx.fillStyle(0x6b5b3e, 0.1);
+        gfx.fillRect(cx - 1, y + h / 2 - 8, 2, 16);
+        break;
+      }
+      case 'castle': {
+        // Battlements
+        const bw = 8;
+        for (let bx = x + 4; bx < x + w - 4; bx += bw * 2) {
+          gfx.fillStyle(b.roofColor);
+          gfx.fillRect(bx, y - 4, bw, 8);
+        }
+        // Gate
+        gfx.fillStyle(0x1a1818);
+        gfx.fillRect(x + w / 2 - 8, y + h - 18, 16, 18);
+        gfx.fillStyle(0x3a3530, 0.5);
+        gfx.fillRect(x + w / 2 - 7, y + h - 17, 14, 1);
+        gfx.fillRect(x + w / 2 - 7, y + h - 12, 14, 1);
+        gfx.fillRect(x + w / 2 - 7, y + h - 7, 14, 1);
+        break;
+      }
+      case 'tavern': {
+        // Windows with warm glow
+        gfx.fillStyle(0x8a6a3a, 0.2);
+        gfx.fillRect(x + 8, y + 16, 12, 10);
+        gfx.fillRect(x + w - 20, y + 16, 12, 10);
+        // Glow
+        gfx.fillStyle(0xdda055, 0.06);
+        gfx.fillCircle(x + 14, y + 21, 14);
+        gfx.fillCircle(x + w - 14, y + 21, 14);
+        break;
+      }
+      case 'market': {
+        // Awning stripes
+        gfx.fillStyle(0x4a3a28, 0.5);
+        for (let sx = x + 6; sx < x + w - 6; sx += 10) {
+          gfx.fillRect(sx, y + 10, 4, h - 16);
+        }
+        // Crates
+        gfx.fillStyle(0x4a3a28);
+        gfx.fillRect(x + 6, y + h - 14, 10, 8);
+        gfx.fillRect(x + w - 16, y + h - 14, 10, 8);
+        break;
+      }
+      case 'jobs': {
+        // Notice board posts
+        gfx.fillStyle(0x5a4a3a);
+        gfx.fillRect(x + 8, y + 4, 4, h - 8);
+        gfx.fillRect(x + w - 12, y + 4, 4, h - 8);
+        // Papers
+        gfx.fillStyle(0x8b7355, 0.3);
+        gfx.fillRect(x + 16, y + 8, 12, 8);
+        gfx.fillRect(x + 32, y + 6, 10, 10);
+        gfx.fillRect(x + w - 30, y + 8, 14, 8);
+        break;
+      }
+      case 'docks': {
+        // Water edge
+        gfx.fillStyle(0x2a3a4a, 0.4);
+        gfx.fillRect(x + 2, y + h - 10, w - 4, 8);
+        // Rope coils
+        gfx.lineStyle(1, 0x6b5b3e, 0.3);
+        gfx.strokeCircle(x + 12, y + 20, 5);
+        gfx.strokeCircle(x + w - 12, y + 20, 5);
+        break;
+      }
+      case 'mill': {
+        // Wheel/fan
+        const mx = x + w / 2;
+        const my = y + h / 2 - 4;
+        gfx.lineStyle(2, 0x5a4a3a, 0.5);
+        for (let a = 0; a < 4; a++) {
+          const angle = (a * Math.PI) / 2 + Date.now() * 0.001;
+          gfx.lineBetween(mx, my, mx + Math.cos(angle) * 14, my + Math.sin(angle) * 14);
+        }
+        gfx.fillStyle(0x5a4a3a, 0.5);
+        gfx.fillCircle(mx, my, 3);
+        break;
+      }
     }
   }
 
@@ -310,26 +432,35 @@ export class TownMapScene extends Phaser.Scene {
         npc.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
         npc.setAlpha(0.8);
 
-        // Gentle wander
+        // Gentle wander — stay on walkable tiles
+        let npcCol = tile.col;
+        let npcRow = tile.row;
         this.time.addEvent({
           delay: 3000 + Math.random() * 4000,
           callback: () => {
-            const dx = (Math.random() - 0.5) * TILE * 1.5;
-            const dy = (Math.random() - 0.5) * TILE * 1.5;
-            const nx = Phaser.Math.Clamp(npc.x + dx, GRID_LEFT + TILE, GRID_LEFT + GRID_W - TILE);
-            const ny = Phaser.Math.Clamp(npc.y + dy, GRID_TOP + TILE, GRID_TOP + GRID_H - TILE);
-
-            const walkDir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'east' : 'west') : (dy > 0 ? 'south' : 'north');
-            const walkKey = `${breed}_walk_${walkDir}`;
-            if (this.anims.exists(walkKey)) npc.play(walkKey);
-
-            this.tweens.add({
-              targets: npc, x: nx, y: ny, duration: 800, ease: 'Linear',
-              onComplete: () => {
-                const idleDir = `${breed}_idle_${walkDir}`;
-                if (this.textures.exists(idleDir)) { npc.stop(); npc.setTexture(idleDir); }
-              },
-            });
+            // Pick a random adjacent walkable tile
+            const dirs = [{ dc: 0, dr: -1 }, { dc: 0, dr: 1 }, { dc: -1, dr: 0 }, { dc: 1, dr: 0 }];
+            const shuffled = dirs.sort(() => Math.random() - 0.5);
+            for (const d of shuffled) {
+              const nc = npcCol + d.dc;
+              const nr = npcRow + d.dr;
+              if (nc >= 0 && nc < COLS && nr >= 0 && nr < ROWS && this.grid[nr][nc] === PATH) {
+                npcCol = nc;
+                npcRow = nr;
+                const dest = toWorld(nc, nr);
+                const walkDir = Math.abs(d.dc) > Math.abs(d.dr) ? (d.dc > 0 ? 'east' : 'west') : (d.dr > 0 ? 'south' : 'north');
+                const walkKey = `${breed}_walk_${walkDir}`;
+                if (this.anims.exists(walkKey)) npc.play(walkKey);
+                this.tweens.add({
+                  targets: npc, x: dest.x, y: dest.y, duration: 600, ease: 'Linear',
+                  onComplete: () => {
+                    const idleDir = `${breed}_idle_${walkDir}`;
+                    if (this.textures.exists(idleDir)) { npc.stop(); npc.setTexture(idleDir); }
+                  },
+                });
+                break;
+              }
+            }
           },
           loop: true,
         });
@@ -435,9 +566,11 @@ export class TownMapScene extends Phaser.Scene {
   }
 
   private checkDoorProximity(): void {
+    const prevDoor = this.activeDoor;
     this.activeDoor = null;
     for (const b of BUILDINGS) {
-      if (this.playerPos.col === b.doorCol && this.playerPos.row === b.doorRow) {
+      const dist = Math.abs(this.playerPos.col - b.doorCol) + Math.abs(this.playerPos.row - b.doorRow);
+      if (dist <= 1) {
         this.activeDoor = b;
         break;
       }
@@ -445,11 +578,21 @@ export class TownMapScene extends Phaser.Scene {
 
     if (this.promptText) {
       if (this.activeDoor) {
-        this.promptText.setText(`Tap to enter ${this.activeDoor.name}`);
+        this.promptText.setText(`Enter ${this.activeDoor.name}`);
         this.promptText.setAlpha(1);
       } else {
         this.promptText.setAlpha(0);
       }
+    }
+
+    // Highlight/unhighlight building labels
+    if (prevDoor && prevDoor !== this.activeDoor) {
+      const prevLabel = this.buildingLabels.get(prevDoor.id);
+      if (prevLabel) prevLabel.setColor('#8b7355');
+    }
+    if (this.activeDoor) {
+      const label = this.buildingLabels.get(this.activeDoor.id);
+      if (label) label.setColor('#c4956a');
     }
   }
 
