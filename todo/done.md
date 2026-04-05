@@ -93,3 +93,189 @@
 [x] - APK export instructions documented (todo/export.md)
 [x] - Added to portfolio at stephens.page/portfolio.html
 [x] - The cats should wander around the guildhall on their own, shown in their assigned room in the overview
+[x] Complete Chapter 6 — rival guild resolution (win condition + narrative scene)
+[x] Achievements/milestones screen in menu
+[x] Overall game tutorial — guided first day for new players
+[x] Harder late-game economy (scaling food cost per cat level, random expenses)
+[x] Cat specialization at level 5 (permanent category bonus/penalty)
+[x] Guild timeline/journal — scrollable log of major events
+[x] More cat sounds per breed (unique vocalizations beyond wildcat)
+[x] Chapter 7: The Inquisition (from vision doc)
+[x] New breed: Bengal (Chapter 6 rivalry recruit)
+[x] Develop the artwork for the rooms. Right now they look like chessboards, not pixel art places in this world
+[x] create art for the rats in the pacman minigame
+[x] prevent fishing from starting while the user is still reading the tutorial introduction (and so then them failing it in the background while still reading the intro text)
+[x] limit the approaches to jobs, as some approaches don't make sense, like fishing to complete the mill mousing job doesn't thematically fit for example
+[x] add a hunting mini game for jobs that are about hunting rodents
+[x] show the furniture sprites / art in the guild overview (I'm not referring to the room specific views)
+[x] add an end day button at the bottom of the guild view
+[x] show wishes at the top of the guild view
+[x] remove the undo button from the sokobond / crate pushing game, as it removes consequences of actions, remove the reset button too for the same reason
+[x] put full screen art in the dialogues, either of the cat talking, or of the game's setting / an unlocked location in the game
+[x] add a threat to the pac-man style game, something the cats have to avoid that can chase them, this can make failure more possible in this mini-game, something thematically that could injure the cat, like a dog or some or thing that could be antithetical to a cat
+[x] my wildcat wished for a nap in a warm spot, this cost 5 fish, but this wish could have required the user has a bed / some fitting furniture to fulfill the request
+[x] Playtest with real users
+[x] make running into the guard dog in the pac man mini game cause losing the mini game
+[x] use an emoji for the guard dog icon in the pac man mini game
+[x] in the pac man mini game, keep your avatar moving if the player holds down a direction on the d pad
+[x] keep the end day summary message on screen until the player dismisses it
+[x] Make the goals to get to the next chapter more clear for the player to find in the game ui, maybe they are presented to the player at the start of each chapter? Or maybe better to let the player discover it themselves and not overtly say it? Decide which is better here
+[x] add a quit to main menu game option from the menu
+[x] allow multiple saves
+[x] Add a mini-game where the cat fights rats, like a side scrolling beat em up kind of game, or perhaps like a top down zelda game style fight
+[x] refine the fight mini-game
+[x] refine the nonogram puzzles
+[x] ensure there are jobs for all the mini-game types and all the puzzle types
+[x] close the job board when the player leaves the job board 
+[x] ensure the pac man puzzles are solvable without going through the dog
+[x] generate pixel art for the dog in the pac man mini game
+[x] add a barking sound effect to the pac man mini game 
+[x] make a way to close the job board after it is opened
+[x] prevent opening the job board from the tavern
+[x] resolve console audio decode errors (only load wildcat audio, others use pitch-shift)
+[x] resolve /var/www/clowder.stephens.page/todo/error in rat chase pac man game.png - the error in that screen shot
+[x] Ensure the game is fun per /var/www/clowder.stephens.page/source_documents/Reports/What Makes Games Fun.md, and report how it is or is not in clowder.stephens.page/todo/fun.md, then work to improve its fun accordingly
+[x] generate a music prompt for the fight mini game
+[x] open the job board when the cat walks onto the job board on the town map
+[x] increase the base attack radius or the hit box in the fight game, as i felt like rats were in my hit box, but yet they weren't getting hit
+[x] open the town map view after a mini game or puzzle / job is resolved
+[x] make sure the rat chase / pac man games can always be completed successfully. I had one where it seemed like there was no path around the dog to get to the rat, so I lost without a chance of winning
+[x] where does the game have procedural generation / room for this? / room for LLM created content on the fly / on demand?
+[x] add terrain to some fight mini games
+[x] make it so that you can accept a job, but then you have to go to that location to do it
+[x] have at least two paths to the rat in the rat chase game, this should help prevent cases where the player cannot get around the dog to get to the rat
+[x] add a furniture shop to the town map so the player can actually go to it to open it
+[x] in order to recruit a cat, show them walking around the town, and make the player talk to them to recruit them (still require the payment)
+[x] use the /var/www/clowder.stephens.page/music/fight tracks for the fight background music
+[x] ensure every part of the game has some pixel art unique to that part of the game
+[x] in the [cat] appears screen, present an option to deny entry to the cat
+[x] sometimes in trying to accept a job I get this in the console and can't accept it `clowder.stephens.page/:20  GET https://www.googletagmanager.com/gtag/js?id=G-81TZVKST2W net::ERR_BLOCKED_BY_CLIENT
+index-DYiVPUgx.js:2      Phaser v3.80.1 (WebGL | Web Audio)  https://phaser.io
+index-DYiVPUgx.js:6 Uncaught TypeError: Cannot read properties of undefined (reading 'sys')
+    at initialize.setTexture (index-DYiVPUgx.js:6:27380)
+    at initialize.callback (index-DYiVPUgx.js:119:21654)
+    at initialize.update (index-DYiVPUgx.js:64:13191)
+    at e.50792.s.emit (index-DYiVPUgx.js:2:3235)
+    at initialize.step (index-DYiVPUgx.js:62:6653)
+    at initialize.update (index-DYiVPUgx.js:61:22063)
+    at initialize.step (index-DYiVPUgx.js:2:77460)
+    at initialize.step (index-DYiVPUgx.js:2:81674)
+    at t (index-DYiVPUgx.js:4:3019)
+setTexture @ index-DYiVPUgx.js:6
+callback @ index-DYiVPUgx.js:119
+update @ index-DYiVPUgx.js:64
+e.50792.s.emit @ index-DYiVPUgx.js:2
+step @ index-DYiVPUgx.js:62
+update @ index-DYiVPUgx.js:61
+step @ index-DYiVPUgx.js:2
+step @ index-DYiVPUgx.js:2
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+requestAnimationFrame
+t @ index-DYiVPUgx.js:4
+`
+[x] ensure there is a way to close the town job board when it opens
+[x] ensure the rat fight game can be paused
+[x] implement something or some things from /var/www/clowder.stephens.page/todo/procedural-and-llm-opportunities.md
+[x] maybe jobs should have fewer approaches available? If any approach options at all?
+[x] show rats in the town during the rat plague
+[x] for the rat plague, after the scene happened, I went to the job board and it already showed 3/5 rat nests cleared. It should have been 0, as the rat plague just started and I hadn't done any jobs yet
+[x] add a job that is transporting in the town itself
+[x] with the hunting mini game, the repeated squeeky rat sounds from constantly hitting them gets a little annoying
+[x] get different stats of the cats to impact how they perform in the fight game
+[x] what would we need to setup LLM integration?
+[x] the first nonogram I encountered was 8x8 and would have taken a while, maybe make the first one the player encounters smaller, and the resolution seemed a bit low too. I wonder if this nonogram game would be better rendered by HTML than by Phaser.
+[x] add something the cat can pickup in the fight game that gives a new cat themed weapon
+[x] winning fight mini games / jobs should count towards the resolution of the rat plague
+[x] the fight game still doesn't pause when the player clicks the pause button at the top
+[x] some of the rush hour puzzles seem too easy
+[x] remove recruitment from the job board menu, make the only way to do it going to talk to the cat in town
+[x] remove the furniture shop from the menu, make the only way to get to it by going to the carpenter on the town map
+[x] add swipe animations for the fight game
+[x] put a note / indicator on jobs which will progress the resolution of the rat plague. I'm having a tough time sometimes knowing what will help move that along
+[x] remove wishes from the town board, showing them only in the guild view
+[x] try to match room placement to wishes, so if the Maine Coon wants to scratch something for example, require that cat to be placed in the room with the scratching post
+[x] resolve the bug in the rush hour puzzles where if you drag your cat to the exit, it can resolve, even if the path to the exit is not clear
+[x] I don't know how solvable the nonograms are, some seem very tough, as I got one with a 5x5 grid where there were 1's along the entire top and 1's along the entire side except for one row which had a 2 at the end
+[x] I feel like I can't resolve the rat plague. I took two tasks that were marked plague, and before I took both I was at 4/5 rat tasks, but I'm still at 4/5 after resolving both of those
+[x] make it so that you can pick up jobs at the job board, but then to do them you have to go to the location where they are done and then start the job at that location.
+[x] the fight game seems to start paused, and I need to click pause in the corner then unpause to get it moving. 
+[x] make it so the player loses the game if they get down to the last cat (themself) and can't afford their upkeep, a loss from staving
+[x] show the players what jobs they have accepted and not yet resolved below the town in the town view
+[x] if the player hasn't yet successfully resolved any nonograms, make the first one pretty easy
+[x] make the player movement smoother in the rat chase game if the player holds an arrow / direction key
+[x] got `clowder.stephens.page/:20  GET https://www.googletagmanager.com/gtag/js?id=G-81TZVKST2W net::ERR_BLOCKED_BY_CLIENT
+index-C0OXO78h.js:2      Phaser v3.80.1 (WebGL | Web Audio)  https://phaser.io
+recruit.mp3:1  GET https://clowder.stephens.page/assets/sfx/recruit.mp3 500 (Internal Server Error)
+`
+[x] add a big rat enemy type to the fight game
+[x] if a job was taken and failed, don't put it right back on the job board, leave it's absence as a consequence of failure
+[x] show the job difficulty while the player is doing the job
+[x] prevent days from turning over to the next day during a job
+[x] enable boosting cat stats by interacting with furniture in the guild
+[x] show a random angle of wildcat on the main menu screen where the user clicks continue or new game / restat game or something. Maybe show other cats here sometimes too, perhaps an animation now and then too
+[x] display job difficulty while doing the puzzle / minigame
+[x] add joystick on screen for mobile movement in fight game on mobile, and if player releasees hold on the joystick, stop their avatar's movement
+[x] don't trigger cat conversations in town when walking over the cats, but only when clicking them
+[x] on mobile in the fight game, let the player hold a press on the joystick (use the joystick), and press the attack button at the same time. Right now the player has to let go of the joystick in order to press the fight button.
