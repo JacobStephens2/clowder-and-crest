@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, ALL_BREED_IDS } from '../utils/constants';
-import { getGameState } from '../main';
+import { getGameState, getAcceptedJob } from '../main';
 import { getCurrentPhase } from '../systems/DayTimer';
 import { createDpad } from '../ui/sceneHelpers';
 import { playSfx } from '../systems/SfxManager';
@@ -162,6 +162,17 @@ export class TownMapScene extends Phaser.Scene {
     this.promptText = this.add.text(GAME_WIDTH / 2, GRID_TOP + GRID_H + 8, '', {
       fontFamily: 'Georgia, serif', fontSize: '12px', color: '#c4956a',
     }).setOrigin(0.5).setAlpha(0);
+
+    // Accepted job banner
+    const accepted = getAcceptedJob();
+    if (accepted) {
+      const jobBanner = this.add.text(GAME_WIDTH / 2, GRID_TOP + GRID_H + 22,
+        `\u{1F4CB} Job: ${accepted.name} — go to a location to start`, {
+        fontFamily: 'Georgia, serif', fontSize: '10px', color: '#dda055',
+      }).setOrigin(0.5);
+      // Pulse to draw attention
+      this.tweens.add({ targets: jobBanner, alpha: 0.5, duration: 800, yoyo: true, repeat: -1 });
+    }
 
     // Ambient mist
     for (let i = 0; i < 4; i++) {

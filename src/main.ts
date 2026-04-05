@@ -1115,6 +1115,7 @@ eventBus.on('show-town-overlay', () => {
 
 // Job accept — show cat assignment overlay
 let acceptedJob: JobDef | null = null;
+export function getAcceptedJob(): JobDef | null { return acceptedJob; }
 
 eventBus.on('job-accept', ({ job }: { job: JobDef }) => {
   playSfx('job_accept');

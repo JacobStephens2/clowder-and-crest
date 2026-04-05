@@ -144,7 +144,9 @@ export class NonogramScene extends Phaser.Scene {
     this.jobId = data?.jobId ?? '';
     this.catId = data?.catId ?? '';
     this.difficulty = data?.difficulty ?? 'easy';
-    this.gridSize = GRID_SIZES[this.difficulty] ?? 5;
+    // First nonogram ever? Make it a small 4x4 intro puzzle
+    const hasCompletedNonogram = localStorage.getItem('clowder_nonogram_completed');
+    this.gridSize = hasCompletedNonogram ? (GRID_SIZES[this.difficulty] ?? 5) : 4;
     this.solved = false;
     this.mistakes = 0;
     this.fillMode = true;
@@ -408,6 +410,7 @@ export class NonogramScene extends Phaser.Scene {
     }
 
     this.solved = true;
+    localStorage.setItem('clowder_nonogram_completed', '1');
     playSfx('victory');
 
     // Auto-fill remaining marks
