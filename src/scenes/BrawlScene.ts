@@ -384,9 +384,18 @@ export class BrawlScene extends Phaser.Scene {
         if (rat.hp <= 0) {
           toRemove.push(rat);
         } else {
-          // Flash hit feedback
-          rat.gfx.setAlpha(0.4);
-          this.time.delayedCall(150, () => { if (rat.gfx.active) rat.gfx.setAlpha(1); });
+          // Hit feedback — flash, shake, and damage number
+          rat.gfx.setAlpha(0.3);
+          const origX = rat.gfx.x;
+          this.tweens.add({
+            targets: rat.gfx, x: origX + 4, duration: 40, yoyo: true, repeat: 2,
+            onComplete: () => { if (rat.gfx.active) { rat.gfx.setAlpha(1); rat.gfx.x = origX; } },
+          });
+          // Show remaining HP
+          const dmgText = this.add.text(rat.x, rat.y - 16, `${rat.hp}/${rat.maxHp}`, {
+            fontFamily: 'Georgia, serif', fontSize: '10px', color: '#cc6666',
+          }).setOrigin(0.5);
+          this.tweens.add({ targets: dmgText, y: rat.y - 30, alpha: 0, duration: 600, onComplete: () => dmgText.destroy() });
         }
       }
     }
@@ -433,7 +442,8 @@ export class BrawlScene extends Phaser.Scene {
 
     const baseCount = this.difficulty === 'hard' ? 5 : this.difficulty === 'medium' ? 4 : 3;
     const count = baseCount + this.wave - 1;
-    const ratHp = this.difficulty === 'hard' ? 3 : this.difficulty === 'medium' ? 2 : 1;
+    // Wave 1 rats are always 1 HP (one-hit kills). Later waves get tougher.
+    const ratHp = this.wave === 1 ? 1 : (this.difficulty === 'hard' ? 3 : this.difficulty === 'medium' ? 2 : 1);
     const ratSpeed = (this.difficulty === 'hard' ? 1.2 : this.difficulty === 'medium' ? 1.0 : 0.8) + this.wave * 0.1;
 
     for (let i = 0; i < count; i++) {
