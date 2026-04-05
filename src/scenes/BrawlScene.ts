@@ -568,6 +568,38 @@ export class BrawlScene extends Phaser.Scene {
     const ratHp = this.wave === 1 ? 1 : (this.difficulty === 'hard' ? 3 : this.difficulty === 'medium' ? 2 : 1);
     const ratSpeed = (this.difficulty === 'hard' ? 1.2 : this.difficulty === 'medium' ? 1.0 : 0.8) + this.wave * 0.1;
 
+    // Spawn a Rat King on the final wave
+    if (this.wave === this.totalWaves) {
+      const bossHp = this.difficulty === 'hard' ? 8 : this.difficulty === 'medium' ? 6 : 4;
+      const bossX = GAME_WIDTH / 2;
+      const bossY = ARENA_TOP + 30;
+      const bossContainer = this.add.container(bossX, bossY);
+
+      if (this.textures.exists('rat')) {
+        const bossSprite = this.add.sprite(0, 0, 'rat');
+        bossSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        bossSprite.setScale(1.6);
+        bossContainer.add(bossSprite);
+      } else {
+        const bossBody = this.add.circle(0, 0, 18, 0x6a3a2a);
+        bossContainer.add(bossBody);
+      }
+      // Crown
+      const crown = this.add.text(0, -22, '\u{1F451}', { fontSize: '14px' }).setOrigin(0.5);
+      bossContainer.add(crown);
+      // Boss label
+      const bossLabel = this.add.text(0, 20, 'RAT KING', {
+        fontFamily: 'Georgia, serif', fontSize: '8px', color: '#cc6666',
+      }).setOrigin(0.5);
+      bossContainer.add(bossLabel);
+
+      this.rats.push({
+        x: bossX, y: bossY, hp: bossHp, maxHp: bossHp,
+        speed: ratSpeed * 0.6, gfx: bossContainer,
+        stunTimer: 1.0, attackTimer: 0.7,
+      });
+    }
+
     for (let i = 0; i < count; i++) {
       // Spawn from edges
       const edge = Math.floor(Math.random() * 4);

@@ -297,11 +297,34 @@ export class ChaseScene extends Phaser.Scene {
       eventBus.emit('navigate', 'TownMapScene');
     });
 
-    // Input: WASD / Arrow keys
+    // Input: WASD / Arrow keys with hold-to-repeat
+    let keyHoldTimer: Phaser.Time.TimerEvent | null = null;
+    let heldKey: string | null = null;
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
       if (this.caught) return;
       const dir = this.keyToDir(event.key);
-      if (dir) this.moveCat(dir.dr, dir.dc);
+      if (!dir) return;
+      this.moveCat(dir.dr, dir.dc);
+      if (heldKey !== event.key) {
+        heldKey = event.key;
+        keyHoldTimer?.destroy();
+        keyHoldTimer = this.time.addEvent({
+          delay: 150,
+          callback: () => {
+            if (this.caught) return;
+            const d = this.keyToDir(heldKey!);
+            if (d) this.moveCat(d.dr, d.dc);
+          },
+          loop: true,
+        });
+      }
+    });
+    this.input.keyboard?.on('keyup', (event: KeyboardEvent) => {
+      if (event.key === heldKey) {
+        heldKey = null;
+        keyHoldTimer?.destroy();
+        keyHoldTimer = null;
+      }
     });
 
     // Virtual d-pad for mobile (below maze)
