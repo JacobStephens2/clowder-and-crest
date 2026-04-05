@@ -453,7 +453,27 @@ export class BrawlScene extends Phaser.Scene {
     this.attackGfx.beginPath();
     this.attackGfx.arc(this.catX, this.catY, this.attackRange, slashStart, slashEnd, false);
     this.attackGfx.strokePath();
-    this.time.delayedCall(120, () => this.attackGfx.clear());
+
+    // Claw swipe marks — 3 parallel scratch lines
+    for (let i = 0; i < 3; i++) {
+      const offset = (i - 1) * 5;
+      const innerR = this.attackRange * 0.4 + offset;
+      const outerR = this.attackRange * 0.9 + offset;
+      const angle = this.catFacing + (i - 1) * 0.12;
+      this.attackGfx.lineStyle(2, 0xeecc88, 0.6);
+      this.attackGfx.beginPath();
+      this.attackGfx.moveTo(
+        this.catX + Math.cos(angle) * innerR,
+        this.catY + Math.sin(angle) * innerR
+      );
+      this.attackGfx.lineTo(
+        this.catX + Math.cos(angle) * outerR,
+        this.catY + Math.sin(angle) * outerR
+      );
+      this.attackGfx.strokePath();
+    }
+
+    this.time.delayedCall(150, () => this.attackGfx.clear());
 
     // Check hits
     const toRemove: Rat[] = [];

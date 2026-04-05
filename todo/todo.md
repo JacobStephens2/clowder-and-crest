@@ -13,3 +13,5 @@
 [x] the fight game still doesn't pause when the player clicks the pause button at the top
 [x] some of the rush hour puzzles seem too easy
 [x] remove recruitment from the job board menu, make the only way to do it going to talk to the cat in town
+[x] remove the furniture shop from the menu, make the only way to get to it by going to the carpenter on the town map
+[x] add swipe animations for the fight game

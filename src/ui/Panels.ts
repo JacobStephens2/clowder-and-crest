@@ -254,7 +254,7 @@ export function showMenuPanel(): void {
     <button class="menu-btn" id="menu-achievements">Achievements</button>
     <button class="menu-btn" id="menu-journal">Guild Journal</button>
     <button class="menu-btn" id="menu-save">Save Game</button>
-    <button class="menu-btn" id="menu-furniture">Furniture Shop</button>
+    <div style="padding:4px 12px;font-size:10px;color:#555;font-style:italic;text-align:center">Visit the Carpenter in town to buy furniture</div>
     <button class="menu-btn" id="menu-mute">${isMuted() ? 'Unmute Music' : 'Mute Music'}</button>
     <button class="menu-btn" id="menu-mute-sfx">${isSfxMuted() ? 'Unmute Sound Effects' : 'Mute Sound Effects'}</button>
     <button class="menu-btn" id="menu-export">Export Save</button>
@@ -336,11 +336,6 @@ export function showMenuPanel(): void {
   document.getElementById('menu-save')!.addEventListener('click', () => {
     deps.saveGame(gameState!);
     deps.showToast('Game saved!');
-  });
-
-  document.getElementById('menu-furniture')!.addEventListener('click', () => {
-    panel.remove();
-    showFurnitureShop();
   });
 
   document.getElementById('menu-mute')!.addEventListener('click', () => {
