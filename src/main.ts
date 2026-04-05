@@ -838,10 +838,9 @@ eventBus.on('show-town-overlay', () => {
       return '<div style="padding:2px 12px;font-size:10px;color:#8a4a4a;text-align:center;font-family:Georgia,serif;font-style:italic">Doors lock as your cats approach. The town fears what your guild has become.</div>';
     })()}
     ${plagueActive ? (() => {
-      const pestDone = gameState.completedJobs.filter((id: string) =>
-        ['mill_mousing', 'granary_patrol', 'cathedral_mousing', 'warehouse_clearing', 'ship_hold',
-         'tavern_cellar', 'dockside_patrol', 'bakery_guard', 'castle_ratcatcher'].includes(id)
-      ).length;
+      const plagueJobIds = ['mill_mousing', 'granary_patrol', 'cathedral_mousing', 'warehouse_clearing', 'ship_hold',
+         'tavern_cellar', 'dockside_patrol', 'bakery_guard', 'castle_ratcatcher'];
+      const pestDone = gameState.completedJobs.filter((id: string) => plagueJobIds.includes(id)).length;
       const pre = numFlag("prePlaguePestJobs");
       const progress = Math.min(5, pestDone - pre);
       const plagueDays = gameState.day - (numFlag("plagueDayStarted") || gameState.day);
@@ -2060,7 +2059,8 @@ eventBus.on('chapter-advance', (chapter: number) => {
 eventBus.on('rat-plague-start', () => {
   if (gameState) {
     gameState.flags.prePlaguePestJobs = gameState.completedJobs.filter((id) =>
-      ['mill_mousing', 'granary_patrol', 'cathedral_mousing', 'warehouse_clearing', 'ship_hold'].includes(id)
+      ['mill_mousing', 'granary_patrol', 'cathedral_mousing', 'warehouse_clearing', 'ship_hold',
+       'tavern_cellar', 'dockside_patrol', 'bakery_guard', 'castle_ratcatcher'].includes(id)
     ).length;
     gameState.flags.plagueDayStarted = gameState.day;
     addJournalEntry(gameState, 'The Rat Plague has begun. The town is under siege.', 'event');

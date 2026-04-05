@@ -14,12 +14,12 @@ const ARENA_H = 420;
 const ARENA_RIGHT = ARENA_LEFT + ARENA_W;
 const ARENA_BOTTOM = ARENA_TOP + ARENA_H;
 
-// ── Cat stats ──
-const CAT_SPEED = 2.5;
+// ── Cat stats (base values, modified by cat stats in init) ──
 const CAT_SIZE = 16;
-const ATTACK_RANGE = 52;
-const ATTACK_ARC = Math.PI * 0.8; // 144 degree swing
-const ATTACK_COOLDOWN = 400; // ms
+const BASE_SPEED = 2.5;
+const BASE_ATTACK_RANGE = 52;
+const BASE_ATTACK_ARC = Math.PI * 0.8; // 144 degree swing
+const BASE_ATTACK_COOLDOWN = 400; // ms
 
 // ── Rat stats ──
 const RAT_SIZE = 10;
@@ -46,6 +46,10 @@ export class BrawlScene extends Phaser.Scene {
   private catFacing = 0; // radians
   private catHp = 5;
   private catMaxHp = 5;
+  private catSpeed = BASE_SPEED;
+  private attackRange = BASE_ATTACK_RANGE;
+  private attackArc = BASE_ATTACK_ARC;
+  private attackCooldown = BASE_ATTACK_COOLDOWN;
   private catSprite!: Phaser.GameObjects.Sprite | Phaser.GameObjects.Arc;
   private hpBar!: Phaser.GameObjects.Graphics;
   private attackGfx!: Phaser.GameObjects.Graphics;
@@ -90,9 +94,22 @@ export class BrawlScene extends Phaser.Scene {
 
     const state = getGameState();
     const cat = state?.cats.find((c) => c.id === this.catId);
-    const huntBonus = Math.min(3, ((cat?.stats?.hunting ?? 5) - 4));
+    const hunting = cat?.stats?.hunting ?? 5;
+    const endurance = cat?.stats?.endurance ?? 5;
+    const stealth = cat?.stats?.stealth ?? 5;
+    const senses = cat?.stats?.senses ?? 5;
+
+    // Hunting → more HP
+    const huntBonus = Math.min(3, hunting - 4);
     this.catMaxHp = (this.difficulty === 'hard' ? 3 : this.difficulty === 'medium' ? 4 : 5) + huntBonus;
     this.catHp = this.catMaxHp;
+    // Endurance → faster movement (+10% per point above 5)
+    this.catSpeed = BASE_SPEED * (1 + (endurance - 5) * 0.1);
+    // Stealth → shorter attack cooldown (-20ms per point above 5)
+    this.attackCooldown = Math.max(200, BASE_ATTACK_COOLDOWN - (stealth - 5) * 20);
+    // Senses → larger attack range (+3px per point above 5)
+    this.attackRange = BASE_ATTACK_RANGE + (senses - 5) * 3;
+    this.attackArc = BASE_ATTACK_ARC;
     this.totalWaves = this.difficulty === 'hard' ? 4 : 3;
   }
 
@@ -270,7 +287,7 @@ export class BrawlScene extends Phaser.Scene {
 
     if (dx !== 0 || dy !== 0) {
       const len = Math.sqrt(dx * dx + dy * dy);
-      const speed = CAT_SPEED * 60 * dt;
+      const speed = this.catSpeed * 60 * dt;
       this.catX = Phaser.Math.Clamp(this.catX + (dx / len) * speed, ARENA_LEFT + CAT_SIZE, ARENA_RIGHT - CAT_SIZE);
       this.catY = Phaser.Math.Clamp(this.catY + (dy / len) * speed, ARENA_TOP + CAT_SIZE, ARENA_BOTTOM - CAT_SIZE);
       this.catFacing = Math.atan2(dy, dx);
@@ -411,24 +428,24 @@ export class BrawlScene extends Phaser.Scene {
   private attack(): void {
     if (this.finished) return;
     const now = Date.now();
-    if (now - this.lastAttackTime < ATTACK_COOLDOWN) return;
+    if (now - this.lastAttackTime < this.attackCooldown) return;
     this.lastAttackTime = now;
 
     playSfx('tap', 0.4);
 
     // Draw attack slash — filled arc wedge
     this.attackGfx.clear();
-    const slashStart = this.catFacing - ATTACK_ARC / 2;
-    const slashEnd = this.catFacing + ATTACK_ARC / 2;
+    const slashStart = this.catFacing - this.attackArc / 2;
+    const slashEnd = this.catFacing + this.attackArc / 2;
     this.attackGfx.fillStyle(0xdda055, 0.25);
     this.attackGfx.beginPath();
     this.attackGfx.moveTo(this.catX, this.catY);
-    this.attackGfx.arc(this.catX, this.catY, ATTACK_RANGE, slashStart, slashEnd, false);
+    this.attackGfx.arc(this.catX, this.catY, this.attackRange, slashStart, slashEnd, false);
     this.attackGfx.closePath();
     this.attackGfx.fillPath();
     this.attackGfx.lineStyle(2, 0xdda055, 0.7);
     this.attackGfx.beginPath();
-    this.attackGfx.arc(this.catX, this.catY, ATTACK_RANGE, slashStart, slashEnd, false);
+    this.attackGfx.arc(this.catX, this.catY, this.attackRange, slashStart, slashEnd, false);
     this.attackGfx.strokePath();
     this.time.delayedCall(120, () => this.attackGfx.clear());
 
@@ -438,7 +455,7 @@ export class BrawlScene extends Phaser.Scene {
       const dx = rat.x - this.catX;
       const dy = rat.y - this.catY;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist > ATTACK_RANGE) continue;
+      if (dist > this.attackRange) continue;
 
       // Check angle
       let angle = Math.atan2(dy, dx);
@@ -447,7 +464,7 @@ export class BrawlScene extends Phaser.Scene {
       while (diff > Math.PI) diff -= 2 * Math.PI;
       while (diff < -Math.PI) diff += 2 * Math.PI;
 
-      if (Math.abs(diff) <= ATTACK_ARC / 2) {
+      if (Math.abs(diff) <= this.attackArc / 2) {
         rat.hp--;
         rat.stunTimer = 0.3;
 

@@ -50,6 +50,7 @@ export class HuntScene extends Phaser.Scene {
   private spawnTimer: Phaser.Time.TimerEvent | null = null;
   private activeRats: ActiveRat[] = [];
   private tutorialShowing = false;
+  private lastCatchSfx = 0;
 
   constructor() {
     super({ key: 'HuntScene' });
@@ -216,7 +217,12 @@ export class HuntScene extends Phaser.Scene {
       rat.caught = true;
       this.score++;
       this.scoreText.setText(`Caught: ${this.score}`);
-      playSfx('rat_caught');
+      // Throttle catch sound to avoid annoying repetition
+      const now = Date.now();
+      if (now - this.lastCatchSfx > 500) {
+        playSfx('rat_caught', 0.4);
+        this.lastCatchSfx = now;
+      }
 
       // Pop effect
       gfx.destroy();

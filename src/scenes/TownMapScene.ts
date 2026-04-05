@@ -137,6 +137,12 @@ export class TownMapScene extends Phaser.Scene {
     // Spawn recruitable stray cats
     this.spawnStrayCats();
 
+    // Spawn plague rats if active
+    const save2 = getGameState();
+    if (save2?.flags.ratPlagueStarted && !save2.flags.ratPlagueResolved) {
+      this.spawnPlagueRats();
+    }
+
     // Controls
     this.setupControls();
 
@@ -553,6 +559,40 @@ export class TownMapScene extends Phaser.Scene {
         },
         loop: true,
       });
+    }
+  }
+
+  private spawnPlagueRats(): void {
+    // Scatter rat sprites around the town during the plague
+    const pathTiles: { col: number; row: number }[] = [];
+    for (let r = 1; r < ROWS - 1; r++) {
+      for (let c = 1; c < COLS - 1; c++) {
+        if (this.grid[r][c] === PATH) pathTiles.push({ col: c, row: r });
+      }
+    }
+    const count = Math.min(5, pathTiles.length);
+    for (let i = 0; i < count; i++) {
+      const idx = Math.floor(Math.random() * pathTiles.length);
+      const tile = pathTiles.splice(idx, 1)[0];
+      const { x, y } = toWorld(tile.col, tile.row);
+
+      if (this.textures.exists('rat')) {
+        const rat = this.add.sprite(x, y, 'rat');
+        rat.setScale(0.6);
+        rat.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        rat.setAlpha(0.7);
+        // Skitter around
+        this.time.addEvent({
+          delay: 2000 + Math.random() * 3000,
+          callback: () => {
+            if (!rat.active) return;
+            const nx = x + (Math.random() - 0.5) * TILE * 2;
+            const ny = y + (Math.random() - 0.5) * TILE * 2;
+            this.tweens.add({ targets: rat, x: Phaser.Math.Clamp(nx, GRID_LEFT + TILE, GRID_LEFT + GRID_W - TILE), y: Phaser.Math.Clamp(ny, GRID_TOP + TILE, GRID_TOP + GRID_H - TILE), duration: 400, ease: 'Linear' });
+          },
+          loop: true,
+        });
+      }
     }
   }
 

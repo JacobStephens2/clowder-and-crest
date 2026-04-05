@@ -115,9 +115,10 @@ export function registerNarrativeEvents(deps: NarrativeDeps): void {
     const gameState = getGameState();
     if (gameState) {
       gameState.flags.prePlaguePestJobs = gameState.completedJobs.filter((id) =>
-        ['mill_mousing', 'granary_patrol', 'cathedral_mousing', 'warehouse_clearing', 'ship_hold'].includes(id)
-      ).length as unknown as boolean;
-      gameState.flags.plagueDayStarted = gameState.day as unknown as boolean;
+        ['mill_mousing', 'granary_patrol', 'cathedral_mousing', 'warehouse_clearing', 'ship_hold',
+         'tavern_cellar', 'dockside_patrol', 'bakery_guard', 'castle_ratcatcher'].includes(id)
+      ).length;
+      gameState.flags.plagueDayStarted = gameState.day;
       addJournalEntry(gameState, 'The Rat Plague has begun. The town is under siege.', 'event');
     }
 

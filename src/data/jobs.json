@@ -143,6 +143,17 @@
     "description": "Bring herbs from the garden to the apothecary across town."
   },
   {
+    "id": "town_transport",
+    "name": "Town Transport",
+    "category": "courier",
+    "difficulty": "easy",
+    "keyStats": ["endurance", "stealth"],
+    "baseReward": 5,
+    "maxReward": 8,
+    "puzzleSkin": "market",
+    "description": "Move a crate of salted fish from the docks to the market square before the stall opens."
+  },
+  {
     "id": "castle_ratcatcher",
     "name": "Castle Ratcatcher",
     "category": "pest_control",
