@@ -151,7 +151,7 @@ export class ChaseScene extends Phaser.Scene {
   private grid: number[][] = [];
   private catPos = { r: 1, c: 1 };
   private ratPos = { r: 11, c: 11 };
-  private dots: { r: number; c: number; gfx: Phaser.GameObjects.Arc }[] = [];
+  private dots: { r: number; c: number; gfx: Phaser.GameObjects.Arc | Phaser.GameObjects.Sprite }[] = [];
   private dotsCollected = 0;
   private totalDots = 0;
   private catSprite: Phaser.GameObjects.Sprite | null = null;
@@ -260,7 +260,16 @@ export class ChaseScene extends Phaser.Scene {
     this.dots = [];
     for (const d of dotPositions) {
       const { x, y } = this.cellToWorld(d.r, d.c);
-      const gfx = this.add.circle(x, y, 3, DOT_COLOR, 0.6);
+      let gfx: Phaser.GameObjects.Arc | Phaser.GameObjects.Sprite;
+      if (this.textures.exists('fish_sprite')) {
+        const fish = this.add.sprite(x, y, 'fish_sprite');
+        fish.setScale(0.35);
+        fish.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        fish.setAlpha(0.7);
+        gfx = fish;
+      } else {
+        gfx = this.add.circle(x, y, 3, DOT_COLOR, 0.6);
+      }
       this.dots.push({ r: d.r, c: d.c, gfx });
     }
     this.totalDots = this.dots.length;
