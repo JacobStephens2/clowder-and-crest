@@ -3,7 +3,7 @@ import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, ALL_BREED_IDS } from '../utils/constants';
 import { getGameState, getAcceptedJob } from '../main';
 import { getCurrentPhase } from '../systems/DayTimer';
-import { createDpad } from '../ui/sceneHelpers';
+
 import { playSfx } from '../systems/SfxManager';
 import { getAvailableRecruits } from '../systems/CatManager';
 
@@ -146,16 +146,63 @@ export class TownMapScene extends Phaser.Scene {
     // Controls
     this.setupControls();
 
-    // D-pad
-    createDpad(this, {
-      x: GAME_WIDTH / 2,
-      y: GRID_TOP + GRID_H + 55,
-      size: 38,
-      onDirection: (dx, dy) => {
-        this.movePlayer(dx, dy);
+    // Virtual joystick for town movement
+    this.input.addPointer(1);
+    const joyX = GAME_WIDTH / 2;
+    const joyY = GRID_TOP + GRID_H + 55;
+    const joyRadius = 36;
+    this.add.circle(joyX, joyY, joyRadius, 0x2a2520, 0.6).setStrokeStyle(1, 0x6b5b3e);
+    const joyKnob = this.add.circle(joyX, joyY, 14, 0x6b5b3e, 0.8);
+
+    let joyPointerId = -1;
+    let joyMoveTimer: Phaser.Time.TimerEvent | null = null;
+
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      const wx = pointer.x / DPR;
+      const wy = pointer.y / DPR;
+      if (Math.sqrt((wx - joyX) ** 2 + (wy - joyY) ** 2) < joyRadius * 1.5) {
+        joyPointerId = pointer.id;
+      }
+    });
+
+    this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+      if (pointer.id === joyPointerId) {
+        joyPointerId = -1;
+        joyKnob.setPosition(joyX, joyY);
+        joyMoveTimer?.destroy();
+        joyMoveTimer = null;
+      }
+    });
+
+    // Poll joystick in a timer for grid-based movement
+    this.time.addEvent({
+      delay: 16,
+      loop: true,
+      callback: () => {
+        if (joyPointerId < 0) return;
+        const pointers = [this.input.pointer1, this.input.pointer2, this.input.activePointer];
+        for (const p of pointers) {
+          if (p && p.id === joyPointerId && p.isDown) {
+            const dx = p.x / DPR - joyX;
+            const dy = p.y / DPR - joyY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const clampDist = Math.min(dist, joyRadius);
+            if (dist > 8) {
+              joyKnob.setPosition(joyX + (dx / dist) * clampDist, joyY + (dy / dist) * clampDist);
+              // Trigger grid movement if not already moving
+              if (!this.isMoving && !joyMoveTimer) {
+                const mdx = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : -1) : 0;
+                const mdy = Math.abs(dy) >= Math.abs(dx) ? (dy > 0 ? 1 : -1) : 0;
+                this.movePlayer(mdx, mdy);
+                joyMoveTimer = this.time.delayedCall(200, () => { joyMoveTimer = null; });
+              }
+            } else {
+              joyKnob.setPosition(joyX, joyY);
+            }
+            break;
+          }
+        }
       },
-      holdRepeat: true,
-      repeatInterval: 200,
     });
 
     // Prompt text for building interactions

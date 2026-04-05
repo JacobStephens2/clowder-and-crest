@@ -362,35 +362,61 @@ export class ChaseScene extends Phaser.Scene {
       }
     });
 
-    // Virtual d-pad for mobile (below maze)
-    const dpadY = MAZE_Y + MAZE_H + 70;
-    const dpadX = GAME_WIDTH / 2;
-    const dpadSize = 40;
-    const dpadGap = 4;
+    // Virtual joystick for mobile (below maze)
+    this.input.addPointer(1);
+    const joyX = GAME_WIDTH / 2;
+    const joyY = MAZE_Y + MAZE_H + 70;
+    const joyRadius = 36;
+    this.add.circle(joyX, joyY, joyRadius, 0x2a2520, 0.6).setStrokeStyle(1, 0x6b5b3e);
+    const joyKnob = this.add.circle(joyX, joyY, 14, 0x6b5b3e, 0.8);
 
-    let holdTimer: Phaser.Time.TimerEvent | null = null;
-    const makeArrow = (x: number, y: number, dr: number, dc: number, label: string) => {
-      const btn = this.add.rectangle(x, y, dpadSize, dpadSize, 0x2a2520, 0.8);
-      btn.setStrokeStyle(1, 0x6b5b3e);
-      btn.setInteractive({ useHandCursor: true });
-      this.add.text(x, y, label, { fontSize: '18px', color: '#c4956a' }).setOrigin(0.5);
-      btn.on('pointerdown', () => {
-        if (!this.caught) this.moveCat(dr, dc);
-        holdTimer?.destroy();
-        holdTimer = this.time.addEvent({
-          delay: 180,
-          callback: () => { if (!this.caught) this.moveCat(dr, dc); },
-          loop: true,
-        });
-      });
-      btn.on('pointerup', () => holdTimer?.destroy());
-      btn.on('pointerout', () => holdTimer?.destroy());
-    };
+    let joyPointerId = -1;
+    let joyMoveTimer: Phaser.Time.TimerEvent | null = null;
 
-    makeArrow(dpadX, dpadY - dpadSize - dpadGap, -1, 0, '\u25B2'); // Up
-    makeArrow(dpadX, dpadY + dpadSize + dpadGap, 1, 0, '\u25BC');  // Down
-    makeArrow(dpadX - dpadSize - dpadGap, dpadY, 0, -1, '\u25C0'); // Left
-    makeArrow(dpadX + dpadSize + dpadGap, dpadY, 0, 1, '\u25B6');  // Right
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      const wx = pointer.x / DPR;
+      const wy = pointer.y / DPR;
+      if (Math.sqrt((wx - joyX) ** 2 + (wy - joyY) ** 2) < joyRadius * 1.5) {
+        joyPointerId = pointer.id;
+      }
+    });
+    this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+      if (pointer.id === joyPointerId) {
+        joyPointerId = -1;
+        joyKnob.setPosition(joyX, joyY);
+        joyMoveTimer?.destroy();
+        joyMoveTimer = null;
+      }
+    });
+
+    // Poll joystick for grid-based movement
+    this.time.addEvent({
+      delay: 16, loop: true,
+      callback: () => {
+        if (joyPointerId < 0 || this.caught) return;
+        const pointers = [this.input.pointer1, this.input.pointer2, this.input.activePointer];
+        for (const p of pointers) {
+          if (p && p.id === joyPointerId && p.isDown) {
+            const dx = p.x / DPR - joyX;
+            const dy = p.y / DPR - joyY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const clampDist = Math.min(dist, joyRadius);
+            if (dist > 8) {
+              joyKnob.setPosition(joyX + (dx / dist) * clampDist, joyY + (dy / dist) * clampDist);
+              if (!joyMoveTimer) {
+                const dr = Math.abs(dy) >= Math.abs(dx) ? (dy > 0 ? 1 : -1) : 0;
+                const dc = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : -1) : 0;
+                this.moveCat(dr, dc);
+                joyMoveTimer = this.time.delayedCall(150, () => { joyMoveTimer = null; });
+              }
+            } else {
+              joyKnob.setPosition(joyX, joyY);
+            }
+            break;
+          }
+        }
+      },
+    });
 
     // Swipe gesture for mobile
     let swipeStart: { x: number; y: number } | null = null;
