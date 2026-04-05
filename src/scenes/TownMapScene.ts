@@ -715,7 +715,9 @@ export class TownMapScene extends Phaser.Scene {
 
     if (this.promptText) {
       if (this.activeDoor) {
-        this.promptText.setText(`Enter ${this.activeDoor.name}`);
+        // Check if there's an accepted job to start here
+        const hasJob = this.activeDoor.id !== 'jobs' && this.activeDoor.id !== 'carpenter';
+        this.promptText.setText(hasJob ? `Start job at ${this.activeDoor.name}` : `Enter ${this.activeDoor.name}`);
         this.promptText.setAlpha(1);
       } else {
         this.promptText.setAlpha(0);
@@ -784,8 +786,11 @@ export class TownMapScene extends Phaser.Scene {
     playSfx('tap', 0.3);
     if (b.id === 'carpenter') {
       eventBus.emit('show-furniture-shop');
-    } else {
+    } else if (b.id === 'jobs') {
       eventBus.emit('show-town-overlay');
+    } else {
+      // Non-job-board buildings: start accepted job if one exists
+      eventBus.emit('start-accepted-job');
     }
   }
 }

@@ -866,11 +866,7 @@ eventBus.on('show-town-overlay', () => {
       return '<div style="padding:2px 12px;font-size:10px;color:#8a4a4a;text-align:center;font-family:Georgia,serif;font-style:italic">Doors lock as your cats approach. The town fears what your guild has become.</div>';
     })()}
     ${plagueActive ? (() => {
-      const plagueJobIds = ['mill_mousing', 'granary_patrol', 'cathedral_mousing', 'warehouse_clearing', 'ship_hold',
-         'tavern_cellar', 'dockside_patrol', 'bakery_guard', 'castle_ratcatcher'];
-      const pestDone = gameState.completedJobs.filter((id: string) => plagueJobIds.includes(id)).length;
-      const pre = numFlag("prePlaguePestJobs");
-      const progress = Math.min(5, pestDone - pre);
+      const progress = Math.min(5, numFlag("plaguePestDone"));
       const plagueDays = gameState.day - (numFlag("plagueDayStarted") || gameState.day);
       return `<div style="background:#4a2020;color:#cc6666;padding:10px 12px;margin:0 12px 8px;border-radius:4px;font-size:12px;text-align:center;font-family:Georgia,serif;border:1px solid #6a3030">
         <strong>\u{1F400} THE RAT PLAGUE — Day ${plagueDays + 1}</strong><br>
@@ -1118,9 +1114,23 @@ eventBus.on('show-town-overlay', () => {
 });
 
 // Job accept — show cat assignment overlay
+let acceptedJob: JobDef | null = null;
+
 eventBus.on('job-accept', ({ job }: { job: JobDef }) => {
   playSfx('job_accept');
   if (!gameState) return;
+
+  // Store the accepted job and close the overlay — player must go to a location to start it
+  acceptedJob = job;
+  overlayLayer.querySelectorAll('.town-overlay').forEach((el) => el.remove());
+  showToast(`Accepted: ${job.name}. Go to a location in town to start the job.`);
+});
+
+// When player enters any building with an accepted job, start the assignment
+eventBus.on('start-accepted-job', () => {
+  if (!acceptedJob || !gameState) return;
+  const job = acceptedJob;
+  acceptedJob = null;
   showAssignOverlay(job);
 });
 
@@ -1376,6 +1386,11 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
   applyReputationShift(gameState, job);
   if (!gameState.completedJobs.includes(job.id)) {
     gameState.completedJobs.push(job.id);
+  }
+
+  // Track plague pest control completions separately (counts every completion, not just unique)
+  if (gameState.flags.ratPlagueStarted && !gameState.flags.ratPlagueResolved && job.category === 'pest_control') {
+    gameState.flags.plaguePestDone = (Number(gameState.flags.plaguePestDone ?? 0)) + 1;
   }
 
   // Record puzzle stars

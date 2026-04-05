@@ -43,18 +43,11 @@ export function checkChapterAdvance(save: SaveData): boolean {
 export function checkRatPlagueResolution(save: SaveData): boolean {
   if (!save.flags.ratPlagueStarted || save.flags.ratPlagueResolved) return false;
 
-  // Plague resolves after completing 5 pest control jobs during chapter 3
-  const plagueJobs = save.completedJobs.filter((id) => {
-    return id.startsWith('plague_') || ['mill_mousing', 'granary_patrol', 'cathedral_mousing', 'warehouse_clearing', 'ship_hold'].includes(id);
-  });
+  // Plague resolves after completing 5 pest control jobs during the plague
+  // Uses a counter that tracks every completion (not just unique job IDs)
+  const plaguePestDone = Number(save.flags.plaguePestDone ?? 0);
 
-  // Need at least 5 plague-era pest control completions beyond what was done pre-plague
-  const prePlagueCount = Number(save.flags.prePlaguePestJobs ?? 0);
-  const pestControlDone = save.completedJobs.filter((id) =>
-    ['mill_mousing', 'granary_patrol', 'cathedral_mousing', 'warehouse_clearing', 'ship_hold'].includes(id)
-  ).length;
-
-  if (pestControlDone - prePlagueCount >= 5) {
+  if (plaguePestDone >= 5) {
     save.flags.ratPlagueResolved = true;
     eventBus.emit('rat-plague-resolved');
     return true;

@@ -1,22 +1,3 @@
-[x] ensure the rat fight game can be paused
-[x] implement something or some things from /var/www/clowder.stephens.page/todo/procedural-and-llm-opportunities.md
-[x] maybe jobs should have fewer approaches available? If any approach options at all?
-[x] show rats in the town during the rat plague
-[x] for the rat plague, after the scene happened, I went to the job board and it already showed 3/5 rat nests cleared. It should have been 0, as the rat plague just started and I hadn't done any jobs yet
-[x] add a job that is transporting in the town itself
-[x] with the hunting mini game, the repeated squeeky rat sounds from constantly hitting them gets a little annoying
-[x] get different stats of the cats to impact how they perform in the fight game
-[x] what would we need to setup LLM integration?
-[x] the first nonogram I encountered was 8x8 and would have taken a while, maybe make the first one the player encounters smaller, and the resolution seemed a bit low too. I wonder if this nonogram game would be better rendered by HTML than by Phaser.
-[x] add something the cat can pickup in the fight game that gives a new cat themed weapon
-[x] winning fight mini games / jobs should count towards the resolution of the rat plague
-[x] the fight game still doesn't pause when the player clicks the pause button at the top
-[x] some of the rush hour puzzles seem too easy
-[x] remove recruitment from the job board menu, make the only way to do it going to talk to the cat in town
-[x] remove the furniture shop from the menu, make the only way to get to it by going to the carpenter on the town map
-[x] add swipe animations for the fight game
-[x] put a note / indicator on jobs which will progress the resolution of the rat plague. I'm having a tough time sometimes knowing what will help move that along
-[x] remove wishes from the town board, showing them only in the guild view
-[x] try to match room placement to wishes, so if the Maine Coon wants to scratch something for example, require that cat to be placed in the room with the scratching post
-[x] resolve the bug in the rush hour puzzles where if you drag your cat to the exit, it can resolve, even if the path to the exit is not clear
-[x] I don't know how solvable the nonograms are, some seem very tough, as I got one with a 5x5 grid where there were 1's along the entire top and 1's along the entire side except for one row which had a 2 at the end.
+[x] I feel like I can't resolve the rat plague. I took two tasks that were marked plague, and before I took both I was at 4/5 rat tasks, but I'm still at 4/5 after resolving both of those
+[x] make it so that you can pick up jobs at the job board, but then to do them you have to go to the location where they are done and then start the job at that location.
+[] the fight game seems to start paused, and I need to click pause in the corner then unpause to get it moving. 
