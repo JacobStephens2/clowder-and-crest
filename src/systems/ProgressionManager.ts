@@ -28,10 +28,10 @@ export function checkChapterAdvance(save: SaveData): boolean {
     }
     if (save.chapter === 7) {
       save.flags.inquisitionStarted = true;
-      save.flags.inquisitionDayStarted = save.day as unknown as boolean;
-      save.flags.inquisitionSacredJobs = 0 as unknown as boolean;
-      save.flags.inquisitionShadowJobs = 0 as unknown as boolean;
-      save.flags.inquisitionGuardJobs = 0 as unknown as boolean;
+      save.flags.inquisitionDayStarted = save.day;
+      save.flags.inquisitionSacredJobs = 0;
+      save.flags.inquisitionShadowJobs = 0;
+      save.flags.inquisitionGuardJobs = 0;
       eventBus.emit('inquisition-start');
     }
 
@@ -49,7 +49,7 @@ export function checkRatPlagueResolution(save: SaveData): boolean {
   });
 
   // Need at least 5 plague-era pest control completions beyond what was done pre-plague
-  const prePlagueCount = save.flags.prePlaguePestJobs as unknown as number ?? 0;
+  const prePlagueCount = Number(save.flags.prePlaguePestJobs ?? 0);
   const pestControlDone = save.completedJobs.filter((id) =>
     ['mill_mousing', 'granary_patrol', 'cathedral_mousing', 'warehouse_clearing', 'ship_hold'].includes(id)
   ).length;
@@ -107,16 +107,16 @@ export function getChapterDescription(chapter: number): string {
 export function checkInquisitionResolution(save: SaveData): boolean {
   if (!save.flags.inquisitionStarted || save.flags.inquisitionResolved) return false;
 
-  const startDay = save.flags.inquisitionDayStarted as unknown as number ?? save.day;
+  const startDay = Number(save.flags.inquisitionDayStarted ?? save.day);
   const daysPassed = save.day - startDay;
 
   // Investigation lasts 5 days
   if (daysPassed >= 5) {
     save.flags.inquisitionResolved = true;
 
-    const sacredJobs = save.flags.inquisitionSacredJobs as unknown as number ?? 0;
-    const guardJobs = save.flags.inquisitionGuardJobs as unknown as number ?? 0;
-    const shadowJobs = save.flags.inquisitionShadowJobs as unknown as number ?? 0;
+    const sacredJobs = Number(save.flags.inquisitionSacredJobs ?? 0);
+    const guardJobs = Number(save.flags.inquisitionGuardJobs ?? 0);
+    const shadowJobs = Number(save.flags.inquisitionShadowJobs ?? 0);
     const goodWork = sacredJobs + guardJobs;
 
     let verdict: 'vindicated' | 'acquitted' | 'condemned';
@@ -128,7 +128,7 @@ export function checkInquisitionResolution(save: SaveData): boolean {
       verdict = 'acquitted';
     }
 
-    save.flags.inquisitionVerdict = verdict as unknown as boolean;
+    save.flags.inquisitionVerdict = verdict;
     eventBus.emit('inquisition-verdict', verdict);
     return true;
   }

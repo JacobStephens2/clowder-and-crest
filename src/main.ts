@@ -27,16 +27,16 @@ import { createCat, getBreed, addXp } from './systems/CatManager';
 import { earnFish, spendFish, calculateReward, collectStationedEarnings, isCatStationed } from './systems/Economy';
 import { getJob, getStatMatchScore, generateDailyJobs, type JobDef } from './systems/JobBoard';
 import { getPuzzleByDifficulty, generatePuzzle } from './systems/PuzzleGenerator';
-import { addBondPoints, processDailyBonds, getAvailableConversation, markConversationViewed, getBondRank, getBondPairs } from './systems/BondSystem';
+import { addBondPoints, processDailyBonds } from './systems/BondSystem';
 import { checkChapterAdvance, checkRatPlagueResolution, checkInquisitionResolution, getChapterName, getNextChapterHint } from './systems/ProgressionManager';
 import { startBgm, toggleMute, isMuted, switchToPuzzleMusic, switchToNormalMusic, pauseMusic, resumeMusic } from './systems/MusicManager';
 import { playSfx, toggleSfxMute, isSfxMuted } from './systems/SfxManager';
 import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDayEnd, pauseDayTimer, resumeDayTimer, isPaused } from './systems/DayTimer';
 import { applyReputationShift, getReputationLabel, getReputationRecruitModifier, getReputationBonuses } from './systems/ReputationSystem';
 import { getComboMultiplier, updateCombo, getDailyWish, getCurrentFestival, trackEvent } from './systems/GameSystems';
-import conversationsData from './data/conversations.json';
 import { showNarrativeOverlay } from './ui/narrativeOverlay';
 import { initPanels, showCatPanel, showMenuPanel } from './ui/Panels';
+import { initConversations, checkAndShowConversation } from './ui/Conversations';
 
 // ──── Game State ────
 let gameState: SaveData | null = null;
@@ -47,6 +47,11 @@ let cachedJobDay = -1;
 
 export function getGameState(): SaveData | null {
   return gameState;
+}
+
+/** Read a numeric flag value (flags store mixed types). */
+function numFlag(key: string): number {
+  return Number(gameState?.flags[key] ?? 0);
 }
 
 // ──── Phaser Game ────
@@ -381,6 +386,14 @@ initPanels({
   stopDayTimer,
   guildEndDayBtn,
   guildWishBanner,
+});
+initConversations({
+  getGameState: () => gameState,
+  overlayLayer,
+  saveGame,
+  showToast,
+  switchScene,
+  suggestEndDay,
 });
 eventBus.on('active-slot', (slot: number) => { activeSlot = slot; });
 eventBus.on('show-name-prompt', (data?: { slot?: number }) => {
@@ -793,9 +806,9 @@ eventBus.on('show-town-overlay', () => {
         ['mill_mousing', 'granary_patrol', 'cathedral_mousing', 'warehouse_clearing', 'ship_hold',
          'tavern_cellar', 'dockside_patrol', 'bakery_guard', 'castle_ratcatcher'].includes(id)
       ).length;
-      const pre = gameState.flags.prePlaguePestJobs as unknown as number ?? 0;
+      const pre = numFlag("prePlaguePestJobs");
       const progress = Math.min(5, pestDone - pre);
-      const plagueDays = gameState.day - (gameState.flags.plagueDayStarted as unknown as number ?? gameState.day);
+      const plagueDays = gameState.day - (numFlag("plagueDayStarted") || gameState.day);
       return `<div style="background:#4a2020;color:#cc6666;padding:10px 12px;margin:0 12px 8px;border-radius:4px;font-size:12px;text-align:center;font-family:Georgia,serif;border:1px solid #6a3030">
         <strong>\u{1F400} THE RAT PLAGUE — Day ${plagueDays + 1}</strong><br>
         <div style="margin:6px 0;font-size:11px">Rat nests cleared: ${progress}/5</div>
@@ -830,7 +843,7 @@ eventBus.on('show-town-overlay', () => {
     const catIcon = categoryIcons[job.category] ?? '\u{1F43E}';
     const artFile = jobArtMap[job.puzzleSkin] ?? '';
     const artImg = artFile ? `<img src="assets/sprites/jobs/${artFile}.png" style="width:48px;height:48px;image-rendering:pixelated;border-radius:4px;margin-right:8px;flex-shrink:0" />` : '';
-    const isContested = (job as any).contested;
+    const isContested = job.contested;
     html += `
       <div class="town-job-card" style="display:flex;gap:8px;align-items:center;${isContested ? 'border-left:3px solid #cc6666' : ''}">
         ${artImg}
@@ -1100,7 +1113,7 @@ eventBus.on('show-town-overlay', () => {
         showToast('All cats feel refreshed!');
       } else if (itemId === 'fishbone') {
         // Store bonus flag — next job reward gets +20%
-        gameState!.flags.luckyFishbone = true as unknown as boolean;
+        gameState!.flags.luckyFishbone = true;
         showToast('Lucky Fishbone acquired! Next job pays +20%.');
       } else if (itemId === 'scroll') {
         const cat = gameState!.cats[Math.floor(Math.random() * gameState!.cats.length)];
@@ -1109,7 +1122,7 @@ eventBus.on('show-town-overlay', () => {
         cat.stats[stat] = Math.min(10, cat.stats[stat] + 1);
         showToast(`${cat.name}'s ${stat} increased to ${cat.stats[stat]}!`);
       } else if (itemId === 'blessing') {
-        gameState!.flags.saintBlessing = true as unknown as boolean;
+        gameState!.flags.saintBlessing = true;
         showToast('Saint\'s Blessing protects your cats from the next mood drop.');
       }
 
@@ -1402,11 +1415,11 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
   // Track jobs during Inquisition investigation
   if (gameState.flags.inquisitionStarted && !gameState.flags.inquisitionResolved) {
     if (job.category === 'sacred') {
-      gameState.flags.inquisitionSacredJobs = ((gameState.flags.inquisitionSacredJobs as unknown as number ?? 0) + 1) as unknown as boolean;
+      gameState.flags.inquisitionSacredJobs = (numFlag("inquisitionSacredJobs") + 1);
     } else if (job.category === 'guard') {
-      gameState.flags.inquisitionGuardJobs = ((gameState.flags.inquisitionGuardJobs as unknown as number ?? 0) + 1) as unknown as boolean;
+      gameState.flags.inquisitionGuardJobs = (numFlag("inquisitionGuardJobs") + 1);
     } else if (job.category === 'shadow') {
-      gameState.flags.inquisitionShadowJobs = ((gameState.flags.inquisitionShadowJobs as unknown as number ?? 0) + 1) as unknown as boolean;
+      gameState.flags.inquisitionShadowJobs = (numFlag("inquisitionShadowJobs") + 1);
     }
   }
 
@@ -1521,7 +1534,7 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
 
   // Plague escalation — daily pressure while plague is active
   if (gameState.flags.ratPlagueStarted && !gameState.flags.ratPlagueResolved) {
-    const plagueDays = gameState.day - (gameState.flags.plagueDayStarted as unknown as number ?? gameState.day);
+    const plagueDays = gameState.day - (numFlag("plagueDayStarted") || gameState.day);
 
     // Plague sickness: each day, 20% chance a random cat's mood drops
     if (Math.random() < 0.2) {
@@ -1546,7 +1559,7 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
       ['mill_mousing', 'granary_patrol', 'cathedral_mousing', 'warehouse_clearing', 'ship_hold',
        'tavern_cellar', 'dockside_patrol', 'bakery_guard', 'castle_ratcatcher'].includes(id)
     ).length;
-    const prePlagueCount = gameState.flags.prePlaguePestJobs as unknown as number ?? 0;
+    const prePlagueCount = numFlag("prePlaguePestJobs");
     const plagueProgress = Math.min(5, pestControlDone - prePlagueCount);
     if (plagueProgress > 0 && plagueProgress < 5) {
       showToast(`Plague progress: ${plagueProgress}/5 rat nests cleared. The town needs ${5 - plagueProgress} more.`);
@@ -1555,12 +1568,12 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
 
   // Inquisition daily check
   if (gameState.flags.inquisitionStarted && !gameState.flags.inquisitionResolved) {
-    const inqStart = gameState.flags.inquisitionDayStarted as unknown as number ?? gameState.day;
+    const inqStart = numFlag("inquisitionDayStarted") || gameState.day;
     const inqDays = gameState.day - inqStart;
     if (inqDays < 5) {
-      const sacredCount = gameState.flags.inquisitionSacredJobs as unknown as number ?? 0;
-      const guardCount = gameState.flags.inquisitionGuardJobs as unknown as number ?? 0;
-      const shadowCount = gameState.flags.inquisitionShadowJobs as unknown as number ?? 0;
+      const sacredCount = gameState.flags.inquisitionSacredJobs ?? 0;
+      const guardCount = gameState.flags.inquisitionGuardJobs ?? 0;
+      const shadowCount = gameState.flags.inquisitionShadowJobs ?? 0;
       const dayNum = inqDays + 1;
       const questioning = gameState.cats[Math.floor(Math.random() * gameState.cats.length)];
       setTimeout(() => {
@@ -1702,11 +1715,11 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
 
   // Chapter 6+: Rival guild influence — uncompleted contested jobs count as rival wins
   if (gameState.chapter >= 6 && cachedDailyJobs) {
-    const contestedJobs = (cachedDailyJobs as any[]).filter((j: any) => j.contested);
-    const contestedLost = contestedJobs.filter((j: any) => !jobsCompletedToday.has(j.id));
+    const contestedJobs = (cachedDailyJobs as JobDef[]).filter((j) => j.contested);
+    const contestedLost = contestedJobs.filter((j: JobDef) => !jobsCompletedToday.has(j.id));
     if (contestedLost.length > 0) {
-      const rivalInfluence = (gameState.flags.rivalInfluence as unknown as number ?? 0) + contestedLost.length;
-      gameState.flags.rivalInfluence = rivalInfluence as unknown as boolean;
+      const rivalInfluence = numFlag("rivalInfluence") + contestedLost.length;
+      gameState.flags.rivalInfluence = rivalInfluence;
       showToast(`The Silver Paws claimed ${contestedLost.length} contested job${contestedLost.length > 1 ? 's' : ''}. Their influence: ${rivalInfluence}`);
 
       // Consequences at thresholds
@@ -1723,10 +1736,10 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
       }
     } else if (contestedJobs.length > 0) {
       // Player completed all contested jobs — reduce rival influence
-      const current = (gameState.flags.rivalInfluence as unknown as number ?? 0);
+      const current = numFlag("rivalInfluence");
       if (current > 0) {
         const reduced = Math.max(0, current - 2);
-        gameState.flags.rivalInfluence = reduced as unknown as boolean;
+        gameState.flags.rivalInfluence = reduced;
         showToast(`You defended all contested jobs! Silver Paws influence: ${reduced}`);
 
         // Win condition: rival influence reduced to 0
@@ -1928,232 +1941,6 @@ function suggestEndDay(): void {
   });
 }
 
-function checkAndShowConversation(): void {
-  if (!gameState) {
-    switchScene('GuildhallScene');
-    return;
-  }
-
-  const catBreeds = gameState.cats.map((c) => c.breed);
-  for (const [a, b] of getBondPairs()) {
-    if (catBreeds.includes(a) && catBreeds.includes(b)) {
-      const rank = getAvailableConversation(gameState, a, b);
-      if (rank) {
-        showConversation(a, b, rank);
-        return;
-      }
-    }
-  }
-
-  // Check for group conversations (3+ cats with Companion+ bond to wildcat)
-  if (gameState.cats.length >= 3) {
-    const convos = conversationsData as Record<string, any[]>;
-    const groupKeys = Object.keys(convos).filter((k) => k.startsWith('group_'));
-    for (const key of groupKeys) {
-      const viewedKey = `viewed_${key}`;
-      if (!gameState.flags[viewedKey]) {
-        // Check trigger conditions
-        const shouldTrigger =
-          (key === 'group_guild_meeting' && gameState.cats.length >= 4 && gameState.totalJobsCompleted >= 10) ||
-          (key === 'group_plague_aftermath' && gameState.flags.ratPlagueResolved) ||
-          (key === 'group_celebration' && gameState.totalJobsCompleted >= 25) ||
-          (key === 'group_shadow_crisis' && gameState.reputationScore <= -25 && gameState.cats.length >= 3) ||
-          (key === 'group_noble_recognition' && gameState.reputationScore >= 25 && gameState.cats.length >= 3);
-        if (shouldTrigger) {
-          gameState.flags[viewedKey] = true;
-          saveGame(gameState);
-          showGroupConversation(key);
-          return;
-        }
-      }
-    }
-  }
-
-  switchScene('TownScene');
-
-  // If all cats are busy, suggest ending the day
-  setTimeout(() => suggestEndDay(), 500);
-}
-
-function showGroupConversation(key: string): void {
-  if (!gameState) return;
-  const convos = conversationsData as Record<string, Array<{ rank: string; title: string; lines: Array<{ speaker: string; text: string }> }>>;
-  const convoSet = convos[key];
-  if (!convoSet || convoSet.length === 0) { switchScene('TownScene'); return; }
-  const convo = convoSet[0];
-
-  let lineIndex = 0;
-  const overlay = document.createElement('div');
-  overlay.className = 'conversation-overlay';
-
-  // Show all cat portraits
-  const portraitsHtml = gameState.cats.slice(0, 5).map((cat) => {
-    const color = BREED_COLORS[cat.breed] ?? '#8b7355';
-    return `<div class="conversation-portrait" style="background:${color};width:60px;height:60px">
-      <img src="assets/sprites/${cat.breed}/south.png" style="width:48px;height:48px;image-rendering:pixelated" />
-      <div style="font-size:8px;margin-top:2px">${cat.name}</div>
-    </div>`;
-  }).join('');
-
-  overlay.innerHTML = `
-    <img src="assets/sprites/dialogues/guildhall.png" style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:420px;image-rendering:pixelated;opacity:0.25;pointer-events:none" />
-    <div class="conversation-portraits" style="justify-content:center;gap:8px;flex-wrap:wrap">${portraitsHtml}</div>
-    <div class="conversation-textbox">
-      <div style="color:#c4956a;font-size:12px;margin-bottom:4px">${convo.title}</div>
-      <div class="conversation-speaker" id="conv-speaker"></div>
-      <div class="conversation-text" id="conv-text"></div>
-      <div class="conversation-advance">Tap to continue</div>
-      <button id="conv-skip" style="position:absolute;top:10px;right:16px;background:none;border:1px solid #3a3530;color:#6b5b3e;padding:4px 10px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer">Skip</button>
-    </div>
-  `;
-  overlayLayer.appendChild(overlay);
-
-  const speaker = document.getElementById('conv-speaker')!;
-  const text = document.getElementById('conv-text')!;
-
-  function showLine(): void {
-    if (lineIndex >= convo.lines.length) {
-      overlay.remove();
-      showToast('A guild moment to remember.');
-      switchScene('TownScene');
-      return;
-    }
-    const line = convo.lines[lineIndex];
-    const cat = gameState!.cats.find((c) => c.breed === line.speaker);
-    const name = cat?.name ?? BREED_NAMES[line.speaker] ?? line.speaker;
-    const breedName = BREED_NAMES[line.speaker] ?? line.speaker;
-    speaker.innerHTML = `${name} <span class="speaker-breed">${breedName}</span>`;
-    text.textContent = line.text;
-    lineIndex++;
-  }
-
-  showLine();
-  overlay.addEventListener('click', (e) => {
-    if ((e.target as HTMLElement).id === 'conv-skip') return;
-    showLine();
-  });
-  document.getElementById('conv-skip')!.addEventListener('click', (e) => {
-    e.stopPropagation();
-    overlay.remove();
-    switchScene('TownScene');
-  });
-}
-
-function showConversation(breedA: string, breedB: string, rank: string): void {
-  const convos = conversationsData as Record<string, Array<{ rank: string; title: string; lines: Array<{ speaker: string; text: string }> }>>;
-  const key1 = `${breedA}_${breedB}`;
-  const key2 = `${breedB}_${breedA}`;
-  const convoSet = convos[key1] ?? convos[key2];
-  if (!convoSet) {
-    switchScene('GuildhallScene');
-    return;
-  }
-
-  const convoMatch = convoSet.find((c) => c.rank === rank);
-  if (!convoMatch) {
-    switchScene('GuildhallScene');
-    return;
-  }
-  const convo = convoMatch;
-
-  let lineIndex = 0;
-
-  const overlay = document.createElement('div');
-  overlay.className = 'conversation-overlay';
-
-  // Full-screen scene art background based on conversation rank
-  const sceneArt = rank === 'A' ? 'rooftop' : rank === 'B' ? 'granary' : 'guildhall';
-
-  const catA = gameState!.cats.find((c) => c.breed === breedA);
-  const catB = gameState!.cats.find((c) => c.breed === breedB);
-  const colorA = BREED_COLORS[breedA] ?? '#8b7355';
-  const colorB = BREED_COLORS[breedB] ?? '#8b7355';
-  const nameA = catA?.name ?? BREED_NAMES[breedA] ?? breedA;
-  const nameB = catB?.name ?? BREED_NAMES[breedB] ?? breedB;
-  const breedNameA = BREED_NAMES[breedA] ?? breedA;
-  const breedNameB = BREED_NAMES[breedB] ?? breedB;
-
-  const portraitImgA = `<img src="assets/sprites/${breedA}/south.png" style="width:72px;height:72px;image-rendering:pixelated;margin-bottom:4px" />`;
-  const portraitImgB = `<img src="assets/sprites/${breedB}/south.png" style="width:72px;height:72px;image-rendering:pixelated;margin-bottom:4px" />`;
-
-  overlay.innerHTML = `
-    <img src="assets/sprites/dialogues/${sceneArt}.png" style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:420px;image-rendering:pixelated;opacity:0.25;pointer-events:none" />
-    <div class="conversation-portraits">
-      <div class="conversation-portrait" id="portrait-left" style="background:${colorA}">
-        ${portraitImgA}
-        <div class="portrait-name">${nameA}</div>
-        <div class="portrait-breed">${breedNameA}</div>
-      </div>
-      <div class="conversation-portrait" id="portrait-right" style="background:${colorB}">
-        ${portraitImgB}
-        <div class="portrait-name">${nameB}</div>
-        <div class="portrait-breed">${breedNameB}</div>
-      </div>
-    </div>
-    <div class="conversation-textbox">
-      <div class="conversation-speaker" id="conv-speaker"></div>
-      <div class="conversation-text" id="conv-text"></div>
-      <div class="conversation-advance">Tap to continue</div>
-      <button id="conv-skip" style="position:absolute;top:10px;right:16px;background:none;border:1px solid #3a3530;color:#6b5b3e;padding:4px 10px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer">Skip</button>
-    </div>
-  `;
-
-  overlayLayer.appendChild(overlay);
-
-  const speaker = document.getElementById('conv-speaker')!;
-  const text = document.getElementById('conv-text')!;
-  const portraitLeft = document.getElementById('portrait-left')!;
-  const portraitRight = document.getElementById('portrait-right')!;
-
-  function showLine(): void {
-    if (lineIndex >= convo.lines.length) {
-      // Done
-      overlay.remove();
-      markConversationViewed(gameState!, breedA, breedB, rank);
-      saveGame(gameState!);
-
-      // Cliffhanger for C and B rank conversations
-      if (rank === 'C') {
-        showToast(`${nameA} & ${nameB} are getting to know each other... (keep building their bond)`);
-      } else if (rank === 'B') {
-        showToast(`${nameA} & ${nameB} have more to say... something important is on their mind.`);
-      } else {
-        showToast(`${nameA} & ${nameB} have reached their deepest bond.`);
-      }
-
-      switchScene('TownScene');
-      return;
-    }
-
-    const line = convo.lines[lineIndex];
-    const isA = line.speaker === breedA;
-    const speakerName = isA ? nameA : nameB;
-    const speakerBreed = isA ? breedNameA : breedNameB;
-    speaker.innerHTML = `${speakerName} <span class="speaker-breed">${speakerBreed}</span>`;
-    text.textContent = line.text;
-
-    portraitLeft.classList.toggle('speaking', isA);
-    portraitRight.classList.toggle('speaking', !isA);
-
-    lineIndex++;
-  }
-
-  showLine();
-
-  overlay.addEventListener('click', (e) => {
-    if ((e.target as HTMLElement).id === 'conv-skip') return;
-    showLine();
-  });
-
-  document.getElementById('conv-skip')!.addEventListener('click', (e) => {
-    e.stopPropagation();
-    overlay.remove();
-    markConversationViewed(gameState!, breedA, breedB, rank);
-    saveGame(gameState!);
-    showToast(`Bond deepened: ${nameA} & ${nameB}`);
-    switchScene('TownScene');
-  });
-}
 
 // Panels extracted to src/ui/Panels.ts
 
@@ -2209,8 +1996,8 @@ eventBus.on('rat-plague-start', () => {
   if (gameState) {
     gameState.flags.prePlaguePestJobs = gameState.completedJobs.filter((id) =>
       ['mill_mousing', 'granary_patrol', 'cathedral_mousing', 'warehouse_clearing', 'ship_hold'].includes(id)
-    ).length as unknown as boolean;
-    gameState.flags.plagueDayStarted = gameState.day as unknown as boolean;
+    ).length;
+    gameState.flags.plagueDayStarted = gameState.day;
     addJournalEntry(gameState, 'The Rat Plague has begun. The town is under siege.', 'event');
   }
 

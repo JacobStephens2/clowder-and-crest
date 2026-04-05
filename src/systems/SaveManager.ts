@@ -60,7 +60,7 @@ export interface SaveData {
   completedJobs: string[];
   bonds: BondSaveData[];
   puzzlesCompleted: Record<string, number>;
-  flags: Record<string, boolean>;
+  flags: Record<string, boolean | number | string>;
   availableRecruits: string[];
   stationedCats: StationedJob[];
   journal: JournalEntry[];

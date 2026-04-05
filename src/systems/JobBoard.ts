@@ -13,6 +13,7 @@ export interface JobDef {
   maxReward: number;
   puzzleSkin: string;
   description: string;
+  contested?: boolean;
 }
 
 const allJobs: JobDef[] = jobsData as JobDef[];
@@ -64,7 +65,7 @@ export function generateDailyJobs(save: SaveData): JobDef[] {
   if (save.chapter >= 6) {
     const contestCount = Math.min(2, Math.floor(jobs.length / 2));
     for (let i = 0; i < contestCount; i++) {
-      (jobs[i] as any).contested = true;
+      jobs[i].contested = true;
     }
   }
 

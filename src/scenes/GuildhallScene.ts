@@ -113,7 +113,7 @@ export class GuildhallScene extends Phaser.Scene {
     // Inquisition warning
     if (save.flags.inquisitionStarted && !save.flags.inquisitionResolved) {
       const inqY = save.flags.ratPlagueStarted && !save.flags.ratPlagueResolved ? 118 : 95;
-      const inqStart = save.flags.inquisitionDayStarted as unknown as number ?? save.day;
+      const inqStart = Number(save.flags.inquisitionDayStarted ?? save.day);
       const inqDaysLeft = Math.max(0, 5 - (save.day - inqStart));
       this.add.rectangle(GAME_WIDTH / 2, inqY, ROOM_WIDTH, 22, 0x3a2050, 0.8);
       this.add.text(GAME_WIDTH / 2, inqY, `The Inquisitor watches (${inqDaysLeft} days remain)`, {
