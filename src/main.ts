@@ -1551,6 +1551,26 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
     }
   }
 
+  // Starvation game over — last cat, no fish, broke for days
+  if (gameState.cats.length === 1 && gameState.fish === 0 && gameState.cats[0].mood === 'unhappy') {
+    showNarrativeOverlay({
+      scenes: [
+        `${gameState.playerCatName} sat alone in the cold guildhall. The fish stores were empty. The other cats had gone.`,
+        'The lean-to behind the grain market felt smaller than ever. No food. No guild. No home.',
+        `${gameState.playerCatName} slipped out through the market gate before dawn. Perhaps another town. Perhaps another chance.`,
+        'The guild is lost. But every story has another chapter...',
+      ],
+      image: 'assets/sprites/scenes/town.png',
+      onComplete: () => {
+        // Return to title — game over
+        gameState = null;
+        stopDayTimer();
+        switchScene('TitleScene');
+      },
+    });
+    return { foodCost: 0, stationedEarned: 0, events: [], fishRemaining: 0 };
+  }
+
   // Plague escalation — daily pressure while plague is active
   if (gameState.flags.ratPlagueStarted && !gameState.flags.ratPlagueResolved) {
     const plagueDays = gameState.day - (numFlag("plagueDayStarted") || gameState.day);

@@ -4,7 +4,6 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
-import { isPaused } from '../systems/DayTimer';
 
 // ── Layout constants ──
 const BAR_HEIGHT = 360;
@@ -330,7 +329,7 @@ export class FishingScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
-    if (this.finished || this.tutorialShowing || isPaused()) return;
+    if (this.finished || this.tutorialShowing) return;
 
     const dt = delta / 1000; // seconds
     this.elapsed += dt;
