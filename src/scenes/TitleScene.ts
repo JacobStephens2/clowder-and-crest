@@ -97,10 +97,15 @@ export class TitleScene extends Phaser.Scene {
     wallGfx.lineStyle(1, 0x3a3530, 0.5);
     wallGfx.lineBetween(cx - 60, 405, cx + 60, 405);
 
-    // Pixel art cat sitting on wall
-    const catSprite = this.add.sprite(cx, 382, 'wildcat_idle_south');
+    // Pixel art cat sitting on wall — random breed and direction
+    const breeds = ['wildcat', 'russian_blue', 'tuxedo', 'maine_coon', 'siamese', 'bengal'];
+    const dirs = ['south', 'north', 'east', 'west'];
+    const titleBreed = breeds[Math.floor(Math.random() * breeds.length)];
+    const titleDir = dirs[Math.floor(Math.random() * dirs.length)];
+    const titleKey = `${titleBreed}_idle_${titleDir}`;
+    const catKey = this.textures.exists(titleKey) ? titleKey : 'wildcat_idle_south';
+    const catSprite = this.add.sprite(cx, 382, catKey);
     catSprite.setScale(3);
-    // Crisp pixel scaling
     catSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
 
     // Gentle idle bob
@@ -111,6 +116,28 @@ export class TitleScene extends Phaser.Scene {
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut',
+    });
+
+    // Occasionally switch to a walk animation then back to idle
+    this.time.addEvent({
+      delay: 5000 + Math.random() * 5000,
+      callback: () => {
+        if (!catSprite.active) return;
+        const walkDir = dirs[Math.floor(Math.random() * dirs.length)];
+        const walkKey = `${titleBreed}_walk_${walkDir}`;
+        if (this.anims.exists(walkKey)) {
+          catSprite.play(walkKey);
+          this.time.delayedCall(1500, () => {
+            if (!catSprite.active) return;
+            const idleDir = `${titleBreed}_idle_${walkDir}`;
+            if (this.textures.exists(idleDir)) {
+              catSprite.stop();
+              catSprite.setTexture(idleDir);
+            }
+          });
+        }
+      },
+      loop: true,
     });
 
     // Save slots

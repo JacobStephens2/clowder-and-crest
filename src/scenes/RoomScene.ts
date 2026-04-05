@@ -32,13 +32,13 @@ function worldToGrid(wx: number, wy: number): { col: number; row: number } {
 }
 
 // Interactive furniture: cats can walk to these and perform an action
-const INTERACTIVE_FURNITURE: Record<string, { action: string; duration: number; anim?: string; breedAnim?: string }> = {
-  scratching_post: { action: 'scratching', duration: 2000, anim: 'scratch' },
-  potted_catnip: { action: 'sniffing catnip', duration: 1500, anim: 'eat' },
-  cushioned_basket: { action: 'curling up', duration: 3000, breedAnim: 'sleep' },
-  straw_bed: { action: 'sleeping', duration: 4000, breedAnim: 'sleep' },
-  woolen_blanket: { action: 'napping', duration: 3500, breedAnim: 'sleep' },
-  bookshelf: { action: 'investigating', duration: 1500 },
+const INTERACTIVE_FURNITURE: Record<string, { action: string; duration: number; anim?: string; breedAnim?: string; stat?: string; boostLabel?: string }> = {
+  scratching_post: { action: 'scratching', duration: 2000, anim: 'scratch', stat: 'hunting', boostLabel: '+1 Hunting' },
+  potted_catnip: { action: 'sniffing catnip', duration: 1500, anim: 'eat', stat: 'senses', boostLabel: '+1 Senses' },
+  cushioned_basket: { action: 'curling up', duration: 3000, breedAnim: 'sleep', stat: 'endurance', boostLabel: '+1 Endurance' },
+  straw_bed: { action: 'sleeping', duration: 4000, breedAnim: 'sleep', stat: 'endurance', boostLabel: '+1 Endurance' },
+  woolen_blanket: { action: 'napping', duration: 3500, breedAnim: 'sleep', stat: 'charm', boostLabel: '+1 Charm' },
+  bookshelf: { action: 'investigating', duration: 1500, stat: 'intelligence', boostLabel: '+1 Intelligence' },
 };
 
 export class RoomScene extends Phaser.Scene {
@@ -358,6 +358,27 @@ export class RoomScene extends Phaser.Scene {
                     });
                   }
                 }
+                // Stat boost from furniture (once per day per furniture type)
+                const save = getGameState();
+                const playerCat = save?.cats.find((c) => c.isPlayer);
+                if (save && playerCat && interaction.stat) {
+                  const boostKey = `furniture_boost_${f.furnitureId}_day_${save.day}`;
+                  if (!save.flags[boostKey]) {
+                    save.flags[boostKey] = true;
+                    const statKey = interaction.stat as keyof typeof playerCat.stats;
+                    if (playerCat.stats[statKey] < 10) {
+                      playerCat.stats[statKey]++;
+                      saveGame(save);
+                      const boostText = document.createElement('div');
+                      boostText.className = 'toast';
+                      boostText.style.color = '#4a8a4a';
+                      boostText.textContent = interaction.boostLabel ?? `+1 ${interaction.stat}`;
+                      document.getElementById('overlay-layer')?.appendChild(boostText);
+                      setTimeout(() => boostText.remove(), 2000);
+                    }
+                  }
+                }
+
                 const actionText = document.createElement('div');
                 actionText.className = 'toast';
                 actionText.textContent = `*${interaction.action}*`;
