@@ -50,68 +50,83 @@ Hybrid Phaser Canvas + HTML/CSS overlays:
 src/
 ├── main.ts                  # Entry point — Phaser config, game state, HTML overlay wiring, event handlers
 ├── scenes/
-│   ├── BootScene.ts         # Asset preloading — 255+ sprites, SFX, scenes, furniture, blocks
-│   ├── TitleScene.ts        # Title screen — crest, rain particles, pixel art cat, Continue/New Game
-│   ├── GuildhallScene.ts    # Room overview — cat sprites, furniture, lanterns, chapter-aware naming
-│   ├── RoomScene.ts         # Top-down room interior — 7x7 grid, wandering cats, interactive furniture
-│   ├── TownScene.ts         # Phaser townscape with time-of-day variants — UI is HTML overlay
-│   ├── PuzzleScene.ts       # 6x6 Rush Hour grid — themed block sprites, drag controls, undo/reset
-│   ├── SokobanScene.ts      # 7x7 Sokoban crate-pushing — procedural generation + 8 fallbacks
-│   ├── ChaseScene.ts        # 13x13 Pac-Man style rat chase in procedural maze
-│   └── FishingScene.ts      # Fishing reel-in minigame with tutorial overlay
+│   ├── BootScene.ts         # Asset preloading — 300+ sprites, SFX, scenes, furniture, blocks
+│   ├── TitleScene.ts        # Title screen — crest, rain, random breed cat, save slots
+│   ├── GuildhallScene.ts    # Room overview — cat sprites, furniture sprites, chapter-aware naming
+│   ├── RoomScene.ts         # Top-down room interior — 7x7 grid, wandering cats, furniture interaction with stat boosts
+│   ├── TownMapScene.ts      # Explorable 8x10 town map — walkable streets, buildings, stray cat recruitment
+│   ├── PuzzleScene.ts       # 6x6 Rush Hour grid — themed block sprites, drag controls
+│   ├── SokobanScene.ts      # 7x7 Sokoban crate-pushing — procedural generation + 8 fallbacks + swipe controls
+│   ├── ChaseScene.ts        # 13x13 Pac-Man style rat chase — guard dog, speed boosts, hold-to-move
+│   ├── FishingScene.ts      # Fishing reel-in — rare golden fish, current surges
+│   ├── HuntScene.ts         # Whack-a-mole rat hunting — golden/poison rats, 3 difficulties
+│   ├── BrawlScene.ts        # Zelda-style combat — waves, Rat King boss, powerups, joystick, multi-touch
+│   ├── NonogramScene.ts     # Grid logic puzzle — procedural with solvability validation
+│   ├── StealthScene.ts      # Stealth/avoidance — guard patrol, grass hiding, vision cones
+│   └── PounceScene.ts       # Physics catapult — Matter.js, knock rats off crate stacks
 ├── systems/
-│   ├── SaveManager.ts       # Save/load to localStorage, forward migration for missing fields
-│   ├── CatManager.ts        # Breed definitions, cat creation with variance, XP/leveling
-│   ├── JobBoard.ts          # 30 job templates across 5 categories, stat matching with trait/mood modifiers
-│   ├── Economy.ts           # Fish earn/spend, stationed earnings with diminishing returns, station events
+│   ├── SaveManager.ts       # Save/load to localStorage, 3 save slots, forward migration, failure notification
+│   ├── CatManager.ts        # 6 breed definitions, cat creation with variance, XP/leveling, specialization
+│   ├── JobBoard.ts          # 35 job templates across 6 categories, stat matching, procedural flavor text
+│   ├── Economy.ts           # Fish earn/spend, stationed earnings, station events
 │   ├── PuzzleGenerator.ts   # Procedural Rush Hour generation + BFS solver
-│   ├── BondSystem.ts        # All 10 breed pair bonds, rank tracking, conversation triggers
-│   ├── ProgressionManager.ts # 5-chapter gates, progression hints, rat plague
-│   ├── MusicManager.ts      # 12 tracks (10 ambient + 2 puzzle), pause/resume, mode switching
+│   ├── BondSystem.ts        # All 15 breed pair bonds, rank tracking, conversation triggers
+│   ├── ProgressionManager.ts # 7-chapter gates, progression hints, rat plague, inquisition
+│   ├── MusicManager.ts      # 14 tracks (10 ambient + 2 puzzle + 2 fight), 3 modes
 │   ├── DayTimer.ts          # 3-minute days, phase display, pause support
-│   ├── SfxManager.ts        # 15 ElevenLabs sound effects
+│   ├── SfxManager.ts        # 16 sound effects
 │   ├── ReputationSystem.ts  # Crest/Shadow scoring, recruit cost modifiers, tier bonuses
+│   ├── GameSystems.ts       # Combos, daily wishes, festivals, analytics
 │   └── OtaUpdater.ts        # Capacitor OTA update checker
 ├── ui/
-│   └── overlay.css          # All HTML overlay styles
+│   ├── overlay.css          # All HTML overlay styles
+│   ├── Panels.ts            # Cat panel, menu, rename prompt, furniture shop
+│   ├── Conversations.ts     # Fire Emblem-style bond dialogues + group conversations
+│   ├── narrativeOverlay.ts  # Reusable tap-to-advance narrative scene overlay
+│   └── sceneHelpers.ts      # Shared button, d-pad, tutorial helpers for scenes
 ├── data/
-│   ├── breeds.json          # 5 breeds with base stats and stat biases
-│   ├── jobs.json            # 30 job templates (pest control, courier, guard, sacred, detection)
+│   ├── breeds.json          # 6 breeds with base stats and stat biases
+│   ├── jobs.json            # 35 job templates (pest control, courier, guard, sacred, detection, shadow)
 │   ├── puzzles.json         # 5 hand-designed Rush Hour puzzles, BFS-validated
 │   ├── furniture.json       # 15 furniture items with pixel art sprites
-│   └── conversations.json   # 33 conversation scripts (30 pair + 3 group)
+│   └── conversations.json   # 48 conversation scripts (45 pair + 3 group)
 └── utils/
-    ├── constants.ts         # ALL_BREED_IDS, dimensions, colors, stats, bonds, chapter triggers
+    ├── constants.ts         # ALL_BREED_IDS, SCENES, dimensions, colors, stats, bonds, chapter triggers
     ├── events.ts            # GameEventBus singleton for canvas <-> overlay communication
     └── helpers.ts           # clamp, randomInt, pick, shuffled
 ```
 
 ## Game Flow
 
-1. **Title Screen** — crest logo, rain particles, pixel art wildcat, Continue / New Game
+1. **Title Screen** — crest logo, rain particles, random breed cat, save slot selection
 2. **Name Prompt** (HTML overlay) — player names their Wildcat
 3. **Intro Story** — 6-panel narrative with rain ambience and music
-4. **Guildhall** — "Behind the Grain Market" (Ch.1) → "The Guildhall" (Ch.2+), rooms with cats and furniture
-5. **Town** — job board (daily jobs), recruit cats, traveling merchant (every 3rd day), daily cat wish
-6. **Job Accept** — pick a cat (stat/trait/mood details shown), take the job
-7. **Minigame** — Rush Hour, Sokoban, Chase, or Fishing (random per job category)
-8. **Results** — fish earned, XP, level ups, combo streak tracking
-9. **Conversation** — pair bonds (C/B/A) or group conversations at milestones
-10. **Day End** — upkeep deducted, stationed earnings collected, reputation bonuses, crisis events
-11. **Loop** — advance day, check chapter progression, repeat
+4. **Tutorial** — 5-step guided walkthrough for new players
+5. **Guildhall** — "Behind the Grain Market" (Ch.1) → "The Guildhall" (Ch.2+), rooms with cats and furniture
+6. **Town Map** — explorable 8x10 grid with buildings, stray cats, NPC cats
+7. **Job Board** — accept a job, walk to a building to start it
+8. **Minigame** — 2 choices per job category from 9 types (Rush Hour, Sokoban, Chase, Fish, Hunt, Brawl, Nonogram, Stealth, Pounce)
+9. **Results** — fish earned, XP, level ups, combo streak, perfect celebration
+10. **Conversation** — Fire Emblem-style pair bonds (C/B/A) or group conversations at milestones
+11. **Day End** — upkeep deducted, stationed earnings, reputation bonuses, crisis events, random expenses
+12. **Guild Report** — returning player briefing after 24+ hours away
+13. **Loop** — advance day, check chapter progression, repeat
 
 ## Key Design Decisions
 
 - **Player is the founding Wildcat** — always in the roster, named at game start, can't be dismissed
-- **All 5 breeds have PixelLab pixel art** — idle (4 directions), walk (6 frames x 4 dirs), sleep (10 frames)
-- **4 minigame types** — Rush Hour (procedural + BFS), Sokoban, Chase (procedural maze), Fishing
-- **30 jobs across 5 categories** — pest control, courier, guard, sacred, detection (chapter-gated)
+- **All 6 breeds have PixelLab pixel art** — idle (4 directions), walk (6 frames x 4 dirs), scratch, sit, eat, sleep animations
+- **9 minigame types** — Rush Hour, Sokoban, Chase, Fishing, Hunt, Brawl, Nonogram, Stealth, Pounce (2 choices per job category)
+- **35 jobs across 6 categories** — pest control, courier, guard, sacred, detection, shadow (chapter-gated)
 - **Reputation system** — Sacred/Guard → Crest (noble), Detection → Shadow. Affects recruit costs and daily bonuses
-- **Bond system** — all 10 breed pairs track bonds, 33 conversation scripts
+- **Bond system** — all 15 breed pairs track bonds, 48 conversation scripts
 - **Economy** — 15 fish start, 2/cat + 1/room daily upkeep, combo chains, merchant items
-- **Chapter 3 is the Rat Plague** — triggers extra pest control jobs, resolves after 5 completions
+- **7 chapters** — including Rat Plague (Ch.3), Rival Guild (Ch.6), Inquisition (Ch.7)
 - **Save migration** — missing fields backfilled, saves never destroyed on updates
-- **ALL_BREED_IDS** in constants.ts — single source of truth for breed lists
+- **ALL_BREED_IDS** and **SCENES** in constants.ts — single source of truth for breed lists and scene keys
+- **3 save slots** — multiple saves with slot picker on title screen
+- **Scene shutdown cleanup** — all scenes register shutdown handlers to prevent memory leaks
+- **HTML escaping** — user-provided names escaped with esc() to prevent injection
 
 ## Deployment
 
