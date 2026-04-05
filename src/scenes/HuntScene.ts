@@ -143,7 +143,7 @@ export class HuntScene extends Phaser.Scene {
     createSceneButton(this, GAME_WIDTH / 2, FIELD_BOTTOM + 70, 'Quit', () => {
       this.cleanup();
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      eventBus.emit('navigate', 'TownScene');
+      eventBus.emit('navigate', 'TownMapScene');
     });
 
     // Countdown
@@ -327,7 +327,7 @@ export class HuntScene extends Phaser.Scene {
 
     this.time.delayedCall(2000, () => {
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      eventBus.emit('navigate', 'TownScene');
+      eventBus.emit('navigate', 'TownMapScene');
     });
   }
 

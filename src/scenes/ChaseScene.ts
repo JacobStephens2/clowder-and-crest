@@ -282,7 +282,7 @@ export class ChaseScene extends Phaser.Scene {
     this.createButton(60, MAZE_Y + MAZE_H + 30, 'Quit', () => {
       this.cleanup();
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      eventBus.emit('navigate', 'TownScene');
+      eventBus.emit('navigate', 'TownMapScene');
     });
 
     // Input: WASD / Arrow keys
@@ -562,7 +562,7 @@ export class ChaseScene extends Phaser.Scene {
 
     this.time.delayedCall(2000, () => {
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      eventBus.emit('navigate', 'TownScene');
+      eventBus.emit('navigate', 'TownMapScene');
     });
   }
 
@@ -625,7 +625,11 @@ export class ChaseScene extends Phaser.Scene {
     for (const m of moves) {
       const nr = this.dogPos.r + m.dr;
       const nc = this.dogPos.c + m.dc;
-      if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && this.grid[nr][nc] === FLOOR) {
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS || this.grid[nr][nc] !== FLOOR) continue;
+      // Don't let the dog camp near the rat — stay at least 2 tiles away
+      const distToRat = Math.abs(nr - this.ratPos.r) + Math.abs(nc - this.ratPos.c);
+      if (distToRat < 2) continue;
+      {
         this.dogPos = { r: nr, c: nc };
         const dest = this.cellToWorld(nr, nc);
         this.tweens.add({ targets: this.dogGfx, x: dest.x, y: dest.y, duration: 150, ease: 'Linear' });
@@ -666,7 +670,7 @@ export class ChaseScene extends Phaser.Scene {
 
     this.time.delayedCall(2000, () => {
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      eventBus.emit('navigate', 'TownScene');
+      eventBus.emit('navigate', 'TownMapScene');
     });
   }
 

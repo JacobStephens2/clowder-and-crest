@@ -13,4 +13,6 @@
 [x] generate a music prompt for the fight mini game
 [x] open the job board when the cat walks onto the job board on the town map
 [x] increase the base attack radius or the hit box in the fight game, as i felt like rats were in my hit box, but yet they weren't getting hit
-[] open the town map view after a mini game or puzzle / job is resolved
+[x] open the town map view after a mini game or puzzle / job is resolved
+[x] make sure the rat chase / pac man games can always be completed successfully. I had one where it seemed like there was no path around the dog to get to the rat, so I lost without a chance of winning
+[] where does the game have procedural generation / room for this? / room for LLM created content on the fly / on demand?

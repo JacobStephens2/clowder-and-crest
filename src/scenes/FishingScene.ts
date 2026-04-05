@@ -300,7 +300,7 @@ export class FishingScene extends Phaser.Scene {
     this.createButton(GAME_WIDTH / 2, BAR_Y + BAR_HEIGHT + 65, 'Quit', () => {
       this.finished = true;
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      eventBus.emit('navigate', 'TownScene');
+      eventBus.emit('navigate', 'TownMapScene');
     });
 
     // ── Input: pointer (click/tap) ──
@@ -508,7 +508,7 @@ export class FishingScene extends Phaser.Scene {
 
     this.time.delayedCall(2000, () => {
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      eventBus.emit('navigate', 'TownScene');
+      eventBus.emit('navigate', 'TownMapScene');
     });
   }
 

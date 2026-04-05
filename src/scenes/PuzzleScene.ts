@@ -218,7 +218,7 @@ export class PuzzleScene extends Phaser.Scene {
     // Back button
     this.createButton(GAME_WIDTH / 2, offsetY + gridPx + 50, 'Quit', () => {
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      eventBus.emit('navigate', 'TownScene');
+      eventBus.emit('navigate', 'TownMapScene');
     });
 
     eventBus.emit('show-ui');

@@ -225,7 +225,7 @@ export class NonogramScene extends Phaser.Scene {
     }).setOrigin(0.5);
     quitBg.on('pointerdown', () => {
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      eventBus.emit('navigate', 'TownScene');
+      eventBus.emit('navigate', 'TownMapScene');
     });
 
     eventBus.emit('show-ui');

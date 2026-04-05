@@ -206,7 +206,7 @@ export class BrawlScene extends Phaser.Scene {
     quitBtn.on('pointerdown', () => {
       this.finished = true;
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      eventBus.emit('navigate', 'TownScene');
+      eventBus.emit('navigate', 'TownMapScene');
     });
 
     // Start first wave
@@ -561,7 +561,7 @@ export class BrawlScene extends Phaser.Scene {
 
       this.time.delayedCall(2000, () => {
         eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-        eventBus.emit('navigate', 'TownScene');
+        eventBus.emit('navigate', 'TownMapScene');
       });
     }
   }
