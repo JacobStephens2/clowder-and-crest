@@ -237,29 +237,55 @@ export class BrawlScene extends Phaser.Scene {
       }
     });
 
-    // D-pad
-    const dpadY = ARENA_BOTTOM + 60;
-    createDpad(this, {
-      x: GAME_WIDTH / 2, y: dpadY,
-      onDirection: (dx, dy) => {
-        this.moveDir = { x: dx, y: dy };
-        if (dx !== 0 || dy !== 0) this.catFacing = Math.atan2(dy, dx);
-      },
-      holdRepeat: true, repeatInterval: 50,
+    // Virtual joystick for movement
+    const joyY = ARENA_BOTTOM + 60;
+    const joyX = GAME_WIDTH / 2 - 50;
+    const joyRadius = 36;
+    const joyBase = this.add.circle(joyX, joyY, joyRadius, 0x2a2520, 0.6);
+    joyBase.setStrokeStyle(1, 0x6b5b3e);
+    const joyKnob = this.add.circle(joyX, joyY, 14, 0x6b5b3e, 0.8);
+    joyBase.setInteractive({ draggable: false, useHandCursor: true });
+
+    // Joystick input via pointer tracking
+    const joyZone = this.add.zone(joyX, joyY, joyRadius * 3, joyRadius * 3);
+    joyZone.setInteractive({ useHandCursor: true });
+    let joyActive = false;
+    joyZone.on('pointerdown', () => { joyActive = true; });
+    this.input.on('pointerup', () => {
+      joyActive = false;
+      joyKnob.setPosition(joyX, joyY);
+      this.moveDir = { x: 0, y: 0 };
+    });
+    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      if (!joyActive) return;
+      const dx = pointer.x / DPR - joyX;
+      const dy = pointer.y / DPR - joyY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const clampDist = Math.min(dist, joyRadius);
+      if (dist > 5) {
+        const nx = dx / dist * clampDist;
+        const ny = dy / dist * clampDist;
+        joyKnob.setPosition(joyX + nx, joyY + ny);
+        this.moveDir = { x: dx / dist, y: dy / dist };
+        this.catFacing = Math.atan2(dy, dx);
+      } else {
+        joyKnob.setPosition(joyX, joyY);
+        this.moveDir = { x: 0, y: 0 };
+      }
     });
 
     // Attack button
-    const atkBtn = this.add.rectangle(GAME_WIDTH - 55, dpadY, 60, 60, 0x5a2a20, 0.8);
+    const atkBtn = this.add.rectangle(GAME_WIDTH - 55, joyY, 60, 60, 0x5a2a20, 0.8);
     atkBtn.setStrokeStyle(2, 0xcc6666);
     atkBtn.setInteractive({ useHandCursor: true });
-    this.add.text(GAME_WIDTH - 55, dpadY, '\u2694\uFE0F', { fontSize: '24px' }).setOrigin(0.5);
+    this.add.text(GAME_WIDTH - 55, joyY, '\u2694\uFE0F', { fontSize: '24px' }).setOrigin(0.5);
     atkBtn.on('pointerdown', () => this.attack());
 
     // Quit button
-    const quitBtn = this.add.rectangle(45, dpadY, 60, 34, 0x2a2520);
+    const quitBtn = this.add.rectangle(45, joyY, 60, 34, 0x2a2520);
     quitBtn.setStrokeStyle(1, 0x6b5b3e);
     quitBtn.setInteractive({ useHandCursor: true });
-    this.add.text(45, dpadY, 'Quit', { fontFamily: 'Georgia, serif', fontSize: '12px', color: '#c4956a' }).setOrigin(0.5);
+    this.add.text(45, joyY, 'Quit', { fontFamily: 'Georgia, serif', fontSize: '12px', color: '#c4956a' }).setOrigin(0.5);
     quitBtn.on('pointerdown', () => {
       this.finished = true;
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });

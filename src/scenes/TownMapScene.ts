@@ -552,6 +552,22 @@ export class TownMapScene extends Phaser.Scene {
       const qMark = this.add.text(x, y - 32, '?', {
         fontFamily: 'Georgia, serif', fontSize: '14px', color: '#dda055',
       }).setOrigin(0.5);
+
+      // Click to recruit (only when player is adjacent)
+      sprite.setInteractive({ useHandCursor: true });
+      sprite.on('pointerdown', () => {
+        const dist = Math.abs(this.playerPos.col - tile.col) + Math.abs(this.playerPos.row - tile.row);
+        if (dist <= 1) {
+          eventBus.emit('recruit-cat', breed.id);
+          sprite.destroy();
+          nameLabel.destroy();
+          qMark.destroy();
+          this.strayCats = this.strayCats.filter((s) => s.breed !== breed.id);
+        } else {
+          // Too far — walk toward the stray
+          this.walkToThenInteractStray(tile.col, tile.row, breed.id);
+        }
+      });
       this.tweens.add({
         targets: qMark, y: y - 36, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
       });
@@ -745,25 +761,39 @@ export class TownMapScene extends Phaser.Scene {
       if (label) label.setColor('#c4956a');
     }
 
-    // Check for stray cat proximity — trigger recruit when standing next to one
+    // Check for stray cat proximity — show prompt when adjacent, tap to recruit
     for (const stray of this.strayCats) {
       const dist = Math.abs(this.playerPos.col - stray.col) + Math.abs(this.playerPos.row - stray.row);
       if (dist <= 1) {
         if (this.promptText) {
-          this.promptText.setText(`Talk to stray ${stray.breed}`);
+          this.promptText.setText(`Tap to talk to stray`);
           this.promptText.setAlpha(1);
-        }
-        // If standing on the same tile, trigger recruit
-        if (dist === 0) {
-          eventBus.emit('recruit-cat', stray.breed);
-          // Remove the stray from the map
-          stray.sprite.destroy();
-          stray.nameLabel.destroy();
-          this.strayCats = this.strayCats.filter((s) => s !== stray);
         }
         return; // Don't show building prompt if near a stray
       }
     }
+  }
+
+  private walkToThenInteractStray(col: number, row: number, breedId: string): void {
+    const dc = col - this.playerPos.col;
+    const dr = row - this.playerPos.row;
+    if (Math.abs(dc) + Math.abs(dr) <= 1) {
+      // Close enough — trigger recruit
+      eventBus.emit('recruit-cat', breedId);
+      const stray = this.strayCats.find((s) => s.breed === breedId);
+      if (stray) {
+        stray.sprite.destroy();
+        stray.nameLabel.destroy();
+        this.strayCats = this.strayCats.filter((s) => s !== stray);
+      }
+      return;
+    }
+    if (Math.abs(dc) > Math.abs(dr)) {
+      this.movePlayer(dc > 0 ? 1 : -1, 0);
+    } else {
+      this.movePlayer(0, dr > 0 ? 1 : -1);
+    }
+    this.time.delayedCall(220, () => this.walkToThenInteractStray(col, row, breedId));
   }
 
   private walkToThenEnter(b: BuildingDef): void {
