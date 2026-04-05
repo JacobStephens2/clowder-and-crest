@@ -16,10 +16,11 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS, BREED_NAMES, STAT_NAMES, AL
 import {
   type SaveData,
   createDefaultSave,
-  saveGame,
+  saveGame as rawSaveGame,
   loadGame,
   deleteSave,
   addJournalEntry,
+  saveToSlot,
 } from './systems/SaveManager';
 import { createCat, getBreed, addXp } from './systems/CatManager';
 import { earnFish, spendFish, calculateReward, collectStationedEarnings, isCatStationed } from './systems/Economy';
@@ -361,7 +362,14 @@ bottomBar.addEventListener('click', (e) => {
 });
 
 // New game — name prompt
-eventBus.on('show-name-prompt', () => {
+let activeSlot = 1;
+function saveGame(data: SaveData): void {
+  rawSaveGame(data);
+  saveToSlot(activeSlot, data);
+}
+eventBus.on('active-slot', (slot: number) => { activeSlot = slot; });
+eventBus.on('show-name-prompt', (data?: { slot?: number }) => {
+  if (data?.slot) activeSlot = data.slot;
   // Remove any existing name prompt to prevent stacking
   overlayLayer.querySelectorAll('.name-prompt-overlay').forEach((el) => el.remove());
 

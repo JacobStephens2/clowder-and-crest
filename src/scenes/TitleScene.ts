@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { hasSave, loadGame } from '../systems/SaveManager';
+import { hasSave, loadGame, saveGame, getSlotSummary, loadFromSlot, saveToSlot, deleteSlot } from '../systems/SaveManager';
 import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 
@@ -113,22 +113,28 @@ export class TitleScene extends Phaser.Scene {
       ease: 'Sine.easeInOut',
     });
 
-    // Buttons
-    const btnY = 480;
-    const hasExisting = hasSave();
+    // Save slots
+    const btnY = 470;
+    const hasLegacy = hasSave();
 
-    if (hasExisting) {
+    // Migrate legacy save to slot 1 if needed
+    if (hasLegacy && !getSlotSummary(1)) {
+      const legacy = loadGame();
+      if (legacy) saveToSlot(1, legacy);
+    }
+
+    const anySlotUsed = [1, 2, 3].some((s) => getSlotSummary(s) !== null);
+
+    if (anySlotUsed) {
       this.createButton(cx, btnY, 'Continue', () => {
-        const save = loadGame()!;
-        eventBus.emit('game-loaded', save);
-        eventBus.emit('navigate', 'GuildhallScene');
+        this.showSlotPicker('load');
       });
-      this.createButton(cx, btnY + 60, 'New Game', () => {
-        eventBus.emit('show-name-prompt');
+      this.createButton(cx, btnY + 50, 'New Game', () => {
+        this.showSlotPicker('new');
       });
     } else {
       this.createButton(cx, btnY, 'New Game', () => {
-        eventBus.emit('show-name-prompt');
+        eventBus.emit('show-name-prompt', { slot: 1 });
       });
     }
 
@@ -141,6 +147,75 @@ export class TitleScene extends Phaser.Scene {
 
     // Hide overlays on title
     eventBus.emit('hide-ui');
+  }
+
+  private showSlotPicker(mode: 'load' | 'new'): void {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;';
+
+    const title = mode === 'load' ? 'Choose a Save' : 'Choose a Slot';
+    let html = `<div style="color:#c4956a;font-family:Georgia,serif;font-size:22px;margin-bottom:20px">${title}</div>`;
+
+    for (let slot = 1; slot <= 3; slot++) {
+      const summary = getSlotSummary(slot);
+      if (summary) {
+        const label = `Slot ${slot}: ${summary.name} — Day ${summary.day}, Ch.${summary.chapter}, ${summary.cats} cats`;
+        html += `<button class="slot-btn" data-slot="${slot}" style="display:block;width:300px;padding:12px;margin:6px 0;background:#2a2520;border:1px solid #6b5b3e;border-radius:6px;color:#c4956a;font-family:Georgia,serif;font-size:13px;cursor:pointer;text-align:left">${label}</button>`;
+        if (mode === 'new') {
+          html += `<button class="slot-del" data-slot="${slot}" style="display:block;width:300px;padding:4px;margin:0 0 8px 0;background:none;border:none;color:#8b4444;font-family:Georgia,serif;font-size:10px;cursor:pointer;text-align:center">Delete this save</button>`;
+        }
+      } else {
+        if (mode === 'new') {
+          html += `<button class="slot-btn" data-slot="${slot}" style="display:block;width:300px;padding:12px;margin:6px 0;background:#2a2520;border:1px dashed #3a3530;border-radius:6px;color:#6b5b3e;font-family:Georgia,serif;font-size:13px;cursor:pointer;text-align:left">Slot ${slot}: Empty</button>`;
+        } else {
+          html += `<div style="width:300px;padding:12px;margin:6px 0;color:#3a3530;font-family:Georgia,serif;font-size:13px;text-align:left">Slot ${slot}: Empty</div>`;
+        }
+      }
+    }
+
+    html += `<button id="slot-cancel" style="margin-top:16px;padding:8px 24px;background:none;border:1px solid #3a3530;border-radius:4px;color:#6b5b3e;font-family:Georgia,serif;font-size:13px;cursor:pointer">Cancel</button>`;
+
+    overlay.innerHTML = html;
+    document.body.appendChild(overlay);
+
+    overlay.querySelectorAll('.slot-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const slot = parseInt((btn as HTMLElement).dataset.slot!, 10);
+        overlay.remove();
+        if (mode === 'load') {
+          const save = loadFromSlot(slot);
+          if (save) {
+            // Also write to default slot for auto-save compatibility
+            saveGame(save);
+            eventBus.emit('game-loaded', save);
+            eventBus.emit('active-slot', slot);
+            eventBus.emit('navigate', 'GuildhallScene');
+          }
+        } else {
+          const existing = getSlotSummary(slot);
+          if (existing) {
+            if (!confirm(`Overwrite "${existing.name}"'s save?`)) return;
+            deleteSlot(slot);
+          }
+          eventBus.emit('show-name-prompt', { slot });
+        }
+      });
+    });
+
+    overlay.querySelectorAll('.slot-del').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const slot = parseInt((btn as HTMLElement).dataset.slot!, 10);
+        const summary = getSlotSummary(slot);
+        if (summary && confirm(`Delete "${summary.name}"'s save? This cannot be undone.`)) {
+          deleteSlot(slot);
+          overlay.remove();
+          this.showSlotPicker(mode);
+        }
+      });
+    });
+
+    document.getElementById('slot-cancel')!.addEventListener('click', () => overlay.remove());
   }
 
   private createButton(x: number, y: number, label: string, onClick: () => void): void {
