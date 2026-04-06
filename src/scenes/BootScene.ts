@@ -146,6 +146,17 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Generate a reusable white-circle particle texture so every scene can
+    // create particle bursts without needing a dedicated sprite. Scenes tint
+    // the particle via config (e.g. tint: 0x6abe3f for green catnip bursts).
+    if (!this.textures.exists('particle_pixel')) {
+      const pixelGfx = this.add.graphics();
+      pixelGfx.fillStyle(0xffffff, 1);
+      pixelGfx.fillCircle(4, 4, 4);
+      pixelGfx.generateTexture('particle_pixel', 8, 8);
+      pixelGfx.destroy();
+    }
+
     // Create walk animations for each breed/direction
     for (const breed of BREEDS_WITH_SPRITES) {
       for (const dir of DIRECTIONS) {

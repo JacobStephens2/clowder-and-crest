@@ -251,8 +251,21 @@ export class HuntScene extends Phaser.Scene {
         }
       }
 
-      // Pop effect
+      // Pop effect + particle burst
       gfx.destroy();
+      if (this.textures.exists('particle_pixel')) {
+        const burst = this.add.particles(hole.x, hole.y, 'particle_pixel', {
+          speed: { min: 60, max: 160 },
+          lifespan: { min: 250, max: 500 },
+          scale: { start: 0.9, end: 0 },
+          alpha: { start: 1, end: 0 },
+          tint: isGolden ? 0xffd700 : 0xcc7744,
+          blendMode: Phaser.BlendModes.ADD,
+          emitting: false,
+        });
+        burst.explode(isGolden ? 20 : 12);
+        this.time.delayedCall(600, () => burst.destroy());
+      }
       const pointLabel = isGolden ? '+2!' : '+1';
       const pointColor = isGolden ? '#ffd700' : '#4a8a4a';
       const sparkle = this.add.text(hole.x, hole.y - 20, pointLabel, {

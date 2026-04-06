@@ -324,6 +324,26 @@ export class PounceScene extends Phaser.Scene {
 
     const stars = this.launches <= 1 ? 3 : this.launches <= 2 ? 2 : 1;
 
+    // Confetti explosion centered on the ground
+    if (this.textures.exists('particle_pixel')) {
+      const colors = [0xdda055, 0x6abe3f, 0x6b8ea6, 0xc4956a];
+      for (let i = 0; i < colors.length; i++) {
+        const burst = this.add.particles(GAME_WIDTH / 2, GROUND_Y - 60, 'particle_pixel', {
+          speed: { min: 80, max: 260 },
+          lifespan: { min: 400, max: 900 },
+          scale: { start: 1, end: 0 },
+          alpha: { start: 1, end: 0 },
+          tint: colors[i],
+          angle: { min: -120, max: -60 }, // upward cone
+          gravityY: 350,
+          blendMode: Phaser.BlendModes.ADD,
+          emitting: false,
+        });
+        burst.explode(20);
+        this.time.delayedCall(1000, () => burst.destroy());
+      }
+    }
+
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 40, 'All Rats Cleared!', {
       fontFamily: 'Georgia, serif', fontSize: '24px', color: '#c4956a',
     }).setOrigin(0.5);

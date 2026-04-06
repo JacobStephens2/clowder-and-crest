@@ -575,6 +575,21 @@ export class BrawlScene extends Phaser.Scene {
           rat.y = Phaser.Math.Clamp(rat.y, ARENA_TOP + RAT_SIZE, ARENA_BOTTOM - RAT_SIZE);
         }
 
+        // Impact particle burst — red on hit, gold on kill
+        if (this.textures.exists('particle_pixel')) {
+          const burst = this.add.particles(rat.x, rat.y, 'particle_pixel', {
+            speed: { min: 50, max: 140 },
+            lifespan: { min: 200, max: 450 },
+            scale: { start: 0.7, end: 0 },
+            alpha: { start: 1, end: 0 },
+            tint: rat.hp <= 0 ? 0xdda055 : 0xcc4444,
+            blendMode: Phaser.BlendModes.ADD,
+            emitting: false,
+          });
+          burst.explode(rat.hp <= 0 ? 16 : 8);
+          this.time.delayedCall(550, () => burst.destroy());
+        }
+
         if (rat.hp <= 0) {
           toRemove.push(rat);
         } else {

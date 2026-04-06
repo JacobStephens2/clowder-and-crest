@@ -614,6 +614,8 @@ export class ChaseScene extends Phaser.Scene {
       this.dotsCollected++;
       this.dotText.setText(`Fish: ${this.dotsCollected}/${this.totalDots}`);
       this.registerDotForCombo(dest.x, dest.y);
+      // Gold sparkle burst on pickup
+      this.burstParticles(dest.x, dest.y, 0xdda055, 8);
     }
 
     // Collect catnip pellet — scare the dog
@@ -623,6 +625,8 @@ export class ChaseScene extends Phaser.Scene {
       pellet.gfx.destroy();
       this.catnipPellets.splice(pelletIndex, 1);
       this.activateCatnipMode(dest.x, dest.y);
+      // Big green particle explosion
+      this.burstParticles(dest.x, dest.y, 0x6abe3f, 20);
     }
 
     // Check if caught rat
@@ -638,6 +642,25 @@ export class ChaseScene extends Phaser.Scene {
         this.dogCaughtCat();
       }
     }
+  }
+
+  /** One-shot particle burst centered at (x, y) using the global
+      particle_pixel texture generated in BootScene. Scenes don't need to
+      manage emitter lifetime — the emitter auto-removes after the burst. */
+  private burstParticles(x: number, y: number, tint: number, count = 10): void {
+    if (!this.textures.exists('particle_pixel')) return;
+    const emitter = this.add.particles(x, y, 'particle_pixel', {
+      speed: { min: 40, max: 120 },
+      lifespan: { min: 250, max: 500 },
+      scale: { start: 0.8, end: 0 },
+      alpha: { start: 1, end: 0 },
+      tint,
+      blendMode: Phaser.BlendModes.ADD,
+      emitting: false,
+    });
+    emitter.explode(count);
+    // Auto-destroy once particles fade out
+    this.time.delayedCall(600, () => emitter.destroy());
   }
 
   /** Called when the cat collects a fish dot. Chains consecutive collections
@@ -774,7 +797,10 @@ export class ChaseScene extends Phaser.Scene {
     this.moveTimer?.destroy();
     this.ratTimer?.destroy();
 
-    // Celebration
+    // Celebration — big gold particle burst at the capture point
+    const { x: rx, y: ry } = this.cellToWorld(this.ratPos.r, this.ratPos.c);
+    this.burstParticles(rx, ry, 0xdda055, 30);
+    this.cameras.main.flash(150, 220, 170, 90);
     this.ratGfx.setVisible(false);
     this.ratEyes.setVisible(false);
 

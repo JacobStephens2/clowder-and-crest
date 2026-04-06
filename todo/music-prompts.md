@@ -54,10 +54,10 @@ Sacred and reverential. Sustained fiddle tones like a choir, gentle bell chimes 
 ### Scent Trail (Hot/Cold Search) - created
 Mysterious, curious. Pizzicato fiddle with a wandering melody that hesitates and doubles back. 95 BPM. The sound of following a trail. Think detective noir meets medieval cloister.
 
-### Heist (Lock Picking)
+### Heist (Lock Picking) - created
 Clockwork, mechanical. Ticking woodblock percussion with metallic bell twangs. 105 BPM. The sound of precise, careful manipulation. Think a music box crossed with a medieval clock shop.
 
-### Courier Run (Auto-Scroller)
+### Courier Run (Auto-Scroller) - created
 Energetic, forward-driving. Fast strummed lute with a running bass line on cittern. 140 BPM, D Mixolydian. Pure momentum — feet pounding cobblestones. Think medieval parkour.
 
 ---

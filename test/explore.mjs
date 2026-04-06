@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const SCREENSHOT_DIR = path.join(__dirname, 'screenshots', 'explore');
-const TEST_SAVE_PATH = path.join(ROOT, 'todo/test-save-everything-unlocked.json');
+const TEST_SAVE_PATH = path.join(__dirname, 'test-save-everything-unlocked.json');
 
 fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
 
