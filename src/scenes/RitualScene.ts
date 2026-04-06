@@ -8,23 +8,59 @@ import { showMinigameTutorial } from '../ui/sceneHelpers';
 
 const CANDLE_COLORS = [0xcc4444, 0x44aa44, 0x4488cc, 0xddaa33, 0xaa44cc, 0xcc8844];
 
+// Per-candle tones — pentatonic scale (C major pentatonic) so any combination
+// sounds consonant. The doc's biggest direct call-out: "each candle has a
+// distinct tone or musical note... activates dual-channel encoding". With a
+// pentatonic scale, sequences become melodic phrases the player's brain can
+// chunk into musical motifs rather than discrete steps.
+const CANDLE_FREQUENCIES = [
+  261.63, // C4
+  329.63, // E4
+  392.00, // G4
+  440.00, // A4
+  523.25, // C5
+  659.25, // E5
+];
+
+// Base flash duration at round 1, shrinking each round per Simon's "fixed
+// speed ramp" pillar. Ramps from BASE down toward MIN linearly across the
+// target rounds — late rounds genuinely run faster than early ones.
+const BASE_FLASH_MS = 700;
+const MIN_FLASH_MS = 280;
+const BASE_GAP_MS = 400;
+const MIN_GAP_MS = 160;
+
 export class RitualScene extends Phaser.Scene {
   private jobId = '';
   private catId = '';
   private difficulty = 'easy';
-  private candleCount = 4;
-  private sequence: number[] = [];
-  private playerInput: number[] = [];
-  private round = 0;
-  private targetRounds = 6;
-  private lives = 3;
-  private phase: 'showing' | 'input' | 'done' = 'showing';
+  candleCount = 4;
+  sequence: number[] = [];
+  playerInput: number[] = [];
+  round = 0;
+  targetRounds = 6;
+  lives = 3;
+  phase: 'showing' | 'input' | 'done' = 'showing';
   private candles: { glow: Phaser.GameObjects.Arc; zone: Phaser.GameObjects.Zone; color: number }[] = [];
   private showIdx = 0;
-  private finished = false;
+  finished = false;
   private tutorialShowing = false;
   private roundText!: Phaser.GameObjects.Text;
   private livesText!: Phaser.GameObjects.Text;
+  /** Lazily-initialized Web Audio context for per-candle tones. Created on
+      first tone play to satisfy browser autoplay policies (audio contexts
+      must be created or resumed in response to a user gesture). */
+  private audioCtx: AudioContext | null = null;
+  /** Tracks how many rounds the player completed without ANY failures.
+      Used for tiered mastery star scoring per Rhythm Heaven's model. */
+  perfectRounds = 0;
+  /** Replay slowdown multiplier — 1.0 normally, 1.4 after a failure to
+      give the player a 30% slower retry. The doc's adaptive-speed-on-
+      failure recommendation. Resets to 1.0 on success. */
+  replaySpeedMult = 1.0;
+  /** True for the current round if the player has not failed yet. Resets
+      each new round; flips to false on the first wrong tap. */
+  currentRoundPerfect = true;
 
   constructor() { super({ key: 'RitualScene' }); }
 
@@ -39,6 +75,9 @@ export class RitualScene extends Phaser.Scene {
     this.showIdx = 0;
     this.candles = [];
     this.phase = 'showing';
+    this.perfectRounds = 0;
+    this.replaySpeedMult = 1.0;
+    this.currentRoundPerfect = true;
 
     this.candleCount = this.difficulty === 'hard' ? 6 : this.difficulty === 'medium' ? 5 : 4;
     this.targetRounds = this.difficulty === 'hard' ? 8 : this.difficulty === 'medium' ? 7 : 6;
@@ -50,15 +89,79 @@ export class RitualScene extends Phaser.Scene {
     if (charm >= 7) this.lives++; // Grace from charm
   }
 
+  /** Get the per-candle frequency for the given index, wrapping if needed.
+      Each candle gets a distinct pentatonic note so sequences read as
+      melodic phrases. */
+  getCandleFrequency(idx: number): number {
+    return CANDLE_FREQUENCIES[idx % CANDLE_FREQUENCIES.length];
+  }
+
+  /** Compute the current round's flash duration. Linear interpolation from
+      BASE_FLASH_MS at round 1 down to MIN_FLASH_MS at the final round.
+      The replaySpeedMult (1.4 after a failure) extends durations
+      proportionally on the immediate retry. */
+  getCurrentFlashMs(): number {
+    if (this.targetRounds <= 1) return BASE_FLASH_MS;
+    const t = (this.round - 1) / (this.targetRounds - 1);
+    const base = BASE_FLASH_MS - (BASE_FLASH_MS - MIN_FLASH_MS) * Math.max(0, Math.min(1, t));
+    return Math.round(base * this.replaySpeedMult);
+  }
+
+  /** Same curve for the inter-flash gap. */
+  getCurrentGapMs(): number {
+    if (this.targetRounds <= 1) return BASE_GAP_MS;
+    const t = (this.round - 1) / (this.targetRounds - 1);
+    const base = BASE_GAP_MS - (BASE_GAP_MS - MIN_GAP_MS) * Math.max(0, Math.min(1, t));
+    return Math.round(base * this.replaySpeedMult);
+  }
+
+  /** Synthesize a tone at the given frequency. Used for both showing the
+      sequence and for player taps so the player hears the same note when
+      the candle lights up and when they tap it back — reinforcing the
+      audio-visual pairing through symmetric playback. */
+  playTone(frequency: number, duration = 0.32, volume = 0.18): void {
+    try {
+      if (!this.audioCtx) {
+        const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext;
+        if (!Ctx) return;
+        this.audioCtx = new Ctx();
+      }
+      const ctx = this.audioCtx!;
+      // Resume the context if suspended (browser autoplay policy)
+      if (ctx.state === 'suspended') {
+        try { ctx.resume(); } catch {}
+      }
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = frequency;
+      // Envelope: fast attack, slow exponential decay — bell-like
+      const t0 = ctx.currentTime;
+      gain.gain.setValueAtTime(0, t0);
+      gain.gain.linearRampToValueAtTime(volume, t0 + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+      osc.start(t0);
+      osc.stop(t0 + duration + 0.02);
+    } catch {
+      // Audio context may fail to construct under some browsers; degrade
+      // gracefully — the visual sequence still works without sound.
+    }
+  }
+
   create(): void {
     this.cameras.main.setBackgroundColor('#0a0908');
     this.cameras.main.setZoom(DPR);
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
-    if (showMinigameTutorial(this, 'clowder_ritual_tutorial', 'Sacred Ritual',
-      `Watch the candles light up in sequence.<br><br>
+    // Tutorial bumped to v2 — distinct candle tones, speed escalation,
+    // and adaptive replay are new mechanics returning players should know.
+    if (showMinigameTutorial(this, 'clowder_ritual_tutorial_v2', 'Sacred Ritual',
+      `Watch the candles light up in sequence — and <strong>listen to their tones</strong>.<br><br>
       Then tap them back <strong>in the same order</strong>.<br><br>
-      Each round adds one more step. Complete ${this.targetRounds} rounds to succeed!`,
+      Each round adds one more step and the ritual <strong>quickens</strong>.<br><br>
+      Fail and the next replay slows down — you'll get another shot.`,
       () => { this.tutorialShowing = false; }
     )) { this.tutorialShowing = true; }
 
@@ -138,7 +241,7 @@ export class RitualScene extends Phaser.Scene {
     this.time.delayedCall(this.tutorialShowing ? 100 : 1000, () => this.nextRound());
   }
 
-  private nextRound(): void {
+  nextRound(): void {
     if (this.finished || this.tutorialShowing) {
       this.time.delayedCall(500, () => this.nextRound());
       return;
@@ -149,6 +252,10 @@ export class RitualScene extends Phaser.Scene {
     if (fill) fill.width = 200 * (this.round / this.targetRounds);
     this.playerInput = [];
     this.phase = 'showing';
+    // Each new round starts perfect; flips to false on the first wrong tap.
+    // Reset any post-failure slowdown — fresh round runs at base speed.
+    this.currentRoundPerfect = true;
+    this.replaySpeedMult = 1.0;
 
     // Add one new step to the sequence
     this.sequence.push(Math.floor(Math.random() * this.candleCount));
@@ -171,25 +278,31 @@ export class RitualScene extends Phaser.Scene {
 
     const idx = this.sequence[this.showIdx];
     const candle = this.candles[idx];
+    const flashMs = this.getCurrentFlashMs();
+    const gapMs = this.getCurrentGapMs();
 
-    // Flash the candle — longer highlight for easier memorization
+    // Flash the candle — duration scales with the round (Simon's tempo
+    // ramp). Per-candle pentatonic tone is the dual-channel signal.
     candle.glow.setAlpha(0.9);
     candle.glow.setScale(1.3);
-    playSfx('bell_chime', 0.35);
-    this.time.delayedCall(700, () => {
+    this.playTone(this.getCandleFrequency(idx), flashMs / 1000 * 0.85);
+    this.time.delayedCall(flashMs, () => {
       candle.glow.setAlpha(0.15);
       candle.glow.setScale(1);
       this.showIdx++;
-      this.time.delayedCall(400, () => this.showNextInSequence());
+      this.time.delayedCall(gapMs, () => this.showNextInSequence());
     });
   }
 
-  private onCandleTap(idx: number): void {
+  onCandleTap(idx: number): void {
     if (this.phase !== 'input' || this.finished || this.tutorialShowing) return;
 
     const candle = this.candles[idx];
     candle.glow.setAlpha(0.6);
     this.time.delayedCall(200, () => candle.glow.setAlpha(0.15));
+
+    // Same tone for tap as for show — symmetric audio reinforcement
+    this.playTone(this.getCandleFrequency(idx), 0.22);
 
     this.playerInput.push(idx);
     const step = this.playerInput.length - 1;
@@ -198,16 +311,29 @@ export class RitualScene extends Phaser.Scene {
       // Wrong!
       this.lives--;
       this.livesText.setText(`Lives: ${this.lives}`);
+      this.currentRoundPerfect = false;
       playSfx('fail', 0.4);
       this.cameras.main.flash(100, 80, 30, 30);
+      // Apply adaptive slowdown — the replay runs at ~70% speed so the
+      // immediate retry is reachable. Doc's "near-fail mechanics" pillar.
+      this.replaySpeedMult = 1.4;
       this.playerInput = [];
       this.phase = 'showing';
 
       if (this.lives <= 0) {
         this.endGame(false);
       } else {
+        // Near-fail message vs early-fail message — when the player got far
+        // into a long sequence, frame the failure as "almost there" to
+        // exploit the dopaminergic near-miss effect.
+        const fraction = step / Math.max(1, this.sequence.length);
+        const isNearFail = fraction >= 0.6 && this.sequence.length >= 4;
         const statusText = this.children.getByName('statusText') as Phaser.GameObjects.Text;
-        if (statusText) statusText.setText('Wrong! Watch again...');
+        if (statusText) {
+          statusText.setText(isNearFail
+            ? `Almost! You made it to step ${step + 1}. Try again, slower...`
+            : 'Wrong! Watch again...');
+        }
         // Replay current sequence
         this.showIdx = 0;
         this.time.delayedCall(1000, () => this.showNextInSequence());
@@ -215,11 +341,13 @@ export class RitualScene extends Phaser.Scene {
       return;
     }
 
-    playSfx('bell_chime', 0.3);
-
     // Correct — check if sequence complete
     if (this.playerInput.length === this.sequence.length) {
       playSfx('sparkle', 0.4);
+      // Round complete without failure → tally as perfect
+      if (this.currentRoundPerfect) {
+        this.perfectRounds++;
+      }
       if (this.round >= this.targetRounds) {
         this.endGame(true);
       } else {
@@ -234,14 +362,23 @@ export class RitualScene extends Phaser.Scene {
 
     if (won) {
       playSfx('victory');
-      const stars = this.lives >= 3 ? 3 : this.lives >= 2 ? 2 : 1;
+      // Tiered mastery scoring per Rhythm Heaven's model: perfect rounds,
+      // not remaining lives, drive the star count. A run completed without
+      // ever failing is the 3-star prize; failing once or twice still earns
+      // 2 stars; getting through with frequent retries is 1 star.
+      const perfectRatio = this.perfectRounds / this.targetRounds;
+      const stars = perfectRatio === 1 ? 3 : perfectRatio >= 0.6 ? 2 : 1;
       this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'Ritual Complete!', {
         fontFamily: 'Georgia, serif', fontSize: '24px', color: '#c4956a',
+      }).setOrigin(0.5);
+      this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 30, `${this.perfectRounds}/${this.targetRounds} perfect rounds`, {
+        fontFamily: 'Georgia, serif', fontSize: '13px', color: '#dda055',
       }).setOrigin(0.5);
       this.time.delayedCall(1500, () => {
         eventBus.emit('puzzle-complete', {
           puzzleId: `ritual_${this.difficulty}`, moves: this.round, minMoves: this.targetRounds, stars,
           jobId: this.jobId, catId: this.catId,
+          perfectRounds: this.perfectRounds,
         });
       });
     } else {
