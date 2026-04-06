@@ -173,6 +173,11 @@ export function showCatPanel(): void {
 
 export function showRenamePrompt(cat: SaveData['cats'][number]): void {
   const gameState = deps.getGameState();
+  // Clear any stale name prompts first — prevents stacked prompts where
+  // document.getElementById returns the older element and new button clicks
+  // silently do nothing.
+  document.querySelectorAll('.name-prompt-overlay').forEach((el) => el.remove());
+
   const prompt = document.createElement('div');
   prompt.className = 'name-prompt-overlay';
   const color = BREED_COLORS[cat.breed] ?? '#8b7355';
@@ -181,13 +186,14 @@ export function showRenamePrompt(cat: SaveData['cats'][number]): void {
     <div style="width:60px;height:60px;border-radius:50%;background:${color};border:2px solid #6b5b3e;margin-bottom:16px"></div>
     <h2>Rename ${cat.name}</h2>
     <p>${breedName} | Lv.${cat.level}</p>
-    <input type="text" id="rename-input" placeholder="${cat.name}" maxlength="20" autocomplete="off" value="${cat.name}" />
-    <button id="rename-submit">Rename</button>
+    <input type="text" class="rename-input" placeholder="${cat.name}" maxlength="20" autocomplete="off" value="${cat.name}" />
+    <button class="rename-submit">Rename</button>
   `;
   deps.overlayLayer.appendChild(prompt);
 
-  const input = document.getElementById('rename-input') as HTMLInputElement;
-  const submit = document.getElementById('rename-submit')!;
+  // Scope lookups to the new prompt to avoid grabbing any stale DOM node.
+  const input = prompt.querySelector<HTMLInputElement>('.rename-input')!;
+  const submit = prompt.querySelector<HTMLButtonElement>('.rename-submit')!;
   input.focus();
   input.select();
 

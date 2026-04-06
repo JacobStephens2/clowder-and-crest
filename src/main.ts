@@ -460,20 +460,21 @@ eventBus.on('active-slot', (slot: number) => { activeSlot = slot; });
 eventBus.on('show-name-prompt', (data?: { slot?: number }) => {
   if (data?.slot) activeSlot = data.slot;
   // Remove any existing name prompt to prevent stacking
-  overlayLayer.querySelectorAll('.name-prompt-overlay').forEach((el) => el.remove());
+  document.querySelectorAll('.name-prompt-overlay').forEach((el) => el.remove());
 
   const prompt = document.createElement('div');
   prompt.className = 'name-prompt-overlay';
   prompt.innerHTML = `
     <h2>Name Your Cat</h2>
     <p>You are a wildcat stray, arriving at a crumbling settlement in a storm. What is your name?</p>
-    <input type="text" id="cat-name-input" placeholder="Enter name..." maxlength="20" autocomplete="off" />
-    <button id="cat-name-submit">Begin</button>
+    <input type="text" class="cat-name-input" placeholder="Enter name..." maxlength="20" autocomplete="off" />
+    <button class="cat-name-submit">Begin</button>
   `;
   overlayLayer.appendChild(prompt);
 
-  const input = document.getElementById('cat-name-input') as HTMLInputElement;
-  const submit = document.getElementById('cat-name-submit')!;
+  // Scope lookups to the new prompt element.
+  const input = prompt.querySelector<HTMLInputElement>('.cat-name-input')!;
+  const submit = prompt.querySelector<HTMLButtonElement>('.cat-name-submit')!;
 
   input.focus();
 
@@ -892,6 +893,12 @@ eventBus.on('recruit-cat', (breedId: string) => {
 });
 
 function showRecruitNamePrompt(breedId: string, breedName: string, cost: number): void {
+  // Remove any stale name prompts first. Without this, a second prompt stacks
+  // on top of an older one but document.getElementById(...) returns the older
+  // (first) element, so new button clicks attach listeners to the wrong DOM
+  // node and the visible buttons silently do nothing.
+  document.querySelectorAll('.name-prompt-overlay').forEach((el) => el.remove());
+
   const prompt = document.createElement('div');
   prompt.className = 'name-prompt-overlay';
   const color = BREED_COLORS[breedId] ?? '#8b7355';
@@ -904,19 +911,22 @@ function showRecruitNamePrompt(breedId: string, breedName: string, cost: number)
     <h2>A ${breedName} appears</h2>
     <p>A stray ${breedName} wants to join the guild. What will you call them?</p>
     <div style="color:#8b7355;font-size:11px;margin-bottom:8px">Cost: ${cost} fish (you have ${gameState?.fish ?? 0})</div>
-    <input type="text" id="recruit-name-input" placeholder="${breedName}" maxlength="20" autocomplete="off" />
+    <input type="text" class="recruit-name-input" placeholder="${breedName}" maxlength="20" autocomplete="off" />
     <div style="display:flex;gap:8px;margin-top:8px;justify-content:center">
-      <button id="recruit-name-submit" style="flex:1">Welcome (${cost} fish)</button>
-      <button id="recruit-deny" style="flex:1;background:#2a2520;border:1px solid #3a3530;color:#6b5b3e">Turn away</button>
+      <button class="recruit-name-submit" style="flex:1">Welcome (${cost} fish)</button>
+      <button class="recruit-deny" style="flex:1;background:#2a2520;border:1px solid #3a3530;color:#6b5b3e">Turn away</button>
     </div>
   `;
   overlayLayer.appendChild(prompt);
 
-  const input = document.getElementById('recruit-name-input') as HTMLInputElement;
-  const submit = document.getElementById('recruit-name-submit')!;
+  // Scope lookups to the new prompt element so we never accidentally grab an
+  // older, stale DOM node if the remove() above didn't fire (e.g. on a redraw).
+  const input = prompt.querySelector<HTMLInputElement>('.recruit-name-input')!;
+  const submit = prompt.querySelector<HTMLButtonElement>('.recruit-name-submit')!;
+  const deny = prompt.querySelector<HTMLButtonElement>('.recruit-deny')!;
   input.focus();
 
-  document.getElementById('recruit-deny')!.addEventListener('click', () => {
+  deny.addEventListener('click', () => {
     prompt.remove();
     showToast(`The stray ${breedName} wanders off...`);
   });

@@ -327,13 +327,14 @@ html, body {
 
 /* Name prompt */
 .name-prompt-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  /* position: fixed so the prompt escapes #overlay-layer's z-index 10
+     stacking context and renders at the root. z-index matches other
+     top-level modals (pause overlay, tutorials, slot picker) so it's
+     never blocked by them. */
+  position: fixed;
+  inset: 0;
   background: rgba(20, 18, 16, 0.98);
-  z-index: 50;
+  z-index: 9999;
   display: flex;
   flex-direction: column;
   align-items: center;
