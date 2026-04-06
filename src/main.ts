@@ -35,7 +35,7 @@ import { createCat, getBreed, addXp } from './systems/CatManager';
 import { earnFish, spendFish, calculateReward, collectStationedEarnings, isCatStationed } from './systems/Economy';
 import { getJob, getStatMatchScore, generateDailyJobs, getJobFlavor, type JobDef } from './systems/JobBoard';
 import { getPuzzleByDifficulty, generatePuzzle } from './systems/PuzzleGenerator';
-import { addBondPoints, processDailyBonds } from './systems/BondSystem';
+import { addBondPoints, processDailyBonds, grantBondRankReward, getBondRank, getBondPairs, getAvailableConversation } from './systems/BondSystem';
 import { checkChapterAdvance, checkRatPlagueResolution, checkInquisitionResolution, getChapterName, getNextChapterHint } from './systems/ProgressionManager';
 import { startBgm, toggleMute, isMuted, switchToPuzzleMusic, switchToFightMusic, switchToNormalMusic, pauseMusic, resumeMusic } from './systems/MusicManager';
 import { playSfx } from './systems/SfxManager';
@@ -326,19 +326,84 @@ function showDayTransition(day: number, recap?: { foodCost: number; stationedEar
       recapHtml = `<div style="color:#8b7355;font-family:Georgia,serif;font-size:11px;margin-top:12px;text-align:center;max-width:280px">${lines.join('<br>')}</div>`;
     }
   }
-  // Tomorrow's job preview — teaser for what's coming
-  let previewHtml = '';
+  // Tomorrow teasers — dangling threads that create "just one more day" pull.
+  // Per todo/ideas/Great Guild Management Games.md: ending each day with at
+  // least one unresolved hook across multiple systems reliably generates the
+  // compulsion to start the next day. We surface up to 4 hooks: bond ready,
+  // cat needing attention, festival, tomorrow's job.
+  const teasers: { icon: string; color: string; text: string }[] = [];
   if (gameState) {
+    // Hook 1: A bond conversation is ready to view — strongest emotional hook
+    for (const [a, b] of getBondPairs()) {
+      const catA = gameState.cats.find((c) => c.breed === a);
+      const catB = gameState.cats.find((c) => c.breed === b);
+      if (!catA || !catB) continue;
+      const convoRank = getAvailableConversation(gameState, a, b);
+      if (convoRank) {
+        teasers.push({
+          icon: '\u{2764}',
+          color: '#cc6677',
+          text: `${esc(catA.name)} & ${esc(catB.name)} have something to talk about...`,
+        });
+        break; // Only surface one bond hook per day-end
+      }
+    }
+
+    // Hook 2: A cat is close to a bond rank-up (80%+ of threshold)
+    for (const bond of gameState.bonds) {
+      const rank = getBondRank(bond.points);
+      if (rank === 'bonded') continue;
+      const nextThreshold = rank === 'stranger' ? 10 : rank === 'acquaintance' ? 25 : 50;
+      const progress = bond.points / nextThreshold;
+      if (progress >= 0.8 && progress < 1) {
+        const catA = gameState.cats.find((c) => c.breed === bond.catA);
+        const catB = gameState.cats.find((c) => c.breed === bond.catB);
+        if (catA && catB) {
+          teasers.push({
+            icon: '\u{1F31F}',
+            color: '#c4956a',
+            text: `${esc(catA.name)} & ${esc(catB.name)} are nearly at the next bond rank.`,
+          });
+          break;
+        }
+      }
+    }
+
+    // Hook 3: A cat is unhappy and needs attention
+    const unhappyCat = gameState.cats.find((c) => c.mood === 'unhappy' && c.id !== 'player_wildcat');
+    if (unhappyCat) {
+      teasers.push({
+        icon: '\u{1F622}',
+        color: '#6b8ea6',
+        text: `${esc(unhappyCat.name)} is feeling down — maybe tomorrow will be better.`,
+      });
+    }
+
+    // Hook 4: Festival today
+    const festival = getCurrentFestival(day);
+    if (festival) {
+      teasers.push({
+        icon: '\u{1F389}',
+        color: '#dda055',
+        text: `${festival.name} today!`,
+      });
+    }
+
+    // Hook 5: Preview tomorrow's job board (always last so it's a low-key anchor)
     const previewJobs = generateDailyJobs(gameState);
     if (previewJobs.length > 0) {
       const teaser = previewJobs[Math.floor(Math.random() * previewJobs.length)];
-      previewHtml = `<div style="color:#6b8ea6;font-family:Georgia,serif;font-size:10px;margin-top:12px;font-style:italic">"${teaser.name}" appears on the job board...</div>`;
-    }
-    const festival = getCurrentFestival(day);
-    if (festival) {
-      previewHtml += `<div style="color:#dda055;font-family:Georgia,serif;font-size:10px;margin-top:4px">\u{1F389} ${festival.name} today!</div>`;
+      teasers.push({
+        icon: '',
+        color: '#6b8ea6',
+        text: `"${teaser.name}" appears on the job board...`,
+      });
     }
   }
+
+  const previewHtml = teasers.slice(0, 4).map((t) =>
+    `<div style="color:${t.color};font-family:Georgia,serif;font-size:10px;margin-top:6px;font-style:italic">${t.icon ? t.icon + ' ' : ''}${t.text}</div>`
+  ).join('');
 
   overlay.innerHTML = `
     <div style="color:#c4956a;font-family:Georgia,serif;font-size:28px;margin-bottom:4px">Day ${day}</div>
@@ -1590,6 +1655,40 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
     playSfx('purr');
   }
 
+  // Bond teamwork bonus — interlocking systems per the Great Guild Management
+  // Games analysis. If this cat has a bonded-rank partner who also worked
+  // today, they inspire each other: +10% reward. Companion-rank pair: +5%.
+  // This makes bonds feed back into the economy, so investing in
+  // relationships pays off in fish, not just flavor.
+  let teamworkBonus = 0;
+  let teamworkPartner: string | null = null;
+  for (const otherCatId of catsWorkedToday) {
+    if (otherCatId === cat.id) continue;
+    const other = gameState.cats.find((c) => c.id === otherCatId);
+    if (!other) continue;
+    const bond = gameState.bonds.find((b) => {
+      const k = [b.catA, b.catB].sort().join('_');
+      return k === [cat.breed, other.breed].sort().join('_');
+    });
+    if (!bond) continue;
+    const rank = getBondRank(bond.points);
+    if (rank === 'bonded' && teamworkBonus < 0.1) {
+      teamworkBonus = 0.1;
+      teamworkPartner = other.name;
+    } else if (rank === 'companion' && teamworkBonus < 0.05) {
+      teamworkBonus = 0.05;
+      teamworkPartner = other.name;
+    }
+  }
+  if (teamworkBonus > 0 && teamworkPartner) {
+    const before = baseReward;
+    baseReward = Math.floor(baseReward * (1 + teamworkBonus));
+    const extra = baseReward - before;
+    if (extra > 0) {
+      showToast(`Teamwork with ${esc(teamworkPartner)}: +${extra} fish`);
+    }
+  }
+
   const reward = baseReward + (bonusFish ?? 0);
   earnFish(gameState, reward);
   playSfx('purr');
@@ -1619,16 +1718,28 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
     addJournalEntry(gameState, `${esc(cat.name)} reached level ${cat.level}!`, 'level');
   }
 
-  // Bond points (with rank-up celebration)
+  // Bond points (with rank-up celebration + mechanical stat reward).
+  // Per todo/ideas/Great Guild Management Games.md: bonds must change the
+  // playable roster mechanically, not just unlock conversations. Reaching a
+  // rank grants a tangible stat bonus to BOTH cats in the pair so bond
+  // investment has visible payoff.
   for (const other of gameState.cats) {
     if (other.id !== cat.id) {
       const result = addBondPoints(gameState, cat.breed, other.breed, 3);
       if (result?.rankUp) {
         const otherName = other.name;
-        addJournalEntry(gameState, `${esc(cat.name)} & ${otherName} reached ${result.newRank} rank.`, 'bond');
+        const reward = grantBondRankReward(cat, other, result.newRank);
+        const rewardText = reward && reward.amount > 0
+          ? ` (+${reward.amount} ${reward.stat} to both — they ${reward.flavor})`
+          : '';
+        addJournalEntry(
+          gameState,
+          `${esc(cat.name)} & ${otherName} reached ${result.newRank} rank${rewardText}.`,
+          'bond',
+        );
         setTimeout(() => {
           playSfx('chapter');
-          showToast(`\u2764 ${esc(cat.name)} & ${otherName} reached ${result.newRank} rank!`);
+          showToast(`\u2764 ${esc(cat.name)} & ${otherName} reached ${result.newRank}!${rewardText}`);
         }, 2000);
       }
     }

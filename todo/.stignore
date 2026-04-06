@@ -1,0 +1,28 @@
+// Clowder & Crest todo folder — strict whitelist.
+//
+// Syncthing evaluates rules top-down, first match wins. Lines starting with
+// '!' mean "include" (don't ignore). Everything else is an ignore pattern.
+// The final catch-all '*' means: anything NOT explicitly included above is
+// ignored. This prevents a repeat of the 2026-04-06 incident where a Mac
+// Syncthing pointed at ~ pulled the entire home directory into this folder.
+//
+// If you need to add a new subdirectory or file type, ADD IT TO THIS FILE
+// FIRST, then let Syncthing rescan — don't just drop files in and hope.
+
+// Allow markdown files at the root (claude-todo.md, jacob-done.md, etc)
+!/*.md
+
+// Allow the curated subdirectories that actually belong here
+!/archive
+!/archive/**
+!/ideas
+!/ideas/**
+!/dialogue-full-screen-style-inspiration
+!/dialogue-full-screen-style-inspiration/**
+
+// Syncthing's own marker is auto-ignored by Syncthing itself, but belt-and-suspenders:
+!/.stfolder
+!/.stignore
+
+// Ignore absolutely everything else at any depth
+*
