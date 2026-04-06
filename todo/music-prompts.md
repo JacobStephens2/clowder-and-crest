@@ -22,16 +22,16 @@ Shared block: **466 chars.** Leaves ~530 chars per track description. All combin
 ## Track Prompts
 
 ### Chase (Rat Maze) — done
-Medieval chase. Quick fiddle melody over running bodhrán rhythm. 130 BPM, minor key. Tension of pursuit — the cat is hunting. Think tavern reel sped up. Organic, driving, no brass. *(~230 chars after shared)*
+Medieval chase. Quick fiddle melody over running bodhrán rhythm. 130 BPM, minor key. Tension of pursuit — the cat is hunting. Think tavern reel sped up. Organic, driving, no brass. 
 
 ### Hunt (Whack-a-Mole) — done
-Playful, percussive. Bodhrán and hand drums with staccato tin whistle melody. 120 BPM, major (D Mixolydian). Light and bouncy — tapping rats is fun, not stressful. Short 4-bar melodic loops. Think medieval carnival fair. *(~250 chars)*
+Playful, percussive. Bodhrán and hand drums with staccato tin whistle melody. 120 BPM, major (D Mixolydian). Light and bouncy — tapping rats is fun, not stressful. Short 4-bar melodic loops. Think medieval carnival fair. 
 
 ### Fishing (Reel-In) — done
-Calm, patient, flowing. Gentle harp arpeggios over a soft cittern drone. 80 BPM. Meditative with subtle tension — the fish is testing the line. Think Stardew Valley fishing meets Celtic lullaby. *(~215 chars)*
+Calm, patient, flowing. Gentle harp arpeggios over a soft cittern drone. 80 BPM. Meditative with subtle tension — the fish is testing the line. Think Stardew Valley fishing meets Celtic lullaby. 
 
 ### Sokoban (Crate Pushing)
-Thoughtful, methodical. Soft lute and cittern with a contemplative melody. 90 BPM, minor. The sound of unhurried focus — each note is a deliberate move. Think medieval library or a monk's study. *(~215 chars)*
+Thoughtful, methodical. Soft lute and cittern with a contemplative melody. 90 BPM, minor. The sound of unhurried focus — each note is a deliberate move. Think medieval library or a monk's study. 
 
 ### Nonogram (Grid Logic)
 Minimal and clean. Plucked lute with occasional hand-bell tones. 85 BPM. Quiet spaces between notes — the sound of careful deduction. Think a monastery scribing room at dusk. *(~200 chars)*
