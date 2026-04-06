@@ -29,11 +29,22 @@ const WALL = 1;
 const FLOOR = 2;
 
 // ──── Sokoban level type ────
+// Per "What Makes Sokoban Games Great": each level should teach a specific
+// named concept rather than being "another crate board". The name + concept
+// fields are surfaced to the player above the puzzle so they consciously
+// recognize the lesson.
 interface SokobanLevel {
+  /** Short level title shown above the puzzle (e.g. "Around the Pillar"). */
+  name: string;
+  /** One-line description of the concept/lesson the level teaches. */
+  concept: string;
   grid: number[][];      // EMPTY/WALL/FLOOR
   playerStart: { r: number; c: number };
   crates: { r: number; c: number }[];
   targets: { r: number; c: number }[];
+  /** Computed by solveSokoban() at scene load. Authoring uses 0; runtime
+      replaces it with the BFS-found minimum so star scoring stays accurate
+      without manual move counting. */
   minMoves: number;
 }
 
@@ -235,6 +246,8 @@ function tryGenerateLevel(numCrates: number, minMoveTarget: number, maxMoveTarge
   if (solution < minMoveTarget || solution > maxMoveTarget) return null;
 
   return {
+    name: 'Random Cellar',
+    concept: 'A procedurally generated room.',
     grid,
     playerStart: playerPos,
     crates: cratePositions,
@@ -391,176 +404,269 @@ function isSolved(crates: { r: number; c: number }[], targets: { r: number; c: n
   return targets.every(t => crates.some(c => c.r === t.r && c.c === t.c));
 }
 
-// ──── Fallback hand-crafted levels ────
+// ──── Themed hand-crafted levels ────
+//
+// Each level has a NAME and a CONCEPT. The doc's "level-as-lesson" pillar:
+// every puzzle should teach one specific truth about the system. Generic
+// procgen levels don't have that identity — these do.
+//
+// Authoring rules:
+// - minMoves is left as 0; it's filled in at scene load by solveSokoban().
+//   This means I don't have to maintain the manual move count, and the BFS
+//   solver acts as a runtime sanity check (unsolvable levels are rejected
+//   and the next themed level is tried).
+// - The level should work AT the named concept. If the player can solve it
+//   with a different strategy, the concept failed.
 
-const FALLBACK_LEVELS: Record<string, SokobanLevel[]> = {
+const THEMED_LEVELS: Record<string, SokobanLevel[]> = {
   easy: [
     {
+      // Concept: the most basic Sokoban contract — push, don't pull. Two
+      // crates on the same row as their targets, perfectly aligned for a
+      // straight east push. Teaches: "you walk INTO a crate and it slides
+      // away from you."
+      name: 'First Push',
+      concept: 'Walk into a crate to push it. You can\'t pull.',
       grid: [
         [1,1,1,1,1,1,1],
         [1,2,2,2,2,2,1],
         [1,2,2,2,2,2,1],
-        [1,2,2,1,2,2,1],
+        [1,2,2,2,2,2,1],
         [1,2,2,2,2,2,1],
         [1,2,2,2,2,2,1],
         [1,1,1,1,1,1,1],
       ],
-      playerStart: { r: 1, c: 1 },
+      playerStart: { r: 2, c: 1 },
       crates: [{ r: 2, c: 3 }, { r: 4, c: 3 }],
       targets: [{ r: 2, c: 5 }, { r: 4, c: 5 }],
-      minMoves: 10,
+      minMoves: 0, // computed at load
     },
     {
+      // Concept: a wall in the middle forces routing. The crates need to
+      // navigate around an obstacle, teaching "plan the path before you
+      // commit to a push."
+      name: 'Around the Pillar',
+      concept: 'A wall splits the room. Find the path around it.',
       grid: [
         [1,1,1,1,1,1,1],
-        [1,2,2,2,1,2,1],
         [1,2,2,2,2,2,1],
-        [1,2,1,2,2,2,1],
+        [1,2,2,2,2,2,1],
+        [1,2,2,1,2,2,1],
         [1,2,2,2,2,2,1],
         [1,2,2,2,2,2,1],
         [1,1,1,1,1,1,1],
       ],
       playerStart: { r: 1, c: 1 },
-      crates: [{ r: 2, c: 2 }, { r: 4, c: 4 }],
-      targets: [{ r: 5, c: 1 }, { r: 5, c: 5 }],
-      minMoves: 12,
+      crates: [{ r: 2, c: 2 }, { r: 4, c: 2 }],
+      targets: [{ r: 2, c: 5 }, { r: 4, c: 5 }],
+      minMoves: 0,
     },
     {
+      // Concept: two crates next to each other. The player has to step
+      // around the first to reach the side of the second. Teaches "your
+      // own body is part of the puzzle."
+      name: 'Side By Side',
+      concept: 'Two crates, two pushes — but you have to walk around.',
       grid: [
         [1,1,1,1,1,1,1],
         [1,2,2,2,2,2,1],
-        [1,2,1,2,1,2,1],
         [1,2,2,2,2,2,1],
-        [1,2,1,2,1,2,1],
+        [1,2,2,2,2,2,1],
+        [1,2,2,2,2,2,1],
         [1,2,2,2,2,2,1],
         [1,1,1,1,1,1,1],
       ],
-      playerStart: { r: 3, c: 3 },
-      crates: [{ r: 1, c: 3 }, { r: 3, c: 1 }],
-      targets: [{ r: 5, c: 3 }, { r: 3, c: 5 }],
-      minMoves: 8,
+      playerStart: { r: 3, c: 2 },
+      crates: [{ r: 4, c: 2 }, { r: 4, c: 3 }],
+      targets: [{ r: 5, c: 2 }, { r: 5, c: 3 }],
+      minMoves: 0,
     },
   ],
+
   medium: [
     {
-      grid: [
-        [1,1,1,1,1,1,1],
-        [1,2,2,2,2,2,1],
-        [1,2,1,2,2,2,1],
-        [1,2,2,2,1,2,1],
-        [1,2,2,1,2,2,1],
-        [1,2,2,2,2,2,1],
-        [1,1,1,1,1,1,1],
-      ],
-      playerStart: { r: 1, c: 1 },
-      crates: [{ r: 2, c: 3 }, { r: 3, c: 2 }, { r: 4, c: 4 }],
-      targets: [{ r: 5, c: 1 }, { r: 5, c: 3 }, { r: 5, c: 5 }],
-      minMoves: 18,
-    },
-    {
-      grid: [
-        [1,1,1,1,1,1,1],
-        [1,2,2,1,2,2,1],
-        [1,2,2,2,2,2,1],
-        [1,2,2,2,2,2,1],
-        [1,2,2,2,2,2,1],
-        [1,2,2,1,2,2,1],
-        [1,1,1,1,1,1,1],
-      ],
-      playerStart: { r: 3, c: 3 },
-      crates: [{ r: 2, c: 2 }, { r: 2, c: 4 }, { r: 4, c: 3 }],
-      targets: [{ r: 4, c: 1 }, { r: 4, c: 5 }, { r: 1, c: 3 }],
-      minMoves: 16,
-    },
-    {
+      // Concept: 3 crates need to swap from the left side to the right side.
+      // Order of pushes matters — push the wrong one first and you box
+      // yourself in.
+      name: 'Switch Sides',
+      concept: 'Move three crates across — the order matters.',
       grid: [
         [1,1,1,1,1,1,1],
         [1,2,2,2,2,2,1],
         [1,2,2,2,2,2,1],
-        [1,1,2,2,2,1,1],
+        [1,2,2,2,2,2,1],
         [1,2,2,2,2,2,1],
         [1,2,2,2,2,2,1],
         [1,1,1,1,1,1,1],
       ],
       playerStart: { r: 1, c: 1 },
-      crates: [{ r: 2, c: 2 }, { r: 2, c: 4 }, { r: 4, c: 3 }],
-      targets: [{ r: 5, c: 2 }, { r: 5, c: 4 }, { r: 1, c: 3 }],
-      minMoves: 20,
+      crates: [{ r: 2, c: 2 }, { r: 3, c: 2 }, { r: 4, c: 2 }],
+      targets: [{ r: 2, c: 5 }, { r: 3, c: 5 }, { r: 4, c: 5 }],
+      minMoves: 0,
+    },
+    {
+      // Concept: a single interior wall splits the room into two halves
+      // with a single passage. Crates must traverse the passage one at
+      // a time without trapping a partner.
+      name: 'Bottleneck',
+      concept: 'One narrow passage. Send each crate through carefully.',
+      grid: [
+        [1,1,1,1,1,1,1],
+        [1,2,2,2,2,2,1],
+        [1,2,2,1,2,2,1],
+        [1,2,2,2,2,2,1],
+        [1,2,2,1,2,2,1],
+        [1,2,2,2,2,2,1],
+        [1,1,1,1,1,1,1],
+      ],
+      playerStart: { r: 1, c: 1 },
+      crates: [{ r: 1, c: 2 }, { r: 3, c: 2 }, { r: 5, c: 2 }],
+      targets: [{ r: 1, c: 5 }, { r: 3, c: 5 }, { r: 5, c: 5 }],
+      minMoves: 0,
+    },
+    {
+      // Concept: the central pillar means you can't push north. Each crate
+      // has to take a longer route, and you have to think about which way
+      // each one goes around.
+      name: 'Three Around',
+      concept: 'A pillar in the way — each crate takes its own detour.',
+      grid: [
+        [1,1,1,1,1,1,1],
+        [1,2,2,2,2,2,1],
+        [1,2,2,2,2,2,1],
+        [1,2,2,1,2,2,1],
+        [1,2,2,2,2,2,1],
+        [1,2,2,2,2,2,1],
+        [1,1,1,1,1,1,1],
+      ],
+      playerStart: { r: 5, c: 1 },
+      crates: [{ r: 4, c: 2 }, { r: 4, c: 3 }, { r: 4, c: 4 }],
+      targets: [{ r: 1, c: 2 }, { r: 1, c: 3 }, { r: 1, c: 4 }],
+      minMoves: 0,
     },
   ],
+
   hard: [
     {
+      // Concept: 4 crates in the inner ring, each pushable in one direction
+      // toward a wall-adjacent target. Sounds easy, but with 4 crates the
+      // player has to think carefully about footprint — every walkable tile
+      // is a potential blocker for a future push.
+      name: 'Push to the Walls',
+      concept: 'Four crates, four walls. Plan your footprint.',
       grid: [
         [1,1,1,1,1,1,1],
         [1,2,2,2,2,2,1],
-        [1,2,1,2,1,2,1],
         [1,2,2,2,2,2,1],
-        [1,2,1,2,1,2,1],
+        [1,2,2,2,2,2,1],
+        [1,2,2,2,2,2,1],
         [1,2,2,2,2,2,1],
         [1,1,1,1,1,1,1],
       ],
       playerStart: { r: 3, c: 3 },
-      crates: [{ r: 1, c: 1 }, { r: 1, c: 5 }, { r: 5, c: 1 }, { r: 5, c: 5 }],
-      targets: [{ r: 1, c: 3 }, { r: 3, c: 1 }, { r: 3, c: 5 }, { r: 5, c: 3 }],
-      minMoves: 24,
+      crates: [{ r: 2, c: 2 }, { r: 2, c: 4 }, { r: 4, c: 2 }, { r: 4, c: 4 }],
+      targets: [{ r: 2, c: 1 }, { r: 2, c: 5 }, { r: 4, c: 1 }, { r: 4, c: 5 }],
+      minMoves: 0,
     },
     {
+      // Concept: 4 crates in an interior diamond, 4 targets along the
+      // perimeter midpoints. Each crate has to be pushed straight outward,
+      // but with the player navigating between them — it's a positioning
+      // exercise where every push has to be set up by walking the long way
+      // around the cluster.
+      name: 'Pushed Out',
+      concept: 'Push the cluster apart — each crate to its own wall.',
       grid: [
         [1,1,1,1,1,1,1],
         [1,2,2,2,2,2,1],
-        [1,2,2,1,2,2,1],
         [1,2,2,2,2,2,1],
-        [1,2,2,1,2,2,1],
+        [1,2,2,2,2,2,1],
+        [1,2,2,2,2,2,1],
         [1,2,2,2,2,2,1],
         [1,1,1,1,1,1,1],
       ],
-      playerStart: { r: 1, c: 1 },
-      crates: [{ r: 1, c: 4 }, { r: 3, c: 2 }, { r: 3, c: 4 }, { r: 5, c: 2 }],
-      targets: [{ r: 1, c: 5 }, { r: 3, c: 1 }, { r: 5, c: 5 }, { r: 5, c: 1 }],
-      minMoves: 22,
+      playerStart: { r: 3, c: 1 },
+      crates: [{ r: 2, c: 3 }, { r: 3, c: 2 }, { r: 3, c: 4 }, { r: 4, c: 3 }],
+      targets: [{ r: 1, c: 3 }, { r: 3, c: 1 }, { r: 3, c: 5 }, { r: 5, c: 3 }],
+      minMoves: 0,
     },
   ],
 };
 
+/** Validate a hand-designed level by running the BFS solver. Returns a copy
+    with minMoves filled in, or null if the level is unsolvable. Lets us ship
+    levels without manually computing move counts AND catches design errors
+    at runtime instead of in QA. */
+function validateAndScoreLevel(level: SokobanLevel): SokobanLevel | null {
+  const minMoves = solveSokoban(
+    level.grid,
+    level.playerStart,
+    level.crates,
+    level.targets,
+  );
+  if (minMoves < 0) return null;
+  return { ...level, minMoves };
+}
+
 function getLevelForDifficulty(difficulty: string): SokobanLevel {
+  // Prefer themed hand-designed levels — each one teaches a named concept.
+  // Try them in random order; the first one that validates wins. The BFS
+  // validation is cheap on 7x7 grids and acts as a safety net for any
+  // bugs in the level data.
+  const themed = THEMED_LEVELS[difficulty] ?? THEMED_LEVELS.easy;
+  const indices = [...themed.keys()];
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  for (const idx of indices) {
+    const validated = validateAndScoreLevel(themed[idx]);
+    if (validated) return validated;
+  }
+
+  // Fallback: procedural generation. Loses the named-concept identity but
+  // beats crashing on a level-data bug.
   const config: Record<string, { crates: number; min: number; max: number }> = {
     easy: { crates: 2, min: 8, max: 15 },
     medium: { crates: 3, min: 15, max: 25 },
     hard: { crates: 4, min: 20, max: 40 },
   };
-
   const params = config[difficulty] ?? config.easy;
   const generated = generateSokobanLevel(params.crates, params.min, params.max);
-  if (generated) return generated;
+  if (generated) {
+    return {
+      ...generated,
+      name: 'Random Cellar',
+      concept: 'A procedurally generated room. Find the solution.',
+    };
+  }
 
-  // Fallback to hand-crafted levels
-  const fallbacks = FALLBACK_LEVELS[difficulty] ?? FALLBACK_LEVELS.easy;
-  return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+  // Last resort: the simplest themed easy level (won't fail validation
+  // because we already validated above — this is purely for type safety).
+  return {
+    ...THEMED_LEVELS.easy[0],
+    minMoves: 10,
+  };
 }
 
 // ──── Scene ────
-
-interface MoveRecord {
-  playerR: number;
-  playerC: number;
-  crates: { r: number; c: number }[];
-}
 
 export class SokobanScene extends Phaser.Scene {
   private level!: SokobanLevel;
   private playerPos = { r: 0, c: 0 };
   private crates: { r: number; c: number }[] = [];
   private moveCount = 0;
-  private moveHistory: MoveRecord[] = [];
   private solved = false;
   private jobId = '';
   private catId = '';
   private catBreed = 'wildcat';
   private difficulty = 'easy';
 
-  // Display objects
+  // Display objects. Crates can be either Sprite (textured `block_crate`)
+  // or Rectangle (fallback color block); the union type prevents the unsafe
+  // cast that previously hid a setFillStyle-on-Sprite crash.
   private playerSprite!: Phaser.GameObjects.Sprite | Phaser.GameObjects.Ellipse;
-  private crateSprites: Phaser.GameObjects.Rectangle[] = [];
+  private crateSprites: (Phaser.GameObjects.Sprite | Phaser.GameObjects.Rectangle)[] = [];
   private targetMarkers: Phaser.GameObjects.Rectangle[] = [];
   private floorTiles: Phaser.GameObjects.Rectangle[] = [];
   private inputLocked = false;
@@ -577,7 +683,6 @@ export class SokobanScene extends Phaser.Scene {
     const cat = save?.cats.find(c => c.id === this.catId);
     this.catBreed = cat?.breed ?? 'wildcat';
     this.moveCount = 0;
-    this.moveHistory = [];
     this.crateSprites = [];
     this.targetMarkers = [];
     this.floorTiles = [];
@@ -586,17 +691,20 @@ export class SokobanScene extends Phaser.Scene {
   }
 
   create(): void {
-    // Tutorial on first play
-    if (!localStorage.getItem('clowder_sokoban_tutorial')) {
-      localStorage.setItem('clowder_sokoban_tutorial', '1');
+    // Tutorial on first play. Bumped to v2 when themed levels + Restart button
+    // were introduced — returning players need to know about Restart now that
+    // they can paint themselves into a corner with no Undo.
+    if (!localStorage.getItem('clowder_sokoban_tutorial_v2')) {
+      localStorage.setItem('clowder_sokoban_tutorial_v2', '1');
       const t = document.createElement('div');
       t.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
       t.innerHTML = `
         <div style="color:#c4956a;font-family:Georgia,serif;font-size:22px;margin-bottom:12px">Push Crates</div>
-        <div style="color:#8b7355;font-family:Georgia,serif;font-size:14px;text-align:center;max-width:280px;line-height:1.6">
-          Push crates onto the <strong style="color:#4a8a4a">green targets</strong>.<br><br>
-          Use <strong>WASD</strong>, <strong>arrow keys</strong>, or <strong>tap</strong> to move.<br><br>
-          You can only push — not pull. Don't get stuck!
+        <div style="color:#8b7355;font-family:Georgia,serif;font-size:14px;text-align:center;max-width:290px;line-height:1.6">
+          Push crates onto the <strong style="color:#4a8a4a">fish targets</strong>.<br><br>
+          Use <strong>WASD</strong>, <strong>arrows</strong>, <strong>tap</strong>, or the on-screen <strong>d-pad</strong>.<br><br>
+          You can only <strong>push</strong>, never pull. Think before you commit.<br><br>
+          Stuck? Tap <strong style="color:#c4956a">Restart</strong> — there's no undo, but you can always start over.
         </div>
         <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:12px;margin-top:20px">Tap to start</div>
       `;
@@ -686,7 +794,7 @@ export class SokobanScene extends Phaser.Scene {
         crateSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
         crateSprite.setDepth(2);
         if (isOnTarget) crateSprite.setTint(0x88cc88);
-        this.crateSprites.push(crateSprite as unknown as Phaser.GameObjects.Rectangle);
+        this.crateSprites.push(crateSprite);
       } else {
         const color = isOnTarget ? CRATE_ON_TARGET : CRATE_COLOR;
         const rect = this.add.rectangle(px, py, SOKOBAN_TILE - 6, SOKOBAN_TILE - 6, color);
@@ -707,32 +815,48 @@ export class SokobanScene extends Phaser.Scene {
     // Job name
     const job = getJob(this.jobId);
     if (job) {
-      this.add.text(GAME_WIDTH / 2, 42, `${job.name} (${this.difficulty})`, {
+      this.add.text(GAME_WIDTH / 2, 30, `${job.name} (${this.difficulty})`, {
         fontFamily: 'Georgia, serif',
-        fontSize: '14px',
-        color: '#8b7355',
+        fontSize: '12px',
+        color: '#6b5b3e',
       }).setOrigin(0.5);
     }
 
-    // Move counter
-    this.add.text(GAME_WIDTH / 2, 58, 'Moves: 0', {
+    // Level name + concept — the doc's "level-as-lesson" pillar made visible.
+    // The player should consciously recognize what each puzzle is teaching,
+    // not just see "another crate board".
+    this.add.text(GAME_WIDTH / 2, 48, this.level.name, {
       fontFamily: 'Georgia, serif',
-      fontSize: '18px',
+      fontSize: '17px',
+      color: '#c4956a',
+      fontStyle: 'italic',
+    }).setOrigin(0.5);
+    this.add.text(GAME_WIDTH / 2, 65, this.level.concept, {
+      fontFamily: 'Georgia, serif',
+      fontSize: '11px',
+      color: '#8b7355',
+      align: 'center',
+      wordWrap: { width: 320 },
+    }).setOrigin(0.5);
+
+    // Move counter
+    this.add.text(GAME_WIDTH / 2, 80, 'Moves: 0', {
+      fontFamily: 'Georgia, serif',
+      fontSize: '13px',
       color: '#c4956a',
     }).setOrigin(0.5).setName('moveText');
 
-    // Target moves display
-    this.add.text(GAME_WIDTH / 2, 77, `Target: ${this.level.minMoves} moves`, {
-      fontFamily: 'Georgia, serif',
-      fontSize: '13px',
-      color: '#6b5b3e',
-    }).setOrigin(0.5);
-
-    // Buttons
+    // Buttons — Quit (left) and Restart (right). Restart is the *intended*
+    // safety net for the no-undo design: when you realize you've trapped a
+    // crate, you should be able to start over instantly, not have to abandon
+    // the job. Sausage Roll, Baba Is You, A Monster's Expedition all do this.
     const btnY = OFFSET_Y + GRID_PX + 50;
-    this.createButton(GAME_WIDTH / 2, btnY, 'Quit', () => {
+    this.createButton(GAME_WIDTH / 2 - 55, btnY, 'Quit', () => {
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
       eventBus.emit('navigate', 'TownMapScene');
+    });
+    this.createButton(GAME_WIDTH / 2 + 55, btnY, 'Restart', () => {
+      this.resetPuzzle();
     });
 
     // Keyboard input
@@ -864,23 +988,10 @@ export class SokobanScene extends Phaser.Scene {
       // Can't push into another crate
       if (this.crates.some(c => c.r === pushR && c.c === pushC)) return;
 
-      // Save state for undo
-      this.moveHistory.push({
-        playerR: this.playerPos.r,
-        playerC: this.playerPos.c,
-        crates: this.crates.map(c => ({ ...c })),
-      });
-
-      // Move crate
+      // Move crate. No history is recorded — the genre's "no undo" pillar is
+      // load-bearing. The Restart button is the only safety net.
       this.crates[crateIdx].r = pushR;
       this.crates[crateIdx].c = pushC;
-    } else {
-      // No crate — just walk
-      this.moveHistory.push({
-        playerR: this.playerPos.r,
-        playerC: this.playerPos.c,
-        crates: this.crates.map(c => ({ ...c })),
-      });
     }
 
     // Move player
@@ -893,8 +1004,12 @@ export class SokobanScene extends Phaser.Scene {
     // Animate
     this.animateMove(direction, crateIdx);
 
-    // Check win
+    // Check win. Set `solved` synchronously — semantically the puzzle IS
+    // solved at this instant. The 300ms delay before winPuzzle() is purely
+    // cosmetic (lets the player register the final placement before the
+    // celebration animation starts), and shouldn't gate the logical state.
     if (isSolved(this.crates, this.level.targets)) {
+      this.solved = true;
       this.inputLocked = true;
       this.time.delayedCall(300, () => this.winPuzzle());
     }
@@ -947,7 +1062,16 @@ export class SokobanScene extends Phaser.Scene {
     for (let i = 0; i < this.crates.length; i++) {
       const crate = this.crates[i];
       const isOnTarget = this.level.targets.some(t => t.r === crate.r && t.c === crate.c);
-      this.crateSprites[i]?.setFillStyle(isOnTarget ? CRATE_ON_TARGET : CRATE_COLOR);
+      const sprite = this.crateSprites[i];
+      if (!sprite) continue;
+      // Sprites use tint, Rectangles use fill style — pick the right method
+      // for whichever fallback the runtime ended up with.
+      if (sprite instanceof Phaser.GameObjects.Sprite) {
+        if (isOnTarget) sprite.setTint(0x88cc88);
+        else sprite.clearTint();
+      } else {
+        sprite.setFillStyle(isOnTarget ? CRATE_ON_TARGET : CRATE_COLOR);
+      }
     }
   }
 
@@ -991,25 +1115,17 @@ export class SokobanScene extends Phaser.Scene {
     if (moveText) moveText.setText(`Moves: ${this.moveCount}`);
   }
 
-  private undo(): void {
-    if (this.moveHistory.length === 0 || this.solved) return;
-    const last = this.moveHistory.pop()!;
-    this.playerPos.r = last.playerR;
-    this.playerPos.c = last.playerC;
-    this.crates = last.crates.map(c => ({ ...c }));
-    this.moveCount = Math.max(0, this.moveCount - 1);
-    this.updateMoveText();
-    this.repositionAll();
-  }
-
+  /** Restart the current puzzle from its initial state. The genre's
+      "no-undo" pillar requires this as the safety net — players WILL trap
+      themselves and need to recover without abandoning the job. */
   private resetPuzzle(): void {
     if (this.solved) return;
     this.playerPos = { ...this.level.playerStart };
     this.crates = this.level.crates.map(c => ({ ...c }));
     this.moveCount = 0;
-    this.moveHistory = [];
     this.updateMoveText();
     this.repositionAll();
+    playSfx('crate_push', 0.2);
   }
 
   private repositionAll(): void {
