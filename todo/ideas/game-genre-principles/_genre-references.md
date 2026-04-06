@@ -157,7 +157,7 @@ The player has proven they can handle two minigame types. Chapter 2 widens the v
 
 The Rat Plague chapter. The player is now expected to fight and to keep watch. These two minigames define the *threat tier* of the campaign.
 
-## BrawlScene — Rat Combat (Chapter 3) - improving
+## BrawlScene — Rat Combat (Chapter 3) - improved
 
 **Genre:** Top-down action / beat-em-up / Zelda-like.
 
@@ -182,7 +182,7 @@ The Rat Plague chapter. The player is now expected to fight and to keep watch. T
 
 ---
 
-## PatrolScene — Lantern Watch (Chapter 3) - researched
+## PatrolScene — Lantern Watch (Chapter 3) - improving
 
 **Genre:** Attention management / multi-target upkeep.
 
@@ -209,7 +209,7 @@ The Rat Plague chapter. The player is now expected to fight and to keep watch. T
 
 A "thinking chapter" that triples the brain-puzzle vocabulary. Three minigames here mean the player gets variety — and we should make sure each one teaches a *different* logical skill.
 
-## NonogramScene — Grid Logic Puzzle (Chapter 4)
+## NonogramScene — Grid Logic Puzzle (Chapter 4) - researching
 
 **Genre:** Nonogram / Picross.
 
