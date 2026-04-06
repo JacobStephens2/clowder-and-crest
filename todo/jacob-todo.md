@@ -19,11 +19,6 @@
 - **Blocker:** Needs a free API key from https://freesound.org/apiv2/apply/.
 - **What I need from you:** Register, grab the key, paste it here or into an env var. Not urgent — current SFX pool works fine.
 
-## Phaser Editor v5 desktop app (for the MCP I already configured)
-
-- **What:** I added the Phaser Editor MCP to `.mcp.json`, but the MCP acts as a bridge to a **running Phaser Editor v5 desktop instance**. Without the editor running, the MCP won't do anything useful.
-- **What I need from you:** Download and install Phaser Editor v5 from https://phasereditor2d.com/ if you want to use it. Then launch it before asking me to interact with scenes via the MCP. If you don't plan to use the editor, tell me and I'll remove the MCP entry.
-
 ## Nothing else blocking
 
 Everything else in the todo is either done or can be handled by me without your input.
