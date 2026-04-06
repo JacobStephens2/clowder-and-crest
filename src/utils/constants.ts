@@ -71,4 +71,5 @@ export const SCENES = {
   SCENT_TRAIL: 'ScentTrailScene',
   HEIST: 'HeistScene',
   COURIER_RUN: 'CourierRunScene',
+  DUNGEON: 'DungeonRunScene',
 } as const;

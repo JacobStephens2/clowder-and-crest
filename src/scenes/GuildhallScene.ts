@@ -147,8 +147,25 @@ export class GuildhallScene extends Phaser.Scene {
 
     this.drawRooms(save);
 
+    // Cellar entrance (Chapter 5+)
+    if (save.chapter >= 5) {
+      const cellarY = ROOM_START_Y + 3 * (ROOM_HEIGHT + ROOM_GAP) + 10;
+      const cellarBtn = this.add.rectangle(GAME_WIDTH / 2, cellarY, ROOM_WIDTH, 40, 0x1a1818);
+      cellarBtn.setStrokeStyle(1, 0x3a3530);
+      cellarBtn.setInteractive({ useHandCursor: true });
+      this.add.text(GAME_WIDTH / 2, cellarY, '\u{1F5DD}\u{FE0F} The Cellar — Dungeon Run', {
+        fontFamily: 'Georgia, serif', fontSize: '13px', color: '#8b7355',
+      }).setOrigin(0.5);
+      cellarBtn.on('pointerover', () => cellarBtn.setFillStyle(0x2a2520));
+      cellarBtn.on('pointerout', () => cellarBtn.setFillStyle(0x1a1818));
+      cellarBtn.on('pointerdown', () => {
+        eventBus.emit('navigate', 'DungeonRunScene');
+        this.scene.start('DungeonRunScene');
+      });
+    }
+
     // Content height and scrolling
-    const contentHeight = 3 * (ROOM_HEIGHT + ROOM_GAP) + ROOM_START_Y + 40;
+    const contentHeight = 3 * (ROOM_HEIGHT + ROOM_GAP) + ROOM_START_Y + (save.chapter >= 5 ? 60 : 40);
     const maxScroll = Math.max(0, contentHeight - GAME_HEIGHT + 120);
 
     if (maxScroll > 0) {

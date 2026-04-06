@@ -19,6 +19,7 @@ import { ScentTrailScene } from './scenes/ScentTrailScene';
 import { HeistScene } from './scenes/HeistScene';
 import { CourierRunScene } from './scenes/CourierRunScene';
 import { TownMapScene } from './scenes/TownMapScene';
+import { DungeonRunScene, getActiveDungeon, isDungeonRun } from './scenes/DungeonRunScene';
 import { eventBus } from './utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS, BREED_NAMES, STAT_NAMES, ALL_BREED_IDS, SCENES } from './utils/constants';
 import {
@@ -84,7 +85,7 @@ const config: Phaser.Types.Core.GameConfig = {
   input: {
     activePointers: 2,
   },
-  scene: [BootScene, TitleScene, GuildhallScene, TownMapScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene, HuntScene, NonogramScene, BrawlScene, StealthScene, PounceScene, PatrolScene, RitualScene, ScentTrailScene, HeistScene, CourierRunScene],
+  scene: [BootScene, TitleScene, GuildhallScene, TownMapScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene, HuntScene, NonogramScene, BrawlScene, StealthScene, PounceScene, PatrolScene, RitualScene, ScentTrailScene, HeistScene, CourierRunScene, DungeonRunScene],
 };
 
 const game = new Phaser.Game(config);
@@ -1510,6 +1511,16 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
   resumeDayTimer();
   if (!gameState) return;
 
+  // Dungeon run: floor cleared — return to dungeon transition
+  if (isDungeonRun()) {
+    const dungeon = getActiveDungeon()!;
+    dungeon.floorsCleared++;
+    playSfx('sparkle', 0.5);
+    showToast(`Floor ${dungeon.floor} cleared! HP: ${dungeon.hp}/${dungeon.maxHp}`);
+    switchScene('DungeonRunScene');
+    return;
+  }
+
   const job = getJob(jobId);
   const cat = gameState.cats.find((c) => c.id === catId);
   if (!job || !cat) {
@@ -1643,6 +1654,15 @@ eventBus.on('puzzle-quit', ({ jobId, catId }: any = {}) => {
   resumeDayTimer();
   playSfx('fail');
   if (!gameState) return;
+
+  // Dungeon run: floor failed — lose 1 HP, return to dungeon
+  if (isDungeonRun()) {
+    const dungeon = getActiveDungeon()!;
+    dungeon.hp--;
+    showToast(`Floor failed! HP: ${dungeon.hp}/${dungeon.maxHp}`);
+    switchScene('DungeonRunScene');
+    return;
+  }
 
   const cat = gameState.cats.find((c) => c.id === catId);
   const job = getJob(jobId);
