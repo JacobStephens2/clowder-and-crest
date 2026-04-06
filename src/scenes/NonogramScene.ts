@@ -1,13 +1,14 @@
 import Phaser from 'phaser';
 import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
-import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
 import { showMinigameTutorial } from '../ui/sceneHelpers';
 
-// Grid sizes per difficulty
-const GRID_SIZES: Record<string, number> = { easy: 5, medium: 6, hard: 7 };
+// Grid sizes per difficulty — multiples of 5 per the genre's UX rule.
+// "Grids should always be multiples of 5 in both dimensions. The 5-cell
+// grouping rhythm is a cognitive anchor."
+const GRID_SIZES: Record<string, number> = { easy: 5, medium: 10, hard: 15 };
 
 // Layout
 const CLUE_SPACE = 60; // space for clue numbers
@@ -21,69 +22,221 @@ const BORDER_COLOR = 0x6b5b3e;
 const CORRECT_CLUE = '#6b8ea6';
 const PENDING_CLUE = '#8b7355';
 
-// ── Puzzle generation ──
-
-function generateSolution(size: number): boolean[][] {
-  // Try up to 20 times to get an interesting puzzle
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const grid: boolean[][] = [];
-    const fillRate = 0.35 + Math.random() * 0.2;
-    for (let r = 0; r < size; r++) {
-      const row: boolean[] = [];
-      for (let c = 0; c < size; c++) {
-        row.push(Math.random() < fillRate);
-      }
-      grid[r] = row;
-    }
-    // Ensure no completely empty rows or columns
-    for (let r = 0; r < size; r++) {
-      if (grid[r].every((v) => !v)) grid[r][Math.floor(Math.random() * size)] = true;
-    }
-    for (let c = 0; c < size; c++) {
-      if (grid.every((row) => !row[c])) grid[Math.floor(Math.random() * size)][c] = true;
-    }
-
-    // Reject trivial puzzles: no row or column should be completely full
-    const allRowsFull = grid.some((row) => row.every(Boolean));
-    const allColsFull = Array.from({ length: size }, (_, c) => grid.every((row) => row[c])).some(Boolean);
-    if (allRowsFull || allColsFull) continue;
-
-    // Ensure clues are constraining enough to be solvable by logic
-    const rowClues = grid.map((row) => getClues(row));
-    const colClues = Array.from({ length: size }, (_, c) =>
-      getClues(grid.map((row) => row[c]))
-    );
-
-    // Reject if too many rows or columns have only [1] clues (ambiguous)
-    const weakRows = rowClues.filter((c) => c.length === 1 && c[0] === 1).length;
-    const weakCols = colClues.filter((c) => c.length === 1 && c[0] === 1).length;
-    if (weakRows > size * 0.5 || weakCols > size * 0.5) continue;
-
-    // Require at least some clues with values >= 2 (constraining)
-    const strongRows = rowClues.filter((c) => c.some((v) => v >= 2)).length;
-    const strongCols = colClues.filter((c) => c.some((v) => v >= 2)).length;
-    if (strongRows < 2 || strongCols < 2) continue;
-
-    // Require at least one multi-group clue for interest
-    const hasMultiGroup = rowClues.some((c) => c.length >= 2) || colClues.some((c) => c.length >= 2);
-    if (!hasMultiGroup) continue;
-
-    return grid;
-  }
-  // Fallback — just return something valid
-  const grid: boolean[][] = [];
-  for (let r = 0; r < size; r++) {
-    const row: boolean[] = [];
-    for (let c = 0; c < size; c++) row.push(Math.random() < 0.4);
-    grid[r] = row;
-  }
-  for (let r = 0; r < size; r++) {
-    if (grid[r].every((v) => !v)) grid[r][0] = true;
-  }
-  return grid;
+// ── Themed image library ──
+//
+// Per the doc's "thematically resonant" principle: hand-crafted guild-relevant
+// pixel art beats random fills. Each image's grid is validated for unique
+// solvability at load time via constraint propagation; if it fails, we try
+// the next one. Each row of `grid` is a string where '#' = filled, '.' = empty.
+// This is more readable than nested boolean arrays.
+interface NonogramImage {
+  name: string;
+  grid: string[];
 }
 
-function getClues(line: boolean[]): number[] {
+const THEMED_IMAGES: Record<string, NonogramImage[]> = {
+  easy: [
+    {
+      name: 'Plus',
+      grid: [
+        '..#..',
+        '..#..',
+        '#####',
+        '..#..',
+        '..#..',
+      ],
+    },
+    {
+      name: 'Diamond',
+      grid: [
+        '..#..',
+        '.###.',
+        '#####',
+        '.###.',
+        '..#..',
+      ],
+    },
+    {
+      name: 'Frame',
+      grid: [
+        '#####',
+        '#...#',
+        '#...#',
+        '#...#',
+        '#####',
+      ],
+    },
+    {
+      name: 'Arrow',
+      grid: [
+        '..#..',
+        '.###.',
+        '#####',
+        '..#..',
+        '..#..',
+      ],
+    },
+    {
+      name: 'Heart',
+      grid: [
+        '.#.#.',
+        '#####',
+        '#####',
+        '.###.',
+        '..#..',
+      ],
+    },
+    {
+      name: 'Hourglass',
+      grid: [
+        '#####',
+        '.###.',
+        '..#..',
+        '.###.',
+        '#####',
+      ],
+    },
+  ],
+  medium: [
+    {
+      // 10x10 cat face — ears, eyes, whiskers, mouth
+      name: 'Cat Face',
+      grid: [
+        '##......##',
+        '###....###',
+        '##########',
+        '#.#.##.#.#',
+        '##########',
+        '####..####',
+        '##.####.##',
+        '###....###',
+        '.########.',
+        '..######..',
+      ],
+    },
+    {
+      // 10x10 fish silhouette
+      name: 'Fish',
+      grid: [
+        '..........',
+        '..#######.',
+        '.########.',
+        '##########',
+        '##########',
+        '##########',
+        '##########',
+        '.########.',
+        '..#######.',
+        '..........',
+      ],
+    },
+    {
+      // 10x10 key
+      name: 'Key',
+      grid: [
+        '..####....',
+        '.######...',
+        '##....##..',
+        '##....##..',
+        '##....##..',
+        '.######...',
+        '..####....',
+        '...##.....',
+        '...##.##..',
+        '...##.....',
+      ],
+    },
+    {
+      // 10x10 crown
+      name: 'Crown',
+      grid: [
+        '..........',
+        '#..#..#..#',
+        '##.##.##.#',
+        '##########',
+        '##########',
+        '##.####.##',
+        '##.####.##',
+        '##########',
+        '##########',
+        '..........',
+      ],
+    },
+  ],
+  hard: [
+    {
+      // 15x15 sitting cat silhouette
+      name: 'Sitting Cat',
+      grid: [
+        '...............',
+        '...##......##..',
+        '..####....####.',
+        '..############.',
+        '..############.',
+        '..#.##.##.##.#.',
+        '..############.',
+        '..############.',
+        '...##########..',
+        '...##########..',
+        '....########...',
+        '...##########..',
+        '..############.',
+        '...##########..',
+        '....########...',
+      ],
+    },
+    {
+      // 15x15 guild crest — diamond emblem with banner
+      name: 'Guild Crest',
+      grid: [
+        '...............',
+        '......###......',
+        '.....#####.....',
+        '....#######....',
+        '...#########...',
+        '..###########..',
+        '.#############.',
+        '###############',
+        '.#############.',
+        '..###########..',
+        '...#########...',
+        '....#######....',
+        '.....#####.....',
+        '......###......',
+        '...............',
+      ],
+    },
+    {
+      // 15x15 lantern with frame and flame
+      name: 'Lantern',
+      grid: [
+        '......#........',
+        '.....###.......',
+        '....#####......',
+        '....#####......',
+        '...#######.....',
+        '..#########....',
+        '..#########....',
+        '..#.#####.#....',
+        '..#.#####.#....',
+        '..#.#####.#....',
+        '..#########....',
+        '..#########....',
+        '...#######.....',
+        '....#####......',
+        '.....###.......',
+      ],
+    },
+  ],
+};
+
+function parseImage(img: NonogramImage): boolean[][] {
+  return img.grid.map((row) => row.split('').map((ch) => ch === '#'));
+}
+
+// ── Clue helpers ──
+
+export function getClues(line: boolean[]): number[] {
   const clues: number[] = [];
   let run = 0;
   for (const cell of line) {
@@ -112,29 +265,175 @@ function getColClues(solution: boolean[][]): number[][] {
   return clues;
 }
 
+// ── Unique-solvability validator ──
+//
+// Per "Sacred Rule #1": every puzzle must have exactly one solution
+// reachable by pure logic without guessing. We confirm this with a line
+// solver (enumerate all valid placements per line and intersect them) plus
+// iterative constraint propagation across rows and columns until fixpoint.
+//
+// If the propagator reaches a fully-determined grid, the puzzle is uniquely
+// solvable by logic. If it stalls with cells still unknown, the puzzle
+// requires guessing — fail.
+
+type Cell = -1 | 0 | 1; // -1 unknown, 0 empty, 1 filled
+
+/** Generate all valid placements of `clues` against the constraint `line`,
+    where line cells of -1 are unknown. Returns the list of complete patterns. */
+function enumerateLine(line: Cell[], clues: number[]): (0 | 1)[][] {
+  const len = line.length;
+  // Single-clue [0] means an entirely-empty line
+  if (clues.length === 1 && clues[0] === 0) {
+    const empty = line.map(() => 0 as 0 | 1);
+    for (let i = 0; i < len; i++) {
+      if (line[i] === 1) return [];
+    }
+    return [empty];
+  }
+
+  const results: (0 | 1)[][] = [];
+  function place(idx: number, pos: number, current: (0 | 1)[]): void {
+    if (results.length > 5000) return; // safety cap
+    if (idx === clues.length) {
+      // Fill the rest with empties
+      const filled: (0 | 1)[] = current.slice();
+      while (filled.length < len) filled.push(0);
+      // Check consistency with constraints
+      for (let i = 0; i < len; i++) {
+        if (line[i] !== -1 && line[i] !== filled[i]) return;
+      }
+      results.push(filled);
+      return;
+    }
+    const block = clues[idx];
+    // Compute remaining minimum length needed for the rest
+    let minRemaining = 0;
+    for (let i = idx + 1; i < clues.length; i++) minRemaining += clues[i] + 1;
+    const maxStart = len - block - minRemaining;
+    for (let start = pos; start <= maxStart; start++) {
+      const next: (0 | 1)[] = current.slice();
+      // Pad with empties up to start
+      while (next.length < start) next.push(0);
+      // Place the block
+      for (let i = 0; i < block; i++) next.push(1);
+      // Insert separator if more blocks coming
+      if (idx < clues.length - 1) next.push(0);
+      // Verify consistency so far
+      let ok = true;
+      for (let i = 0; i < next.length; i++) {
+        if (line[i] !== -1 && line[i] !== next[i]) { ok = false; break; }
+      }
+      if (!ok) continue;
+      place(idx + 1, next.length, next);
+    }
+  }
+  place(0, 0, []);
+  return results;
+}
+
+/** Run one pass of line-solving on the given line. Returns true if any cell
+    became newly determined. The line is mutated in place. */
+function solveLine(line: Cell[], clues: number[]): boolean {
+  const placements = enumerateLine(line, clues);
+  if (placements.length === 0) return false;
+  let changed = false;
+  for (let i = 0; i < line.length; i++) {
+    if (line[i] !== -1) continue;
+    const v = placements[0][i];
+    if (placements.every((p) => p[i] === v)) {
+      line[i] = v as 0 | 1;
+      changed = true;
+    }
+  }
+  return changed;
+}
+
+/** Confirm an image is uniquely solvable by pure logic (constraint
+    propagation reaches a fully-determined grid without guessing). */
+export function isUniquelySolvable(solution: boolean[][]): boolean {
+  const size = solution.length;
+  const rowClues = getRowClues(solution);
+  const colClues = getColClues(solution);
+  const grid: Cell[][] = Array.from({ length: size }, () => Array(size).fill(-1) as Cell[]);
+
+  let iterations = 0;
+  const maxIterations = size * size * 4;
+  while (iterations < maxIterations) {
+    let changed = false;
+    iterations++;
+    for (let r = 0; r < size; r++) {
+      const line = grid[r].slice();
+      if (solveLine(line, rowClues[r])) {
+        for (let c = 0; c < size; c++) grid[r][c] = line[c];
+        changed = true;
+      }
+    }
+    for (let c = 0; c < size; c++) {
+      const line = grid.map((row) => row[c]);
+      if (solveLine(line, colClues[c])) {
+        for (let r = 0; r < size; r++) grid[r][c] = line[r];
+        changed = true;
+      }
+    }
+    if (!changed) break;
+  }
+  // Solved if no -1 left AND it matches the original solution
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (grid[r][c] === -1) return false;
+      if ((grid[r][c] === 1) !== solution[r][c]) return false;
+    }
+  }
+  return true;
+}
+
+/** Pick a themed image for the requested difficulty. Tries each image in
+    random order, validates with the constraint solver, and returns the
+    first one that passes. Returns null if none validate (which would be a
+    bug worth catching in CI rather than papering over). */
+function pickValidatedImage(difficulty: string): { name: string; grid: boolean[][] } | null {
+  const list = THEMED_IMAGES[difficulty] ?? THEMED_IMAGES.easy;
+  const indices = [...list.keys()];
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  for (const idx of indices) {
+    const img = list[idx];
+    const grid = parseImage(img);
+    if (isUniquelySolvable(grid)) {
+      return { name: img.name, grid };
+    }
+  }
+  return null;
+}
+
 export class NonogramScene extends Phaser.Scene {
   private jobId = '';
   private catId = '';
   private difficulty = 'easy';
-  private gridSize = 5;
-  private solution: boolean[][] = [];
-  private playerGrid: (0 | 1 | 2)[][] = []; // 0=empty, 1=filled, 2=marked-X
-  private rowClues: number[][] = [];
-  private colClues: number[][] = [];
+  gridSize = 5;
+  solution: boolean[][] = [];
+  imageName = '';
+  // 0=empty, 1=filled, 2=marked-X — public so the playtest can poke it
+  playerGrid: (0 | 1 | 2)[][] = [];
+  rowClues: number[][] = [];
+  colClues: number[][] = [];
   private cellSize = 40;
   private gridLeft = 0;
   private gridTop = 0;
-  private solved = false;
-  private mistakes = 0;
-  private fillMode = true; // true=fill, false=mark X
+  solved = false;
+  fillMode = true; // true=fill, false=mark X
   private cellSprites: Phaser.GameObjects.Rectangle[][] = [];
   private cellMarks: (Phaser.GameObjects.Text | null)[][] = [];
   private rowClueTexts: Phaser.GameObjects.Text[][] = [];
   private colClueTexts: Phaser.GameObjects.Text[][] = [];
-  private mistakeText!: Phaser.GameObjects.Text;
   private progressText!: Phaser.GameObjects.Text;
   private modeText!: Phaser.GameObjects.Text;
   private tutorialShowing = false;
+  /** Undo stack — every cell change pushes a previous state. The doc lists
+      "no undo" as a top UX failure: a single misclick destroys solve trust. */
+  private undoStack: { r: number; c: number; prev: 0 | 1 | 2 }[] = [];
 
   constructor() {
     super({ key: 'NonogramScene' });
@@ -144,19 +443,31 @@ export class NonogramScene extends Phaser.Scene {
     this.jobId = data?.jobId ?? '';
     this.catId = data?.catId ?? '';
     this.difficulty = data?.difficulty ?? 'easy';
-    // First nonogram ever? Make it a small 4x4 intro puzzle
+    // First nonogram ever? Always start with the smallest themed easy puzzle
+    // to teach the rules without scale stress.
     const hasCompletedNonogram = localStorage.getItem('clowder_nonogram_completed');
-    this.gridSize = hasCompletedNonogram ? (GRID_SIZES[this.difficulty] ?? 5) : 3;
+    const wantedSize = hasCompletedNonogram ? (GRID_SIZES[this.difficulty] ?? 5) : 5;
     this.solved = false;
-    this.mistakes = 0;
     this.fillMode = true;
     this.cellSprites = [];
     this.cellMarks = [];
     this.rowClueTexts = [];
     this.colClueTexts = [];
+    this.undoStack = [];
 
-    // Generate puzzle
-    this.solution = generateSolution(this.gridSize);
+    // Pick a themed image and validate uniqueness. The validator confirms
+    // the puzzle reduces to a fully-determined solution by pure logic.
+    // Falls back to easy if the requested difficulty has no images yet.
+    const targetDifficulty = wantedSize === 5 ? 'easy' : wantedSize === 10 ? 'medium' : 'hard';
+    let picked = pickValidatedImage(targetDifficulty);
+    if (!picked) picked = pickValidatedImage('easy');
+    // Last-resort fallback — the simplest themed image
+    if (!picked) {
+      picked = { name: 'Plus', grid: parseImage(THEMED_IMAGES.easy[0]) };
+    }
+    this.imageName = picked.name;
+    this.solution = picked.grid;
+    this.gridSize = picked.grid.length;
     this.rowClues = getRowClues(this.solution);
     this.colClues = getColClues(this.solution);
     this.playerGrid = Array.from({ length: this.gridSize }, () =>
@@ -179,12 +490,14 @@ export class NonogramScene extends Phaser.Scene {
     this.cameras.main.setZoom(DPR);
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
-    // Tutorial
-    if (showMinigameTutorial(this, 'clowder_nonogram_tutorial', 'Nonogram',
-      `Fill in the grid to reveal a hidden pattern.<br><br>
+    // Tutorial bumped to v2 — the puzzle now has no penalty feedback,
+    // hand-crafted thematic images, and an Undo button. Returning players
+    // need to know the rules have softened.
+    if (showMinigameTutorial(this, 'clowder_nonogram_tutorial_v2', 'Nonogram',
+      `Reveal the hidden picture by filling the right cells.<br><br>
       The <strong>numbers</strong> on each row and column tell you how many consecutive cells to fill.<br><br>
-      Use the <strong>Fill/Mark</strong> toggle to switch between filling cells and marking empties.<br><br>
-      Fewer mistakes = more stars!`,
+      Use the <strong>Fill/Mark</strong> toggle: Fill for cells you're sure of, Mark (X) for cells you're sure are empty.<br><br>
+      <strong>No penalties</strong> — solve by logic. <strong>Undo</strong> any mistake.`,
       () => { this.tutorialShowing = false; }
     )) {
       this.tutorialShowing = true;
@@ -193,23 +506,21 @@ export class NonogramScene extends Phaser.Scene {
     // Job title
     const job = getJob(this.jobId);
     this.add.text(GAME_WIDTH / 2, 30, (`${job?.name ?? 'Nonogram'} (${this.difficulty})`), {
-      fontFamily: 'Georgia, serif', fontSize: '16px', color: '#c4956a',
+      fontFamily: 'Georgia, serif', fontSize: '14px', color: '#8b7355',
     }).setOrigin(0.5);
 
-    this.add.text(GAME_WIDTH / 2, 52, `${this.gridSize}x${this.gridSize} — Find the pattern`, {
-      fontFamily: 'Georgia, serif', fontSize: '11px', color: '#6b5b3e',
+    // Image name is hidden until solved — the doc's "reveal contract":
+    // never spoil the picture before the player earns it. Show only the
+    // grid size as the framing label.
+    this.add.text(GAME_WIDTH / 2, 50, `${this.gridSize}\u00d7${this.gridSize} — Find the picture`, {
+      fontFamily: 'Georgia, serif', fontSize: '12px', color: '#c4956a',
     }).setOrigin(0.5);
-
-    // Mistake counter
-    this.mistakeText = this.add.text(GAME_WIDTH - 20, 70, 'Mistakes: 0', {
-      fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8b7355',
-    }).setOrigin(1, 0.5);
 
     // Progress counter
     const totalFill = this.solution.flat().filter(Boolean).length;
-    this.progressText = this.add.text(20, 70, `0/${totalFill} filled`, {
+    this.progressText = this.add.text(GAME_WIDTH / 2, 70, `0/${totalFill} filled`, {
       fontFamily: 'Georgia, serif', fontSize: '11px', color: '#6b5b3e',
-    }).setOrigin(0, 0.5);
+    }).setOrigin(0.5);
 
     // Draw clues
     this.drawRowClues();
@@ -218,26 +529,44 @@ export class NonogramScene extends Phaser.Scene {
     // Draw grid
     this.drawGrid();
 
-    // Mode toggle button
+    // Bottom button row: Fill/Mark toggle, Undo, Quit
     const toggleY = this.gridTop + this.gridSize * (this.cellSize + CELL_GAP) + 30;
-    const toggleBg = this.add.rectangle(GAME_WIDTH / 2 - 60, toggleY, 100, 34, 0x2a2520);
+    const btnW = 80;
+    const btnH = 34;
+    const btnGap = 8;
+    const totalW = btnW * 3 + btnGap * 2;
+    const startX = (GAME_WIDTH - totalW) / 2 + btnW / 2;
+
+    // Fill/Mark toggle
+    const toggleX = startX;
+    const toggleBg = this.add.rectangle(toggleX, toggleY, btnW, btnH, 0x2a2520);
     toggleBg.setStrokeStyle(1, BORDER_COLOR);
     toggleBg.setInteractive({ useHandCursor: true });
-    this.modeText = this.add.text(GAME_WIDTH / 2 - 60, toggleY, '\u2588 Fill', {
+    this.modeText = this.add.text(toggleX, toggleY, '\u2588 Fill', {
       fontFamily: 'Georgia, serif', fontSize: '13px', color: '#c4956a',
     }).setOrigin(0.5);
-
     toggleBg.on('pointerdown', () => {
       this.fillMode = !this.fillMode;
       this.modeText.setText(this.fillMode ? '\u2588 Fill' : '\u2717 Mark');
       this.modeText.setColor(this.fillMode ? '#c4956a' : '#888');
     });
 
+    // Undo button — the doc's "no undo destroys solve trust" UX rule
+    const undoX = startX + btnW + btnGap;
+    const undoBg = this.add.rectangle(undoX, toggleY, btnW, btnH, 0x2a2520);
+    undoBg.setStrokeStyle(1, BORDER_COLOR);
+    undoBg.setInteractive({ useHandCursor: true });
+    this.add.text(undoX, toggleY, '\u21B6 Undo', {
+      fontFamily: 'Georgia, serif', fontSize: '13px', color: '#c4956a',
+    }).setOrigin(0.5);
+    undoBg.on('pointerdown', () => this.undo());
+
     // Quit button
-    const quitBg = this.add.rectangle(GAME_WIDTH / 2 + 60, toggleY, 100, 34, 0x2a2520);
+    const quitX = startX + (btnW + btnGap) * 2;
+    const quitBg = this.add.rectangle(quitX, toggleY, btnW, btnH, 0x2a2520);
     quitBg.setStrokeStyle(1, BORDER_COLOR);
     quitBg.setInteractive({ useHandCursor: true });
-    this.add.text(GAME_WIDTH / 2 + 60, toggleY, 'Quit', {
+    this.add.text(quitX, toggleY, 'Quit', {
       fontFamily: 'Georgia, serif', fontSize: '13px', color: '#c4956a',
     }).setOrigin(0.5);
     quitBg.on('pointerdown', () => {
@@ -331,58 +660,64 @@ export class NonogramScene extends Phaser.Scene {
     this.progressText.setText(`${filled}/${totalFill} filled`);
   }
 
-  private handleCellClick(r: number, c: number): void {
+  /** Cell tap handler. Per the doc's most important rule: NO penalty
+      feedback. Filling a wrong cell just fills it — the player figures out
+      the mistake from the clue colors and undoes it themselves. The puzzle
+      is checked for completion only on full match. */
+  handleCellClick(r: number, c: number): void {
     const current = this.playerGrid[r][c];
+    let next: 0 | 1 | 2 = current;
 
     if (this.fillMode) {
-      if (current === 1) return; // already filled
-      if (current === 2) {
-        // Unmark — go back to empty
-        this.playerGrid[r][c] = 0;
-        this.cellSprites[r][c].setFillStyle(EMPTY_COLOR);
-        this.setMark(r, c, false);
-        this.updateClueColors();
-        this.updateProgress();
-        return;
-      }
-      // Fill the cell
-      if (this.solution[r][c]) {
-        // Correct
-        this.playerGrid[r][c] = 1;
-        this.cellSprites[r][c].setFillStyle(FILL_COLOR);
-        playSfx('tap', 0.3);
-      } else {
-        // Mistake — auto-mark as X
-        this.mistakes++;
-        this.mistakeText.setText(`Mistakes: ${this.mistakes}`);
-        this.playerGrid[r][c] = 2;
-        this.cellSprites[r][c].setFillStyle(0x5a2020);
-        this.time.delayedCall(300, () => {
-          if (this.playerGrid[r][c] === 2) {
-            this.cellSprites[r][c].setFillStyle(MARK_COLOR);
-            this.setMark(r, c, true);
-          }
-        });
-        playSfx('fail', 0.3);
-        this.cameras.main.flash(100, 80, 30, 30, false);
-      }
+      // Toggle: empty → filled, filled → empty, marked → empty
+      if (current === 0) next = 1;
+      else if (current === 1) next = 0;
+      else next = 0;
     } else {
-      // Mark mode — toggle X mark
-      if (current === 1) return; // can't mark a filled cell
-      if (current === 2) {
-        this.playerGrid[r][c] = 0;
-        this.cellSprites[r][c].setFillStyle(EMPTY_COLOR);
-        this.setMark(r, c, false);
-      } else {
-        this.playerGrid[r][c] = 2;
-        this.cellSprites[r][c].setFillStyle(MARK_COLOR);
-        this.setMark(r, c, true);
-      }
+      // Mark mode: empty → marked, marked → empty, filled → filled (no-op)
+      if (current === 1) return;
+      if (current === 0) next = 2;
+      else next = 0;
     }
+
+    if (next === current) return;
+    this.applyCellChange(r, c, next, /*record*/ true);
+    playSfx('tap', 0.25);
 
     this.updateClueColors();
     this.updateProgress();
     this.checkWin();
+  }
+
+  /** Apply a cell state change and update visuals. Optionally records the
+      previous state on the undo stack. Used by both the click handler and
+      the undo() method. */
+  private applyCellChange(r: number, c: number, next: 0 | 1 | 2, record: boolean): void {
+    const prev = this.playerGrid[r][c];
+    if (record) this.undoStack.push({ r, c, prev });
+    this.playerGrid[r][c] = next;
+    if (next === 1) {
+      this.cellSprites[r][c].setFillStyle(FILL_COLOR);
+      this.setMark(r, c, false);
+    } else if (next === 2) {
+      this.cellSprites[r][c].setFillStyle(EMPTY_COLOR);
+      this.setMark(r, c, true);
+    } else {
+      this.cellSprites[r][c].setFillStyle(EMPTY_COLOR);
+      this.setMark(r, c, false);
+    }
+  }
+
+  /** Undo the last cell change. Restores the previous state without
+      affecting the undo stack of any earlier changes. */
+  undo(): void {
+    if (this.solved) return;
+    const last = this.undoStack.pop();
+    if (!last) return;
+    this.applyCellChange(last.r, last.c, last.prev, /*record*/ false);
+    this.updateClueColors();
+    this.updateProgress();
+    playSfx('tap', 0.2);
   }
 
   private updateClueColors(): void {
@@ -406,11 +741,17 @@ export class NonogramScene extends Phaser.Scene {
     }
   }
 
-  private checkWin(): void {
-    // Win when all solution cells are filled (mistakes don't prevent winning)
+  /** Win check: every solution cell is filled AND no non-solution cell is
+      filled. The doc's "validate only on completion" rule means we don't
+      tell the player they're wrong before then — but a single extra fill
+      WILL prevent the win, so they have to be precise. */
+  checkWin(): void {
+    if (this.solved) return;
     for (let r = 0; r < this.gridSize; r++) {
       for (let c = 0; c < this.gridSize; c++) {
-        if (this.solution[r][c] && this.playerGrid[r][c] !== 1) return;
+        const wantsFilled = this.solution[r][c];
+        const isFilled = this.playerGrid[r][c] === 1;
+        if (wantsFilled !== isFilled) return;
       }
     }
 
@@ -418,28 +759,35 @@ export class NonogramScene extends Phaser.Scene {
     localStorage.setItem('clowder_nonogram_completed', '1');
     playSfx('victory');
 
-    // Auto-fill remaining marks
+    // Auto-mark remaining unmarked-empty cells so the picture stands out
     for (let r = 0; r < this.gridSize; r++) {
       for (let c = 0; c < this.gridSize; c++) {
         if (!this.solution[r][c] && this.playerGrid[r][c] === 0) {
           this.playerGrid[r][c] = 2;
-          this.cellSprites[r][c].setFillStyle(MARK_COLOR);
+          this.setMark(r, c, true);
         }
       }
     }
     this.updateClueColors();
 
-    const stars = this.mistakes === 0 ? 3 : this.mistakes <= 2 ? 2 : 1;
+    // The genre's reward is the picture, not the score. Stars are flat 3
+    // on solve — the doc explicitly warns against penalty-based scoring.
+    const stars = 3;
     const totalCells = this.solution.flat().filter(Boolean).length;
 
-    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 60, 'Pattern Found!', {
-      fontFamily: 'Georgia, serif', fontSize: '24px', color: '#c4956a',
+    // Reveal the picture name now that the player has earned it
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 60, 'Picture Revealed!', {
+      fontFamily: 'Georgia, serif', fontSize: '22px', color: '#c4956a',
+    }).setOrigin(0.5);
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 88, this.imageName, {
+      fontFamily: 'Georgia, serif', fontSize: '16px', color: '#dda055',
+      fontStyle: 'italic',
     }).setOrigin(0.5);
 
     this.time.delayedCall(1500, () => {
       eventBus.emit('puzzle-complete', {
         puzzleId: `nonogram_${this.difficulty}_${this.gridSize}`,
-        moves: totalCells + this.mistakes,
+        moves: totalCells,
         minMoves: totalCells,
         stars,
         jobId: this.jobId,
