@@ -17,3 +17,6 @@ sound_effects/
 .env.local
 *.env
 test/screenshots/
+
+# Syncthing folder marker
+.stfolder/
