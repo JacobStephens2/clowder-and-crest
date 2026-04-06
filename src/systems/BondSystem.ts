@@ -83,14 +83,34 @@ export function markConversationViewed(save: SaveData, breedA: string, breedB: s
   }
 }
 
-export function processDailyBonds(save: SaveData): void {
-  // Cats in the same guild earn passive bond points
+/** Result of a passive rank-up that fired during processDailyBonds. The
+    caller is responsible for surfacing this to the player (toast, journal). */
+export interface PassiveBondRankUp {
+  catA: CatSaveData;
+  catB: CatSaveData;
+  newRank: BondRank;
+  reward: BondRankReward | null;
+}
+
+export function processDailyBonds(save: SaveData): PassiveBondRankUp[] {
+  // Cats in the same guild earn passive bond points. If the +1 tick crosses
+  // a rank threshold, grant the same mechanical reward as an active rank-up
+  // so passive progress isn't a "silent" gain — bond investment always pays.
   const catBreeds = save.cats.map((c) => c.breed);
+  const rankUps: PassiveBondRankUp[] = [];
   for (const [a, b] of BOND_PAIRS) {
-    if (catBreeds.includes(a) && catBreeds.includes(b)) {
-      addBondPoints(save, a, b, 1);
+    if (!catBreeds.includes(a) || !catBreeds.includes(b)) continue;
+    const result = addBondPoints(save, a, b, 1);
+    if (result?.rankUp) {
+      const catA = save.cats.find((c) => c.breed === a);
+      const catB = save.cats.find((c) => c.breed === b);
+      if (catA && catB) {
+        const reward = grantBondRankReward(catA, catB, result.newRank);
+        rankUps.push({ catA, catB, newRank: result.newRank, reward });
+      }
     }
   }
+  return rankUps;
 }
 
 export interface BondRankReward {

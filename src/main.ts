@@ -294,8 +294,11 @@ function switchScene(target: string, data?: object): void {
       game.scene.stop(key);
     }
   }
-  // Clean up any orphaned scene overlays (tutorials, pause screens)
-  document.querySelectorAll('[style*="z-index: 9999"], [style*="z-index:9999"]').forEach((el) => el.remove());
+  // Clean up any orphaned scene overlays (tutorials, pause screens) but
+  // SPARE the day-transition overlay so the End Day flow can show it.
+  document.querySelectorAll('[style*="z-index: 9999"], [style*="z-index:9999"]').forEach((el) => {
+    if (!el.classList.contains('day-transition-overlay')) el.remove();
+  });
   game.scene.start(target, data);
   // Show floating guild UI only on guild overview
   guildEndDayBtn.style.display = target === 'GuildhallScene' ? 'block' : 'none';
@@ -310,6 +313,10 @@ function switchScene(target: string, data?: object): void {
 function showDayTransition(day: number, recap?: { foodCost: number; stationedEarned: number; events: string[]; fishRemaining?: number }): void {
   playSfx('day_bell', 0.4);
   const overlay = document.createElement('div');
+  // Class lets switchScene's z-index:9999 cleanup spare this element. Without
+  // it, clicking End Day in the guildhall would create the overlay and then
+  // immediately destroy it via switchScene's overlay sweep.
+  overlay.className = 'day-transition-overlay';
   overlay.style.cssText = `
     position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -2062,7 +2069,23 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
     }
   }
 
-  processDailyBonds(gameState);
+  // Passive bond ticks — surface any rank-ups so the player sees that bond
+  // investment paid off (stat bonus + rank-up text in the journal).
+  const passiveRankUps = processDailyBonds(gameState);
+  for (const ru of passiveRankUps) {
+    const rewardText = ru.reward && ru.reward.amount > 0
+      ? ` (+${ru.reward.amount} ${ru.reward.stat} to both — they ${ru.reward.flavor})`
+      : '';
+    addJournalEntry(
+      gameState,
+      `${esc(ru.catA.name)} & ${esc(ru.catB.name)} reached ${ru.newRank} rank${rewardText}.`,
+      'bond',
+    );
+    setTimeout(() => {
+      playSfx('chapter');
+      showToast(`\u2764 ${esc(ru.catA.name)} & ${esc(ru.catB.name)} reached ${ru.newRank}!${rewardText}`);
+    }, 2500);
+  }
 
   // Reputation bond bonus/penalty applied daily
   const repBondBonus = getReputationBonuses(gameState.reputationScore).bondBonus;
