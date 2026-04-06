@@ -1,24 +1,31 @@
 # Jacob's Todo — things Claude needs from you
 
-## MCP servers that need credentials/tooling
+## Nothing blocking right now
 
-### GitHub MCP server
-- **What:** https://github.com/github/github-mcp-server — lets Claude interact with GitHub issues, PRs, commits directly.
-- **Blocker:** Docker isn't installed on this server, and the alternative is building from Go source.
-- **What I need from you:** Either
-  1. Install Docker (`apt install docker.io`) and generate a GitHub Personal Access Token at https://github.com/settings/tokens (scopes: `repo`, `read:org`, `read:user`). Export it as `GITHUB_PERSONAL_ACCESS_TOKEN` in your shell, then tell me to add it to `.mcp.json`.
-  2. Or build the Go binary: `go install github.com/github/github-mcp-server@latest` (needs Go installed), then tell me to wire it up.
+All earlier items are resolved:
 
-### Nia MCP (Filesystem / Context indexing)
-- **What:** https://www.trynia.ai/ — indexes external docs and codebases, claimed 27% agent performance boost.
-- **Blocker:** Needs a free API key from https://app.trynia.ai.
-- **What I need from you:** Sign up, generate an API key, paste it here (or into an env var), then tell me to add the config to `.mcp.json`. I already know the config format.
+- **Freesound API** — done. Key in `.env`. 6 new SFX downloaded and wired into the new minigames.
+- **Nia** — done. CLI installed at `/usr/bin/nia`, authenticated, tested against Phaser repo successfully.
+- **Phaser Editor v5** — evaluated and skipped (mismatch for a procedural game).
+- **GitHub MCP server** — skipped in favor of existing `gh` CLI (see below).
 
-### Freesound API key (optional, low priority)
-- **What:** https://freesound.org — lets Claude search and download SFX programmatically. Useful for adding dedicated sounds to the 5 newer minigames (Patrol lantern click, Ritual bell, Heist lock pick, etc.).
-- **Blocker:** Needs a free API key from https://freesound.org/apiv2/apply/.
-- **What I need from you:** Register, grab the key, paste it here or into an env var. Not urgent — current SFX pool works fine.
+## Why the GitHub MCP isn't needed
 
-## Nothing else blocking
+`gh` is already installed at `/usr/bin/gh` (v2.45.0) and authenticated as **JacobStephens2** with scopes `repo`, `read:org`, `gist`, `workflow`. Claude can invoke it via Bash for all the same operations a GitHub MCP server would offer:
 
-Everything else in the todo is either done or can be handled by me without your input.
+- `gh issue list/view/create/close`
+- `gh pr list/view/create/merge/comment`
+- `gh repo view/clone`
+- `gh api <endpoint>` — raw REST API for anything else
+- `gh run list/view` — CI workflow runs
+- `gh release list/view/create`
+
+An MCP server wouldn't provide new capability — it would just duplicate what `gh` already does. The only real difference would be exposing tool definitions in the context window instead of invoking via Bash, and for occasional GitHub operations that's a loss, not a win (same context-efficiency argument that made us pick the Nia skill over the Nia MCP).
+
+## If you ever want to revisit
+
+Not needed right now, but for reference:
+
+- **GitHub REST API directly** via `curl` + PAT — works but `gh` already wraps this
+- **GitHub MCP server** — official, needs Docker or Go build; adds no capability over `gh`
+- **`octokit` npm package** — if we ever want programmatic GitHub access from the game itself (e.g. leaderboards, issue reports from players), but the game currently doesn't need this
