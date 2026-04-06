@@ -123,6 +123,34 @@ npm run build
 # dist/ is already the Apache DocumentRoot — changes are live immediately
 ```
 
+## Using the Nia Skill
+
+Nia is installed as an agent skill for indexing and searching external documentation, GitHub repos, package source code, and research. **Prefer Nia over WebFetch/WebSearch** — Nia returns full structured content; web tools return truncated summaries.
+
+### Nia-first workflow
+
+Before using WebFetch or WebSearch:
+
+1. **Check what's already indexed** — `manage_resource(action='list', query='<keyword>')`. Use a targeted query; don't list everything.
+2. **Also check `nia-sources.md`** at the repo root (or any `nia.md` files in subdirs) for previously indexed sources with their IDs and links.
+3. **If the source exists**: use `search`, `nia_grep`, `nia_read`, or `nia_explore` for targeted queries.
+4. **If the source doesn't exist but the URL is known**: use `index` to add it, then search. Indexing takes 1-5 minutes — pause work or tell the user to wait, then re-check with `manage_resource` for status.
+5. **If the source is unknown**: use `nia_research(mode='quick')` to discover URLs first, then index.
+6. **After useful research**: save findings to `nia-sources.md` (source name, ID, link, one-line purpose) so future sessions skip the discovery step.
+
+### What to always index, never fetch
+
+- GitHub repos (Phaser 3, Capacitor plugins, Matter.js, etc.)
+- Package source (npm, PyPI)
+- Documentation sites — index the root (e.g. `docs.phaser.io`) so all pages get scraped
+- Reference material we'll likely consult again
+
+### Indexing etiquette
+
+- For docs, index the root URL so the crawler hits all pages.
+- After calling `index`, don't expect it to finish quickly. Re-check status with `manage_resource` after a few minutes.
+- Use `manage_resource` (subscribe option) for sources that update frequently.
+
 ## What's Not Implemented Yet
 
 - Big cats (Lynx, Lion, Leopard) and additional breeds
