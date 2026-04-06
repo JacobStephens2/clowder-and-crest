@@ -127,45 +127,48 @@ npm run build
 
 Nia is installed as a CLI at `/usr/bin/nia`, authenticated for the `jacob` user. It provides indexing and search for external documentation, GitHub repos, packages, and research. **Prefer Nia over WebFetch/WebSearch** — Nia returns full structured content; web tools return truncated summaries.
 
+Plan: **Startup** — generous quotas (5000 queries, 500 indexing slots, 200 deep_research, 200 oracle, unlimited package_search per month). Most practical workloads won't hit limits.
+
 Invoke Nia via the Bash tool. Key commands:
 
 | Command | Purpose |
 |---|---|
 | `nia sources list` | List indexed documentation sources |
 | `nia repos list` | List indexed GitHub repos |
-| `nia github search <owner/repo> <query>` | Live code search in any public GitHub repo (no indexing needed; rate-limited to 10/min) |
+| `nia search query "..." --repos "<owner/repo>" --search-mode repositories --fast` | Semantic search in an indexed repo |
+| `nia search query "..." --docs "<Name>" --search-mode sources --fast` | Semantic search in indexed docs |
+| `nia search deep "<query>"` | Multi-step deep research (200/month) |
+| `nia oracle` | Autonomous AI research jobs (200/month) |
+| `nia github search <owner/repo> <query>` | Live code search in any public GitHub repo (no indexing needed) |
 | `nia github tree <owner/repo> [path]` | Browse a GitHub repo's file tree |
 | `nia github read <owner/repo> <path> [--start N --end M]` | Read a file from GitHub |
-| `nia github glob <owner/repo> <pattern>` | Find files by glob in a GitHub repo |
-| `nia packages search <query>` | Search npm/PyPI/crates.io/Go packages |
-| `nia tracer` | Autonomous GitHub code search without indexing |
-| `nia search <query>` | Search across indexed sources |
-| `nia sources add <url>` | Index a documentation site (root URL preferred) |
+| `nia github glob <owner/repo> <pattern>` | Find files by glob |
+| `nia packages hybrid <registry> <pkg> <query>` | Semantic/keyword search over package source (unlimited) |
+| `nia sources index <url>` | Index a documentation site (root URL preferred) |
 | `nia repos add <owner/repo>` | Index a GitHub repo |
-| `nia oracle` | Autonomous AI research jobs (free plan: 0 available) |
 | `nia usage` | Check plan quotas |
+
+### Decision matrix
+
+| Task | Best tool |
+|---|---|
+| Find a specific function/class by name | `Grep` (free, instant) |
+| Read a known file | `Read` (free, instant) |
+| "How does X relate to Y" across files in our repo | `nia search query --repos "JacobStephens2/clowder-and-crest"` |
+| Phaser API question | `nia search query --docs "Phaser 3 Docs"` |
+| Capacitor / Android build question | `nia search query --docs "Capacitor Docs"` |
+| External repo code lookup | `nia github search` |
+| Open-ended "figure out X" | `nia search deep` or `nia oracle` |
+| Explore codebase structure (multi-step) | `Agent` (Explore) |
 
 ### Nia-first workflow
 
-Before using WebFetch or WebSearch:
-
-1. **Check `nia-sources.md`** at the repo root for sources already indexed in past sessions.
-2. **For GitHub code questions** — use `nia github search/tree/read` directly (no indexing needed).
-3. **For package APIs** — use `nia packages search`.
-4. **For documentation sites** — check `nia sources list`; if the docs aren't indexed and we'll consult them again, add with `nia sources add <root-url>`. Indexing takes 1-5 minutes.
-5. **After useful research** — append the source to `nia-sources.md` (URL, one-line purpose) so future sessions skip discovery.
-
-### Free plan quotas (per month)
-
-- queries: 50
-- web_search: 20
-- package_search: 50
-- tracer: 10
-- indexing: 3 sources
-- contexts: 5
-- deep_research / oracle: 0 (paid feature)
-
-Use indexing sparingly — only for docs/repos we'll reference many times. GitHub live search is unlimited and should be the default for one-off code questions.
+1. **Check `nia-sources.md`** at the repo root for sources already indexed.
+2. **For semantic questions about our code** — use `nia search query --repos ours`.
+3. **For Phaser/Capacitor docs** — both are indexed; query directly.
+4. **For external repos** — use `nia github search/tree/read`.
+5. **For new docs we'll use often** — `nia sources index <root-url>`. Indexing is abundant on Startup plan.
+6. **Update `nia-sources.md`** after indexing a new source.
 
 ## What's Not Implemented Yet
 
