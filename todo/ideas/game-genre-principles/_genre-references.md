@@ -102,7 +102,7 @@ The player's onboarding window. Whatever lands here sets the player's expectatio
 
 ---
 
-# Chapter 2 — First expansion
+# Chapter 2 — First expansion - improved
 
 The player has proven they can handle two minigame types. Chapter 2 widens the vocabulary to include "thinking" (Sokoban) and "rhythm" (CourierRun) — broaden the texture of play before adding combat or stealth.
 
@@ -129,7 +129,7 @@ The player has proven they can handle two minigame types. Chapter 2 widens the v
 
 ---
 
-## CourierRunScene — 3-Lane Auto-Scroller (Chapter 2) - improving
+## CourierRunScene — 3-Lane Auto-Scroller (Chapter 2) - improved
 
 **Genre:** Endless runner / lane switcher.
 
@@ -157,7 +157,7 @@ The player has proven they can handle two minigame types. Chapter 2 widens the v
 
 The Rat Plague chapter. The player is now expected to fight and to keep watch. These two minigames define the *threat tier* of the campaign.
 
-## BrawlScene — Rat Combat (Chapter 3) - researching
+## BrawlScene — Rat Combat (Chapter 3) - improving
 
 **Genre:** Top-down action / beat-em-up / Zelda-like.
 
@@ -182,7 +182,7 @@ The Rat Plague chapter. The player is now expected to fight and to keep watch. T
 
 ---
 
-## PatrolScene — Lantern Watch (Chapter 3)
+## PatrolScene — Lantern Watch (Chapter 3) - researched
 
 **Genre:** Attention management / multi-target upkeep.
 
