@@ -209,7 +209,7 @@ The Rat Plague chapter. The player is now expected to fight and to keep watch. T
 
 A "thinking chapter" that triples the brain-puzzle vocabulary. Three minigames here mean the player gets variety — and we should make sure each one teaches a *different* logical skill.
 
-## NonogramScene — Grid Logic Puzzle (Chapter 4) - researching
+## NonogramScene — Grid Logic Puzzle (Chapter 4) - improved
 
 **Genre:** Nonogram / Picross.
 
@@ -232,7 +232,7 @@ A "thinking chapter" that triples the brain-puzzle vocabulary. Three minigames h
 
 ---
 
-## RitualScene — Simon Says Candles (Chapter 4)
+## RitualScene — Simon Says Candles (Chapter 4) - researching
 
 **Genre:** Sequence memory.
 
