@@ -183,6 +183,10 @@ Each pairing has a three-conversation arc that deepens as the cats work together
 | **The Guild's Purpose** | 4+ cats, 10+ jobs | The cats discuss their identity as a guild |
 | **After the Plague** | Rat plague resolved | Processing trauma and finding meaning in what they endured |
 | **A Feast of Fish** | 25+ jobs completed | Celebration. Joy. Three whole salmon. |
+| **Shadow Crisis** | Reputation ≤ -25 | The guild confronts the cost of shadow dealings |
+| **Noble Recognition** | Reputation ≥ 25 | The town formally honors the guild's virtue |
+| **After the Silver Paws** | Rival defeated | Processing victory — what it cost and what it means |
+| **After the Inquisitor** | Inquisition resolved | Reflecting on being judged — the guild at its truest |
 
 ---
 

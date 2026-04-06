@@ -45,6 +45,28 @@ export class GuildhallScene extends Phaser.Scene {
     const save = getGameState();
     if (!save) return;
 
+    // Fade in
+    this.cameras.main.fadeIn(300, 10, 9, 8);
+
+    // Ambient dust motes
+    for (let i = 0; i < 6; i++) {
+      const mote = this.add.circle(
+        Math.random() * GAME_WIDTH,
+        80 + Math.random() * 300,
+        1, 0xc4956a, 0.15 + Math.random() * 0.1
+      );
+      this.tweens.add({
+        targets: mote,
+        x: mote.x + 20 + Math.random() * 30,
+        y: mote.y - 10 + Math.random() * 20,
+        alpha: 0,
+        duration: 4000 + Math.random() * 3000,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
+
     eventBus.emit('show-ui');
     eventBus.emit('set-active-tab', 'guildhall');
 

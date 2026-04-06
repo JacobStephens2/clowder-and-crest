@@ -51,7 +51,9 @@ export function checkAndShowConversation(): void {
           (key === 'group_plague_aftermath' && gameState.flags.ratPlagueResolved) ||
           (key === 'group_celebration' && gameState.totalJobsCompleted >= 25) ||
           (key === 'group_shadow_crisis' && gameState.reputationScore <= -25 && gameState.cats.length >= 3) ||
-          (key === 'group_noble_recognition' && gameState.reputationScore >= 25 && gameState.cats.length >= 3);
+          (key === 'group_noble_recognition' && gameState.reputationScore >= 25 && gameState.cats.length >= 3) ||
+          (key === 'group_rival_defeated' && gameState.flags.rivalDefeated) ||
+          (key === 'group_inquisition_verdict' && gameState.flags.inquisitionResolved);
         if (shouldTrigger) {
           gameState.flags[viewedKey] = true;
           deps.saveGame(gameState);

@@ -4,36 +4,90 @@
       "rank": "C",
       "title": "First Watch",
       "lines": [
-        { "speaker": "wildcat", "text": "You move quietly. I almost didn't hear you." },
-        { "speaker": "russian_blue", "text": "That was the idea. I was watching the grain store." },
-        { "speaker": "wildcat", "text": "I already cleared it. Three rats since dawn." },
-        { "speaker": "russian_blue", "text": "I know. I saw. You fight like you've got something to prove." },
-        { "speaker": "wildcat", "text": "Maybe I do. This guild doesn't build itself." },
-        { "speaker": "russian_blue", "text": "...No. But you don't have to build it alone." }
+        {
+          "speaker": "wildcat",
+          "text": "You move quietly. I almost didn't hear you."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "That was the idea. I was watching the grain store."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "I already cleared it. Three rats since dawn."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "I know. I saw. You fight like you've got something to prove."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "Maybe I do. This guild doesn't build itself."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "...No. But you don't have to build it alone."
+        }
       ]
     },
     {
       "rank": "B",
       "title": "Rain on the Roof",
       "lines": [
-        { "speaker": "russian_blue", "text": "Do you ever rest? You've been at the board since first light." },
-        { "speaker": "wildcat", "text": "Resting is how you lose what you've built." },
-        { "speaker": "russian_blue", "text": "Resting is how you keep it. Listen to the rain for a moment." },
-        { "speaker": "wildcat", "text": "...Fine. One moment." },
-        { "speaker": "russian_blue", "text": "The sound of water on stone. That's what home sounds like." },
-        { "speaker": "wildcat", "text": "Home. I haven't thought of anywhere that way in a long time." }
+        {
+          "speaker": "russian_blue",
+          "text": "Do you ever rest? You've been at the board since first light."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "Resting is how you lose what you've built."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "Resting is how you keep it. Listen to the rain for a moment."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "...Fine. One moment."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "The sound of water on stone. That's what home sounds like."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "Home. I haven't thought of anywhere that way in a long time."
+        }
       ]
     },
     {
       "rank": "A",
       "title": "The Founder's Trust",
       "lines": [
-        { "speaker": "wildcat", "text": "When the plague rats came, you didn't run." },
-        { "speaker": "russian_blue", "text": "Neither did you. Though you had more reason to." },
-        { "speaker": "wildcat", "text": "What do you mean?" },
-        { "speaker": "russian_blue", "text": "You built this from nothing. You had the most to lose." },
-        { "speaker": "wildcat", "text": "I had the most to fight for. That's different." },
-        { "speaker": "russian_blue", "text": "Then I'll fight beside you. For as long as the guild stands." }
+        {
+          "speaker": "wildcat",
+          "text": "When the plague rats came, you didn't run."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "Neither did you. Though you had more reason to."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "What do you mean?"
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "You built this from nothing. You had the most to lose."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "I had the most to fight for. That's different."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "Then I'll fight beside you. For as long as the guild stands."
+        }
       ]
     }
   ],
@@ -42,35 +96,86 @@
       "rank": "C",
       "title": "Method and Madness",
       "lines": [
-        { "speaker": "tuxedo", "text": "I've mapped the courier routes. Three optimal paths to the monastery." },
-        { "speaker": "siamese", "text": "The monks' cat told me something is wrong in the scriptorium. I can feel it." },
-        { "speaker": "tuxedo", "text": "Feel it. You can feel it." },
-        { "speaker": "siamese", "text": "Mock if you like. My whiskers know things your maps don't." },
-        { "speaker": "tuxedo", "text": "I'm not mocking. I'm... cataloguing." }
+        {
+          "speaker": "tuxedo",
+          "text": "I've mapped the courier routes. Three optimal paths to the monastery."
+        },
+        {
+          "speaker": "siamese",
+          "text": "The monks' cat told me something is wrong in the scriptorium. I can feel it."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "Feel it. You can feel it."
+        },
+        {
+          "speaker": "siamese",
+          "text": "Mock if you like. My whiskers know things your maps don't."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "I'm not mocking. I'm... cataloguing."
+        }
       ]
     },
     {
       "rank": "B",
       "title": "The Letter and the Omen",
       "lines": [
-        { "speaker": "siamese", "text": "That noble's letter you delivered. It smelled like ash and lavender." },
-        { "speaker": "tuxedo", "text": "It was sealed. You shouldn't have been sniffing it." },
-        { "speaker": "siamese", "text": "Ash means grief. Lavender means someone wants to forget." },
-        { "speaker": "tuxedo", "text": "Or someone was burning herbs near their writing desk." },
-        { "speaker": "siamese", "text": "Possibly. But my way is more interesting, isn't it?" },
-        { "speaker": "tuxedo", "text": "...Annoyingly, yes." }
+        {
+          "speaker": "siamese",
+          "text": "That noble's letter you delivered. It smelled like ash and lavender."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "It was sealed. You shouldn't have been sniffing it."
+        },
+        {
+          "speaker": "siamese",
+          "text": "Ash means grief. Lavender means someone wants to forget."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "Or someone was burning herbs near their writing desk."
+        },
+        {
+          "speaker": "siamese",
+          "text": "Possibly. But my way is more interesting, isn't it?"
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "...Annoyingly, yes."
+        }
       ]
     },
     {
       "rank": "A",
       "title": "Two Ways of Seeing",
       "lines": [
-        { "speaker": "tuxedo", "text": "I've been thinking about what you said. About the omens." },
-        { "speaker": "siamese", "text": "A formal cat like you, thinking about omens?" },
-        { "speaker": "tuxedo", "text": "Your intuitions have been right more often than chance allows. That's... data." },
-        { "speaker": "siamese", "text": "And your routes have kept us safe every time. That's a kind of wisdom too." },
-        { "speaker": "tuxedo", "text": "Perhaps the guild needs both. The map and the whisker." },
-        { "speaker": "siamese", "text": "Now you're talking sense." }
+        {
+          "speaker": "tuxedo",
+          "text": "I've been thinking about what you said. About the omens."
+        },
+        {
+          "speaker": "siamese",
+          "text": "A formal cat like you, thinking about omens?"
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "Your intuitions have been right more often than chance allows. That's... data."
+        },
+        {
+          "speaker": "siamese",
+          "text": "And your routes have kept us safe every time. That's a kind of wisdom too."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "Perhaps the guild needs both. The map and the whisker."
+        },
+        {
+          "speaker": "siamese",
+          "text": "Now you're talking sense."
+        }
       ]
     }
   ],
@@ -79,35 +184,86 @@
       "rank": "C",
       "title": "Size and Speed",
       "lines": [
-        { "speaker": "maine_coon", "text": "You're fast. Faster than any cat I've seen." },
-        { "speaker": "wildcat", "text": "Speed keeps you alive when you're small." },
-        { "speaker": "maine_coon", "text": "I wouldn't know about small. But I can hold a door all night." },
-        { "speaker": "wildcat", "text": "That's... actually useful. The granary gate doesn't latch properly." },
-        { "speaker": "maine_coon", "text": "Show me. I'll keep it shut." }
+        {
+          "speaker": "maine_coon",
+          "text": "You're fast. Faster than any cat I've seen."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "Speed keeps you alive when you're small."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "I wouldn't know about small. But I can hold a door all night."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "That's... actually useful. The granary gate doesn't latch properly."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "Show me. I'll keep it shut."
+        }
       ]
     },
     {
       "rank": "B",
       "title": "What We Protect",
       "lines": [
-        { "speaker": "wildcat", "text": "Why did you come here? You could guard any barn in the county." },
-        { "speaker": "maine_coon", "text": "Barns don't need protecting. They just need sitting in." },
-        { "speaker": "wildcat", "text": "And a guild does?" },
-        { "speaker": "maine_coon", "text": "A guild has cats who care about each other. That's worth more than grain." },
-        { "speaker": "wildcat", "text": "You're more thoughtful than you look." },
-        { "speaker": "maine_coon", "text": "Big body, big heart. It's a package deal." }
+        {
+          "speaker": "wildcat",
+          "text": "Why did you come here? You could guard any barn in the county."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "Barns don't need protecting. They just need sitting in."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "And a guild does?"
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "A guild has cats who care about each other. That's worth more than grain."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "You're more thoughtful than you look."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "Big body, big heart. It's a package deal."
+        }
       ]
     },
     {
       "rank": "A",
       "title": "The Last Watch",
       "lines": [
-        { "speaker": "maine_coon", "text": "The plague rats almost took the guildhall. I held the door, but barely." },
-        { "speaker": "wildcat", "text": "I saw the scratches. You should have called for help." },
-        { "speaker": "maine_coon", "text": "You were clearing the cathedral. The town needed you more." },
-        { "speaker": "wildcat", "text": "The guild needs you too. Don't forget that." },
-        { "speaker": "maine_coon", "text": "I won't. As long as you remember you don't have to carry everything alone." },
-        { "speaker": "wildcat", "text": "...Deal." }
+        {
+          "speaker": "maine_coon",
+          "text": "The plague rats almost took the guildhall. I held the door, but barely."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "I saw the scratches. You should have called for help."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "You were clearing the cathedral. The town needed you more."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "The guild needs you too. Don't forget that."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "I won't. As long as you remember you don't have to carry everything alone."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "...Deal."
+        }
       ]
     }
   ],
@@ -116,35 +272,86 @@
       "rank": "C",
       "title": "Quiet Professionalism",
       "lines": [
-        { "speaker": "tuxedo", "text": "You were at the warehouse before dawn. I saw your paw prints." },
-        { "speaker": "russian_blue", "text": "I prefer working before the town wakes. Fewer distractions." },
-        { "speaker": "tuxedo", "text": "Efficient. I respect that." },
-        { "speaker": "russian_blue", "text": "And you always deliver letters on time. The monks have noticed." },
-        { "speaker": "tuxedo", "text": "Punctuality is the simplest form of respect." }
+        {
+          "speaker": "tuxedo",
+          "text": "You were at the warehouse before dawn. I saw your paw prints."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "I prefer working before the town wakes. Fewer distractions."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "Efficient. I respect that."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "And you always deliver letters on time. The monks have noticed."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "Punctuality is the simplest form of respect."
+        }
       ]
     },
     {
       "rank": "B",
       "title": "The Ledger",
       "lines": [
-        { "speaker": "tuxedo", "text": "I've been tracking our earnings. You consistently outperform on pest control." },
-        { "speaker": "russian_blue", "text": "I don't do it for the numbers." },
-        { "speaker": "tuxedo", "text": "I know. That's what makes the numbers so interesting." },
-        { "speaker": "russian_blue", "text": "You see patterns in everything, don't you?" },
-        { "speaker": "tuxedo", "text": "Someone has to. Otherwise it's just cats chasing mice." },
-        { "speaker": "russian_blue", "text": "Sometimes chasing mice is enough." }
+        {
+          "speaker": "tuxedo",
+          "text": "I've been tracking our earnings. You consistently outperform on pest control."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "I don't do it for the numbers."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "I know. That's what makes the numbers so interesting."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "You see patterns in everything, don't you?"
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "Someone has to. Otherwise it's just cats chasing mice."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "Sometimes chasing mice is enough."
+        }
       ]
     },
     {
       "rank": "A",
       "title": "Trust in Silence",
       "lines": [
-        { "speaker": "russian_blue", "text": "You never ask where I go at night." },
-        { "speaker": "tuxedo", "text": "You always come back. That's sufficient." },
-        { "speaker": "russian_blue", "text": "Most cats would be suspicious." },
-        { "speaker": "tuxedo", "text": "Suspicion is a waste of energy spent on cats who've already proven themselves." },
-        { "speaker": "russian_blue", "text": "...That might be the kindest thing anyone's said to me." },
-        { "speaker": "tuxedo", "text": "Don't tell the Siamese. I have a reputation." }
+        {
+          "speaker": "russian_blue",
+          "text": "You never ask where I go at night."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "You always come back. That's sufficient."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "Most cats would be suspicious."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "Suspicion is a waste of energy spent on cats who've already proven themselves."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "...That might be the kindest thing anyone's said to me."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "Don't tell the Siamese. I have a reputation."
+        }
       ]
     }
   ],
@@ -153,35 +360,86 @@
       "rank": "C",
       "title": "Noise and Stillness",
       "lines": [
-        { "speaker": "siamese", "text": "You're so quiet I sometimes forget you're in the room." },
-        { "speaker": "russian_blue", "text": "And you're so loud I never forget." },
-        { "speaker": "siamese", "text": "Loud! I'm expressive. There's a difference." },
-        { "speaker": "russian_blue", "text": "If you say so." },
-        { "speaker": "siamese", "text": "I do say so. Frequently. And at volume." }
+        {
+          "speaker": "siamese",
+          "text": "You're so quiet I sometimes forget you're in the room."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "And you're so loud I never forget."
+        },
+        {
+          "speaker": "siamese",
+          "text": "Loud! I'm expressive. There's a difference."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "If you say so."
+        },
+        {
+          "speaker": "siamese",
+          "text": "I do say so. Frequently. And at volume."
+        }
       ]
     },
     {
       "rank": "B",
       "title": "The Moon Watchers",
       "lines": [
-        { "speaker": "russian_blue", "text": "You were on the roof again last night. I could hear you singing." },
-        { "speaker": "siamese", "text": "It wasn't singing. It was... communing." },
-        { "speaker": "russian_blue", "text": "With the moon?" },
-        { "speaker": "siamese", "text": "With whatever listens. Don't you ever feel something watching back?" },
-        { "speaker": "russian_blue", "text": "...Sometimes. In the grain store, when it's very still." },
-        { "speaker": "siamese", "text": "See? You understand more than you let on." }
+        {
+          "speaker": "russian_blue",
+          "text": "You were on the roof again last night. I could hear you singing."
+        },
+        {
+          "speaker": "siamese",
+          "text": "It wasn't singing. It was... communing."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "With the moon?"
+        },
+        {
+          "speaker": "siamese",
+          "text": "With whatever listens. Don't you ever feel something watching back?"
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "...Sometimes. In the grain store, when it's very still."
+        },
+        {
+          "speaker": "siamese",
+          "text": "See? You understand more than you let on."
+        }
       ]
     },
     {
       "rank": "A",
       "title": "Different Kinds of Knowing",
       "lines": [
-        { "speaker": "siamese", "text": "I had a vision about you. Don't laugh." },
-        { "speaker": "russian_blue", "text": "I'm not laughing." },
-        { "speaker": "siamese", "text": "You were standing in a great hall. Sunlight through stained glass. Cats everywhere." },
-        { "speaker": "russian_blue", "text": "That sounds like the guildhall. On a good day." },
-        { "speaker": "siamese", "text": "It was the guildhall. Years from now. And you were still here." },
-        { "speaker": "russian_blue", "text": "Then I suppose I'd better stay." }
+        {
+          "speaker": "siamese",
+          "text": "I had a vision about you. Don't laugh."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "I'm not laughing."
+        },
+        {
+          "speaker": "siamese",
+          "text": "You were standing in a great hall. Sunlight through stained glass. Cats everywhere."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "That sounds like the guildhall. On a good day."
+        },
+        {
+          "speaker": "siamese",
+          "text": "It was the guildhall. Years from now. And you were still here."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "Then I suppose I'd better stay."
+        }
       ]
     }
   ],
@@ -190,35 +448,86 @@
       "rank": "C",
       "title": "The Big and the Precise",
       "lines": [
-        { "speaker": "maine_coon", "text": "Sorry about the door frame. I keep misjudging my shoulders." },
-        { "speaker": "tuxedo", "text": "You took out two boards. I measured." },
-        { "speaker": "maine_coon", "text": "I'll fix them. I'm good with wood." },
-        { "speaker": "tuxedo", "text": "You're good with everything that doesn't require fitting through normal-sized openings." },
-        { "speaker": "maine_coon", "text": "Fair point." }
+        {
+          "speaker": "maine_coon",
+          "text": "Sorry about the door frame. I keep misjudging my shoulders."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "You took out two boards. I measured."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "I'll fix them. I'm good with wood."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "You're good with everything that doesn't require fitting through normal-sized openings."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "Fair point."
+        }
       ]
     },
     {
       "rank": "B",
       "title": "Guard Duty",
       "lines": [
-        { "speaker": "tuxedo", "text": "The dock foreman asked for you specifically. Said you're the only cat who intimidates the ship rats." },
-        { "speaker": "maine_coon", "text": "I don't try to intimidate anyone." },
-        { "speaker": "tuxedo", "text": "That's exactly why it works. Genuine presence, not performance." },
-        { "speaker": "maine_coon", "text": "You'd know about performance. You walk like you're always being watched." },
-        { "speaker": "tuxedo", "text": "Because I usually am. Observation is a two-way street." },
-        { "speaker": "maine_coon", "text": "I just walk. People get out of the way on their own." }
+        {
+          "speaker": "tuxedo",
+          "text": "The dock foreman asked for you specifically. Said you're the only cat who intimidates the ship rats."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "I don't try to intimidate anyone."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "That's exactly why it works. Genuine presence, not performance."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "You'd know about performance. You walk like you're always being watched."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "Because I usually am. Observation is a two-way street."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "I just walk. People get out of the way on their own."
+        }
       ]
     },
     {
       "rank": "A",
       "title": "Strength and Strategy",
       "lines": [
-        { "speaker": "maine_coon", "text": "When the plague hit the docks, you had the evacuation planned in minutes." },
-        { "speaker": "tuxedo", "text": "And you carried three kittens out while the water rose. Plans don't do that." },
-        { "speaker": "maine_coon", "text": "Someone has to carry things. It's what I'm for." },
-        { "speaker": "tuxedo", "text": "You're not 'for' anything. You choose to help. That matters more." },
-        { "speaker": "maine_coon", "text": "...Thank you. That's not something big cats hear often." },
-        { "speaker": "tuxedo", "text": "Then people aren't paying attention." }
+        {
+          "speaker": "maine_coon",
+          "text": "When the plague hit the docks, you had the evacuation planned in minutes."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "And you carried three kittens out while the water rose. Plans don't do that."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "Someone has to carry things. It's what I'm for."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "You're not 'for' anything. You choose to help. That matters more."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "...Thank you. That's not something big cats hear often."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "Then people aren't paying attention."
+        }
       ]
     }
   ],
@@ -227,35 +536,86 @@
       "rank": "C",
       "title": "The Giant and the Oracle",
       "lines": [
-        { "speaker": "siamese", "text": "Hold still. I'm reading your aura." },
-        { "speaker": "maine_coon", "text": "My what now?" },
-        { "speaker": "siamese", "text": "Your energy. It's... remarkably calm. Like a warm hearth." },
-        { "speaker": "maine_coon", "text": "I've been told I run warm. Thick fur." },
-        { "speaker": "siamese", "text": "It's more than fur. You make other cats feel safe just by being nearby." }
+        {
+          "speaker": "siamese",
+          "text": "Hold still. I'm reading your aura."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "My what now?"
+        },
+        {
+          "speaker": "siamese",
+          "text": "Your energy. It's... remarkably calm. Like a warm hearth."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "I've been told I run warm. Thick fur."
+        },
+        {
+          "speaker": "siamese",
+          "text": "It's more than fur. You make other cats feel safe just by being nearby."
+        }
       ]
     },
     {
       "rank": "B",
       "title": "Night Stories",
       "lines": [
-        { "speaker": "maine_coon", "text": "That story you told the kittens about Saint Gertrude. Was any of it true?" },
-        { "speaker": "siamese", "text": "All of it was true. Some of it happened." },
-        { "speaker": "maine_coon", "text": "That doesn't make sense." },
-        { "speaker": "siamese", "text": "Truth and facts are cousins, not twins. The kittens understood." },
-        { "speaker": "maine_coon", "text": "They also believe I'm part bear." },
-        { "speaker": "siamese", "text": "Are you sure you're not?" }
+        {
+          "speaker": "maine_coon",
+          "text": "That story you told the kittens about Saint Gertrude. Was any of it true?"
+        },
+        {
+          "speaker": "siamese",
+          "text": "All of it was true. Some of it happened."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "That doesn't make sense."
+        },
+        {
+          "speaker": "siamese",
+          "text": "Truth and facts are cousins, not twins. The kittens understood."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "They also believe I'm part bear."
+        },
+        {
+          "speaker": "siamese",
+          "text": "Are you sure you're not?"
+        }
       ]
     },
     {
       "rank": "A",
       "title": "The Protector and the Prophet",
       "lines": [
-        { "speaker": "siamese", "text": "I dreamed the guild burned. I woke up terrified." },
-        { "speaker": "maine_coon", "text": "It won't burn. I check the hearth every night." },
-        { "speaker": "siamese", "text": "You do?" },
-        { "speaker": "maine_coon", "text": "Every night since I came here. Old habit from the barns." },
-        { "speaker": "siamese", "text": "Then my dream was wrong. That's the first time." },
-        { "speaker": "maine_coon", "text": "Maybe it wasn't wrong. Maybe it was a warning, and I already answered it." }
+        {
+          "speaker": "siamese",
+          "text": "I dreamed the guild burned. I woke up terrified."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "It won't burn. I check the hearth every night."
+        },
+        {
+          "speaker": "siamese",
+          "text": "You do?"
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "Every night since I came here. Old habit from the barns."
+        },
+        {
+          "speaker": "siamese",
+          "text": "Then my dream was wrong. That's the first time."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "Maybe it wasn't wrong. Maybe it was a warning, and I already answered it."
+        }
       ]
     }
   ],
@@ -264,35 +624,86 @@
       "rank": "C",
       "title": "The Founder and the Clerk",
       "lines": [
-        { "speaker": "wildcat", "text": "You reorganized the job board." },
-        { "speaker": "tuxedo", "text": "By difficulty, then by reward ratio. It was chaos before." },
-        { "speaker": "wildcat", "text": "It was my chaos. I knew where everything was." },
-        { "speaker": "tuxedo", "text": "Did you though?" },
-        { "speaker": "wildcat", "text": "...Fine. It's better now." }
+        {
+          "speaker": "wildcat",
+          "text": "You reorganized the job board."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "By difficulty, then by reward ratio. It was chaos before."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "It was my chaos. I knew where everything was."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "Did you though?"
+        },
+        {
+          "speaker": "wildcat",
+          "text": "...Fine. It's better now."
+        }
       ]
     },
     {
       "rank": "B",
       "title": "The Weight of Leading",
       "lines": [
-        { "speaker": "tuxedo", "text": "The other cats look to you. You know that." },
-        { "speaker": "wildcat", "text": "They shouldn't. I'm just the first one who showed up." },
-        { "speaker": "tuxedo", "text": "That's exactly why they look to you. First through the door, last to leave." },
-        { "speaker": "wildcat", "text": "Someone has to be." },
-        { "speaker": "tuxedo", "text": "And someone has to make sure the leader doesn't burn out. That's my job." },
-        { "speaker": "wildcat", "text": "I didn't assign you that." }
+        {
+          "speaker": "tuxedo",
+          "text": "The other cats look to you. You know that."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "They shouldn't. I'm just the first one who showed up."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "That's exactly why they look to you. First through the door, last to leave."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "Someone has to be."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "And someone has to make sure the leader doesn't burn out. That's my job."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "I didn't assign you that."
+        }
       ]
     },
     {
       "rank": "A",
       "title": "Two Kinds of Order",
       "lines": [
-        { "speaker": "wildcat", "text": "When I started this guild, I thought strength was all you needed." },
-        { "speaker": "tuxedo", "text": "And now?" },
-        { "speaker": "wildcat", "text": "Now I think you need someone who can count the fish while someone else catches them." },
-        { "speaker": "tuxedo", "text": "A crude metaphor. But accurate." },
-        { "speaker": "wildcat", "text": "Stay. The guild needs your kind of strength too." },
-        { "speaker": "tuxedo", "text": "I'm not going anywhere. Someone has to keep the ledger." }
+        {
+          "speaker": "wildcat",
+          "text": "When I started this guild, I thought strength was all you needed."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "And now?"
+        },
+        {
+          "speaker": "wildcat",
+          "text": "Now I think you need someone who can count the fish while someone else catches them."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "A crude metaphor. But accurate."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "Stay. The guild needs your kind of strength too."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "I'm not going anywhere. Someone has to keep the ledger."
+        }
       ]
     }
   ],
@@ -301,36 +712,90 @@
       "rank": "C",
       "title": "The Skeptic and the Seer",
       "lines": [
-        { "speaker": "siamese", "text": "The saints sent you here. I'm sure of it." },
-        { "speaker": "wildcat", "text": "A storm sent me here. And an empty stomach." },
-        { "speaker": "siamese", "text": "Same thing, from the right angle." },
-        { "speaker": "wildcat", "text": "That's not how angles work." },
-        { "speaker": "siamese", "text": "It is from mine." }
+        {
+          "speaker": "siamese",
+          "text": "The saints sent you here. I'm sure of it."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "A storm sent me here. And an empty stomach."
+        },
+        {
+          "speaker": "siamese",
+          "text": "Same thing, from the right angle."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "That's not how angles work."
+        },
+        {
+          "speaker": "siamese",
+          "text": "It is from mine."
+        }
       ]
     },
     {
       "rank": "B",
       "title": "Faith and Claws",
       "lines": [
-        { "speaker": "wildcat", "text": "You talk to the chapel window. I've seen you." },
-        { "speaker": "siamese", "text": "I talk to Saint Gertrude. Whether she answers is between us." },
-        { "speaker": "wildcat", "text": "Does she?" },
-        { "speaker": "siamese", "text": "She told me the plague would end. And it did." },
-        { "speaker": "wildcat", "text": "We ended it. With claws and sweat." },
-        { "speaker": "siamese", "text": "Maybe the claws were her answer." }
+        {
+          "speaker": "wildcat",
+          "text": "You talk to the chapel window. I've seen you."
+        },
+        {
+          "speaker": "siamese",
+          "text": "I talk to Saint Gertrude. Whether she answers is between us."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "Does she?"
+        },
+        {
+          "speaker": "siamese",
+          "text": "She told me the plague would end. And it did."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "We ended it. With claws and sweat."
+        },
+        {
+          "speaker": "siamese",
+          "text": "Maybe the claws were her answer."
+        }
       ]
     },
     {
       "rank": "A",
       "title": "What the Storm Brought",
       "lines": [
-        { "speaker": "siamese", "text": "Do you remember the night you arrived? The lightning?" },
-        { "speaker": "wildcat", "text": "I remember being cold and hungry and alone." },
-        { "speaker": "siamese", "text": "I saw the lightning from the bell tower. One bolt, straight down into the market square." },
-        { "speaker": "wildcat", "text": "And?" },
-        { "speaker": "siamese", "text": "That's where I found you the next morning. Exactly where the bolt struck." },
-        { "speaker": "wildcat", "text": "...Coincidence." },
-        { "speaker": "siamese", "text": "Of course. But a beautiful one." }
+        {
+          "speaker": "siamese",
+          "text": "Do you remember the night you arrived? The lightning?"
+        },
+        {
+          "speaker": "wildcat",
+          "text": "I remember being cold and hungry and alone."
+        },
+        {
+          "speaker": "siamese",
+          "text": "I saw the lightning from the bell tower. One bolt, straight down into the market square."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "And?"
+        },
+        {
+          "speaker": "siamese",
+          "text": "That's where I found you the next morning. Exactly where the bolt struck."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "...Coincidence."
+        },
+        {
+          "speaker": "siamese",
+          "text": "Of course. But a beautiful one."
+        }
       ]
     }
   ],
@@ -339,13 +804,34 @@
       "rank": "group",
       "title": "The Guild's Purpose",
       "lines": [
-        { "speaker": "wildcat", "text": "We should talk about where this guild is headed." },
-        { "speaker": "russian_blue", "text": "We've come a long way from that first night in the storm." },
-        { "speaker": "tuxedo", "text": "The ledger agrees. Fish reserves are stable. Operations are... functional." },
-        { "speaker": "siamese", "text": "Functional? We're a family. The saints didn't bring us together for bookkeeping." },
-        { "speaker": "maine_coon", "text": "She's right. I didn't stay for the fish. I stayed for all of you." },
-        { "speaker": "wildcat", "text": "Then we agree. This guild is more than a business. It's a home." },
-        { "speaker": "russian_blue", "text": "...Home. Yes. That's what this is." }
+        {
+          "speaker": "wildcat",
+          "text": "We should talk about where this guild is headed."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "We've come a long way from that first night in the storm."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "The ledger agrees. Fish reserves are stable. Operations are... functional."
+        },
+        {
+          "speaker": "siamese",
+          "text": "Functional? We're a family. The saints didn't bring us together for bookkeeping."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "She's right. I didn't stay for the fish. I stayed for all of you."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "Then we agree. This guild is more than a business. It's a home."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "...Home. Yes. That's what this is."
+        }
       ]
     }
   ],
@@ -354,14 +840,38 @@
       "rank": "group",
       "title": "After the Plague",
       "lines": [
-        { "speaker": "wildcat", "text": "The plague is behind us. The town is recovering." },
-        { "speaker": "maine_coon", "text": "I still smell them in the walls sometimes. The rats." },
-        { "speaker": "tuxedo", "text": "The granary stocks are rebuilding. Three weeks behind schedule, but improving." },
-        { "speaker": "siamese", "text": "I dreamed the procession again. Saint Rosalia's bones through the streets." },
-        { "speaker": "russian_blue", "text": "We did what the saints asked. We drove them out." },
-        { "speaker": "wildcat", "text": "Together. Every one of us. That's what made the difference." },
-        { "speaker": "maine_coon", "text": "Next time, I want to be at the front. Not guarding the door." },
-        { "speaker": "siamese", "text": "There won't be a next time. I've seen it." }
+        {
+          "speaker": "wildcat",
+          "text": "The plague is behind us. The town is recovering."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "I still smell them in the walls sometimes. The rats."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "The granary stocks are rebuilding. Three weeks behind schedule, but improving."
+        },
+        {
+          "speaker": "siamese",
+          "text": "I dreamed the procession again. Saint Rosalia's bones through the streets."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "We did what the saints asked. We drove them out."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "Together. Every one of us. That's what made the difference."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "Next time, I want to be at the front. Not guarding the door."
+        },
+        {
+          "speaker": "siamese",
+          "text": "There won't be a next time. I've seen it."
+        }
       ]
     }
   ],
@@ -370,14 +880,38 @@
       "rank": "group",
       "title": "A Feast of Fish",
       "lines": [
-        { "speaker": "maine_coon", "text": "Is it true? A feast?" },
-        { "speaker": "tuxedo", "text": "I've allocated the budget. Three whole salmon." },
-        { "speaker": "siamese", "text": "Three! I could cry." },
-        { "speaker": "russian_blue", "text": "You will cry. You cry at everything." },
-        { "speaker": "siamese", "text": "That's because I feel things, unlike some cats I could name." },
-        { "speaker": "wildcat", "text": "Enough. Tonight we eat well. Tomorrow we work again. But tonight — we celebrate." },
-        { "speaker": "maine_coon", "text": "To the guild!" },
-        { "speaker": "russian_blue", "text": "To the guild." }
+        {
+          "speaker": "maine_coon",
+          "text": "Is it true? A feast?"
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "I've allocated the budget. Three whole salmon."
+        },
+        {
+          "speaker": "siamese",
+          "text": "Three! I could cry."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "You will cry. You cry at everything."
+        },
+        {
+          "speaker": "siamese",
+          "text": "That's because I feel things, unlike some cats I could name."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "Enough. Tonight we eat well. Tomorrow we work again. But tonight \u2014 we celebrate."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "To the guild!"
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "To the guild."
+        }
       ]
     }
   ],
@@ -386,14 +920,38 @@
       "rank": "group",
       "title": "What Have We Become?",
       "lines": [
-        { "speaker": "russian_blue", "text": "I need to say something. And I need everyone to hear it." },
-        { "speaker": "wildcat", "text": "Go ahead." },
-        { "speaker": "russian_blue", "text": "The jobs we've been taking. The lockboxes. The sabotage. That's not why I joined." },
-        { "speaker": "siamese", "text": "The saints don't guide thieves. I've felt it — the silence where their voices used to be." },
-        { "speaker": "tuxedo", "text": "The ledger doesn't lie. We're earning more than ever. But the bonds between us are fraying." },
-        { "speaker": "maine_coon", "text": "I stayed because this was a family. If it's just a business, I can guard any barn." },
-        { "speaker": "wildcat", "text": "...I hear you. All of you. Maybe we lost our way." },
-        { "speaker": "russian_blue", "text": "It's not too late to choose differently. It never is." }
+        {
+          "speaker": "russian_blue",
+          "text": "I need to say something. And I need everyone to hear it."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "Go ahead."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "The jobs we've been taking. The lockboxes. The sabotage. That's not why I joined."
+        },
+        {
+          "speaker": "siamese",
+          "text": "The saints don't guide thieves. I've felt it \u2014 the silence where their voices used to be."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "The ledger doesn't lie. We're earning more than ever. But the bonds between us are fraying."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "I stayed because this was a family. If it's just a business, I can guard any barn."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "...I hear you. All of you. Maybe we lost our way."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "It's not too late to choose differently. It never is."
+        }
       ]
     }
   ],
@@ -402,13 +960,34 @@
       "rank": "group",
       "title": "The Town's Gratitude",
       "lines": [
-        { "speaker": "tuxedo", "text": "There's something at the door. A basket." },
-        { "speaker": "maine_coon", "text": "Fish! And dried herbs. And... is that a blanket?" },
-        { "speaker": "siamese", "text": "There's a note. 'For the guild that guards our town. With thanks.' No signature." },
-        { "speaker": "russian_blue", "text": "The baker's wife. I recognize her handwriting." },
-        { "speaker": "wildcat", "text": "We didn't do this for gifts." },
-        { "speaker": "siamese", "text": "No. But they gave them anyway. That's what trust looks like." },
-        { "speaker": "maine_coon", "text": "This is better than fish. This is home." }
+        {
+          "speaker": "tuxedo",
+          "text": "There's something at the door. A basket."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "Fish! And dried herbs. And... is that a blanket?"
+        },
+        {
+          "speaker": "siamese",
+          "text": "There's a note. 'For the guild that guards our town. With thanks.' No signature."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "The baker's wife. I recognize her handwriting."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "We didn't do this for gifts."
+        },
+        {
+          "speaker": "siamese",
+          "text": "No. But they gave them anyway. That's what trust looks like."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "This is better than fish. This is home."
+        }
       ]
     }
   ],
@@ -417,36 +996,90 @@
       "rank": "C",
       "title": "The Defector",
       "lines": [
-        { "speaker": "bengal", "text": "You beat the Silver Paws. I didn't think anyone could." },
-        { "speaker": "wildcat", "text": "You were one of them." },
-        { "speaker": "bengal", "text": "I was. They promised glory. They delivered politics." },
-        { "speaker": "wildcat", "text": "And now you're here because...?" },
-        { "speaker": "bengal", "text": "Because you fight for something real. I want to see what that looks like from the inside." }
+        {
+          "speaker": "bengal",
+          "text": "You beat the Silver Paws. I didn't think anyone could."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "You were one of them."
+        },
+        {
+          "speaker": "bengal",
+          "text": "I was. They promised glory. They delivered politics."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "And now you're here because...?"
+        },
+        {
+          "speaker": "bengal",
+          "text": "Because you fight for something real. I want to see what that looks like from the inside."
+        }
       ]
     },
     {
       "rank": "B",
       "title": "Restless Energy",
       "lines": [
-        { "speaker": "wildcat", "text": "You've been pacing since dawn. Sit down." },
-        { "speaker": "bengal", "text": "I can't. My legs need to move. My mind needs problems." },
-        { "speaker": "wildcat", "text": "Then take a job. The docks need patrol." },
-        { "speaker": "bengal", "text": "Already did that. And the market sweep. Before breakfast." },
-        { "speaker": "wildcat", "text": "...You're going to be trouble, aren't you?" },
-        { "speaker": "bengal", "text": "The best kind." }
+        {
+          "speaker": "wildcat",
+          "text": "You've been pacing since dawn. Sit down."
+        },
+        {
+          "speaker": "bengal",
+          "text": "I can't. My legs need to move. My mind needs problems."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "Then take a job. The docks need patrol."
+        },
+        {
+          "speaker": "bengal",
+          "text": "Already did that. And the market sweep. Before breakfast."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "...You're going to be trouble, aren't you?"
+        },
+        {
+          "speaker": "bengal",
+          "text": "The best kind."
+        }
       ]
     },
     {
       "rank": "A",
       "title": "Where I Belong",
       "lines": [
-        { "speaker": "bengal", "text": "I dreamed of the Silver Paws last night. Their hall. Their rules." },
-        { "speaker": "wildcat", "text": "Do you miss it?" },
-        { "speaker": "bengal", "text": "I miss the certainty. Someone always told you what to do." },
-        { "speaker": "wildcat", "text": "And here?" },
-        { "speaker": "bengal", "text": "Here I have to decide for myself. It's terrifying." },
-        { "speaker": "wildcat", "text": "That's what freedom costs." },
-        { "speaker": "bengal", "text": "Worth every fish." }
+        {
+          "speaker": "bengal",
+          "text": "I dreamed of the Silver Paws last night. Their hall. Their rules."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "Do you miss it?"
+        },
+        {
+          "speaker": "bengal",
+          "text": "I miss the certainty. Someone always told you what to do."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "And here?"
+        },
+        {
+          "speaker": "bengal",
+          "text": "Here I have to decide for myself. It's terrifying."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "That's what freedom costs."
+        },
+        {
+          "speaker": "bengal",
+          "text": "Worth every fish."
+        }
       ]
     }
   ],
@@ -455,32 +1088,74 @@
       "rank": "C",
       "title": "Too Loud",
       "lines": [
-        { "speaker": "russian_blue", "text": "Must you knock over everything when you enter a room?" },
-        { "speaker": "bengal", "text": "I didn't knock anything over. That barrel was already tilting." },
-        { "speaker": "russian_blue", "text": "It was perfectly stable until you ran past it." },
-        { "speaker": "bengal", "text": "You need to relax. Life's too short to worry about barrels." }
+        {
+          "speaker": "russian_blue",
+          "text": "Must you knock over everything when you enter a room?"
+        },
+        {
+          "speaker": "bengal",
+          "text": "I didn't knock anything over. That barrel was already tilting."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "It was perfectly stable until you ran past it."
+        },
+        {
+          "speaker": "bengal",
+          "text": "You need to relax. Life's too short to worry about barrels."
+        }
       ]
     },
     {
       "rank": "B",
       "title": "Different Speeds",
       "lines": [
-        { "speaker": "bengal", "text": "How do you just... sit there? For hours?" },
-        { "speaker": "russian_blue", "text": "I'm listening. The walls tell you things if you're patient." },
-        { "speaker": "bengal", "text": "The walls told me I was bored, so I went hunting." },
-        { "speaker": "russian_blue", "text": "And yet you came back to sit with me." },
-        { "speaker": "bengal", "text": "...The quiet is nice. Sometimes." }
+        {
+          "speaker": "bengal",
+          "text": "How do you just... sit there? For hours?"
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "I'm listening. The walls tell you things if you're patient."
+        },
+        {
+          "speaker": "bengal",
+          "text": "The walls told me I was bored, so I went hunting."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "And yet you came back to sit with me."
+        },
+        {
+          "speaker": "bengal",
+          "text": "...The quiet is nice. Sometimes."
+        }
       ]
     },
     {
       "rank": "A",
       "title": "Complement",
       "lines": [
-        { "speaker": "russian_blue", "text": "You noticed the rat nest before anyone. How?" },
-        { "speaker": "bengal", "text": "Scratches on the floor. Changed scent near the wall. You would have heard it eventually." },
-        { "speaker": "russian_blue", "text": "Eventually isn't soon enough when lives are at stake." },
-        { "speaker": "bengal", "text": "That's why you need someone fast. And I need someone who remembers to check twice." },
-        { "speaker": "russian_blue", "text": "We make a good team, don't we?" }
+        {
+          "speaker": "russian_blue",
+          "text": "You noticed the rat nest before anyone. How?"
+        },
+        {
+          "speaker": "bengal",
+          "text": "Scratches on the floor. Changed scent near the wall. You would have heard it eventually."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "Eventually isn't soon enough when lives are at stake."
+        },
+        {
+          "speaker": "bengal",
+          "text": "That's why you need someone fast. And I need someone who remembers to check twice."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "We make a good team, don't we?"
+        }
       ]
     }
   ],
@@ -489,33 +1164,78 @@
       "rank": "C",
       "title": "Two Kinds of Brilliant",
       "lines": [
-        { "speaker": "siamese", "text": "You solved that puzzle in six moves. The record was twelve." },
-        { "speaker": "bengal", "text": "I see patterns. Can't help it. Everything is a puzzle to me." },
-        { "speaker": "siamese", "text": "Interesting. I see people. Every face is a story." },
-        { "speaker": "bengal", "text": "Which is more useful?" },
-        { "speaker": "siamese", "text": "Depends on whether the problem has claws." }
+        {
+          "speaker": "siamese",
+          "text": "You solved that puzzle in six moves. The record was twelve."
+        },
+        {
+          "speaker": "bengal",
+          "text": "I see patterns. Can't help it. Everything is a puzzle to me."
+        },
+        {
+          "speaker": "siamese",
+          "text": "Interesting. I see people. Every face is a story."
+        },
+        {
+          "speaker": "bengal",
+          "text": "Which is more useful?"
+        },
+        {
+          "speaker": "siamese",
+          "text": "Depends on whether the problem has claws."
+        }
       ]
     },
     {
       "rank": "B",
       "title": "Rivals in Mind",
       "lines": [
-        { "speaker": "bengal", "text": "I heard you figured out the merchant was lying before anyone else." },
-        { "speaker": "siamese", "text": "His left ear twitched. Classic tell." },
-        { "speaker": "bengal", "text": "I noticed the ledger numbers didn't add up. Same conclusion, different path." },
-        { "speaker": "siamese", "text": "Are we competing?" },
-        { "speaker": "bengal", "text": "Only if you're losing." }
+        {
+          "speaker": "bengal",
+          "text": "I heard you figured out the merchant was lying before anyone else."
+        },
+        {
+          "speaker": "siamese",
+          "text": "His left ear twitched. Classic tell."
+        },
+        {
+          "speaker": "bengal",
+          "text": "I noticed the ledger numbers didn't add up. Same conclusion, different path."
+        },
+        {
+          "speaker": "siamese",
+          "text": "Are we competing?"
+        },
+        {
+          "speaker": "bengal",
+          "text": "Only if you're losing."
+        }
       ]
     },
     {
       "rank": "A",
       "title": "The Smart Ones",
       "lines": [
-        { "speaker": "siamese", "text": "Do you ever feel like you see too much? Every flaw, every angle?" },
-        { "speaker": "bengal", "text": "Every day. The Silver Paws used that. Made me their strategist. Their weapon." },
-        { "speaker": "siamese", "text": "And here?" },
-        { "speaker": "bengal", "text": "Here they ask what I think, not just what I see. There's a difference." },
-        { "speaker": "siamese", "text": "That's called trust. Guard it carefully." }
+        {
+          "speaker": "siamese",
+          "text": "Do you ever feel like you see too much? Every flaw, every angle?"
+        },
+        {
+          "speaker": "bengal",
+          "text": "Every day. The Silver Paws used that. Made me their strategist. Their weapon."
+        },
+        {
+          "speaker": "siamese",
+          "text": "And here?"
+        },
+        {
+          "speaker": "bengal",
+          "text": "Here they ask what I think, not just what I see. There's a difference."
+        },
+        {
+          "speaker": "siamese",
+          "text": "That's called trust. Guard it carefully."
+        }
       ]
     }
   ],
@@ -524,31 +1244,70 @@
       "rank": "C",
       "title": "By the Book",
       "lines": [
-        { "speaker": "tuxedo", "text": "You filed your patrol report... on the back of a fish wrapper." },
-        { "speaker": "bengal", "text": "The information is all there. Route, time, findings." },
-        { "speaker": "tuxedo", "text": "On a fish wrapper." },
-        { "speaker": "bengal", "text": "Would you prefer I didn't file one at all?" }
+        {
+          "speaker": "tuxedo",
+          "text": "You filed your patrol report... on the back of a fish wrapper."
+        },
+        {
+          "speaker": "bengal",
+          "text": "The information is all there. Route, time, findings."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "On a fish wrapper."
+        },
+        {
+          "speaker": "bengal",
+          "text": "Would you prefer I didn't file one at all?"
+        }
       ]
     },
     {
       "rank": "B",
       "title": "Method and Madness",
       "lines": [
-        { "speaker": "bengal", "text": "Your filing system is incredible. Every job, every outcome, cross-referenced." },
-        { "speaker": "tuxedo", "text": "Was that... a compliment?" },
-        { "speaker": "bengal", "text": "Don't let it go to your head. I'm just saying — the Silver Paws had nothing like this." },
-        { "speaker": "tuxedo", "text": "That's why they lost." }
+        {
+          "speaker": "bengal",
+          "text": "Your filing system is incredible. Every job, every outcome, cross-referenced."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "Was that... a compliment?"
+        },
+        {
+          "speaker": "bengal",
+          "text": "Don't let it go to your head. I'm just saying \u2014 the Silver Paws had nothing like this."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "That's why they lost."
+        }
       ]
     },
     {
       "rank": "A",
       "title": "Order and Chaos",
       "lines": [
-        { "speaker": "tuxedo", "text": "I've been thinking. Your instincts and my systems — we could restructure the job board." },
-        { "speaker": "bengal", "text": "You want to work together? You, who color-codes everything?" },
-        { "speaker": "tuxedo", "text": "And you, who solves problems before I finish describing them. Yes." },
-        { "speaker": "bengal", "text": "The guild would run like a machine." },
-        { "speaker": "tuxedo", "text": "A well-organized machine." }
+        {
+          "speaker": "tuxedo",
+          "text": "I've been thinking. Your instincts and my systems \u2014 we could restructure the job board."
+        },
+        {
+          "speaker": "bengal",
+          "text": "You want to work together? You, who color-codes everything?"
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "And you, who solves problems before I finish describing them. Yes."
+        },
+        {
+          "speaker": "bengal",
+          "text": "The guild would run like a machine."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "A well-organized machine."
+        }
       ]
     }
   ],
@@ -557,32 +1316,146 @@
       "rank": "C",
       "title": "The Big One",
       "lines": [
-        { "speaker": "bengal", "text": "You're... larger than I expected." },
-        { "speaker": "maine_coon", "text": "And you're faster. I saw you clear the fence." },
-        { "speaker": "bengal", "text": "In the Silver Paws, speed was everything. Size meant slow." },
-        { "speaker": "maine_coon", "text": "In this guild, we don't have to be just one thing." }
+        {
+          "speaker": "bengal",
+          "text": "You're... larger than I expected."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "And you're faster. I saw you clear the fence."
+        },
+        {
+          "speaker": "bengal",
+          "text": "In the Silver Paws, speed was everything. Size meant slow."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "In this guild, we don't have to be just one thing."
+        }
       ]
     },
     {
       "rank": "B",
       "title": "Strength",
       "lines": [
-        { "speaker": "bengal", "text": "That crate was stuck. I couldn't budge it. You moved it with one shoulder." },
-        { "speaker": "maine_coon", "text": "And you found the three behind it that I would have missed." },
-        { "speaker": "bengal", "text": "We're covering each other's weaknesses. That's... new for me." },
-        { "speaker": "maine_coon", "text": "That's what a guild is supposed to be." }
+        {
+          "speaker": "bengal",
+          "text": "That crate was stuck. I couldn't budge it. You moved it with one shoulder."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "And you found the three behind it that I would have missed."
+        },
+        {
+          "speaker": "bengal",
+          "text": "We're covering each other's weaknesses. That's... new for me."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "That's what a guild is supposed to be."
+        }
       ]
     },
     {
       "rank": "A",
       "title": "Gentle Giant",
       "lines": [
-        { "speaker": "bengal", "text": "You never raise your voice. Even when things go wrong." },
-        { "speaker": "maine_coon", "text": "Shouting just makes everyone smaller. Including you." },
-        { "speaker": "bengal", "text": "The Silver Paws' leader shouted constantly. I thought that was leadership." },
-        { "speaker": "maine_coon", "text": "It's not. Leadership is making others feel bigger than they are." },
-        { "speaker": "bengal", "text": "You'd have been a terrible Silver Paw. Too kind." },
-        { "speaker": "maine_coon", "text": "I'll take that as the highest compliment." }
+        {
+          "speaker": "bengal",
+          "text": "You never raise your voice. Even when things go wrong."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "Shouting just makes everyone smaller. Including you."
+        },
+        {
+          "speaker": "bengal",
+          "text": "The Silver Paws' leader shouted constantly. I thought that was leadership."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "It's not. Leadership is making others feel bigger than they are."
+        },
+        {
+          "speaker": "bengal",
+          "text": "You'd have been a terrible Silver Paw. Too kind."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "I'll take that as the highest compliment."
+        }
+      ]
+    }
+  ],
+  "group_rival_defeated": [
+    {
+      "rank": "group",
+      "title": "After the Silver Paws",
+      "lines": [
+        {
+          "speaker": "wildcat",
+          "text": "They're gone. The Silver Paws have left the town."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "I counted their wagons leaving at dawn. Seven cats, three carts. They were well-funded."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "And we beat them with... what? Stubbornness?"
+        },
+        {
+          "speaker": "siamese",
+          "text": "Purpose. They had money. We had something worth fighting for."
+        },
+        {
+          "speaker": "russian_blue",
+          "text": "Do you think they'll come back?"
+        },
+        {
+          "speaker": "wildcat",
+          "text": "It doesn't matter. We'll be ready."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "Together."
+        }
+      ]
+    }
+  ],
+  "group_inquisition_verdict": [
+    {
+      "rank": "group",
+      "title": "After the Inquisitor",
+      "lines": [
+        {
+          "speaker": "russian_blue",
+          "text": "Brother Aldric is gone. The monks packed their ledgers this morning."
+        },
+        {
+          "speaker": "siamese",
+          "text": "Five days of being watched. I don't think I've ever cleaned my whiskers so much."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "It wasn't about whiskers. It was about what we do. Who we are."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "And now the Church knows."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "For better or worse."
+        },
+        {
+          "speaker": "siamese",
+          "text": "The town was watching too. Not just the Inquisitor. Everyone."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "Then they saw us at our truest. That's all we can offer."
+        }
       ]
     }
   ]

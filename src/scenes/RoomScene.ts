@@ -61,6 +61,7 @@ export class RoomScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#1c1b19');
     this.cameras.main.setZoom(DPR);
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
+    this.cameras.main.fadeIn(250, 10, 9, 8);
 
     const save = getGameState();
     if (!save) return;
