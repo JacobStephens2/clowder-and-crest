@@ -24,15 +24,39 @@ const BASE_ATTACK_COOLDOWN = 400; // ms
 // ── Rat stats ──
 const RAT_SIZE = 10;
 
+// Rat archetype — each type has distinct movement, windup, and attack
+// behavior. Per the doc's "use wave structure to teach rat types one at a
+// time": grunts wave 1, skirmishers introduced wave 2, boss on the final wave.
+type RatType = 'grunt' | 'skirmisher' | 'boss';
+
 interface Rat {
+  type: RatType;
   x: number;
   y: number;
   hp: number;
   maxHp: number;
   speed: number;
+  baseSpeed: number;
   gfx: Phaser.GameObjects.Container;
   stunTimer: number;
   attackTimer: number;
+  /** Counts down while the rat is winding up an attack. > 0 means the rat
+      is locked in its telegraph and won't move. Damage applies at 0 if the
+      cat is still in range. The doc's #1 implication: every rat needs a
+      readable wind-up so failure feels earned, not random. */
+  windupTimer: number;
+  /** Total duration of the current windup (for visual ratio). */
+  windupDuration: number;
+  /** When > 0, the rat is in its lunge state (skirmishers only). The lunge
+      moves in a straight line at high speed and damages on contact. */
+  lungeTimer: number;
+  lungeDx: number;
+  lungeDy: number;
+  /** Boss phase tracking. Phase 2 triggers at 50% HP. */
+  bossPhase: 1 | 2;
+  /** Holds the white-flash overlay so we can fade it during the windup
+      without re-creating GameObjects every frame. */
+  flashGfx: Phaser.GameObjects.Graphics | null;
 }
 
 export class BrawlScene extends Phaser.Scene {
@@ -63,6 +87,13 @@ export class BrawlScene extends Phaser.Scene {
   private finished = false;
   private waveText!: Phaser.GameObjects.Text;
   private killText!: Phaser.GameObjects.Text;
+  /** Hit-stop: timestamp until which scene update should be frozen.
+      Brief 60-80ms freeze on kills makes attacks feel "heavy" — the doc's
+      explicit recommendation for game-feel juice. */
+  private hitStopUntil = 0;
+  /** True between wave-foreshadow alert and actual spawn. Used by tests
+      and to keep the alert text from double-firing. */
+  private waveAnnouncing = false;
 
   // Input state
   private moveDir = { x: 0, y: 0 };
@@ -125,12 +156,14 @@ export class BrawlScene extends Phaser.Scene {
     // Enable multi-touch (joystick + attack simultaneously)
     this.input.addPointer(1);
 
-    // Tutorial
-    if (showMinigameTutorial(this, 'clowder_brawl_tutorial', 'Fight!',
+    // Tutorial — bumped to v2 when telegraphs + skirmishers were added so
+    // returning players see the new rules.
+    if (showMinigameTutorial(this, 'clowder_brawl_tutorial_v2', 'Fight!',
       `Rats are attacking! Fight them off.<br><br>
       <strong>Move</strong> with WASD, arrows, or the d-pad.<br><br>
-      <strong>Attack</strong> by tapping the arena or pressing Space. You swipe in the direction you're facing.<br><br>
-      Survive all waves to complete the job!`,
+      <strong>Attack</strong> by tapping the arena or pressing Space.<br><br>
+      Rats <strong style="color:#ffaa44">flash white</strong> before they strike — walk away to dodge entirely.<br><br>
+      Watch for <strong style="color:#ff5555">red skirmishers</strong> in later waves: they lunge!`,
       () => { this.tutorialShowing = false; }
     )) {
       this.tutorialShowing = true;
@@ -308,6 +341,8 @@ export class BrawlScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     if (this.finished || this.tutorialShowing || this.gamePaused) return;
+    // Hit-stop: freeze the world for ~60ms on a kill so the impact has weight
+    if (Date.now() < this.hitStopUntil) return;
     const dt = delta / 1000;
 
     // Poll joystick — check the tracked pointer's current position each frame.
@@ -417,14 +452,52 @@ export class BrawlScene extends Phaser.Scene {
     for (const rat of this.rats) {
       if (rat.stunTimer > 0) {
         rat.stunTimer -= dt;
+        rat.gfx.setPosition(rat.x, rat.y);
         continue;
       }
 
-      // Move toward cat
       const rdx = this.catX - rat.x;
       const rdy = this.catY - rat.y;
       const rdist = Math.sqrt(rdx * rdx + rdy * rdy);
 
+      // ── Lunge state (skirmishers): launched in a fixed direction ──
+      if (rat.lungeTimer > 0) {
+        rat.lungeTimer -= dt;
+        const lspeed = rat.baseSpeed * 4 * 60 * dt;
+        rat.x += rat.lungeDx * lspeed;
+        rat.y += rat.lungeDy * lspeed;
+        rat.x = Phaser.Math.Clamp(rat.x, ARENA_LEFT + RAT_SIZE, ARENA_RIGHT - RAT_SIZE);
+        rat.y = Phaser.Math.Clamp(rat.y, ARENA_TOP + RAT_SIZE, ARENA_BOTTOM - RAT_SIZE);
+        // Damage on lunge contact (respects i-frames)
+        const lhitDist = Math.sqrt((this.catX - rat.x) ** 2 + (this.catY - rat.y) ** 2);
+        if (lhitDist < RAT_SIZE + CAT_SIZE && this.invincibleTimer <= 0) {
+          this.applyHitToCat();
+          rat.lungeTimer = 0;
+          rat.stunTimer = 0.6; // recovery
+          if (this.catHp <= 0) { this.gameOver(false); return; }
+        }
+        rat.gfx.setPosition(rat.x, rat.y);
+        continue;
+      }
+
+      // ── Windup state: rat is committed to an attack, frozen in place ──
+      // The doc's #1 implication: every rat needs a readable wind-up so the
+      // player can react. Damage applies at windupTimer ≤ 0 if the cat is
+      // still in range; otherwise the windup whiffs and the rat resets.
+      if (rat.windupTimer > 0) {
+        rat.windupTimer -= dt;
+        // Live the visual flash — increase intensity as windup nears completion
+        this.drawWindupFlash(rat);
+        if (rat.windupTimer <= 0) {
+          // Windup elapsed: resolve the attack
+          this.resolveRatAttack(rat);
+          if (this.catHp <= 0) { this.gameOver(false); return; }
+        }
+        rat.gfx.setPosition(rat.x, rat.y);
+        continue;
+      }
+
+      // ── Walk toward cat ──
       if (rdist > RAT_SIZE + CAT_SIZE) {
         const rspeed = rat.speed * 60 * dt;
         rat.x += (rdx / rdist) * rspeed;
@@ -458,24 +531,120 @@ export class BrawlScene extends Phaser.Scene {
         }
       }
 
-      // Rat attacks cat on contact (respects invincibility)
+      // ── Trigger windup when in attack range (and cooldown elapsed) ──
       rat.attackTimer -= dt;
-      if (rdist < RAT_SIZE + CAT_SIZE && rat.attackTimer <= 0 && this.invincibleTimer <= 0) {
-        rat.attackTimer = 1.0;
-        this.catHp--;
-        this.invincibleTimer = 0.8; // brief invincibility after hit
-        this.drawHpBar();
-        this.cameras.main.flash(100, 80, 20, 20);
-        playSfx('hiss', 0.4);
-
-        if (this.catHp <= 0) {
-          this.gameOver(false);
-          return;
-        }
+      const attackRange = rat.type === 'skirmisher' ? RAT_SIZE + CAT_SIZE + 18 : RAT_SIZE + CAT_SIZE + 2;
+      if (rdist < attackRange && rat.attackTimer <= 0) {
+        this.startRatWindup(rat);
       }
 
       rat.gfx.setPosition(rat.x, rat.y);
     }
+
+    // Boss phase transition — check after rat updates so the boss reference
+    // is still valid. At 50% HP, the Rat King enters phase 2.
+    for (const rat of this.rats) {
+      if (rat.type === 'boss' && rat.bossPhase === 1 && rat.hp <= rat.maxHp / 2) {
+        this.triggerBossPhase2(rat);
+      }
+    }
+  }
+
+  /** Begin a rat's attack telegraph. Sets the windup timer and flashes the
+      sprite. The rat is locked in place during this window — the player can
+      walk away to dodge entirely. */
+  private startRatWindup(rat: Rat): void {
+    // Windup duration scales with rat type. Skirmishers are slower to commit
+    // (the lunge is dangerous so they get a bigger tell); grunts are quicker;
+    // boss tells are the longest in phase 1, shorter in phase 2.
+    let dur: number;
+    if (rat.type === 'boss') dur = rat.bossPhase === 1 ? 0.85 : 0.55;
+    else if (rat.type === 'skirmisher') dur = 0.75;
+    else dur = 0.55;
+    rat.windupTimer = dur;
+    rat.windupDuration = dur;
+    rat.attackTimer = 1.2; // cooldown after the next attack resolves
+  }
+
+  /** Draw the white-flash overlay during a rat's windup. Intensity ramps up
+      as the windup approaches completion so the player gets a smooth visual
+      "almost" before the strike lands. */
+  private drawWindupFlash(rat: Rat): void {
+    if (!rat.flashGfx) {
+      rat.flashGfx = this.add.graphics();
+      rat.gfx.add(rat.flashGfx);
+    }
+    rat.flashGfx.clear();
+    const ratio = 1 - (rat.windupTimer / Math.max(0.001, rat.windupDuration));
+    const alpha = 0.25 + 0.55 * ratio;
+    const radius = rat.type === 'boss' ? 24 : RAT_SIZE + 4;
+    // Skirmishers flash red (lunge tell), grunts/boss flash white
+    const color = rat.type === 'skirmisher' ? 0xff5555 : 0xffffff;
+    rat.flashGfx.fillStyle(color, alpha * 0.5);
+    rat.flashGfx.fillCircle(0, 0, radius);
+    rat.flashGfx.lineStyle(2, color, alpha);
+    rat.flashGfx.strokeCircle(0, 0, radius);
+  }
+
+  private clearWindupFlash(rat: Rat): void {
+    rat.flashGfx?.destroy();
+    rat.flashGfx = null;
+  }
+
+  /** Resolve a rat attack at the end of its windup. Behavior depends on
+      type — grunts deal direct contact damage; skirmishers launch into a
+      lunge in the cat's last-known direction. */
+  private resolveRatAttack(rat: Rat): void {
+    this.clearWindupFlash(rat);
+    if (rat.type === 'skirmisher') {
+      // Lunge in the direction of the cat at the moment the windup elapsed
+      const dx = this.catX - rat.x;
+      const dy = this.catY - rat.y;
+      const len = Math.max(0.001, Math.sqrt(dx * dx + dy * dy));
+      rat.lungeDx = dx / len;
+      rat.lungeDy = dy / len;
+      rat.lungeTimer = 0.35;
+      return;
+    }
+    // Grunt / boss — contact damage IF the cat is still in range
+    const dist = Math.sqrt((this.catX - rat.x) ** 2 + (this.catY - rat.y) ** 2);
+    const range = rat.type === 'boss' ? RAT_SIZE + CAT_SIZE + 6 : RAT_SIZE + CAT_SIZE + 2;
+    if (dist < range && this.invincibleTimer <= 0) {
+      this.applyHitToCat(rat.type === 'boss' ? 2 : 1);
+    }
+  }
+
+  /** Damage the cat. Centralized so juice (flash, shake, sound) and
+      bookkeeping (i-frames, HP bar) live in one place. */
+  private applyHitToCat(amount = 1): void {
+    this.catHp -= amount;
+    this.invincibleTimer = 0.8;
+    this.drawHpBar();
+    this.cameras.main.flash(100, 80, 20, 20);
+    this.cameras.main.shake(120, 0.008);
+    playSfx('hiss', 0.4);
+  }
+
+  /** Trigger boss phase 2 at 50% HP. Per "boss fights need an emotional
+      midpoint": flash, scream, accelerate, shorten windups, spawn 2 minions.
+      The fight stops being a chunky rat and becomes a real test. */
+  private triggerBossPhase2(rat: Rat): void {
+    rat.bossPhase = 2;
+    rat.speed = rat.baseSpeed * 1.6;
+    rat.windupTimer = 0; // interrupt any pending windup
+    this.clearWindupFlash(rat);
+    this.cameras.main.flash(300, 200, 40, 40);
+    this.cameras.main.shake(220, 0.012);
+    playSfx('hiss', 0.7);
+    playSfx('rat_caught', 0.4);
+    // Visual: brief "ENRAGED" tag above the boss
+    const tag = this.add.text(rat.x, rat.y - 36, 'ENRAGED', {
+      fontFamily: 'Georgia, serif', fontSize: '12px', color: '#ff5555',
+    }).setOrigin(0.5);
+    this.tweens.add({ targets: tag, y: rat.y - 56, alpha: 0, duration: 1200, onComplete: () => tag.destroy() });
+    // Spawn 2 grunt minions at random arena edges
+    this.spawnRat('grunt', 1, rat.baseSpeed);
+    this.spawnRat('grunt', 1, rat.baseSpeed);
   }
 
   private facingToDir(): string {
@@ -614,12 +783,17 @@ export class BrawlScene extends Phaser.Scene {
       this.killText.setText(`Rats: ${this.ratsKilled}`);
       playSfx('rat_caught', 0.5);
 
+      // Hit-stop — brief 60ms freeze on kill so the impact has weight.
+      // The doc's juice pillar: "this is what makes attacks feel heavy".
+      this.hitStopUntil = Date.now() + 60;
+
       // Death effect
       const sparkle = this.add.text(rat.x, rat.y - 10, '+1', {
         fontFamily: 'Georgia, serif', fontSize: '14px', color: '#4a8a4a',
       }).setOrigin(0.5);
       this.tweens.add({ targets: sparkle, y: rat.y - 40, alpha: 0, duration: 500, onComplete: () => sparkle.destroy() });
 
+      this.clearWindupFlash(rat);
       rat.gfx.destroy();
       this.rats = this.rats.filter((r) => r !== rat);
     }
@@ -647,98 +821,159 @@ export class BrawlScene extends Phaser.Scene {
     }
   }
 
+  /** Foreshadow + spawn the next wave. The doc's "encounter design" pillar
+      explicitly calls for "audio, visual, or environmental cues so the player
+      has one turn to prepare". We show an alert ~1s before the rats appear. */
   private spawnWave(): void {
+    if (this.waveAnnouncing || this.finished) return;
+    this.waveAnnouncing = true;
     this.wave++;
     this.waveText.setText(`Wave ${this.wave}/${this.totalWaves}`);
 
+    // ── Wave foreshadowing ──
+    const incoming = this.add.text(GAME_WIDTH / 2, ARENA_TOP + ARENA_H / 2, `Wave ${this.wave} incoming!`, {
+      fontFamily: 'Georgia, serif', fontSize: '20px', color: '#ffaa44',
+    }).setOrigin(0.5).setAlpha(0);
+    this.tweens.add({ targets: incoming, alpha: 1, duration: 250, yoyo: true, hold: 600, onComplete: () => incoming.destroy() });
+    playSfx('tap', 0.3);
+    // Brief border pulse — environmental cue that something is coming
+    this.cameras.main.flash(150, 200, 100, 30, false);
+
+    // Schedule the actual spawn after the alert
+    this.time.delayedCall(1100, () => {
+      this.waveAnnouncing = false;
+      if (this.finished) return;
+      this.actuallySpawnWave();
+    });
+  }
+
+  /** The real spawn logic. Composition is the doc's "wave structure to teach
+      rat types one at a time" pillar:
+      - Wave 1: only Grunts (the player learns the basic windup→attack loop)
+      - Wave 2+: introduces Skirmishers in the mix (red flash, lunge attack)
+      - Final wave: spawns the boss + a small grunt entourage
+   */
+  private actuallySpawnWave(): void {
     const baseCount = this.difficulty === 'hard' ? 5 : this.difficulty === 'medium' ? 4 : 3;
     const count = baseCount + this.wave - 1;
-    // Wave 1 rats are always 1 HP (one-hit kills). Later waves get tougher.
     const ratHp = this.wave === 1 ? 1 : (this.difficulty === 'hard' ? 3 : this.difficulty === 'medium' ? 2 : 1);
     const ratSpeed = (this.difficulty === 'hard' ? 1.2 : this.difficulty === 'medium' ? 1.0 : 0.8) + this.wave * 0.1;
 
-    // Spawn a Rat King on the final wave
     if (this.wave === this.totalWaves) {
-      const bossHp = this.difficulty === 'hard' ? 8 : this.difficulty === 'medium' ? 6 : 4;
-      const bossX = GAME_WIDTH / 2;
-      const bossY = ARENA_TOP + 30;
-      const bossContainer = this.add.container(bossX, bossY);
-
-      if (this.textures.exists('rat')) {
-        const bossSprite = this.add.sprite(0, 0, 'rat');
-        bossSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
-        bossSprite.setScale(1.6);
-        bossContainer.add(bossSprite);
-      } else {
-        const bossBody = this.add.circle(0, 0, 18, 0x6a3a2a);
-        bossContainer.add(bossBody);
+      this.spawnBoss();
+      // Boss waves get a smaller entourage so the boss is the focus
+      const entourage = Math.max(1, Math.floor(count / 2));
+      for (let i = 0; i < entourage; i++) {
+        const type: RatType = (i % 2 === 0 || this.wave < 2) ? 'grunt' : 'skirmisher';
+        this.spawnRat(type, ratHp, ratSpeed);
       }
-      // Crown
-      const crown = this.add.text(0, -22, '\u{1F451}', { fontSize: '14px' }).setOrigin(0.5);
-      bossContainer.add(crown);
-      // Boss label
-      const bossLabel = this.add.text(0, 20, 'RAT KING', {
-        fontFamily: 'Georgia, serif', fontSize: '8px', color: '#cc6666',
-      }).setOrigin(0.5);
-      bossContainer.add(bossLabel);
-
-      this.rats.push({
-        x: bossX, y: bossY, hp: bossHp, maxHp: bossHp,
-        speed: ratSpeed * 0.6, gfx: bossContainer,
-        stunTimer: 1.0, attackTimer: 0.7,
-      });
+      return;
     }
 
     for (let i = 0; i < count; i++) {
-      // Spawn from edges
-      const edge = Math.floor(Math.random() * 4);
-      let rx: number, ry: number;
-      switch (edge) {
-        case 0: rx = ARENA_LEFT + 15; ry = ARENA_TOP + 15 + Math.random() * (ARENA_H - 30); break;
-        case 1: rx = ARENA_RIGHT - 15; ry = ARENA_TOP + 15 + Math.random() * (ARENA_H - 30); break;
-        case 2: rx = ARENA_LEFT + 15 + Math.random() * (ARENA_W - 30); ry = ARENA_TOP + 15; break;
-        default: rx = ARENA_LEFT + 15 + Math.random() * (ARENA_W - 30); ry = ARENA_BOTTOM - 15; break;
-      }
+      // Wave 2+ introduces skirmishers — about 1/3 of the spawns
+      const type: RatType = (this.wave >= 2 && i % 3 === 0) ? 'skirmisher' : 'grunt';
+      const hp = type === 'skirmisher' ? 1 : ratHp; // skirmishers always die in 1 hit
+      const sp = type === 'skirmisher' ? ratSpeed * 0.85 : ratSpeed;
+      this.spawnRat(type, hp, sp);
+    }
+  }
 
-      const container = this.add.container(rx, ry);
-
-      // Rat body — use sprite if available
-      if (this.textures.exists('rat')) {
-        const ratSprite = this.add.sprite(0, 0, 'rat');
-        ratSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
-        ratSprite.setScale(0.8);
-        container.add(ratSprite);
-      } else {
-        const body = this.add.circle(0, 0, RAT_SIZE, 0x8a5a4a);
-        container.add(body);
-        const eye1 = this.add.circle(-3, -3, 2, 0xffffff);
-        const eye2 = this.add.circle(3, -3, 2, 0xffffff);
-        const pupil1 = this.add.circle(-3, -3, 1, 0x111111);
-        const pupil2 = this.add.circle(3, -3, 1, 0x111111);
-        container.add([eye1, eye2, pupil1, pupil2]);
-      }
-
-      // HP indicator for tougher rats
-      if (ratHp > 1) {
-        const hpDot = this.add.circle(0, -RAT_SIZE - 4, 2, 0xcc4444);
-        container.add(hpDot);
-      }
-
-      this.rats.push({
-        x: rx, y: ry,
-        hp: ratHp, maxHp: ratHp,
-        speed: ratSpeed,
-        gfx: container,
-        stunTimer: 0.5, // brief spawn grace
-        attackTimer: 1.0,
-      });
+  /** Spawn a single rat of the given type at a random arena edge. */
+  private spawnRat(type: RatType, hp: number, speed: number): void {
+    const edge = Math.floor(Math.random() * 4);
+    let rx: number, ry: number;
+    switch (edge) {
+      case 0: rx = ARENA_LEFT + 15; ry = ARENA_TOP + 15 + Math.random() * (ARENA_H - 30); break;
+      case 1: rx = ARENA_RIGHT - 15; ry = ARENA_TOP + 15 + Math.random() * (ARENA_H - 30); break;
+      case 2: rx = ARENA_LEFT + 15 + Math.random() * (ARENA_W - 30); ry = ARENA_TOP + 15; break;
+      default: rx = ARENA_LEFT + 15 + Math.random() * (ARENA_W - 30); ry = ARENA_BOTTOM - 15; break;
     }
 
-    // Wave announce
-    const announce = this.add.text(GAME_WIDTH / 2, ARENA_TOP + ARENA_H / 2, `Wave ${this.wave}!`, {
-      fontFamily: 'Georgia, serif', fontSize: '28px', color: '#cc6666',
-    }).setOrigin(0.5).setAlpha(0);
-    this.tweens.add({ targets: announce, alpha: 1, duration: 300, yoyo: true, hold: 500, onComplete: () => announce.destroy() });
+    const container = this.add.container(rx, ry);
+
+    // Rat body — use sprite if available, tinted differently per type
+    if (this.textures.exists('rat')) {
+      const ratSprite = this.add.sprite(0, 0, 'rat');
+      ratSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      ratSprite.setScale(type === 'skirmisher' ? 0.7 : 0.8);
+      // Skirmishers wear a red tint so the player can spot them at a glance —
+      // the same visual identity as the lunge windup flash.
+      if (type === 'skirmisher') ratSprite.setTint(0xff8888);
+      container.add(ratSprite);
+    } else {
+      const bodyColor = type === 'skirmisher' ? 0xb04a4a : 0x8a5a4a;
+      const body = this.add.circle(0, 0, RAT_SIZE, bodyColor);
+      container.add(body);
+      const eye1 = this.add.circle(-3, -3, 2, 0xffffff);
+      const eye2 = this.add.circle(3, -3, 2, 0xffffff);
+      const pupil1 = this.add.circle(-3, -3, 1, 0x111111);
+      const pupil2 = this.add.circle(3, -3, 1, 0x111111);
+      container.add([eye1, eye2, pupil1, pupil2]);
+    }
+
+    if (hp > 1) {
+      const hpDot = this.add.circle(0, -RAT_SIZE - 4, 2, 0xcc4444);
+      container.add(hpDot);
+    }
+
+    this.rats.push({
+      type,
+      x: rx, y: ry,
+      hp, maxHp: hp,
+      speed, baseSpeed: speed,
+      gfx: container,
+      stunTimer: 0.5,
+      attackTimer: 1.0,
+      windupTimer: 0,
+      windupDuration: 0,
+      lungeTimer: 0,
+      lungeDx: 0, lungeDy: 0,
+      bossPhase: 1,
+      flashGfx: null,
+    });
+  }
+
+  /** Spawn the Rat King boss. Lives at the top of the arena, has its own
+      windup tells, and transitions to phase 2 at 50% HP. */
+  private spawnBoss(): void {
+    const bossHp = this.difficulty === 'hard' ? 8 : this.difficulty === 'medium' ? 6 : 4;
+    const bossSpeed = (this.difficulty === 'hard' ? 1.2 : this.difficulty === 'medium' ? 1.0 : 0.8) * 0.6;
+    const bossX = GAME_WIDTH / 2;
+    const bossY = ARENA_TOP + 30;
+    const bossContainer = this.add.container(bossX, bossY);
+
+    if (this.textures.exists('rat')) {
+      const bossSprite = this.add.sprite(0, 0, 'rat');
+      bossSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      bossSprite.setScale(1.6);
+      bossContainer.add(bossSprite);
+    } else {
+      const bossBody = this.add.circle(0, 0, 18, 0x6a3a2a);
+      bossContainer.add(bossBody);
+    }
+    const crown = this.add.text(0, -22, '\u{1F451}', { fontSize: '14px' }).setOrigin(0.5);
+    bossContainer.add(crown);
+    const bossLabel = this.add.text(0, 20, 'RAT KING', {
+      fontFamily: 'Georgia, serif', fontSize: '8px', color: '#cc6666',
+    }).setOrigin(0.5);
+    bossContainer.add(bossLabel);
+
+    this.rats.push({
+      type: 'boss',
+      x: bossX, y: bossY,
+      hp: bossHp, maxHp: bossHp,
+      speed: bossSpeed, baseSpeed: bossSpeed,
+      gfx: bossContainer,
+      stunTimer: 1.0,
+      attackTimer: 0.7,
+      windupTimer: 0,
+      windupDuration: 0,
+      lungeTimer: 0,
+      lungeDx: 0, lungeDy: 0,
+      bossPhase: 1,
+      flashGfx: null,
+    });
   }
 
   private drawHpBar(): void {
