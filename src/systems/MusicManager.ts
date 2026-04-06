@@ -21,8 +21,10 @@ const FIGHT_TRACKS = [
 
 let bgmAudio: HTMLAudioElement | null = null;
 let bgmMuted = localStorage.getItem('clowder_bgm_muted') === '1';
+let bgmVolume = parseFloat(localStorage.getItem('clowder_bgm_volume') ?? '0.35');
 let bgmTrackIndex = -1;
 let currentMode: 'normal' | 'puzzle' | 'fight' = 'normal';
+let fadeTimer: ReturnType<typeof setInterval> | null = null;
 
 function getTrackList(): string[] {
   if (currentMode === 'fight') return FIGHT_TRACKS;
@@ -40,21 +42,56 @@ function pickNextTrack(): string {
 }
 
 function onTrackEnded(): void {
-  playTrack(pickNextTrack());
+  playTrack(pickNextTrack(), false);
 }
 
-function playTrack(src: string): void {
-  if (bgmAudio) {
-    bgmAudio.pause();
-    bgmAudio.removeEventListener('ended', onTrackEnded);
+function clearFade(): void {
+  if (fadeTimer !== null) {
+    clearInterval(fadeTimer);
+    fadeTimer = null;
   }
-  bgmAudio = new Audio(src);
-  bgmAudio.volume = 0.35;
-  bgmAudio.muted = bgmMuted;
-  bgmAudio.addEventListener('ended', onTrackEnded);
-  bgmAudio.play().catch(() => {
+}
+
+function fadeOutAndStop(audio: HTMLAudioElement, duration: number, cb: () => void): void {
+  clearFade();
+  const startVol = audio.volume;
+  const steps = Math.max(1, Math.floor(duration / 20));
+  const decrement = startVol / steps;
+  let step = 0;
+  fadeTimer = setInterval(() => {
+    step++;
+    audio.volume = Math.max(0, startVol - decrement * step);
+    if (step >= steps) {
+      clearFade();
+      audio.pause();
+      audio.removeEventListener('ended', onTrackEnded);
+      cb();
+    }
+  }, 20);
+}
+
+function playTrack(src: string, fade = true): void {
+  const startNew = () => {
+    bgmAudio = new Audio(src);
+    bgmAudio.volume = bgmVolume;
+    bgmAudio.muted = bgmMuted;
+    bgmAudio.addEventListener('ended', onTrackEnded);
+    bgmAudio.play().catch(() => {
+      bgmAudio = null;
+    });
+  };
+
+  if (bgmAudio && fade) {
+    const old = bgmAudio;
     bgmAudio = null;
-  });
+    fadeOutAndStop(old, 300, startNew);
+  } else {
+    if (bgmAudio) {
+      bgmAudio.pause();
+      bgmAudio.removeEventListener('ended', onTrackEnded);
+    }
+    startNew();
+  }
 }
 
 export function startBgm(): void {
@@ -94,6 +131,16 @@ export function toggleMute(): boolean {
 
 export function isMuted(): boolean {
   return bgmMuted;
+}
+
+export function setBgmVolume(vol: number): void {
+  bgmVolume = Math.max(0, Math.min(1, vol));
+  localStorage.setItem('clowder_bgm_volume', String(bgmVolume));
+  if (bgmAudio) bgmAudio.volume = bgmVolume;
+}
+
+export function getBgmVolume(): number {
+  return bgmVolume;
 }
 
 export function pauseMusic(): void {

@@ -4,8 +4,8 @@ import { getJob } from '../systems/JobBoard';
 import { getBondPairs, getBondRank } from '../systems/BondSystem';
 import { getChapterName, getNextChapterHint } from '../systems/ProgressionManager';
 import { getReputationLabel, getReputationBonuses } from '../systems/ReputationSystem';
-import { toggleMute, isMuted } from '../systems/MusicManager';
-import { toggleSfxMute, isSfxMuted } from '../systems/SfxManager';
+import { toggleMute, isMuted, setBgmVolume, getBgmVolume } from '../systems/MusicManager';
+import { toggleSfxMute, isSfxMuted, setSfxVolume, getSfxVolume } from '../systems/SfxManager';
 import { deleteSave, loadGame } from '../systems/SaveManager';
 import { spendFish } from '../systems/Economy';
 import { playSfx } from '../systems/SfxManager';
@@ -256,7 +256,15 @@ export function showMenuPanel(): void {
     <button class="menu-btn" id="menu-save">Save Game</button>
     <div style="padding:4px 12px;font-size:10px;color:#555;font-style:italic;text-align:center">Visit the Carpenter in town to buy furniture</div>
     <button class="menu-btn" id="menu-mute">${isMuted() ? 'Unmute Music' : 'Mute Music'}</button>
+    <div style="display:flex;align-items:center;gap:8px;padding:0 12px;margin:-4px 0 8px">
+      <span style="font-size:11px;color:#8b7355;white-space:nowrap">Music Vol</span>
+      <input type="range" id="menu-vol-bgm" min="0" max="100" value="${Math.round(getBgmVolume() * 100)}" style="flex:1;accent-color:#c4956a;height:6px">
+    </div>
     <button class="menu-btn" id="menu-mute-sfx">${isSfxMuted() ? 'Unmute Sound Effects' : 'Mute Sound Effects'}</button>
+    <div style="display:flex;align-items:center;gap:8px;padding:0 12px;margin:-4px 0 8px">
+      <span style="font-size:11px;color:#8b7355;white-space:nowrap">SFX Vol</span>
+      <input type="range" id="menu-vol-sfx" min="0" max="100" value="${Math.round(getSfxVolume() * 100)}" style="flex:1;accent-color:#c4956a;height:6px">
+    </div>
     <button class="menu-btn" id="menu-export">Export Save</button>
     <button class="menu-btn" id="menu-import">Import Save</button>
     <button class="menu-btn" id="menu-quit-title">Quit to Title Screen</button>
@@ -350,6 +358,14 @@ export function showMenuPanel(): void {
     panel.remove();
     showMenuPanel();
     deps.showToast(muted ? 'Sound effects muted' : 'Sound effects unmuted');
+  });
+
+  document.getElementById('menu-vol-bgm')!.addEventListener('input', (e) => {
+    setBgmVolume(parseInt((e.target as HTMLInputElement).value) / 100);
+  });
+
+  document.getElementById('menu-vol-sfx')!.addEventListener('input', (e) => {
+    setSfxVolume(parseInt((e.target as HTMLInputElement).value) / 100);
   });
 
   document.getElementById('menu-export')!.addEventListener('click', () => {

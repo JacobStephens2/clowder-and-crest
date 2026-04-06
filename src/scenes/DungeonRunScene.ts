@@ -71,6 +71,11 @@ export class DungeonRunScene extends Phaser.Scene {
       return;
     }
 
+    this.events.once('shutdown', () => {
+      this.time.removeAllEvents();
+      this.tweens.killAll();
+    });
+
     // Check if returning from a floor
     if (activeDungeon) {
       this.showFloorTransition();

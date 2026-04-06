@@ -145,6 +145,11 @@ export class GuildhallScene extends Phaser.Scene {
       }).setOrigin(0.5);
     }
 
+    this.events.once('shutdown', () => {
+      this.time.removeAllEvents();
+      this.tweens.killAll();
+    });
+
     this.drawRooms(save);
 
     // Cellar entrance (Chapter 5+)
