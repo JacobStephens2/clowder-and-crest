@@ -79,8 +79,9 @@ const config: Phaser.Types.Core.GameConfig = {
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   render: {
-    pixelArt: false,
-    antialias: true,
+    // Pixel art game — global NEAREST filtering, no antialiasing.
+    // Makes per-sprite `texture.setFilter(NEAREST)` calls redundant.
+    pixelArt: true,
   },
   input: {
     activePointers: 2,

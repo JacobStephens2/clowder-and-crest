@@ -4,7 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
-import { showMinigameTutorial } from '../ui/sceneHelpers';
+import { showMinigameTutorial, attachStandardCleanup } from '../ui/sceneHelpers';
 
 const LANE_Y = [280, 400, 520]; // 3 lanes
 const LANE_COUNT = 3;
@@ -151,11 +151,7 @@ export class CourierRunScene extends Phaser.Scene {
       if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') this.changeLane(1);
     });
 
-    this.events.once('shutdown', () => {
-      this.time.removeAllEvents();
-      this.tweens.killAll();
-      this.input.keyboard?.removeAllListeners();
-    });
+    attachStandardCleanup(this);
 
     eventBus.emit('show-ui');
     eventBus.emit('set-active-tab', 'town');

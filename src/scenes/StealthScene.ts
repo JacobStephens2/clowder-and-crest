@@ -4,7 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
-import { createDpad, showMinigameTutorial } from '../ui/sceneHelpers';
+import { createDpad, showMinigameTutorial, attachStandardCleanup } from '../ui/sceneHelpers';
 
 // ── Layout ──
 const GRID_COLS = 9;
@@ -140,11 +140,7 @@ export class StealthScene extends Phaser.Scene {
       loop: true,
     });
 
-    this.events.once('shutdown', () => {
-      this.time.removeAllEvents();
-      this.tweens.killAll();
-      this.input.keyboard?.removeAllListeners();
-    });
+    attachStandardCleanup(this);
 
     eventBus.emit('show-ui');
     eventBus.emit('set-active-tab', 'town');

@@ -4,6 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
+import { attachStandardCleanup } from '../ui/sceneHelpers';
 
 // ── Layout constants ──
 const BAR_HEIGHT = 360;
@@ -329,12 +330,7 @@ export class FishingScene extends Phaser.Scene {
       this.isReeling = false;
     });
 
-    // Clean up on scene stop (prevent timer/tween memory leaks)
-    this.events.once('shutdown', () => {
-      this.time.removeAllEvents();
-      this.tweens.killAll();
-      this.input.keyboard?.removeAllListeners();
-    });
+    attachStandardCleanup(this);
     eventBus.emit('show-ui');
   }
 

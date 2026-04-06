@@ -4,7 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
-import { createDpad, showMinigameTutorial } from '../ui/sceneHelpers';
+import { createDpad, showMinigameTutorial, attachStandardCleanup } from '../ui/sceneHelpers';
 
 const TILE = 38;
 const GRID_TOP = 100;
@@ -112,11 +112,7 @@ export class ScentTrailScene extends Phaser.Scene {
       holdRepeat: false,
     });
 
-    this.events.once('shutdown', () => {
-      this.time.removeAllEvents();
-      this.tweens.killAll();
-      this.input.keyboard?.removeAllListeners();
-    });
+    attachStandardCleanup(this);
 
     eventBus.emit('show-ui');
     eventBus.emit('set-active-tab', 'town');

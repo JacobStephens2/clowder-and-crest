@@ -1,8 +1,33 @@
 /**
- * Shared helpers for Phaser scenes — buttons, d-pads, tutorials.
+ * Shared helpers for Phaser scenes — buttons, d-pads, tutorials, lifecycle.
  * Eliminates duplication across minigame scenes.
  */
 import Phaser from 'phaser';
+
+// ── Scene Lifecycle ──
+
+/**
+ * Attach a standard shutdown handler covering the common cleanup cases.
+ * Call once per scene in create(). Pass `extra` for scene-specific cleanup
+ * (e.g. removing HTML overlays, clearing physics bodies).
+ *
+ * Covers:
+ * - Timer events (time.removeAllEvents)
+ * - Tweens (tweens.killAll)
+ * - Keyboard listeners (input.keyboard.removeAllListeners)
+ *
+ * Does NOT cover input.on() pointer handlers — those persist for scene restarts
+ * by design. If a scene adds scene-scoped pointer handlers, register them via
+ * the `extra` callback with input.off('eventname') calls.
+ */
+export function attachStandardCleanup(scene: Phaser.Scene, extra?: () => void): void {
+  scene.events.once('shutdown', () => {
+    scene.time.removeAllEvents();
+    scene.tweens.killAll();
+    scene.input.keyboard?.removeAllListeners();
+    extra?.();
+  });
+}
 
 // ── Styled Button ──
 

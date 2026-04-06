@@ -36,16 +36,16 @@ Thoughtful, methodical. Soft lute and cittern with a contemplative melody. 90 BP
 ### Nonogram (Grid Logic) - created
 Minimal and clean. Plucked lute with occasional hand-bell tones. 85 BPM. Quiet spaces between notes — the sound of careful deduction. Think a monastery scribing room at dusk. *(~200 chars)*
 
-### Stealth (Guard Avoidance)
+### Stealth (Guard Avoidance) - created
 Tense and suspenseful. Low cittern drone with occasional high fiddle harmonics. 100 BPM. Silence is part of the composition — the cat is holding its breath. Think medieval heist by candlelight.
 
-### Pounce (Physics Catapult)
+### Pounce (Physics Catapult) - created
 Dramatic, anticipatory. Building bodhrán rolls with held fiddle notes, then silence before release. 110 BPM. Alternating tense buildup and brief quiet. Think siege engine loading.
 
-### Slide Blocks (Rush Hour)
+### Slide Blocks (Rush Hour) - created
 Light puzzle music. Wooden percussion (marimba-like tonewoods) with a simple lute melody. 95 BPM. Satisfying clicks implied in the rhythm. Think a wooden toy puzzle on a guildmaster's desk.
 
-### Patrol (Lantern Watch)
+### Patrol (Lantern Watch) - created
 Eerie and watchful. Low tin whistle with distant harp accents. 70 BPM. Night atmosphere — a lone bell in the distance, still air. The sound of staying alert in darkness. Think medieval night watch.
 
 ### Ritual (Simon Says)
