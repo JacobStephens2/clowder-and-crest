@@ -685,15 +685,15 @@ export class RoomScene extends Phaser.Scene {
         if (this.anims.exists(walkKey) && sprite.anims.currentAnim?.key !== walkKey) {
           sprite.play(walkKey);
         }
-        this.tweens.add({ targets: sprite, x: dest.x, y: dest.y - 4, duration, ease: 'Linear' });
+        this.tweens.add({ targets: sprite, x: dest.x, y: dest.y - 4, duration, ease: 'Sine.easeOut' });
       }
       if (fallbackGfx) {
-        this.tweens.add({ targets: fallbackGfx, x: dest.x, y: dest.y, duration, ease: 'Linear' });
+        this.tweens.add({ targets: fallbackGfx, x: dest.x, y: dest.y, duration, ease: 'Sine.easeOut' });
       }
-      this.tweens.add({ targets: shadow, x: dest.x, y: dest.y + 12, duration, ease: 'Linear' });
-      this.tweens.add({ targets: indicator, x: dest.x, y: dest.y - 30, duration, ease: 'Linear' });
+      this.tweens.add({ targets: shadow, x: dest.x, y: dest.y + 12, duration, ease: 'Sine.easeOut' });
+      this.tweens.add({ targets: indicator, x: dest.x, y: dest.y - 30, duration, ease: 'Sine.easeOut' });
       this.tweens.add({
-        targets: nameTag, x: dest.x, y: dest.y + 18, duration, ease: 'Linear',
+        targets: nameTag, x: dest.x, y: dest.y + 18, duration, ease: 'Sine.easeOut',
         onComplete: () => {
           currentTile = { col: targetCol, row: targetRow };
           isMoving = false;
@@ -907,15 +907,15 @@ export class RoomScene extends Phaser.Scene {
           if (this.anims.exists(walkKey)) {
             sprite.play(walkKey);
           }
-          this.tweens.add({ targets: sprite, x: dest.x, y: dest.y - 4, duration, ease: 'Linear' });
+          this.tweens.add({ targets: sprite, x: dest.x, y: dest.y - 4, duration, ease: 'Sine.easeOut' });
         }
         if (fallbackGfx) {
-          this.tweens.add({ targets: fallbackGfx, x: dest.x, y: dest.y, duration, ease: 'Linear' });
+          this.tweens.add({ targets: fallbackGfx, x: dest.x, y: dest.y, duration, ease: 'Sine.easeOut' });
         }
-        this.tweens.add({ targets: shadow, x: dest.x, y: dest.y + 12, duration, ease: 'Linear' });
-        this.tweens.add({ targets: hitBox, x: dest.x, y: dest.y, duration, ease: 'Linear' });
+        this.tweens.add({ targets: shadow, x: dest.x, y: dest.y + 12, duration, ease: 'Sine.easeOut' });
+        this.tweens.add({ targets: hitBox, x: dest.x, y: dest.y, duration, ease: 'Sine.easeOut' });
         this.tweens.add({
-          targets: nameTag, x: dest.x, y: dest.y + 18, duration, ease: 'Linear',
+          targets: nameTag, x: dest.x, y: dest.y + 18, duration, ease: 'Sine.easeOut',
           onComplete: () => { currentTile = { ...nextTile }; wanderToNext(); },
         });
       });

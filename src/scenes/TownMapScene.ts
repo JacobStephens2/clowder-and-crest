@@ -741,7 +741,7 @@ export class TownMapScene extends Phaser.Scene {
         targets: this.playerSprite,
         x: dest.x, y: dest.y,
         duration: 160,
-        ease: 'Linear',
+        ease: 'Sine.easeOut',
         onComplete: () => {
           this.isMoving = false;
           const idleKey = `${this.catBreed}_idle_${dir}`;

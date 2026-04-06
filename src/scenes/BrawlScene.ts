@@ -356,8 +356,12 @@ export class BrawlScene extends Phaser.Scene {
     if (dx !== 0 || dy !== 0) {
       const len = Math.sqrt(dx * dx + dy * dy);
       const speed = this.catSpeed * 60 * dt;
-      this.catX = Phaser.Math.Clamp(this.catX + (dx / len) * speed, ARENA_LEFT + CAT_SIZE, ARENA_RIGHT - CAT_SIZE);
-      this.catY = Phaser.Math.Clamp(this.catY + (dy / len) * speed, ARENA_TOP + CAT_SIZE, ARENA_BOTTOM - CAT_SIZE);
+      // Apply acceleration-style movement for smoother feel
+      const targetX = Phaser.Math.Clamp(this.catX + (dx / len) * speed, ARENA_LEFT + CAT_SIZE, ARENA_RIGHT - CAT_SIZE);
+      const targetY = Phaser.Math.Clamp(this.catY + (dy / len) * speed, ARENA_TOP + CAT_SIZE, ARENA_BOTTOM - CAT_SIZE);
+      // Lerp toward target for smoothing (0.7 = responsive but smooth)
+      this.catX = Phaser.Math.Linear(this.catX, targetX, 0.7);
+      this.catY = Phaser.Math.Linear(this.catY, targetY, 0.7);
       this.catFacing = Math.atan2(dy, dx);
 
       // Update idle sprite direction
@@ -391,7 +395,9 @@ export class BrawlScene extends Phaser.Scene {
       }
     }
 
-    this.catSprite.setPosition(this.catX, this.catY);
+    // Smooth sprite position with lerp
+    this.catSprite.x = Phaser.Math.Linear(this.catSprite.x, this.catX, 0.5);
+    this.catSprite.y = Phaser.Math.Linear(this.catSprite.y, this.catY, 0.5);
 
     // Check powerup pickup
     this.checkPowerupPickup();

@@ -568,7 +568,7 @@ export class ChaseScene extends Phaser.Scene {
         this.catSprite.play(walkKey);
       }
       this.tweens.add({
-        targets: this.catSprite, x: dest.x, y: dest.y, duration: 120, ease: 'Linear',
+        targets: this.catSprite, x: dest.x, y: dest.y, duration: 120, ease: 'Sine.easeOut',
         onComplete: () => {
           const idleDir = dr < 0 ? 'north' : dr > 0 ? 'south' : dc < 0 ? 'west' : 'east';
           this.catSprite?.setTexture(`${this.catBreed}_idle_${idleDir}`);
@@ -578,7 +578,7 @@ export class ChaseScene extends Phaser.Scene {
       });
     }
     if (this.catFallback) {
-      this.tweens.add({ targets: this.catFallback, x: dest.x, y: dest.y, duration: 120, ease: 'Linear' });
+      this.tweens.add({ targets: this.catFallback, x: dest.x, y: dest.y, duration: 120, ease: 'Sine.easeOut' });
     }
 
     // Collect dots
