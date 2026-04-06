@@ -333,6 +333,7 @@ export class FishingScene extends Phaser.Scene {
     this.events.once('shutdown', () => {
       this.time.removeAllEvents();
       this.tweens.killAll();
+      this.input.keyboard?.removeAllListeners();
     });
     eventBus.emit('show-ui');
   }

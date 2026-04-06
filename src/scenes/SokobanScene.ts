@@ -752,47 +752,42 @@ export class SokobanScene extends Phaser.Scene {
       });
     }
 
-    // Tap/click input for movement (on the grid only)
+    // Unified pointer input — distinguishes swipes from taps on a single pointerup,
+    // preventing double-dispatch from the old split handlers.
+    let swipeStart: { x: number; y: number } | null = null;
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      swipeStart = { x: pointer.worldX, y: pointer.worldY };
+    });
     this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
-      if (this.solved || this.inputLocked) return;
+      if (this.solved || this.inputLocked) { swipeStart = null; return; }
+      const endX = pointer.worldX;
+      const endY = pointer.worldY;
 
-      const worldX = pointer.x / DPR;
-      const worldY = pointer.y / DPR;
+      // Swipe: long-distance drag, direction from the drag vector
+      if (swipeStart) {
+        const dx = endX - swipeStart.x;
+        const dy = endY - swipeStart.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        swipeStart = null;
+        if (dist >= 30) {
+          if (Math.abs(dx) > Math.abs(dy)) {
+            this.tryMove(dx > 0 ? 'right' : 'left');
+          } else {
+            this.tryMove(dy > 0 ? 'down' : 'up');
+          }
+          return;
+        }
+      }
 
-      // Only accept taps within the puzzle grid area
-      if (worldX < OFFSET_X || worldX > OFFSET_X + GRID_PX ||
-          worldY < OFFSET_Y || worldY > OFFSET_Y + GRID_PX) return;
+      // Tap inside the grid: direction relative to player
+      if (endX < OFFSET_X || endX > OFFSET_X + GRID_PX ||
+          endY < OFFSET_Y || endY > OFFSET_Y + GRID_PX) return;
 
       const playerPx = OFFSET_X + this.playerPos.c * SOKOBAN_TILE + SOKOBAN_TILE / 2;
       const playerPy = OFFSET_Y + this.playerPos.r * SOKOBAN_TILE + SOKOBAN_TILE / 2;
-
-      const dx = worldX - playerPx;
-      const dy = worldY - playerPy;
-
-      // Larger dead zone to prevent accidental moves
+      const dx = endX - playerPx;
+      const dy = endY - playerPy;
       if (Math.abs(dx) < SOKOBAN_TILE * 0.5 && Math.abs(dy) < SOKOBAN_TILE * 0.5) return;
-
-      if (Math.abs(dx) > Math.abs(dy)) {
-        this.tryMove(dx > 0 ? 'right' : 'left');
-      } else {
-        this.tryMove(dy > 0 ? 'down' : 'up');
-      }
-    });
-
-    // Swipe gesture for mobile
-    let swipeStart: { x: number; y: number } | null = null;
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      swipeStart = { x: pointer.x / DPR, y: pointer.y / DPR };
-    });
-    this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
-      if (!swipeStart || this.solved || this.inputLocked) { swipeStart = null; return; }
-      const endX = pointer.x / DPR;
-      const endY = pointer.y / DPR;
-      const dx = endX - swipeStart.x;
-      const dy = endY - swipeStart.y;
-      swipeStart = null;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 30) return; // too short — let tap handler deal with it
       if (Math.abs(dx) > Math.abs(dy)) {
         this.tryMove(dx > 0 ? 'right' : 'left');
       } else {

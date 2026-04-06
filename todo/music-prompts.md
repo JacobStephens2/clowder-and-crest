@@ -21,44 +21,44 @@ Shared block: **466 chars.** Leaves ~530 chars per track description. All combin
 
 ## Track Prompts
 
-### Chase (Rat Maze) — done
+### Chase (Rat Maze) — created
 Medieval chase. Quick fiddle melody over running bodhrán rhythm. 130 BPM, minor key. Tension of pursuit — the cat is hunting. Think tavern reel sped up. Organic, driving, no brass. 
 
-### Hunt (Whack-a-Mole) — done
+### Hunt (Whack-a-Mole) — created
 Playful, percussive. Bodhrán and hand drums with staccato tin whistle melody. 120 BPM, major (D Mixolydian). Light and bouncy — tapping rats is fun, not stressful. Short 4-bar melodic loops. Think medieval carnival fair. 
 
-### Fishing (Reel-In) — done
+### Fishing (Reel-In) — created
 Calm, patient, flowing. Gentle harp arpeggios over a soft cittern drone. 80 BPM. Meditative with subtle tension — the fish is testing the line. Think Stardew Valley fishing meets Celtic lullaby. 
 
-### Sokoban (Crate Pushing)
+### Sokoban (Crate Pushing) - created
 Thoughtful, methodical. Soft lute and cittern with a contemplative melody. 90 BPM, minor. The sound of unhurried focus — each note is a deliberate move. Think medieval library or a monk's study. 
 
-### Nonogram (Grid Logic)
+### Nonogram (Grid Logic) - created
 Minimal and clean. Plucked lute with occasional hand-bell tones. 85 BPM. Quiet spaces between notes — the sound of careful deduction. Think a monastery scribing room at dusk. *(~200 chars)*
 
 ### Stealth (Guard Avoidance)
-Tense and suspenseful. Low cittern drone with occasional high fiddle harmonics. 100 BPM. Silence is part of the composition — the cat is holding its breath. Think medieval heist by candlelight. *(~220 chars)*
+Tense and suspenseful. Low cittern drone with occasional high fiddle harmonics. 100 BPM. Silence is part of the composition — the cat is holding its breath. Think medieval heist by candlelight.
 
 ### Pounce (Physics Catapult)
-Dramatic, anticipatory. Building bodhrán rolls with held fiddle notes, then silence before release. 110 BPM. Alternating tense buildup and brief quiet. Think siege engine loading. *(~215 chars)*
+Dramatic, anticipatory. Building bodhrán rolls with held fiddle notes, then silence before release. 110 BPM. Alternating tense buildup and brief quiet. Think siege engine loading.
 
 ### Slide Blocks (Rush Hour)
-Light puzzle music. Wooden percussion (marimba-like tonewoods) with a simple lute melody. 95 BPM. Satisfying clicks implied in the rhythm. Think a wooden toy puzzle on a guildmaster's desk. *(~215 chars)*
+Light puzzle music. Wooden percussion (marimba-like tonewoods) with a simple lute melody. 95 BPM. Satisfying clicks implied in the rhythm. Think a wooden toy puzzle on a guildmaster's desk.
 
 ### Patrol (Lantern Watch)
-Eerie and watchful. Low tin whistle with distant harp accents. 70 BPM. Night atmosphere — a lone bell in the distance, still air. The sound of staying alert in darkness. Think medieval night watch. *(~225 chars)*
+Eerie and watchful. Low tin whistle with distant harp accents. 70 BPM. Night atmosphere — a lone bell in the distance, still air. The sound of staying alert in darkness. Think medieval night watch.
 
 ### Ritual (Simon Says)
-Sacred and reverential. Sustained fiddle tones like a choir, gentle bell chimes on each sequence step. 60 BPM. Ethereal and solemn. Think Gregorian chant distilled to its simplest elements. *(~215 chars)*
+Sacred and reverential. Sustained fiddle tones like a choir, gentle bell chimes on each sequence step. 60 BPM. Ethereal and solemn. Think Gregorian chant distilled to its simplest elements.
 
 ### Scent Trail (Hot/Cold Search)
-Mysterious, curious. Pizzicato fiddle with a wandering melody that hesitates and doubles back. 95 BPM. The sound of following a trail. Think detective noir meets medieval cloister. *(~215 chars)*
+Mysterious, curious. Pizzicato fiddle with a wandering melody that hesitates and doubles back. 95 BPM. The sound of following a trail. Think detective noir meets medieval cloister.
 
 ### Heist (Lock Picking)
-Clockwork, mechanical. Ticking woodblock percussion with metallic bell twangs. 105 BPM. The sound of precise, careful manipulation. Think a music box crossed with a medieval clock shop. *(~215 chars)*
+Clockwork, mechanical. Ticking woodblock percussion with metallic bell twangs. 105 BPM. The sound of precise, careful manipulation. Think a music box crossed with a medieval clock shop.
 
 ### Courier Run (Auto-Scroller)
-Energetic, forward-driving. Fast strummed lute with a running bass line on cittern. 140 BPM, D Mixolydian. Pure momentum — feet pounding cobblestones. Think medieval parkour. *(~205 chars)*
+Energetic, forward-driving. Fast strummed lute with a running bass line on cittern. 140 BPM, D Mixolydian. Pure momentum — feet pounding cobblestones. Think medieval parkour.
 
 ---
 

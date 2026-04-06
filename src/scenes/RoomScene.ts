@@ -742,8 +742,9 @@ export class RoomScene extends Phaser.Scene {
       moveToTile(grid.col, grid.row);
     });
 
-    // WASD / Arrow key movement (supports diagonal + continuous hold)
-    let moveRepeat: ReturnType<typeof setInterval> | null = null;
+    // WASD / Arrow key movement (supports diagonal + continuous hold).
+    // Uses Phaser's time.addEvent so the loop is auto-cleaned on scene shutdown.
+    let moveRepeat: Phaser.Time.TimerEvent | null = null;
 
     const processMovement = () => {
       let dc = 0;
@@ -760,19 +761,23 @@ export class RoomScene extends Phaser.Scene {
     const startRepeat = () => {
       if (moveRepeat) return;
       processMovement();
-      moveRepeat = setInterval(() => {
-        if (keysHeld.size === 0) {
-          clearInterval(moveRepeat!);
-          moveRepeat = null;
-          return;
-        }
-        processMovement();
-      }, 280);
+      moveRepeat = this.time.addEvent({
+        delay: 280,
+        loop: true,
+        callback: () => {
+          if (keysHeld.size === 0) {
+            moveRepeat?.remove();
+            moveRepeat = null;
+            return;
+          }
+          processMovement();
+        },
+      });
     };
 
     const stopRepeat = () => {
       if (keysHeld.size === 0 && moveRepeat) {
-        clearInterval(moveRepeat);
+        moveRepeat.remove();
         moveRepeat = null;
       }
       // Go idle when all keys released and not moving

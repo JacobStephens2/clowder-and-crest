@@ -4,8 +4,25 @@ import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 
 export class TitleScene extends Phaser.Scene {
+  private rainGfx: Phaser.GameObjects.Graphics | null = null;
+  private rainDrops: { x: number; y: number; speed: number; len: number }[] = [];
+
   constructor() {
     super({ key: 'TitleScene' });
+  }
+
+  update(): void {
+    if (!this.rainGfx) return;
+    this.rainGfx.clear();
+    this.rainGfx.lineStyle(1, 0x4a4a4a, 0.15);
+    for (const drop of this.rainDrops) {
+      drop.y += drop.speed;
+      if (drop.y > GAME_HEIGHT) {
+        drop.y = -drop.len;
+        drop.x = Math.random() * GAME_WIDTH;
+      }
+      this.rainGfx.lineBetween(drop.x, drop.y, drop.x - 1, drop.y + drop.len);
+    }
   }
 
   create(): void {
@@ -15,30 +32,18 @@ export class TitleScene extends Phaser.Scene {
     this.cameras.main.setZoom(DPR);
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
-    // Rain particles (subtle lines falling)
-    const rainGfx = this.add.graphics();
-    const rainDrops: { x: number; y: number; speed: number; len: number }[] = [];
+    // Rain particles (subtle lines falling). Animated in update() — using
+    // events.on('update') leaks listeners past scene shutdown.
+    this.rainGfx = this.add.graphics();
+    this.rainDrops = [];
     for (let i = 0; i < 40; i++) {
-      rainDrops.push({
+      this.rainDrops.push({
         x: Math.random() * GAME_WIDTH,
         y: Math.random() * GAME_HEIGHT,
         speed: 2 + Math.random() * 3,
         len: 6 + Math.random() * 10,
       });
     }
-
-    this.events.on('update', () => {
-      rainGfx.clear();
-      rainGfx.lineStyle(1, 0x4a4a4a, 0.15);
-      for (const drop of rainDrops) {
-        drop.y += drop.speed;
-        if (drop.y > GAME_HEIGHT) {
-          drop.y = -drop.len;
-          drop.x = Math.random() * GAME_WIDTH;
-        }
-        rainGfx.lineBetween(drop.x, drop.y, drop.x - 1, drop.y + drop.len);
-      }
-    });
 
     // Vignette overlay
     const vignette = this.add.graphics();
@@ -176,6 +181,8 @@ export class TitleScene extends Phaser.Scene {
     this.events.once('shutdown', () => {
       this.time.removeAllEvents();
       this.tweens.killAll();
+      this.rainGfx = null;
+      this.rainDrops = [];
     });
 
     eventBus.emit('hide-ui');

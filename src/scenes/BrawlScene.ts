@@ -228,8 +228,8 @@ export class BrawlScene extends Phaser.Scene {
 
     // Tap handling — manual hit-testing for multi-touch reliability
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      const wx = pointer.x / DPR;
-      const wy = pointer.y / DPR;
+      const wx = pointer.worldX;
+      const wy = pointer.worldY;
 
       // Check attack button first
       if (this.atkBtnBounds) {
@@ -299,6 +299,7 @@ export class BrawlScene extends Phaser.Scene {
     this.events.once('shutdown', () => {
       this.time.removeAllEvents();
       this.tweens.killAll();
+      this.input.keyboard?.removeAllListeners();
       this.pauseOverlay?.remove();
     });
     eventBus.emit('show-ui');
@@ -309,17 +310,18 @@ export class BrawlScene extends Phaser.Scene {
     if (this.finished || this.tutorialShowing || this.gamePaused) return;
     const dt = delta / 1000;
 
-    // Poll joystick — check the tracked pointer's current position each frame
+    // Poll joystick — check the tracked pointer's current position each frame.
+    // Uses canonical Phaser multi-touch pattern: addPointer() + read pointer1/pointer2
+    // directly in update() (see phaserjs/examples multitouch/two touch inputs.js).
     if (this.joyConfig && this.joyConfig.pointerId >= 0) {
       const jc = this.joyConfig;
-      // Find the pointer by checking all active pointers
-      const pointers = [this.input.pointer1, this.input.pointer2, this.input.activePointer];
+      const pointers = [this.input.pointer1, this.input.pointer2];
       let found = false;
       for (const p of pointers) {
         if (p && p.id === jc.pointerId) {
           if (p.isDown) {
-            const pdx = p.x / DPR - jc.x;
-            const pdy = p.y / DPR - jc.y;
+            const pdx = p.worldX - jc.x;
+            const pdy = p.worldY - jc.y;
             const pdist = Math.sqrt(pdx * pdx + pdy * pdy);
             const clampDist = Math.min(pdist, jc.radius);
             if (pdist > 5) {

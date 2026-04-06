@@ -110,8 +110,8 @@ export class HeistScene extends Phaser.Scene {
     // Touch input — detect which ring was tapped
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       if (this.finished || this.tutorialShowing) return;
-      const wx = pointer.x / DPR;
-      const wy = pointer.y / DPR;
+      const wx = pointer.worldX;
+      const wy = pointer.worldY;
       const cx = GAME_WIDTH / 2;
       const cy = 330;
       const dist = Math.sqrt((wx - cx) ** 2 + (wy - cy) ** 2);

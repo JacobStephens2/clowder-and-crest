@@ -379,35 +379,59 @@ export class ChaseScene extends Phaser.Scene {
     this.add.circle(joyX, joyY, joyRadius, 0x2a2520, 0.6).setStrokeStyle(1, 0x6b5b3e);
     const joyKnob = this.add.circle(joyX, joyY, 14, 0x6b5b3e, 0.8);
 
+    // Unified pointer handling — single pointerdown/pointerup pair covers both
+    // the joystick base and maze swipe gestures. Previously split into two pairs
+    // which is an anti-pattern per phaserjs/examples.
     let joyPointerId = -1;
     let joyMoveTimer: Phaser.Time.TimerEvent | null = null;
+    let swipeStart: { x: number; y: number } | null = null;
 
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      const wx = pointer.x / DPR;
-      const wy = pointer.y / DPR;
+      const wx = pointer.worldX;
+      const wy = pointer.worldY;
+      // Joystick area takes priority
       if (Math.sqrt((wx - joyX) ** 2 + (wy - joyY) ** 2) < joyRadius * 1.5) {
         joyPointerId = pointer.id;
+        return;
+      }
+      // Otherwise, record swipe start if inside the maze
+      if (wy >= MAZE_Y && wy <= MAZE_Y + MAZE_H) {
+        swipeStart = { x: wx, y: wy };
       }
     });
     this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+      // Joystick release
       if (pointer.id === joyPointerId) {
         joyPointerId = -1;
         joyKnob.setPosition(joyX, joyY);
         joyMoveTimer?.destroy();
         joyMoveTimer = null;
+        return;
+      }
+      // Swipe release
+      if (this.caught || !swipeStart) return;
+      const dx = pointer.worldX - swipeStart.x;
+      const dy = pointer.worldY - swipeStart.y;
+      const dist = Math.hypot(dx, dy);
+      swipeStart = null;
+      if (dist < 15) return;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        this.moveCat(0, dx > 0 ? 1 : -1);
+      } else {
+        this.moveCat(dy > 0 ? 1 : -1, 0);
       }
     });
 
-    // Poll joystick for grid-based movement
+    // Poll joystick for grid-based movement (early-returns when idle)
     this.time.addEvent({
       delay: 16, loop: true,
       callback: () => {
         if (joyPointerId < 0 || this.caught) return;
-        const pointers = [this.input.pointer1, this.input.pointer2, this.input.activePointer];
+        const pointers = [this.input.pointer1, this.input.pointer2];
         for (const p of pointers) {
           if (p && p.id === joyPointerId && p.isDown) {
-            const dx = p.x / DPR - joyX;
-            const dy = p.y / DPR - joyY;
+            const dx = p.worldX - joyX;
+            const dy = p.worldY - joyY;
             const dist = Math.sqrt(dx * dx + dy * dy);
             const clampDist = Math.min(dist, joyRadius);
             if (dist > 8) {
@@ -425,27 +449,6 @@ export class ChaseScene extends Phaser.Scene {
           }
         }
       },
-    });
-
-    // Swipe gesture for mobile
-    let swipeStart: { x: number; y: number } | null = null;
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      // Only register swipes in the maze area
-      if (pointer.worldY < MAZE_Y || pointer.worldY > MAZE_Y + MAZE_H) return;
-      swipeStart = { x: pointer.worldX, y: pointer.worldY };
-    });
-    this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
-      if (this.caught || !swipeStart) return;
-      const dx = pointer.worldX - swipeStart.x;
-      const dy = pointer.worldY - swipeStart.y;
-      const dist = Math.hypot(dx, dy);
-      swipeStart = null;
-      if (dist < 15) return; // Too short, ignore
-      if (Math.abs(dx) > Math.abs(dy)) {
-        this.moveCat(0, dx > 0 ? 1 : -1);
-      } else {
-        this.moveCat(dy > 0 ? 1 : -1, 0);
-      }
     });
 
     // Rat movement timer
@@ -483,6 +486,7 @@ export class ChaseScene extends Phaser.Scene {
     this.events.once('shutdown', () => {
       this.time.removeAllEvents();
       this.tweens.killAll();
+      this.input.keyboard?.removeAllListeners();
     });
     eventBus.emit('show-ui');
   }
@@ -564,7 +568,8 @@ export class ChaseScene extends Phaser.Scene {
     if (this.catSprite) {
       const dirName = dr < 0 ? 'north' : dr > 0 ? 'south' : dc < 0 ? 'west' : 'east';
       const walkKey = `${this.catBreed}_walk_${dirName}`;
-      if (this.anims.exists(walkKey)) {
+      // Guard avoids restarting the anim from frame 0 on consecutive same-direction steps
+      if (this.anims.exists(walkKey) && this.catSprite.anims.currentAnim?.key !== walkKey) {
         this.catSprite.play(walkKey);
       }
       this.tweens.add({

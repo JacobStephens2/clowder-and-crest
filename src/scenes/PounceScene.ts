@@ -111,13 +111,13 @@ export class PounceScene extends Phaser.Scene {
 
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       if (!this.canLaunch || this.finished || this.tutorialShowing) return;
-      dragStart = { x: pointer.x / DPR, y: pointer.y / DPR };
+      dragStart = { x: pointer.worldX, y: pointer.worldY };
     });
 
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
       if (!dragStart || !this.aimLine || !this.canLaunch) return;
-      const wx = pointer.x / DPR;
-      const wy = pointer.y / DPR;
+      const wx = pointer.worldX;
+      const wy = pointer.worldY;
       this.aimLine.clear();
       this.aimLine.lineStyle(2, 0xdda055, 0.5);
       this.aimLine.lineBetween(LAUNCH_X, LAUNCH_Y, LAUNCH_X + (dragStart.x - wx) * 0.5, LAUNCH_Y + (dragStart.y - wy) * 0.5);
@@ -134,8 +134,8 @@ export class PounceScene extends Phaser.Scene {
 
     this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
       if (!dragStart || !this.canLaunch || this.finished || this.tutorialShowing) return;
-      const wx = pointer.x / DPR;
-      const wy = pointer.y / DPR;
+      const wx = pointer.worldX;
+      const wy = pointer.worldY;
       const dx = (dragStart.x - wx) * 3;
       const dy = (dragStart.y - wy) * 3;
       dragStart = null;
@@ -165,13 +165,17 @@ export class PounceScene extends Phaser.Scene {
       this.input.off('pointerdown');
       this.input.off('pointermove');
       this.input.off('pointerup');
+      this.input.keyboard?.removeAllListeners();
       this.time.removeAllEvents();
       this.tweens.killAll();
-      // Clean up Matter.js physics bodies
-      const bodies = this.matter.world.getAllBodies();
+      // Clean up Matter.js physics bodies — snapshot the array first because
+      // matter.world.remove() mutates the live bodies list and would otherwise
+      // skip entries as we iterate.
+      const bodies = [...this.matter.world.getAllBodies()];
       for (const body of bodies) {
         this.matter.world.remove(body);
       }
+      this.bodySprites = [];
     });
 
     eventBus.emit('show-ui');

@@ -143,6 +143,7 @@ export class StealthScene extends Phaser.Scene {
     this.events.once('shutdown', () => {
       this.time.removeAllEvents();
       this.tweens.killAll();
+      this.input.keyboard?.removeAllListeners();
     });
 
     eventBus.emit('show-ui');
@@ -325,7 +326,9 @@ export class StealthScene extends Phaser.Scene {
 
     if (this.catSprite) {
       const walkKey = `${this.catBreed}_walk_${dir}`;
-      if (this.anims.exists(walkKey)) this.catSprite.play(walkKey);
+      if (this.anims.exists(walkKey) && this.catSprite.anims.currentAnim?.key !== walkKey) {
+        this.catSprite.play(walkKey);
+      }
       // Dim when in grass (hidden)
       this.catSprite.setAlpha(this.inGrass ? 0.5 : 1);
 

@@ -15,6 +15,8 @@ interface BlockSprite {
   block: PuzzleBlock;
   rect: Phaser.GameObjects.Rectangle;
   label: Phaser.GameObjects.Text;
+  /** Optional themed block art or cat sprite that overlays the rect */
+  overlay?: Phaser.GameObjects.Sprite;
   startX: number;
   startY: number;
 }
@@ -124,6 +126,7 @@ export class PuzzleScene extends Phaser.Scene {
         tower: ['block_crate'], manor: ['block_cart', 'block_crate'],
         night: ['block_crate', 'block_barrel'],
       };
+      let overlay: Phaser.GameObjects.Sprite | undefined;
       if (!block.isTarget) {
         const blockKeys = skinToBlock[this.puzzleSkin] ?? ['block_crate'];
         const blockKey = blockKeys[i % blockKeys.length];
@@ -134,7 +137,7 @@ export class PuzzleScene extends Phaser.Scene {
           const scaleY = (h - 4) / blockSprite.height;
           blockSprite.setScale(Math.min(scaleX, scaleY));
           blockSprite.setDepth(1);
-          rect.on('drag', () => blockSprite.setPosition(rect.x, rect.y));
+          overlay = blockSprite;
         }
       }
 
@@ -155,15 +158,17 @@ export class PuzzleScene extends Phaser.Scene {
           catSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
           catSprite.setDepth(1);
           label.setVisible(false);
-          // Move with drag
-          rect.on('drag', () => {
-            catSprite.setPosition(rect.x, rect.y);
-          });
+          overlay = catSprite;
         }
       }
 
-      const sprite: BlockSprite = { block, rect, label, startX: block.x, startY: block.y };
+      const sprite: BlockSprite = { block, rect, label, overlay, startX: block.x, startY: block.y };
       this.blockSprites.push(sprite);
+
+      // Drag-follow: overlay tracks rect during user drag
+      if (overlay) {
+        rect.on('drag', () => overlay!.setPosition(rect.x, rect.y));
+      }
 
       // Drag handlers
       rect.on('dragstart', (pointer: Phaser.Input.Pointer) => {
@@ -421,6 +426,7 @@ export class PuzzleScene extends Phaser.Scene {
       const py = offsetY + block.y * TILE_SIZE + (block.orientation === 'vertical' ? block.length * TILE_SIZE / 2 : TILE_SIZE / 2);
       sprite.rect.setPosition(px, py);
       sprite.label.setPosition(px, py);
+      sprite.overlay?.setPosition(px, py);
     }
   }
 

@@ -159,8 +159,8 @@ export class TownMapScene extends Phaser.Scene {
     let joyMoveTimer: Phaser.Time.TimerEvent | null = null;
 
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      const wx = pointer.x / DPR;
-      const wy = pointer.y / DPR;
+      const wx = pointer.worldX;
+      const wy = pointer.worldY;
       if (Math.sqrt((wx - joyX) ** 2 + (wy - joyY) ** 2) < joyRadius * 1.5) {
         joyPointerId = pointer.id;
       }
@@ -181,11 +181,11 @@ export class TownMapScene extends Phaser.Scene {
       loop: true,
       callback: () => {
         if (joyPointerId < 0) return;
-        const pointers = [this.input.pointer1, this.input.pointer2, this.input.activePointer];
+        const pointers = [this.input.pointer1, this.input.pointer2];
         for (const p of pointers) {
           if (p && p.id === joyPointerId && p.isDown) {
-            const dx = p.x / DPR - joyX;
-            const dy = p.y / DPR - joyY;
+            const dx = p.worldX - joyX;
+            const dy = p.worldY - joyY;
             const dist = Math.sqrt(dx * dx + dy * dy);
             const clampDist = Math.min(dist, joyRadius);
             if (dist > 8) {
@@ -244,6 +244,7 @@ export class TownMapScene extends Phaser.Scene {
     this.events.once('shutdown', () => {
       this.time.removeAllEvents();
       this.tweens.killAll();
+      this.input.keyboard?.removeAllListeners();
     });
 
     eventBus.emit('show-ui');
@@ -539,7 +540,9 @@ export class TownMapScene extends Phaser.Scene {
                 const walkDir = Math.abs(d.dc) > Math.abs(d.dr) ? (d.dc > 0 ? 'east' : 'west') : (d.dr > 0 ? 'south' : 'north');
                 const walkKey = `${breed}_walk_${walkDir}`;
                 if (!npc.active) return;
-                if (this.anims.exists(walkKey)) npc.play(walkKey);
+                if (this.anims.exists(walkKey) && npc.anims.currentAnim?.key !== walkKey) {
+                  npc.play(walkKey);
+                }
                 this.tweens.add({
                   targets: npc, x: dest.x, y: dest.y, duration: 600, ease: 'Linear',
                   onComplete: () => {
@@ -694,8 +697,8 @@ export class TownMapScene extends Phaser.Scene {
 
     // Tap to move
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      const wx = pointer.x / DPR;
-      const wy = pointer.y / DPR;
+      const wx = pointer.worldX;
+      const wy = pointer.worldY;
       if (wx < GRID_LEFT || wx > GRID_LEFT + GRID_W || wy < GRID_TOP || wy > GRID_TOP + GRID_H) return;
 
       const col = Math.floor((wx - GRID_LEFT) / TILE);
@@ -732,7 +735,7 @@ export class TownMapScene extends Phaser.Scene {
       ? (dx > 0 ? 'east' : 'west')
       : (dy > 0 ? 'south' : 'north');
     const walkKey = `${this.catBreed}_walk_${dir}`;
-    if (this.playerSprite && this.anims.exists(walkKey)) {
+    if (this.playerSprite && this.anims.exists(walkKey) && this.playerSprite.anims.currentAnim?.key !== walkKey) {
       this.playerSprite.play(walkKey);
     }
 
