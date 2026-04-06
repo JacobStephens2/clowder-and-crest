@@ -32,9 +32,21 @@ Generous quotas — most practical workloads won't hit limits. See **Quota Budge
 
 ## New capabilities unlocked by Startup plan
 
-- **`nia search deep <query>`** — multi-step research (200/month). Use for complex questions that need multiple lookups chained together.
-- **`nia oracle`** — autonomous AI research jobs (200/month). Kicks off long-running research that reports back when done. Use for open-ended "figure out how X works" questions.
+- **`nia search deep <query>`** — multi-step research (200/month). ⚠ **Not for repo-specific questions.** Confirmed via testing: this tool is web-search-based, does NOT query indexed private sources, and will hallucinate plausible-sounding but fictional files/bugs. Use only for external research (papers, blog posts, open web).
+- **`nia oracle`** — autonomous AI research jobs (200/month). Not yet tested. Probably same caveat as `search deep`.
 - **Unlimited `nia packages`** — semantic/keyword search over any npm, PyPI, crates.io, Go package source without using a quota.
+
+## ⚠ Nia results require verification
+
+Tested on 2026-04-06: `nia search query --repos ours` returned a chapter-progression soft-lock analysis that looked authoritative but was **mixed quality**:
+
+- Some findings were real but **overstated in severity** (e.g. called a visible gate a "silent soft-lock")
+- Some were **factually wrong about mechanics** (e.g. claimed "30% random influence gain" when the actual code is deterministic)
+- Some were **real but minor** edge cases
+
+**Before acting on any Nia finding**, verify against the actual code via Grep/Read. Do not let Nia's confident tone substitute for grounding. The LLM layer editorializes and extrapolates from the retrieved snippets — treat findings as hypotheses to verify, not conclusions.
+
+`nia search deep` is WORSE than this — tested on the same question, it invented file names (`chapterSystem.ts`, `gateSystem.ts`) and bugs that don't exist anywhere in the repo. The citations were just the top-level GitHub URL plus an unrelated project. **Never trust `search deep` for private repo analysis.**
 
 ## When to use Nia vs direct tools
 
