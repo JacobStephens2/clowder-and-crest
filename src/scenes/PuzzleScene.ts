@@ -13,6 +13,10 @@ const EXIT_COLOR = 0x4a8a4a;
 
 interface BlockSprite {
   block: PuzzleBlock;
+  /** The interactive Container holding rect + label + optional overlay.
+      All child sprites are positioned at (0,0) local so they follow the
+      container transform automatically. */
+  container: Phaser.GameObjects.Container;
   rect: Phaser.GameObjects.Rectangle;
   label: Phaser.GameObjects.Text;
   /** Optional themed block art or cat sprite that overlays the rect */
@@ -103,91 +107,91 @@ export class PuzzleScene extends Phaser.Scene {
       this.add.triangle(ex + 12, ey, 0, -10, 0, 10, 16, 0, EXIT_COLOR).setAlpha(0.8);
     }
 
-    // Create block sprites
+    // Create block sprites — each block is a Container holding the rect,
+    // label, and optional themed/cat overlay. Children live at local (0,0)
+    // so they inherit the container's transform automatically. This avoids
+    // the manual multi-child position sync the old code needed after
+    // repositionAllBlocks() or undo.
+    const skinToBlock: Record<string, string[]> = {
+      mill: ['block_flour_sack', 'block_crate'], granary: ['block_crate', 'block_barrel'],
+      bakery: ['block_flour_sack', 'block_crate'], tavern: ['block_barrel', 'block_crate'],
+      cathedral: ['block_pew', 'block_crate'], warehouse: ['block_crate', 'block_barrel'],
+      ship: ['block_barrel', 'block_crate'], docks: ['block_barrel', 'block_crate'],
+      castle: ['block_crate', 'block_barrel'], market: ['block_cart', 'block_crate'],
+      garden: ['block_crate'], monastery: ['block_pew', 'block_crate'],
+      tower: ['block_crate'], manor: ['block_cart', 'block_crate'],
+      night: ['block_crate', 'block_barrel'],
+    };
     this.config.blocks.forEach((block, i) => {
       const w = block.orientation === 'horizontal' ? block.length * TILE_SIZE - 4 : TILE_SIZE - 4;
       const h = block.orientation === 'vertical' ? block.length * TILE_SIZE - 4 : TILE_SIZE - 4;
       const px = offsetX + block.x * TILE_SIZE + (block.orientation === 'horizontal' ? block.length * TILE_SIZE / 2 : TILE_SIZE / 2);
       const py = offsetY + block.y * TILE_SIZE + (block.orientation === 'vertical' ? block.length * TILE_SIZE / 2 : TILE_SIZE / 2);
 
+      // All children start at local (0, 0) — the container positions them
       const color = block.isTarget ? TARGET_COLOR : BLOCK_COLORS[i % BLOCK_COLORS.length];
-      const rect = this.add.rectangle(px, py, w, h, color);
+      const rect = this.add.rectangle(0, 0, w, h, color);
       rect.setStrokeStyle(1, 0x000000, 0.3);
-      rect.setInteractive({ draggable: true });
 
-      // Themed block sprite overlay for non-target blocks
-      const skinToBlock: Record<string, string[]> = {
-        mill: ['block_flour_sack', 'block_crate'], granary: ['block_crate', 'block_barrel'],
-        bakery: ['block_flour_sack', 'block_crate'], tavern: ['block_barrel', 'block_crate'],
-        cathedral: ['block_pew', 'block_crate'], warehouse: ['block_crate', 'block_barrel'],
-        ship: ['block_barrel', 'block_crate'], docks: ['block_barrel', 'block_crate'],
-        castle: ['block_crate', 'block_barrel'], market: ['block_cart', 'block_crate'],
-        garden: ['block_crate'], monastery: ['block_pew', 'block_crate'],
-        tower: ['block_crate'], manor: ['block_cart', 'block_crate'],
-        night: ['block_crate', 'block_barrel'],
-      };
       let overlay: Phaser.GameObjects.Sprite | undefined;
       if (!block.isTarget) {
         const blockKeys = skinToBlock[this.puzzleSkin] ?? ['block_crate'];
         const blockKey = blockKeys[i % blockKeys.length];
         if (this.textures.exists(blockKey)) {
-          const blockSprite = this.add.sprite(px, py, blockKey);
-          blockSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+          const blockSprite = this.add.sprite(0, 0, blockKey);
           const scaleX = (w - 4) / blockSprite.width;
           const scaleY = (h - 4) / blockSprite.height;
           blockSprite.setScale(Math.min(scaleX, scaleY));
-          blockSprite.setDepth(1);
           overlay = blockSprite;
         }
       }
 
       const labelText = block.isTarget ? 'CAT' : '';
-      const label = this.add.text(px, py, labelText, {
+      const label = this.add.text(0, 0, labelText, {
         fontFamily: 'Georgia, serif',
         fontSize: '11px',
         color: '#fff',
       }).setOrigin(0.5);
 
-      // Show cat sprite on the target block
+      // Cat sprite on the target block — replaces the text label visually
       if (block.isTarget && this.catId) {
-        const catBreed = this.catBreed;
-        const idleKey = `${catBreed}_idle_east`;
+        const idleKey = `${this.catBreed}_idle_east`;
         if (this.textures.exists(idleKey)) {
-          const catSprite = this.add.sprite(px, py, idleKey);
+          const catSprite = this.add.sprite(0, 0, idleKey);
           catSprite.setScale(0.8);
-          catSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
-          catSprite.setDepth(1);
           label.setVisible(false);
           overlay = catSprite;
         }
       }
 
-      const sprite: BlockSprite = { block, rect, label, overlay, startX: block.x, startY: block.y };
+      // Assemble container with children (order = render order: rect below, overlay above, label on top)
+      const children: Phaser.GameObjects.GameObject[] = [rect];
+      if (overlay) children.push(overlay);
+      children.push(label);
+      const container = this.add.container(px, py, children);
+      container.setSize(w, h);
+      container.setInteractive({ draggable: true });
+
+      const sprite: BlockSprite = { block, container, rect, label, overlay, startX: block.x, startY: block.y };
       this.blockSprites.push(sprite);
 
-      // Drag-follow: overlay tracks rect during user drag
-      if (overlay) {
-        rect.on('drag', () => overlay!.setPosition(rect.x, rect.y));
-      }
-
-      // Drag handlers
-      rect.on('dragstart', (pointer: Phaser.Input.Pointer) => {
+      container.on('dragstart', (pointer: Phaser.Input.Pointer) => {
         if (this.solved) return;
         this.dragBlock = sprite;
         this.dragStartPointer = { x: pointer.x, y: pointer.y };
         this.dragStartBlock = { x: block.x, y: block.y };
-        rect.setDepth(10);
+        container.setDepth(10);
       });
 
-      rect.on('drag', (_pointer: Phaser.Input.Pointer, dragX: number, dragY: number) => {
+      container.on('drag', (_pointer: Phaser.Input.Pointer, dragX: number, dragY: number) => {
         if (this.solved || !this.dragBlock) return;
         this.handleDrag(this.dragBlock, dragX, dragY);
       });
 
-      rect.on('dragend', () => {
+      container.on('dragend', () => {
         if (this.solved || !this.dragBlock) return;
         this.snapBlock(this.dragBlock);
-        this.dragBlock.rect.setDepth(0);
+        this.dragBlock.container.setDepth(0);
         this.dragBlock = null;
       });
     });
@@ -240,30 +244,30 @@ export class PuzzleScene extends Phaser.Scene {
     const offsetY = PUZZLE_OFFSET_Y;
 
     if (block.orientation === 'horizontal') {
-      // Constrain to horizontal axis
       const minX = this.getMinPos(block, 'left');
       const maxX = this.getMaxPos(block, 'right');
       const minPx = offsetX + minX * TILE_SIZE + block.length * TILE_SIZE / 2;
       const maxPx = offsetX + maxX * TILE_SIZE + block.length * TILE_SIZE / 2;
 
-      // Allow target block to go past grid edge for win — but ONLY if path is clear to the edge
+      // Target block can go past the grid edge on a win — only when the path is clear
       const pathClearToEdge = block.isTarget && this.config.exitSide === 'right' && maxX >= GRID_SIZE - block.length;
       const actualMax = pathClearToEdge
         ? offsetX + 6 * TILE_SIZE + block.length * TILE_SIZE / 2
         : maxPx;
 
-      sprite.rect.x = Phaser.Math.Clamp(dragX, minPx, actualMax);
-      sprite.rect.y = offsetY + block.y * TILE_SIZE + TILE_SIZE / 2;
+      sprite.container.x = Phaser.Math.Clamp(dragX, minPx, actualMax);
+      sprite.container.y = offsetY + block.y * TILE_SIZE + TILE_SIZE / 2;
     } else {
       const minY = this.getMinPos(block, 'up');
       const maxY = this.getMaxPos(block, 'down');
       const minPy = offsetY + minY * TILE_SIZE + block.length * TILE_SIZE / 2;
       const maxPy = offsetY + maxY * TILE_SIZE + block.length * TILE_SIZE / 2;
 
-      sprite.rect.x = offsetX + block.x * TILE_SIZE + TILE_SIZE / 2;
-      sprite.rect.y = Phaser.Math.Clamp(dragY, minPy, maxPy);
+      sprite.container.x = offsetX + block.x * TILE_SIZE + TILE_SIZE / 2;
+      sprite.container.y = Phaser.Math.Clamp(dragY, minPy, maxPy);
     }
-    sprite.label.setPosition(sprite.rect.x, sprite.rect.y);
+    // No need to sync label/overlay — they're children of the container
+    // and follow its transform automatically.
   }
 
   private getMinPos(block: PuzzleBlock, _dir: 'left' | 'up'): number {
@@ -313,14 +317,14 @@ export class PuzzleScene extends Phaser.Scene {
 
     let newGridPos: number;
     if (block.orientation === 'horizontal') {
-      newGridPos = Math.round((sprite.rect.x - offsetX - block.length * TILE_SIZE / 2) / TILE_SIZE);
+      newGridPos = Math.round((sprite.container.x - offsetX - block.length * TILE_SIZE / 2) / TILE_SIZE);
       newGridPos = Phaser.Math.Clamp(newGridPos, this.getMinPos(block, 'left'), this.getMaxPos(block, 'right'));
 
-      // Check win: target exits grid (only if path was actually clear)
+      // Win check: target exits the grid (only when path was clear)
       if (block.isTarget && this.config.exitSide === 'right') {
         const maxPos = this.getMaxPos(block, 'right');
         if (maxPos >= GRID_SIZE - block.length) {
-          const rawGridPos = (sprite.rect.x - offsetX - block.length * TILE_SIZE / 2) / TILE_SIZE;
+          const rawGridPos = (sprite.container.x - offsetX - block.length * TILE_SIZE / 2) / TILE_SIZE;
           if (rawGridPos > GRID_SIZE - block.length + 0.5) {
             this.winPuzzle(sprite);
             return;
@@ -335,10 +339,10 @@ export class PuzzleScene extends Phaser.Scene {
         this.updateMoveText();
       }
 
-      sprite.rect.x = offsetX + block.x * TILE_SIZE + block.length * TILE_SIZE / 2;
-      sprite.rect.y = offsetY + block.y * TILE_SIZE + TILE_SIZE / 2;
+      sprite.container.x = offsetX + block.x * TILE_SIZE + block.length * TILE_SIZE / 2;
+      sprite.container.y = offsetY + block.y * TILE_SIZE + TILE_SIZE / 2;
     } else {
-      newGridPos = Math.round((sprite.rect.y - offsetY - block.length * TILE_SIZE / 2) / TILE_SIZE);
+      newGridPos = Math.round((sprite.container.y - offsetY - block.length * TILE_SIZE / 2) / TILE_SIZE);
       newGridPos = Phaser.Math.Clamp(newGridPos, this.getMinPos(block, 'up'), this.getMaxPos(block, 'down'));
 
       if (newGridPos !== block.y) {
@@ -348,10 +352,9 @@ export class PuzzleScene extends Phaser.Scene {
         this.updateMoveText();
       }
 
-      sprite.rect.x = offsetX + block.x * TILE_SIZE + TILE_SIZE / 2;
-      sprite.rect.y = offsetY + block.y * TILE_SIZE + block.length * TILE_SIZE / 2;
+      sprite.container.x = offsetX + block.x * TILE_SIZE + TILE_SIZE / 2;
+      sprite.container.y = offsetY + block.y * TILE_SIZE + block.length * TILE_SIZE / 2;
     }
-    sprite.label.setPosition(sprite.rect.x, sprite.rect.y);
   }
 
   private winPuzzle(sprite: BlockSprite): void {
@@ -359,9 +362,10 @@ export class PuzzleScene extends Phaser.Scene {
     this.moveCount++;
     this.updateMoveText();
 
-    // Animate cat off screen
+    // Animate cat off screen — one tween on the container carries the
+    // rect, label, and overlay along automatically.
     this.tweens.add({
-      targets: [sprite.rect, sprite.label],
+      targets: sprite.container,
       x: GAME_WIDTH + 50,
       duration: 400,
       ease: 'Power2',
@@ -424,9 +428,8 @@ export class PuzzleScene extends Phaser.Scene {
       const block = sprite.block;
       const px = offsetX + block.x * TILE_SIZE + (block.orientation === 'horizontal' ? block.length * TILE_SIZE / 2 : TILE_SIZE / 2);
       const py = offsetY + block.y * TILE_SIZE + (block.orientation === 'vertical' ? block.length * TILE_SIZE / 2 : TILE_SIZE / 2);
-      sprite.rect.setPosition(px, py);
-      sprite.label.setPosition(px, py);
-      sprite.overlay?.setPosition(px, py);
+      // One position set on the container propagates to all children.
+      sprite.container.setPosition(px, py);
     }
   }
 

@@ -804,6 +804,28 @@ export class ChaseScene extends Phaser.Scene {
     this.ratGfx.setVisible(false);
     this.ratEyes.setVisible(false);
 
+    // Sweep all remaining fish dots toward the cat in a staggered cascade.
+    // Uses tweens.stagger() to auto-delay each target by 40ms — one tween,
+    // one call, real Pac-Man-style satisfaction.
+    if (this.dots.length > 0) {
+      const catWorld = this.cellToWorld(this.catPos.r, this.catPos.c);
+      const dotTargets = this.dots.map((d) => d.gfx);
+      this.tweens.add({
+        targets: dotTargets,
+        x: catWorld.x,
+        y: catWorld.y,
+        scale: 0.2,
+        alpha: 0,
+        duration: 280,
+        ease: 'Sine.easeIn',
+        delay: this.tweens.stagger(40, {}),
+        onComplete: () => {
+          for (const d of this.dots) d.gfx.destroy();
+          this.dots = [];
+        },
+      });
+    }
+
     const dotRatio = this.totalDots > 0 ? this.dotsCollected / this.totalDots : 0;
     const stars = this.timeLeft > 30 && dotRatio > 0.7 ? 3
       : this.timeLeft > 15 && dotRatio > 0.4 ? 2 : 1;
