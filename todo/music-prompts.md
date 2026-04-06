@@ -69,19 +69,19 @@ These are for the non-minigame parts of the game: the title screen, the intro st
 ### Prologue — The Storm (intro) - created
 Somber, foreboding. Low tin whistle drone over distant bodhrán thunder rolls. 70 BPM, D minor. The sound of rain on cobblestones — a lone wet wildcat seeking shelter. Sparse, lonely, no hope yet. The guild motif D-C-A-G is born at the end on a single soft harp phrase, like a seed planted. Think: the opening of a fairy tale about a cat who has nothing but tomorrow.
 
-### Title Screen
+### Title Screen - created
 Reverent, promising. Held cittern drone with a slow harp arpeggio that rises then settles. 60 BPM. The whole "guild identity" distilled — quiet, noble, patient. The guild motif rings out clearly near the end as a hand-bell chime. Think: the logo card of a story about finding home. Sits gracefully beneath UI.
 
-### Guildhall — Main Hub
+### Guildhall — Main Hub - created
 Warm, unhurried. Gentle lute picking over a soft cittern drone, occasional bodhrán heartbeat. 72 BPM. The sound of home — cats napping, hearth crackling, the weight of the day lifted. The guild motif played once softly, as if from memory. Think: a quiet evening inside stone walls while rain falls outside.
 
-### Town Map — Market Day
+### Town Map — Market Day - created
 Bustling, cheerful. Lively tin whistle melody over a plucky lute rhythm, hand drums keeping pace. 100 BPM, D Mixolydian. The sound of market day — merchants haggling, children running, the guild's cats on the job. The guild motif surfaces once in the cittern bass line as the cats pass through. Think: a walk through a medieval town that knows your name.
 
-### Town Map — Dusk / Night
+### Town Map — Dusk / Night - created
 Softer, watchful. Slow lute with distant harp accents. 65 BPM. Lantern light, empty cobblestones, the day winding down. The guild motif played low and quiet. Think: walking home through a town after the crowds have thinned. A fitting contrast to the daytime market track.
 
-### Castle Halls (ambient variant)
+### Castle Halls (ambient variant) - creating
 Dignified, echoing. Slow cittern drone under a sustained fiddle line. 65 BPM. The sound of a nobler part of town — stone arches, tapestries, footsteps in a long corridor. The guild motif plays as a distant harp refrain, as if from another room. Think: a medieval court where cats have business.
 
 ### Dawn Parapets (ambient variant)

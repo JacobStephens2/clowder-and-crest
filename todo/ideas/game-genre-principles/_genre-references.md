@@ -24,7 +24,7 @@ Unlock summary:
 
 ---
 
-## Main Game — Clowder & Crest
+## Main Game — Clowder & Crest - improved
 
 **Genre:** Guild/shop management sim × daily life sim × narrative-driven support-conversation RPG.
 
@@ -55,7 +55,7 @@ Unlock summary:
 
 The player's onboarding window. Whatever lands here sets the player's expectation for *every* minigame to follow. These should be ruthlessly readable in the first 5 seconds of play.
 
-## ChaseScene — Rat Maze (Chapter 1)
+## ChaseScene — Rat Maze (Chapter 1) - improved
 
 **Genre:** Maze-chase arcade.
 
@@ -79,7 +79,7 @@ The player's onboarding window. Whatever lands here sets the player's expectatio
 
 ---
 
-## HuntScene — Whack-a-Mole (Chapter 1)
+## HuntScene — Whack-a-Mole (Chapter 1) - improved
 
 **Genre:** Reaction / click-timing / target-clicker.
 
@@ -106,7 +106,7 @@ The player's onboarding window. Whatever lands here sets the player's expectatio
 
 The player has proven they can handle two minigame types. Chapter 2 widens the vocabulary to include "thinking" (Sokoban) and "rhythm" (CourierRun) — broaden the texture of play before adding combat or stealth.
 
-## SokobanScene — Crate Pushing (Chapter 2)
+## SokobanScene — Crate Pushing (Chapter 2) - improving
 
 **Genre:** Sokoban / box-pushing puzzle.
 
@@ -129,7 +129,7 @@ The player has proven they can handle two minigame types. Chapter 2 widens the v
 
 ---
 
-## CourierRunScene — 3-Lane Auto-Scroller (Chapter 2)
+## CourierRunScene — 3-Lane Auto-Scroller (Chapter 2) - researched
 
 **Genre:** Endless runner / lane switcher.
 
