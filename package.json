@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:smoke": "node test/smoke.mjs",
+    "test:explore": "node test/explore.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",
@@ -16,6 +18,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.5.2",
+    "playwright": "^1.59.1",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2",
     "vite": "^8.0.3"
