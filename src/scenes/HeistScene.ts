@@ -157,7 +157,7 @@ export class HeistScene extends Phaser.Scene {
     ring.rotation = (ring.rotation + dir + ring.notches) % ring.notches;
     this.moveCount++;
     this.movesText.setText(`Moves: ${this.moveCount}`);
-    playSfx('tap', 0.3);
+    playSfx('lock_click', 0.4);
 
     // Rotate linked ring in opposite direction
     if (ring.linkedTo >= 0 && ring.linkedTo < this.rings.length) {
@@ -229,7 +229,8 @@ export class HeistScene extends Phaser.Scene {
     this.finished = true;
 
     if (won) {
-      playSfx('victory');
+      playSfx('lock_open', 0.6);
+      this.time.delayedCall(500, () => playSfx('victory'));
       const stars = this.timeLeft > 15 ? 3 : this.timeLeft > 8 ? 2 : 1;
       this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 130, 'Lock Picked!', {
         fontFamily: 'Georgia, serif', fontSize: '24px', color: '#c4956a',

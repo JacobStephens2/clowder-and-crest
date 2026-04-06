@@ -132,7 +132,7 @@ export class PatrolScene extends Phaser.Scene {
           if (this.lives <= 0) this.gameOver(false);
         } else {
           lantern.brightness = 1;
-          playSfx('tap', 0.3);
+          playSfx('match_strike', 0.35);
           // Flash bright on relight
           flame.setScale(1.4);
           glow.setAlpha(0.6);

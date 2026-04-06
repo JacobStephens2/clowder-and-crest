@@ -242,7 +242,7 @@ export class ScentTrailScene extends Phaser.Scene {
     this.catPos = { r: nr, c: nc };
     this.movesLeft--;
     this.movesText.setText(`Moves: ${this.movesLeft}`);
-    playSfx('tap', 0.15);
+    playSfx('sniff', 0.25);
 
     const dest = { x: this.gridLeft + nc * TILE + TILE / 2, y: GRID_TOP + nr * TILE + TILE / 2 };
     if (this.catSprite) {

@@ -175,7 +175,7 @@ export class RitualScene extends Phaser.Scene {
     // Flash the candle — longer highlight for easier memorization
     candle.glow.setAlpha(0.9);
     candle.glow.setScale(1.3);
-    playSfx('tap', 0.3);
+    playSfx('bell_chime', 0.35);
     this.time.delayedCall(700, () => {
       candle.glow.setAlpha(0.15);
       candle.glow.setScale(1);
@@ -215,7 +215,7 @@ export class RitualScene extends Phaser.Scene {
       return;
     }
 
-    playSfx('tap', 0.2);
+    playSfx('bell_chime', 0.3);
 
     // Correct — check if sequence complete
     if (this.playerInput.length === this.sequence.length) {

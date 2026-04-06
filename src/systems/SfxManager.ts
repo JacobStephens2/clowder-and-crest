@@ -28,6 +28,11 @@ const SFX_PATHS: Record<string, string> = {
   crate_push: 'assets/sfx/crate_push.mp3',
   merchant: 'assets/sfx/merchant.mp3',
   bark: 'assets/sfx/bark.mp3',
+  lock_click: 'assets/sfx/lock_click.mp3',
+  lock_open: 'assets/sfx/lock_open.mp3',
+  bell_chime: 'assets/sfx/bell_chime.mp3',
+  sniff: 'assets/sfx/sniff.mp3',
+  match_strike: 'assets/sfx/match_strike.mp3',
 };
 
 function getAvailableAudio(key: string): HTMLAudioElement | null {
