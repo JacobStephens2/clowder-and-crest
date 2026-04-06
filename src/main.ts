@@ -2200,35 +2200,75 @@ eventBus.on('chapter-advance', (chapter: number) => {
     }
   }
 
-  // Chapter 5 endgame acknowledgment
-  if (chapter === 5) {
-    const catName = gameState?.playerCatName ?? 'The wildcat';
-    const repLabel = getReputationLabel(gameState?.reputationScore ?? 0);
-    setTimeout(() => showNarrativeOverlay({
+  // Chapter intro narrative scenes
+  const catName = esc(gameState?.playerCatName ?? 'The wildcat');
+  const chapterScenes: Record<number, { scenes: string[]; image: string; onScene?: (i: number) => void; onComplete?: () => void }> = {
+    2: {
+      scenes: [
+        `Word had spread. A stray who catches rats and earns fish — that was worth talking about.`,
+        `A second cat appeared at the lean-to one morning. Not a friend, not yet. But willing to work.`,
+        `${catName} looked at the newcomer. Two cats. Two sets of paws. The beginning of something.`,
+        'Courier jobs have appeared on the board. The Kitchen & Pantry can now be unlocked. A traveling merchant visits every third day.',
+      ],
+      image: 'assets/sprites/scenes/guildhall.png',
+    },
+    3: {
+      scenes: [
+        'The granary fell first. Rats poured from the walls like dark water, overrunning the flour stores in a single night.',
+        'By morning, the cathedral cellar was lost. The monks fled to the upper floors. The market stalls were abandoned.',
+        'The townsfolk whispered of St. Rosalia — how her bones once drove plague from Palermo. But there were no saints\' bones here. Only cats.',
+        `${catName} gathered the guild. This was no ordinary job. This was a siege.`,
+        'Guard, Sacred, and Detection jobs are now available. Complete 5 pest control jobs to drive the rats from the town.',
+      ],
+      image: 'assets/sprites/scenes/town_plague.png',
+      onScene: (i) => { if (i === 0) playSfx('thunder'); },
+    },
+    4: {
+      scenes: [
+        'The guild had a reputation now. Not just strays doing odd jobs — an institution.',
+        `The town council sent a messenger: they wanted to give ${catName}'s guild a name. A formal recognition.`,
+        'Hard jobs were coming in from every quarter — the castle, the monastery, the docks. The guild was ready.',
+        'All job difficulties are now available. Logic puzzles and sacred rites await the guild\'s finest minds.',
+      ],
+      image: 'assets/sprites/scenes/town_day.png',
+    },
+    5: {
       scenes: [
         'The lean-to behind the grain market is long gone. In its place stands a guildhall — warm, furnished, and full of life.',
-        `${catName} looks around the hall. Five cats, each with their own story, their own strength. A clowder.`,
+        `${catName} looks around the hall. Each cat with their own story, their own strength. A clowder.`,
         'The town knows their names now. The merchants wave. The monks nod. Even the children leave fish by the door.',
-        `From a stray in a storm to ${repLabel === 'Noble' ? 'the most trusted guild in town' : repLabel === 'Shadowed' ? 'a guild that operates in the shadows, feared and wealthy' : 'a guild that has earned its place'}.`,
-        `This is what ${catName} built. Not just a guild — a home.\n\nThank you for playing Clowder & Crest.`,
+        `From a stray in a storm to ${getReputationLabel(gameState?.reputationScore ?? 0) === 'Noble' ? 'the most trusted guild in town' : getReputationLabel(gameState?.reputationScore ?? 0) === 'Shadowed' ? 'a guild that operates in the shadows' : 'a guild that has earned its place'}.`,
+        `This is what ${catName} built. Not just a guild — a home.`,
       ],
       image: 'assets/sprites/crest.png',
       onScene: (i) => { if (i === 4) playSfx('chapter'); },
-    }), 2000);
-  }
-
-  // Chapter 6: The Rival — narrative scene
-  if (chapter === 6) {
-    setTimeout(() => showNarrativeOverlay({
+    },
+    6: {
       scenes: [
         'Word arrived at dawn. A second guild had entered the town.',
         'They called themselves the Silver Paws — sleek, well-funded, and hungry for work.',
         'Their agents were already at the job board, undercutting prices and charming merchants.',
-        `${esc(gameState?.playerCatName ?? 'The wildcat')} watched from across the square. This was no longer about survival. This was about legacy.`,
+        `${catName} watched from across the square. This was no longer about survival. This was about legacy.`,
         'Contested jobs will appear on the board. Complete them before the Silver Paws do — or risk losing everything you\'ve built.',
       ],
       image: 'assets/sprites/scenes/town_day.png',
-    }), 1000);
+    },
+    7: {
+      scenes: [
+        'A letter arrived bearing the Bishop\'s seal. An Inquisitor was coming.',
+        `"We have heard of your guild," it read. "Cats that serve the saints — or so you claim."`,
+        `${catName} read the words twice. Five days. Five days to prove what the guild truly was.`,
+        'Sacred and Guard work will earn the Inquisitor\'s favor. Shadow dealings will earn condemnation.',
+        'Choose your jobs wisely. The Bishop is watching.',
+      ],
+      image: 'assets/sprites/scenes/guildhall.png',
+      onScene: (i) => { if (i === 0) playSfx('thunder'); },
+    },
+  };
+
+  if (chapterScenes[chapter]) {
+    const cs = chapterScenes[chapter];
+    setTimeout(() => showNarrativeOverlay(cs), 1500);
   }
 });
 
