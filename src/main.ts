@@ -91,6 +91,11 @@ const config: Phaser.Types.Core.GameConfig = {
 
 const game = new Phaser.Game(config);
 
+// Debug hook for Playwright playtests — exposes the Phaser game instance so
+// tests can drive scene transitions and inspect state. Not referenced in
+// production code; safe to leave in.
+(window as unknown as { __clowderGame: Phaser.Game }).__clowderGame = game;
+
 // ──── OTA Updates (Capacitor only, silent) ────
 
 // ──── Keyboard shortcuts ────
