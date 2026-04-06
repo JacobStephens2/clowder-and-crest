@@ -310,3 +310,4 @@ recruit.mp3:1  GET https://clowder.stephens.page/assets/sfx/recruit.mp3 500 (Int
 [x] check if anything in https://github.com/wshobson/agents would be useful for you and set it up if so (skipped — 182-agent orchestration framework is overkill for solo game dev)
 [x] setup Nano Banana Pro / Tiny PRD for yourself if useful (skipped — Nano Banana Pro is Google's image gen model, Tiny PRD is a PRD generator; neither relevant)
 [x] Consider setting up and using these tools (Vite already in use; Phaser Editor evaluated and skipped; Tiled/TexturePacker/Aseprite are desktop GUI tools for user to install)
+[x] would any of the api's in /var/www/clowder.stephens.page/todo/ideas/additional-apis.md be useful for you to develop Clowder & Crest? (see /var/www/clowder.stephens.page/todo/ideas/api-evaluation.md — mostly already covered, Freesound API key is the only low-hanging fruit)

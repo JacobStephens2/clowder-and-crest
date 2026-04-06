@@ -1,1 +1,0 @@
-[x] would any of the api's in /var/www/clowder.stephens.page/todo/ideas/additional-apis.md be useful for you to develop Clowder & Crest? (see /var/www/clowder.stephens.page/todo/ideas/api-evaluation.md — mostly already covered, Freesound API key is the only low-hanging fruit)

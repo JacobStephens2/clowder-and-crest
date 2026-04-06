@@ -59,19 +59,21 @@ async function clickCanvas(page, x, y) {
 
 /**
  * Inject the test save into localStorage via page.evaluate before Phaser boots.
- * The game reads `clowder_save` on load via SaveManager.loadGame().
+ * The game uses slot-based saves: `clowder_save_slot_1/2/3`. We write to slot 1
+ * and also the legacy `clowder_save` key (for the Import Save path). TitleScene
+ * then shows a "Continue" button because getSlotSummary(1) finds data.
  */
 async function loadTestSave(page) {
   const save = JSON.parse(fs.readFileSync(TEST_SAVE_PATH, 'utf-8'));
-  // Also mark tutorials as already seen so they don't block navigation
   save.flags = {
     ...save.flags,
     tutorial_complete: true,
     clowder_intro_shown: true,
   };
   await page.evaluate((saveJson) => {
+    localStorage.setItem('clowder_save_slot_1', saveJson);
     localStorage.setItem('clowder_save', saveJson);
-    // Mark the various tutorial storage keys used by individual scenes
+    // Suppress tutorial overlays — each scene checks localStorage for its key
     const tutorialKeys = [
       'clowder_tutorial_shown',
       'clowder_guildhall_tutorial',
@@ -157,23 +159,34 @@ async function main() {
     // Second load — Phaser boots with the save in place
     await page.reload({ waitUntil: 'networkidle' });
     await wait(4500); // let boot + title transitions settle
-
-    // Title may still show. Dismiss any tutorial overlays first.
     await shot(page, 'initial-boot');
 
-    // If title screen shows a Continue button, click it.
-    // The guildhall should auto-load if the save is valid.
-    const continueBtn = await page.$('button:has-text("Continue")');
-    if (continueBtn) {
-      await continueBtn.click();
-      await wait(2000);
-    }
-
-    // Try clicking on the canvas title "Continue" area as fallback
+    // With a slot save present, TitleScene shows "Continue" at canvas (195, 470)
+    // and "New Game" at (195, 520). Click Continue.
     await clickCanvas(page, 195, 470);
-    await wait(2000);
+    await wait(1200);
+    await shot(page, 'slot-picker');
 
-    // Dismiss any HTML tutorial overlays via Escape or click-through
+    // The slot picker is an HTML overlay listing up to 3 slots. Click the first.
+    const slotBtn = await page.$('.slot-btn, button:has-text("Tester"), button:has-text("Day 60")');
+    if (slotBtn) {
+      await slotBtn.click();
+      await wait(2500);
+    } else {
+      // Fallback — click the first button that isn't the close/back/cancel
+      const buttons = await page.$$('button');
+      for (const b of buttons) {
+        const t = (await b.textContent())?.trim() ?? '';
+        if (t && !t.match(/close|cancel|back|×|✕/i) && t.length < 60) {
+          await b.click();
+          break;
+        }
+      }
+      await wait(2500);
+    }
+    await shot(page, 'after-slot-load');
+
+    // Dismiss any HTML tutorial/toast overlays
     for (let i = 0; i < 5; i++) {
       const overlay = await page.$('.tutorial-overlay, [class*="tutorial"]');
       if (overlay) {
@@ -181,7 +194,6 @@ async function main() {
         await wait(500);
       } else break;
     }
-
     await shot(page, 'after-boot');
 
     // ── Main tabs ──

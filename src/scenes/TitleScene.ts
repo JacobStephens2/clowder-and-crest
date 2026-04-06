@@ -190,7 +190,8 @@ export class TitleScene extends Phaser.Scene {
 
   private showSlotPicker(mode: 'load' | 'new'): void {
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;';
+    // Near-solid backdrop + blur so the title scene behind doesn't bleed through.
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(12,10,8,0.97);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;';
 
     const title = mode === 'load' ? 'Choose a Save' : 'Choose a Slot';
     let html = `<div style="color:#c4956a;font-family:Georgia,serif;font-size:22px;margin-bottom:20px">${title}</div>`;
@@ -205,9 +206,9 @@ export class TitleScene extends Phaser.Scene {
         }
       } else {
         if (mode === 'new') {
-          html += `<button class="slot-btn" data-slot="${slot}" style="display:block;width:300px;padding:12px;margin:6px 0;background:#2a2520;border:1px dashed #3a3530;border-radius:6px;color:#6b5b3e;font-family:Georgia,serif;font-size:13px;cursor:pointer;text-align:left">Slot ${slot}: Empty</button>`;
+          html += `<button class="slot-btn" data-slot="${slot}" style="display:block;width:300px;padding:12px;margin:6px 0;background:#1a1614;border:1px dashed #3a3530;border-radius:6px;color:#6b5b3e;font-family:Georgia,serif;font-size:13px;cursor:pointer;text-align:left">Slot ${slot}: Empty</button>`;
         } else {
-          html += `<div style="width:300px;padding:12px;margin:6px 0;color:#3a3530;font-family:Georgia,serif;font-size:13px;text-align:left">Slot ${slot}: Empty</div>`;
+          html += `<div style="width:300px;padding:12px;margin:6px 0;background:#15110f;border:1px dashed #2a2520;border-radius:6px;color:#4a4034;font-family:Georgia,serif;font-size:13px;text-align:left">Slot ${slot}: Empty</div>`;
         }
       }
     }

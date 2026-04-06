@@ -147,10 +147,12 @@ export class TownMapScene extends Phaser.Scene {
     // Controls
     this.setupControls();
 
-    // Virtual joystick for town movement
+    // Virtual joystick for town movement.
+    // Positioned near the bottom of the canvas (just above the HTML bottom nav)
+    // for thumb access on mobile, instead of floating in dead space below the grid.
     this.input.addPointer(1);
     const joyX = GAME_WIDTH / 2;
-    const joyY = GRID_TOP + GRID_H + 55;
+    const joyY = GAME_HEIGHT - 120;
     const joyRadius = 36;
     this.add.circle(joyX, joyY, joyRadius, 0x2a2520, 0.6).setStrokeStyle(1, 0x6b5b3e);
     const joyKnob = this.add.circle(joyX, joyY, 14, 0x6b5b3e, 0.8);

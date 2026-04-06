@@ -48,10 +48,10 @@ Light puzzle music. Wooden percussion (marimba-like tonewoods) with a simple lut
 ### Patrol (Lantern Watch) - created
 Eerie and watchful. Low tin whistle with distant harp accents. 70 BPM. Night atmosphere — a lone bell in the distance, still air. The sound of staying alert in darkness. Think medieval night watch.
 
-### Ritual (Simon Says)
+### Ritual (Simon Says) - created
 Sacred and reverential. Sustained fiddle tones like a choir, gentle bell chimes on each sequence step. 60 BPM. Ethereal and solemn. Think Gregorian chant distilled to its simplest elements.
 
-### Scent Trail (Hot/Cold Search)
+### Scent Trail (Hot/Cold Search) - created
 Mysterious, curious. Pizzicato fiddle with a wandering melody that hesitates and doubles back. 95 BPM. The sound of following a trail. Think detective noir meets medieval cloister.
 
 ### Heist (Lock Picking)
