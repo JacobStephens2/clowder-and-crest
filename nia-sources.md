@@ -12,7 +12,13 @@ Track sources indexed via Nia so future sessions skip discovery.
 
 ## Indexed GitHub Repos
 
-_(none — use `nia github search/tree/read` for live search without indexing)_
+- **JacobStephens2/clowder-and-crest** — this game's own source
+  - Repository ID: `69d3307b87a12793570a2d42`
+  - Global source ID: `e4bada6a0bf6a263`
+  - Status: indexed (ready)
+  - Query via: `nia search query "..." --repos "JacobStephens2/clowder-and-crest" --search-mode repositories --fast`
+  - **Best for:** semantic questions about the codebase ("where is X handled", "how does Y relate to Z", cross-file concerns)
+  - **Not best for:** literal keyword lookups — use Grep/Read directly, they're free and faster
 
 ## Lessons Learned (April 2026)
 
@@ -46,7 +52,19 @@ Option B is worth the slot cost if we'll target the source frequently, which is 
 
 ## Current Quota Budget (resets 2026-05-01)
 
-- queries: 2/50 used
-- indexing: 2/3 used — **only 1 slot left this month, spend carefully**
+- queries: 4/50 used
+- indexing: 3/3 used — **no more indexing slots this month**
 - Everything else: 0 used
 - GitHub live search: unmetered
+
+## When to use Nia vs direct tools
+
+| Task | Best tool | Why |
+|---|---|---|
+| Find a specific function/class by name | `Grep` | Free, instant |
+| Read a known file | `Read` | Free, instant |
+| "How does X relate to Y" across files | `nia search query --repos ours` | Semantic, surfaces cross-file relationships |
+| "Where is X handled" when you don't know the file | `nia search query --repos ours` | Semantic, may find indirect implementations |
+| Phaser API question | `nia search query --docs "Phaser 3 Docs"` | Authoritative, structured |
+| External repo code lookup | `nia github search` | Free, unmetered |
+| Explore codebase structure | `Agent` (Explore) | Multi-step, saves main context |
