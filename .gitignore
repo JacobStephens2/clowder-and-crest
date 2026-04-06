@@ -13,3 +13,6 @@ screenshots/
 music/
 pixel_art/
 sound_effects/
+.env
+.env.local
+*.env
