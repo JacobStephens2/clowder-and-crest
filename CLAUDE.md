@@ -8,6 +8,8 @@ Cat guild management game with Rush Hour sliding block puzzles. Built with Phase
 npm run dev          # Start Vite dev server on port 3200
 npm run build        # Type-check + production build to dist/
 npm run preview      # Preview production build locally
+npm run ota:publish  # Build + zip dist/ + write updates/manifest.json
+npm run release      # Alias for ota:publish
 ```
 
 Build output goes to `dist/`, which Apache serves directly.
@@ -39,7 +41,13 @@ src/
 │   ├── BrawlScene.ts        # Zelda-style combat — waves, Rat King boss, powerups, joystick, multi-touch
 │   ├── NonogramScene.ts     # Grid logic puzzle — procedural with solvability validation
 │   ├── StealthScene.ts      # Stealth/avoidance — guard patrol, grass hiding, vision cones
-│   └── PounceScene.ts       # Physics catapult — Matter.js, knock rats off crate stacks
+│   ├── PounceScene.ts       # Physics catapult — Matter.js, knock rats off crate stacks
+│   ├── PatrolScene.ts       # Lantern watch — reveal hidden rats, guard jobs (Ch.3)
+│   ├── RitualScene.ts       # Simon Says candle sequences, sacred jobs (Ch.4)
+│   ├── ScentTrailScene.ts   # Hot/cold grid search, detection jobs (Ch.4)
+│   ├── HeistScene.ts        # Lock-picking concentric rings, shadow jobs (Ch.6)
+│   ├── CourierRunScene.ts   # 3-lane auto-scroller, courier jobs (Ch.2)
+│   └── DungeonRunScene.ts   # Roguelike cellar — chain minigame floors with persistent HP (Ch.5+)
 ├── systems/
 │   ├── SaveManager.ts       # Save/load to localStorage, 3 save slots, forward migration, failure notification
 │   ├── CatManager.ts        # 6 breed definitions, cat creation with variance, XP/leveling, specialization
@@ -48,9 +56,9 @@ src/
 │   ├── PuzzleGenerator.ts   # Procedural Rush Hour generation + BFS solver
 │   ├── BondSystem.ts        # All 15 breed pair bonds, rank tracking, conversation triggers
 │   ├── ProgressionManager.ts # 7-chapter gates, progression hints, rat plague, inquisition
-│   ├── MusicManager.ts      # 14 tracks (10 ambient + 2 puzzle + 2 fight), 3 modes
+│   ├── MusicManager.ts      # 14 tracks (10 ambient + 2 puzzle + 2 fight), 3 modes, fade transitions
 │   ├── DayTimer.ts          # 3-minute days, phase display, pause support
-│   ├── SfxManager.ts        # 16 sound effects
+│   ├── SfxManager.ts        # 22 sound effects with audio pooling for concurrent playback
 │   ├── ReputationSystem.ts  # Crest/Shadow scoring, recruit cost modifiers, tier bonuses
 │   ├── GameSystems.ts       # Combos, daily wishes, festivals, analytics
 ├── ui/
@@ -80,7 +88,7 @@ src/
 5. **Guildhall** — "Behind the Grain Market" (Ch.1) → "The Guildhall" (Ch.2+), rooms with cats and furniture
 6. **Town Map** — explorable 8x10 grid with buildings, stray cats, NPC cats
 7. **Job Board** — accept a job, walk to a building to start it
-8. **Minigame** — 2 choices per job category from 9 types (Rush Hour, Sokoban, Chase, Fish, Hunt, Brawl, Nonogram, Stealth, Pounce)
+8. **Minigame** — 2+ choices per job category from 14 types, staggered unlock across chapters
 9. **Results** — fish earned, XP, level ups, combo streak, perfect celebration
 10. **Conversation** — Fire Emblem-style pair bonds (C/B/A) or group conversations at milestones
 11. **Day End** — upkeep deducted, stationed earnings, reputation bonuses, crisis events, random expenses
@@ -91,7 +99,8 @@ src/
 
 - **Player is the founding Wildcat** — always in the roster, named at game start, can't be dismissed
 - **All 6 breeds have PixelLab pixel art** — idle (4 directions), walk (6 frames x 4 dirs), scratch, sit, eat, sleep animations
-- **9 minigame types** — Rush Hour, Sokoban, Chase, Fishing, Hunt, Brawl, Nonogram, Stealth, Pounce (2 choices per job category)
+- **14 minigame types** — Rush Hour, Sokoban, Chase, Fishing, Hunt, Brawl, Nonogram, Stealth, Pounce, Patrol, Ritual, Scent Trail, Heist, Courier Run (staggered unlock across chapters)
+- **Roguelike dungeon run** — chain random minigame floors with persistent HP, unlocks Chapter 5+
 - **35 jobs across 6 categories** — pest control, courier, guard, sacred, detection, shadow (chapter-gated)
 - **Reputation system** — Sacred/Guard → Crest (noble), Detection → Shadow. Affects recruit costs and daily bonuses
 - **Bond system** — all 15 breed pairs track bonds, 48 conversation scripts
@@ -117,9 +126,7 @@ npm run build
 ## What's Not Implemented Yet
 
 - Big cats (Lynx, Lion, Leopard) and additional breeds
-- Nonogram and light-path puzzle types
-- Town map exploration (isometric overworld)
+- Light-path puzzle type
 - Individual cat rooms (personal decoration per cat)
-- Shadow/Healing job categories
 - Cloud save sync
 - Signed release APK (debug builds only)
