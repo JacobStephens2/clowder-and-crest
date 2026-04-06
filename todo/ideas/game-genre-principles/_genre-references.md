@@ -106,7 +106,7 @@ The player's onboarding window. Whatever lands here sets the player's expectatio
 
 The player has proven they can handle two minigame types. Chapter 2 widens the vocabulary to include "thinking" (Sokoban) and "rhythm" (CourierRun) — broaden the texture of play before adding combat or stealth.
 
-## SokobanScene — Crate Pushing (Chapter 2) - improving
+## SokobanScene — Crate Pushing (Chapter 2) - improved
 
 **Genre:** Sokoban / box-pushing puzzle.
 
