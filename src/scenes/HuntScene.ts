@@ -24,12 +24,15 @@ for (let row = 0; row < 3; row++) {
   }
 }
 
+type RatType = 'normal' | 'golden' | 'poison' | 'peek' | 'doublepop';
+
 interface ActiveRat {
   holeIndex: number;
   gfx: Phaser.GameObjects.Graphics | Phaser.GameObjects.Sprite;
   hitZone: Phaser.GameObjects.Zone;
   timer: Phaser.Time.TimerEvent;
   caught: boolean;
+  type: RatType;
 }
 
 export class HuntScene extends Phaser.Scene {
@@ -41,16 +44,21 @@ export class HuntScene extends Phaser.Scene {
   private missed = 0;
   private maxMisses = 5;
   private timeLeft = 40;
+  private startTime = 40; // for escalation calculation
   private totalSpawned = 0;
   private finished = false;
   private timerText!: Phaser.GameObjects.Text;
   private scoreText!: Phaser.GameObjects.Text;
   private missText!: Phaser.GameObjects.Text;
+  private comboText: Phaser.GameObjects.Text | null = null;
   private countdownTimer: Phaser.Time.TimerEvent | null = null;
-  private spawnTimer: Phaser.Time.TimerEvent | null = null;
+  private nextSpawnTimer: Phaser.Time.TimerEvent | null = null;
   private activeRats: ActiveRat[] = [];
   private tutorialShowing = false;
   private lastCatchSfx = 0;
+  // Combo state — consecutive catches without misses
+  private combo = 0;
+  private comboMaxBonus = 0;
 
   constructor() {
     super({ key: 'HuntScene' });
@@ -66,13 +74,74 @@ export class HuntScene extends Phaser.Scene {
     this.totalSpawned = 0;
     this.finished = false;
     this.activeRats = [];
+    this.combo = 0;
+    this.comboMaxBonus = 0;
 
     const state = getGameState();
     const cat = state?.cats.find((c) => c.id === this.catId);
     // Hunting stat gives more time
     const huntingBonus = Math.min(5, (cat?.stats?.hunting ?? 5) - 3);
     this.timeLeft = (this.difficulty === 'hard' ? 18 : this.difficulty === 'medium' ? 22 : 25) + huntingBonus;
+    this.startTime = this.timeLeft;
     this.maxMisses = this.difficulty === 'hard' ? 3 : this.difficulty === 'medium' ? 4 : 5;
+  }
+
+  /**
+   * Compute the delay until the next spawn based on how much of the round
+   * has elapsed. Per the design doc Pillar 3 (Speed Escalation): start
+   * generous, accelerate over time. The same skill is tested at progressively
+   * higher demands — no new rules introduced.
+   */
+  private getNextSpawnDelay(): number {
+    const elapsed = this.startTime - this.timeLeft;
+    const progress = Math.min(1, elapsed / this.startTime);
+    // Easy: 1100ms → 500ms over the round
+    // Med:  900ms → 400ms
+    // Hard: 700ms → 300ms
+    const startDelay = this.difficulty === 'hard' ? 700 : this.difficulty === 'medium' ? 900 : 1100;
+    const endDelay = this.difficulty === 'hard' ? 300 : this.difficulty === 'medium' ? 400 : 500;
+    return startDelay + (endDelay - startDelay) * progress;
+  }
+
+  /**
+   * Visibility window also shrinks as the round progresses — rats stay up
+   * for less time, demanding faster reactions.
+   */
+  private getVisibleTime(type: RatType): number {
+    const elapsed = this.startTime - this.timeLeft;
+    const progress = Math.min(1, elapsed / this.startTime);
+    if (type === 'peek') return 350; // peek rats are always brief
+    if (type === 'doublepop') return 600; // first emergence is short
+    const startWindow = this.difficulty === 'hard' ? 1200 : this.difficulty === 'medium' ? 1600 : 2000;
+    const endWindow = this.difficulty === 'hard' ? 600 : this.difficulty === 'medium' ? 800 : 1000;
+    return startWindow + (endWindow - startWindow) * progress;
+  }
+
+  /**
+   * Pick which type of rat to spawn. Wave-1 spawns are pure normal/golden so
+   * the player learns the basic loop. Poison appears around 25% elapsed.
+   * Fake-out (peek/doublepop) rats appear after 50% elapsed.
+   */
+  private pickRatType(): RatType {
+    const elapsed = this.startTime - this.timeLeft;
+    const progress = Math.min(1, elapsed / this.startTime);
+    const roll = Math.random();
+    if (progress < 0.15) {
+      // Pure tutorial period — no punishes, no fake-outs
+      return roll < 0.18 ? 'golden' : 'normal';
+    }
+    if (progress < 0.5) {
+      // Mid-round: introduce poison rats
+      if (roll < 0.15) return 'golden';
+      if (roll < 0.3) return 'poison';
+      return 'normal';
+    }
+    // Late round: full mix including fake-outs
+    if (roll < 0.15) return 'golden';
+    if (roll < 0.32) return 'poison';
+    if (roll < 0.42) return 'peek';
+    if (roll < 0.50) return 'doublepop';
+    return 'normal';
   }
 
   create(): void {
@@ -80,11 +149,13 @@ export class HuntScene extends Phaser.Scene {
     this.cameras.main.setZoom(DPR);
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
-    // Tutorial on first play
-    if (showMinigameTutorial(this, 'clowder_hunt_tutorial', 'Hunt the Rats!',
-      `Rats pop up from holes in the ground.<br><br>
-      <strong>Tap them</strong> before they disappear!<br><br>
-      Miss too many and the job fails. Your cat's <strong style="color:#c4956a">Hunting</strong> stat gives bonus time.`,
+    // Tutorial on first play. Bumped key to v2 because the rules expanded
+    // (poison rats, fake-outs, combo) and returning players need to see them.
+    if (showMinigameTutorial(this, 'clowder_hunt_tutorial_v2', 'Hunt the Rats!',
+      `Tap rats as they pop from holes — before they retreat.<br><br>
+      <strong style="color:#dda055">Gold rats = +2</strong> · <strong style="color:#cc6666">Red rats = poison, don't tap</strong><br><br>
+      Watch for <strong>peek</strong> rats that fake-out and retreat fast.<br><br>
+      Chain catches without misses to build a <strong>combo bonus</strong>. The hunt speeds up over time.`,
       () => { this.tutorialShowing = false; }
     )) {
       this.tutorialShowing = true;
@@ -161,24 +232,77 @@ export class HuntScene extends Phaser.Scene {
       loop: true,
     });
 
-    // Spawn rats
-    const spawnDelay = this.difficulty === 'hard' ? 700 : this.difficulty === 'medium' ? 900 : 1100;
-    this.spawnTimer = this.time.addEvent({
-      delay: spawnDelay,
-      callback: () => {
-        if (this.finished || this.tutorialShowing) return;
-        this.spawnRat();
-      },
-      loop: true,
+    // Dynamic spawn schedule — accelerates as the round progresses.
+    // See getNextSpawnDelay() for the curve.
+    const scheduleNext = () => {
+      if (this.finished) return;
+      this.nextSpawnTimer = this.time.delayedCall(this.getNextSpawnDelay(), () => {
+        if (this.finished) return;
+        if (!this.tutorialShowing) this.spawnRat();
+        scheduleNext();
+      });
+    };
+    // First spawn after a brief grace so the player gets oriented
+    this.time.delayedCall(600, scheduleNext);
+
+    // Empty-tap detection — tapping inside the field but not on a rat counts
+    // as a "wasted swing" and breaks the combo. Per Pillar 1 of the design
+    // doc, every action needs feedback — silent misses are the worst case.
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (this.finished || this.tutorialShowing) return;
+      const wx = pointer.worldX;
+      const wy = pointer.worldY;
+      // Inside playfield?
+      if (wx < FIELD_LEFT || wx > FIELD_RIGHT || wy < FIELD_TOP || wy > FIELD_BOTTOM) return;
+      // Did the click hit any active rat's hit zone?
+      for (const rat of this.activeRats) {
+        if (!rat.gfx.active) continue;
+        const dx = wx - rat.gfx.x;
+        const dy = wy - rat.gfx.y;
+        if (dx * dx + dy * dy < (HOLE_RADIUS * 1.4) ** 2) {
+          return; // hit something — let the per-rat handler deal with it
+        }
+      }
+      // Empty tap — break combo, show puff
+      this.onEmptyTap(wx, wy);
     });
 
     // Clean up on scene stop (prevent timer/tween memory leaks)
     this.events.once('shutdown', () => {
       this.time.removeAllEvents();
       this.tweens.killAll();
+      this.input.off('pointerdown');
     });
     eventBus.emit('show-ui');
     eventBus.emit('set-active-tab', 'town');
+  }
+
+  /** Empty tap on the playfield — break combo, show a small dust puff. */
+  private onEmptyTap(x: number, y: number): void {
+    if (this.combo > 0) {
+      this.combo = 0;
+      if (this.comboText) this.comboText.setVisible(false);
+    }
+    playSfx('tap', 0.15);
+    // Dust puff particle burst — neutral grey, low intensity
+    if (this.textures.exists('particle_pixel')) {
+      const burst = this.add.particles(x, y, 'particle_pixel', {
+        speed: { min: 30, max: 80 },
+        lifespan: { min: 200, max: 400 },
+        scale: { start: 0.5, end: 0 },
+        alpha: { start: 0.6, end: 0 },
+        tint: 0x6b5b3e,
+        blendMode: Phaser.BlendModes.NORMAL,
+        emitting: false,
+      });
+      burst.explode(6);
+      this.time.delayedCall(450, () => burst.destroy());
+    }
+    // Brief "miss" text
+    const t = this.add.text(x, y - 12, 'miss', {
+      fontFamily: 'Georgia, serif', fontSize: '10px', color: '#8b7355',
+    }).setOrigin(0.5);
+    this.tweens.add({ targets: t, y: y - 22, alpha: 0, duration: 400, onComplete: () => t.destroy() });
   }
 
   private spawnRat(): void {
@@ -191,19 +315,22 @@ export class HuntScene extends Phaser.Scene {
     const hole = HOLES[holeIndex];
     this.totalSpawned++;
 
-    // 15% chance of golden bonus rat (worth +2), 10% chance of poison rat (costs a miss if caught)
-    const roll = Math.random();
-    const isGolden = roll < 0.15;
-    const isPoison = !isGolden && roll < 0.25;
+    const type = this.pickRatType();
+    const isGolden = type === 'golden';
+    const isPoison = type === 'poison';
+    const isPeek = type === 'peek';
+    const isDoublePop = type === 'doublepop';
 
-    // Draw rat (sprite if available, otherwise graphics fallback)
+    // Draw rat (sprite if available, otherwise graphics fallback). Distinct
+    // tints per type — RED for poison so the danger reads instantly in
+    // peripheral vision (per Pillar 4: visual clarity at speed).
     let gfx: Phaser.GameObjects.Graphics | Phaser.GameObjects.Sprite;
     if (this.textures.exists('rat')) {
       const ratSprite = this.add.sprite(hole.x, hole.y - 10, 'rat');
       ratSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
       ratSprite.setScale(isGolden ? 1.2 : 1.0);
       if (isGolden) ratSprite.setTint(0xffd700);
-      if (isPoison) ratSprite.setTint(0x66aa66);
+      if (isPoison) ratSprite.setTint(0xcc3333);
       gfx = ratSprite;
     } else {
       const ratGfx = this.add.graphics();
@@ -211,8 +338,11 @@ export class HuntScene extends Phaser.Scene {
       gfx = ratGfx;
     }
 
-    // Hit zone
-    const hitZone = this.add.zone(hole.x, hole.y - 10, HOLE_RADIUS * 2.5, HOLE_RADIUS * 2.5);
+    // Per Fruit Ninja design wisdom: the punish hitbox is SMALLER than the
+    // reward hitbox so accidental poison hits feel fair. Golden gets a slight
+    // bonus on the other end — a bigger forgiving hitbox.
+    const hitSize = isPoison ? HOLE_RADIUS * 1.6 : isGolden ? HOLE_RADIUS * 2.8 : HOLE_RADIUS * 2.5;
+    const hitZone = this.add.zone(hole.x, hole.y - 10, hitSize, hitSize);
     hitZone.setInteractive({ useHandCursor: true });
 
     const rat: ActiveRat = {
@@ -220,7 +350,8 @@ export class HuntScene extends Phaser.Scene {
       gfx,
       hitZone,
       caught: false,
-      timer: this.time.delayedCall(0, () => {}), // placeholder
+      type,
+      timer: this.time.delayedCall(0, () => {}), // placeholder, set below
     };
 
     // Tap to catch
@@ -229,20 +360,63 @@ export class HuntScene extends Phaser.Scene {
       rat.caught = true;
 
       if (isPoison) {
-        // Poison rat — costs a miss!
+        // Poison rat hit — distinct fail with red flash and combo break
         this.missed++;
         this.missText.setText(`Missed: ${this.missed}/${this.maxMisses}`);
-        playSfx('fail', 0.4);
-        this.cameras.main.flash(100, 50, 80, 50);
-        const warn = this.add.text(hole.x, hole.y - 30, 'Poison!', {
-          fontFamily: 'Georgia, serif', fontSize: '12px', color: '#66aa66',
+        this.combo = 0;
+        if (this.comboText) this.comboText.setVisible(false);
+        playSfx('hiss', 0.5);
+        this.cameras.main.flash(120, 200, 50, 50);
+        this.cameras.main.shake(100, 0.005);
+        const warn = this.add.text(hole.x, hole.y - 30, 'POISON!', {
+          fontFamily: 'Georgia, serif', fontSize: '13px', color: '#cc3333',
         }).setOrigin(0.5);
-        this.tweens.add({ targets: warn, y: hole.y - 50, alpha: 0, duration: 600, onComplete: () => warn.destroy() });
-        if (this.missed >= this.maxMisses) { gfx.destroy(); hitZone.destroy(); this.activeRats = this.activeRats.filter((r) => r !== rat); rat.timer.destroy(); this.failGame(); return; }
+        this.tweens.add({ targets: warn, y: hole.y - 50, alpha: 0, duration: 700, onComplete: () => warn.destroy() });
+        // Red particle burst — distinct from gold/copper for hits
+        if (this.textures.exists('particle_pixel')) {
+          const burst = this.add.particles(hole.x, hole.y, 'particle_pixel', {
+            speed: { min: 60, max: 140 },
+            lifespan: { min: 250, max: 500 },
+            scale: { start: 0.8, end: 0 },
+            alpha: { start: 1, end: 0 },
+            tint: 0xcc3333,
+            blendMode: Phaser.BlendModes.ADD,
+            emitting: false,
+          });
+          burst.explode(14);
+          this.time.delayedCall(600, () => burst.destroy());
+        }
+        if (this.missed >= this.maxMisses) {
+          gfx.destroy(); hitZone.destroy();
+          this.activeRats = this.activeRats.filter((r) => r !== rat);
+          rat.timer.destroy();
+          this.failGame();
+          return;
+        }
       } else {
+        // Successful catch — increment combo and award points
         const points = isGolden ? 2 : 1;
         this.score += points;
         this.scoreText.setText(`Caught: ${this.score}`);
+        this.combo++;
+        // Combo bonus: every 5-chain awards +2 fish (recorded for results)
+        if (this.combo > 0 && this.combo % 5 === 0) {
+          this.comboMaxBonus += 2;
+          playSfx('sparkle', 0.5);
+          const cb = this.add.text(hole.x, hole.y - 36, `COMBO x${this.combo}!`, {
+            fontFamily: 'Georgia, serif', fontSize: '14px', color: '#ffd700',
+          }).setOrigin(0.5);
+          this.tweens.add({ targets: cb, y: cb.y - 22, alpha: 0, duration: 900, onComplete: () => cb.destroy() });
+        }
+        if (this.combo >= 3) {
+          if (!this.comboText) {
+            this.comboText = this.add.text(GAME_WIDTH / 2, 105, '', {
+              fontFamily: 'Georgia, serif', fontSize: '11px', color: '#dda055',
+            }).setOrigin(0.5);
+          }
+          this.comboText.setText(`Combo x${this.combo}`);
+          this.comboText.setVisible(true);
+        }
         // Throttle catch sound
         const now = Date.now();
         if (now - this.lastCatchSfx > 500) {
@@ -253,7 +427,7 @@ export class HuntScene extends Phaser.Scene {
 
       // Pop effect + particle burst
       gfx.destroy();
-      if (this.textures.exists('particle_pixel')) {
+      if (this.textures.exists('particle_pixel') && !isPoison) {
         const burst = this.add.particles(hole.x, hole.y, 'particle_pixel', {
           speed: { min: 60, max: 160 },
           lifespan: { min: 250, max: 500 },
@@ -266,42 +440,117 @@ export class HuntScene extends Phaser.Scene {
         burst.explode(isGolden ? 20 : 12);
         this.time.delayedCall(600, () => burst.destroy());
       }
-      const pointLabel = isGolden ? '+2!' : '+1';
-      const pointColor = isGolden ? '#ffd700' : '#4a8a4a';
-      const sparkle = this.add.text(hole.x, hole.y - 20, pointLabel, {
-        fontFamily: 'Georgia, serif', fontSize: isGolden ? '20px' : '16px', color: pointColor,
-      }).setOrigin(0.5);
-      this.tweens.add({
-        targets: sparkle, y: hole.y - 50, alpha: 0, duration: 600,
-        onComplete: () => sparkle.destroy(),
-      });
+      if (!isPoison) {
+        const pointLabel = isGolden ? '+2!' : '+1';
+        const pointColor = isGolden ? '#ffd700' : '#4a8a4a';
+        const sparkle = this.add.text(hole.x, hole.y - 20, pointLabel, {
+          fontFamily: 'Georgia, serif', fontSize: isGolden ? '20px' : '16px', color: pointColor,
+        }).setOrigin(0.5);
+        this.tweens.add({
+          targets: sparkle, y: hole.y - 50, alpha: 0, duration: 600,
+          onComplete: () => sparkle.destroy(),
+        });
+      }
 
       rat.timer.destroy();
       hitZone.destroy();
       this.activeRats = this.activeRats.filter((r) => r !== rat);
     });
 
-    // Rat disappears after a delay
-    const visibleTime = this.difficulty === 'hard' ? 1200 : this.difficulty === 'medium' ? 1600 : 2000;
-    rat.timer = this.time.delayedCall(visibleTime, () => {
-      if (rat.caught || this.finished) return;
-      this.missed++;
-      this.missText.setText(`Missed: ${this.missed}/${this.maxMisses}`);
-
-      gfx.destroy();
-      hitZone.destroy();
-      this.activeRats = this.activeRats.filter((r) => r !== rat);
-
-      if (this.missed >= this.maxMisses) {
-        this.failGame();
-      }
-    });
-
-    // Pop-up animation
+    // Spawn animation: pop up
     gfx.setScale(0.3);
     this.tweens.add({ targets: gfx, scaleX: 1, scaleY: 1, duration: 150, ease: 'Back.easeOut' });
 
+    if (isPeek) {
+      // Peek rat: emerges briefly and retreats with no missed-penalty.
+      // Untapped escape is silent — peek rats are about discrimination, not
+      // forced reactions. Tapping one is always rewarded (+1).
+      const visibleTime = this.getVisibleTime('peek');
+      rat.timer = this.time.delayedCall(visibleTime, () => {
+        if (rat.caught || this.finished) return;
+        // Retreat animation — duck back into hole
+        this.tweens.add({
+          targets: gfx, scaleX: 0.3, scaleY: 0.3, alpha: 0, duration: 120,
+          onComplete: () => {
+            gfx.destroy();
+            hitZone.destroy();
+            this.activeRats = this.activeRats.filter((r) => r !== rat);
+          },
+        });
+      });
+    } else if (isDoublePop) {
+      // Double-pop rat: emerges briefly, retreats, then re-emerges.
+      // Players who tap the first emergence still hit (it's a real target),
+      // but the fake-out is for missed first-emergences — the rat gives them
+      // a second chance after the retreat animation, then escapes if missed.
+      const firstWindow = this.getVisibleTime('doublepop');
+      rat.timer = this.time.delayedCall(firstWindow, () => {
+        if (rat.caught || this.finished) return;
+        // Duck back briefly
+        this.tweens.add({
+          targets: gfx, scaleX: 0.3, scaleY: 0.3, duration: 100,
+          onComplete: () => {
+            if (rat.caught || this.finished) return;
+            // Re-emerge after a short pause
+            this.time.delayedCall(180, () => {
+              if (rat.caught || this.finished) return;
+              this.tweens.add({
+                targets: gfx, scaleX: 1, scaleY: 1, duration: 120,
+                ease: 'Back.easeOut',
+              });
+              // Second window — slightly longer than first
+              rat.timer = this.time.delayedCall(700, () => {
+                if (rat.caught || this.finished) return;
+                this.handleRatEscape(rat);
+              });
+            });
+          },
+        });
+      });
+    } else {
+      // Standard rat — disappears after the visibility window with miss penalty
+      const visibleTime = this.getVisibleTime(type);
+      rat.timer = this.time.delayedCall(visibleTime, () => {
+        if (rat.caught || this.finished) return;
+        this.handleRatEscape(rat);
+      });
+    }
+
     this.activeRats.push(rat);
+  }
+
+  /** A rat (normal/golden/poison/doublepop) escaped without being tapped.
+      Counts as a miss, breaks combo, gives a small visual indication. */
+  private handleRatEscape(rat: ActiveRat): void {
+    // Poison rats that escape are GOOD — the player correctly avoided them.
+    // No penalty.
+    if (rat.type === 'poison') {
+      rat.gfx.destroy();
+      rat.hitZone.destroy();
+      this.activeRats = this.activeRats.filter((r) => r !== rat);
+      return;
+    }
+
+    this.missed++;
+    this.missText.setText(`Missed: ${this.missed}/${this.maxMisses}`);
+    this.combo = 0;
+    if (this.comboText) this.comboText.setVisible(false);
+
+    // Visual: small "..." text where the rat was
+    const x = rat.gfx.x;
+    const y = rat.gfx.y;
+    const escTxt = this.add.text(x, y - 14, 'escaped', {
+      fontFamily: 'Georgia, serif', fontSize: '10px', color: '#cc6666',
+    }).setOrigin(0.5);
+    this.tweens.add({ targets: escTxt, y: y - 26, alpha: 0, duration: 500, onComplete: () => escTxt.destroy() });
+
+    rat.gfx.destroy();
+    rat.hitZone.destroy();
+    this.activeRats = this.activeRats.filter((r) => r !== rat);
+
+    if (this.missed >= this.maxMisses) {
+      this.failGame();
+    }
   }
 
   private drawRat(gfx: Phaser.GameObjects.Graphics, x: number, y: number): void {
@@ -343,7 +592,10 @@ export class HuntScene extends Phaser.Scene {
       fontFamily: 'Georgia, serif', fontSize: '28px', color: '#c4956a',
     }).setOrigin(0.5);
 
-    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20, `Caught ${this.score} rat${this.score !== 1 ? 's' : ''}`, {
+    const summary = this.comboMaxBonus > 0
+      ? `Caught ${this.score} rat${this.score !== 1 ? 's' : ''} (+${this.comboMaxBonus} combo bonus)`
+      : `Caught ${this.score} rat${this.score !== 1 ? 's' : ''}`;
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20, summary, {
       fontFamily: 'Georgia, serif', fontSize: '14px', color: '#8b7355',
     }).setOrigin(0.5);
 
@@ -355,6 +607,7 @@ export class HuntScene extends Phaser.Scene {
         stars,
         jobId: this.jobId,
         catId: this.catId,
+        bonusFish: this.comboMaxBonus,
       });
     });
   }
@@ -381,7 +634,7 @@ export class HuntScene extends Phaser.Scene {
 
   private cleanup(): void {
     this.countdownTimer?.destroy();
-    this.spawnTimer?.destroy();
+    this.nextSpawnTimer?.destroy();
     for (const rat of this.activeRats) {
       rat.timer.destroy();
       rat.gfx.destroy();
