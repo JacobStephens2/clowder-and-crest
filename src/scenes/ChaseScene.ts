@@ -168,6 +168,19 @@ export class ChaseScene extends Phaser.Scene {
   private dogPos = { r: 6, c: 6 };
   private dogGfx!: Phaser.GameObjects.GameObject & { x: number; y: number; setPosition: (x: number, y: number) => void };
   private dogStunned = false;
+  /** Dog AI state: patrol (random) → alert (sightline) → chase (adjacent) */
+  private dogState: 'patrol' | 'alert' | 'chase' = 'patrol';
+  private dogAlertIcon: Phaser.GameObjects.Text | null = null;
+  /** When > 0, the dog is "scared" after a catnip pellet: it flees the cat
+      and can be touched for bonus fish. */
+  private dogScaredUntil = 0;
+  /** Power pellet positions still on the board */
+  private catnipPellets: { r: number; c: number; gfx: Phaser.GameObjects.GameObject }[] = [];
+  // Combo state — encourages chaining dot collection for bonus fish
+  private comboCount = 0;
+  private comboLastMs = 0;
+  private comboText: Phaser.GameObjects.Text | null = null;
+  private comboMaxBonus = 0; // tracked for scoring
   private moveCount = 0;
   private timeLeft = 60;
   private timerText!: Phaser.GameObjects.Text;
@@ -198,19 +211,22 @@ export class ChaseScene extends Phaser.Scene {
     this.cameras.main.setZoom(DPR);
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
-    // Tutorial on first play — pause scene until dismissed
-    if (!localStorage.getItem('clowder_chase_tutorial')) {
-      localStorage.setItem('clowder_chase_tutorial', '1');
+    // Tutorial on first play — pause scene until dismissed.
+    // Bumped the storage key when the catnip/combo mechanics were added so
+    // returning players see the updated rules.
+    if (!localStorage.getItem('clowder_chase_tutorial_v2')) {
+      localStorage.setItem('clowder_chase_tutorial_v2', '1');
       this.scene.pause();
       const t = document.createElement('div');
       t.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
       t.innerHTML = `
         <div style="color:#c4956a;font-family:Georgia,serif;font-size:22px;margin-bottom:12px">Chase the Rat!</div>
-        <div style="color:#8b7355;font-family:Georgia,serif;font-size:14px;text-align:center;max-width:280px;line-height:1.6">
+        <div style="color:#8b7355;font-family:Georgia,serif;font-size:13px;text-align:center;max-width:290px;line-height:1.55">
           Navigate the maze to <strong>catch the rat</strong> before time runs out.<br><br>
-          Use the <strong>d-pad buttons</strong>, <strong>swipe</strong>, or <strong>WASD/arrows</strong> to move.<br><br>
-          Collect <strong style="color:#dda055">fish dots</strong> along the way for bonus rewards!<br><br>
-          <strong style="color:#cc6666">Beware the guard dog!</strong> It patrols the maze and costs you time if it catches you.
+          Move with the <strong>joystick</strong>, <strong>swipe</strong>, or <strong>WASD/arrows</strong>.<br><br>
+          Grab <strong style="color:#dda055">fish dots</strong> — chain pickups for <strong>combo bonuses</strong>.<br><br>
+          <strong style="color:#6abe3f">Catnip pellets</strong> scare the guard dog — touch it while scared for a big reward!<br><br>
+          <strong style="color:#cc6666">The dog</strong> has three moods: wandering, suspicious (?), and chasing (!). Watch for its warning.
         </div>
         <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:12px;margin-top:20px">Tap to start</div>
       `;
@@ -274,39 +290,34 @@ export class ChaseScene extends Phaser.Scene {
     }
     this.totalDots = this.dots.length;
 
-    // Speed boost power-ups (2-3 green dots that give temporary speed)
-    const boostCount = this.difficulty === 'hard' ? 2 : 3;
+    // Power catnip pellets — Pac-Man style power-up that flips the hunter/hunted
+    // dynamic. Collecting one scares the dog for ~6s: the dog flees the cat and
+    // can be touched for bonus fish (like Pac-Man eating ghosts). Placed far from
+    // the cat's start to reward exploration.
+    const pelletCount = this.difficulty === 'hard' ? 1 : this.difficulty === 'medium' ? 2 : 2;
     const usedDotPositions = new Set(dotPositions.map((d) => `${d.r},${d.c}`));
-    let boostsPlaced = 0;
-    for (let r = 1; r < ROWS - 1 && boostsPlaced < boostCount; r++) {
-      for (let c = 1; c < COLS - 1 && boostsPlaced < boostCount; c++) {
-        if (this.grid[r][c] === FLOOR && !usedDotPositions.has(`${r},${c}`) && Math.random() < 0.08) {
-          const { x, y } = this.cellToWorld(r, c);
-          const boost = this.add.circle(x, y, 5, 0x44cc44, 0.8);
-          this.tweens.add({ targets: boost, scaleX: 1.3, scaleY: 1.3, duration: 500, yoyo: true, repeat: -1 });
-          // Store position for collision check
-          const br = r, bc = c;
-          this.time.addEvent({
-            delay: 200, loop: true,
-            callback: () => {
-              if (!boost.active || this.caught) return;
-              if (this.catPos.r === br && this.catPos.c === bc) {
-                boost.destroy();
-                // Bonus time from speed pickup
-                this.timeLeft += 3;
-                this.timerText.setText(`Time: ${this.timeLeft}s`);
-                this.timerText.setColor('#44cc44');
-                this.time.delayedCall(500, () => this.timerText.setColor('#c4956a'));
-                const bonusText = this.add.text(this.cellToWorld(br, bc).x, this.cellToWorld(br, bc).y - 10, '+3s', {
-                  fontFamily: 'Georgia, serif', fontSize: '12px', color: '#44cc44',
-                }).setOrigin(0.5);
-                this.tweens.add({ targets: bonusText, y: bonusText.y - 20, alpha: 0, duration: 600, onComplete: () => bonusText.destroy() });
-              }
-            },
-          });
-          boostsPlaced++;
-        }
+    const pelletCandidates: { r: number; c: number; dist: number }[] = [];
+    for (let r = 1; r < ROWS - 1; r++) {
+      for (let c = 1; c < COLS - 1; c++) {
+        if (this.grid[r][c] !== FLOOR) continue;
+        if (usedDotPositions.has(`${r},${c}`)) continue;
+        const dist = Math.abs(r - this.catPos.r) + Math.abs(c - this.catPos.c);
+        if (dist < 5) continue; // require exploration
+        pelletCandidates.push({ r, c, dist });
       }
+    }
+    pelletCandidates.sort(() => Math.random() - 0.5);
+    for (let i = 0; i < Math.min(pelletCount, pelletCandidates.length); i++) {
+      const { r, c } = pelletCandidates[i];
+      const { x, y } = this.cellToWorld(r, c);
+      // Larger, pulsing green pellet — visually distinct from fish dots
+      const pellet = this.add.circle(x, y, 8, 0x6abe3f, 0.95).setStrokeStyle(2, 0x9bdf6b);
+      this.tweens.add({
+        targets: pellet,
+        scaleX: 1.35, scaleY: 1.35, alpha: 0.75,
+        duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      });
+      this.catnipPellets.push({ r, c, gfx: pellet });
     }
 
     // Draw rat
@@ -491,6 +502,15 @@ export class ChaseScene extends Phaser.Scene {
     eventBus.emit('show-ui');
   }
 
+  update(): void {
+    // Fade out the combo HUD once the chain window has expired so it doesn't
+    // linger on screen after the combo breaks.
+    if (this.comboText?.visible && this.time.now - this.comboLastMs > 1500) {
+      this.comboCount = 0;
+      this.comboText.setVisible(false);
+    }
+  }
+
   private cellToWorld(r: number, c: number): { x: number; y: number } {
     return {
       x: MAZE_X + c * CELL + CELL / 2,
@@ -586,13 +606,23 @@ export class ChaseScene extends Phaser.Scene {
       this.tweens.add({ targets: this.catFallback, x: dest.x, y: dest.y, duration: 120, ease: 'Sine.easeOut' });
     }
 
-    // Collect dots
+    // Collect dots — with combo chain for mastery depth
     const dotIndex = this.dots.findIndex((d) => d.r === nr && d.c === nc);
     if (dotIndex >= 0) {
       this.dots[dotIndex].gfx.destroy();
       this.dots.splice(dotIndex, 1);
       this.dotsCollected++;
       this.dotText.setText(`Fish: ${this.dotsCollected}/${this.totalDots}`);
+      this.registerDotForCombo(dest.x, dest.y);
+    }
+
+    // Collect catnip pellet — scare the dog
+    const pelletIndex = this.catnipPellets.findIndex((p) => p.r === nr && p.c === nc);
+    if (pelletIndex >= 0) {
+      const pellet = this.catnipPellets[pelletIndex];
+      pellet.gfx.destroy();
+      this.catnipPellets.splice(pelletIndex, 1);
+      this.activateCatnipMode(dest.x, dest.y);
     }
 
     // Check if caught rat
@@ -601,9 +631,123 @@ export class ChaseScene extends Phaser.Scene {
     }
 
     // Check if ran into dog
-    if (nr === this.dogPos.r && nc === this.dogPos.c && !this.dogStunned) {
-      this.dogCaughtCat();
+    if (nr === this.dogPos.r && nc === this.dogPos.c) {
+      if (this.isDogScared()) {
+        this.catScaredDog();
+      } else if (!this.dogStunned) {
+        this.dogCaughtCat();
+      }
     }
+  }
+
+  /** Called when the cat collects a fish dot. Chains consecutive collections
+      into a combo — extra dots within 1.5s boost the fish multiplier. */
+  private registerDotForCombo(x: number, y: number): void {
+    const now = this.time.now;
+    if (now - this.comboLastMs < 1500) {
+      this.comboCount++;
+    } else {
+      this.comboCount = 1;
+    }
+    this.comboLastMs = now;
+
+    // Milestone bonuses
+    let bonus = 0;
+    if (this.comboCount === 5) bonus = 2;
+    else if (this.comboCount === 10) bonus = 5;
+    else if (this.comboCount > 10 && this.comboCount % 5 === 0) bonus = 3;
+    if (bonus > 0) {
+      this.comboMaxBonus += bonus;
+      playSfx('sparkle', 0.4);
+      const t = this.add.text(x, y - 18, `COMBO x${this.comboCount} +${bonus}!`, {
+        fontFamily: 'Georgia, serif', fontSize: '12px', color: '#dda055',
+      }).setOrigin(0.5).setDepth(20);
+      this.tweens.add({ targets: t, y: t.y - 24, alpha: 0, duration: 900, onComplete: () => t.destroy() });
+    }
+
+    // Live HUD indicator
+    if (this.comboCount >= 3) {
+      if (!this.comboText) {
+        this.comboText = this.add.text(GAME_WIDTH / 2, 104, '', {
+          fontFamily: 'Georgia, serif', fontSize: '11px', color: '#dda055',
+        }).setOrigin(0.5);
+      }
+      this.comboText.setText(`Combo x${this.comboCount}`);
+      this.comboText.setVisible(true);
+    }
+  }
+
+  private isDogScared(): boolean {
+    return this.time.now < this.dogScaredUntil;
+  }
+
+  /** Catnip pellet effect: scare the dog for 6s (4s on hard). */
+  private activateCatnipMode(x: number, y: number): void {
+    const duration = this.difficulty === 'hard' ? 4000 : 6000;
+    this.dogScaredUntil = this.time.now + duration;
+    playSfx('sparkle', 0.6);
+
+    // Visual pop where collected
+    const pop = this.add.text(x, y - 14, 'CATNIP!', {
+      fontFamily: 'Georgia, serif', fontSize: '14px', color: '#6abe3f',
+    }).setOrigin(0.5).setDepth(20);
+    this.tweens.add({ targets: pop, y: pop.y - 26, alpha: 0, duration: 1000, onComplete: () => pop.destroy() });
+
+    // Tint the dog blue-ish while scared
+    if (this.dogGfx && 'setTint' in this.dogGfx) {
+      (this.dogGfx as Phaser.GameObjects.Sprite).setTint(0x6abe3f);
+    }
+    if (this.dogAlertIcon) this.dogAlertIcon.setText('\u{1F4A8}'); // puff-of-air "fleeing" icon
+    this.dogState = 'patrol'; // interrupt any chase
+
+    // Restore on expiration
+    this.time.delayedCall(duration, () => {
+      if (this.caught) return;
+      if ('clearTint' in (this.dogGfx as object)) {
+        (this.dogGfx as Phaser.GameObjects.Sprite).clearTint();
+      }
+      this.dogScaredUntil = 0;
+      if (this.dogAlertIcon) this.dogAlertIcon.setVisible(false);
+    });
+  }
+
+  /** Cat touched the dog while catnip was active — bonus fish + dog respawns far away. */
+  private catScaredDog(): void {
+    playSfx('sparkle', 0.8);
+    this.cameras.main.shake(120, 0.006);
+    const bonusFish = 5;
+    this.dotsCollected += bonusFish;
+    this.comboMaxBonus += bonusFish;
+    this.dotText.setText(`Fish: ${this.dotsCollected}/${this.totalDots}`);
+
+    // Floating text
+    const { x, y } = this.cellToWorld(this.dogPos.r, this.dogPos.c);
+    const t = this.add.text(x, y - 18, `+${bonusFish} fish!`, {
+      fontFamily: 'Georgia, serif', fontSize: '14px', color: '#dda055',
+    }).setOrigin(0.5).setDepth(20);
+    this.tweens.add({ targets: t, y: t.y - 28, alpha: 0, duration: 1000, onComplete: () => t.destroy() });
+
+    // Reset catnip timer AND teleport dog to a far floor tile
+    this.dogScaredUntil = 0;
+    if ('clearTint' in (this.dogGfx as object)) {
+      (this.dogGfx as Phaser.GameObjects.Sprite).clearTint();
+    }
+    const farSpots: { r: number; c: number }[] = [];
+    for (let r = 1; r < ROWS - 1; r++) {
+      for (let c = 1; c < COLS - 1; c++) {
+        if (this.grid[r][c] !== FLOOR) continue;
+        const d = Math.abs(r - this.catPos.r) + Math.abs(c - this.catPos.c);
+        if (d > 8) farSpots.push({ r, c });
+      }
+    }
+    if (farSpots.length > 0) {
+      const spot = farSpots[Math.floor(Math.random() * farSpots.length)];
+      this.dogPos = spot;
+      const dest = this.cellToWorld(spot.r, spot.c);
+      this.dogGfx.setPosition(dest.x, dest.y);
+    }
+    this.dogState = 'patrol';
+    if (this.dogAlertIcon) this.dogAlertIcon.setVisible(false);
   }
 
   private moveRat(): void {
@@ -638,15 +782,20 @@ export class ChaseScene extends Phaser.Scene {
     const stars = this.timeLeft > 30 && dotRatio > 0.7 ? 3
       : this.timeLeft > 15 && dotRatio > 0.4 ? 2 : 1;
 
-    const bonusFish = this.dotsCollected;
+    // dotsCollected already includes dog-scaring bonuses; comboMaxBonus is the
+    // extra reward from chained dot pickups and scared-dog touches.
+    const bonusFish = this.dotsCollected + this.comboMaxBonus;
 
     playSfx('rat_caught');
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'Caught!', {
       fontFamily: 'Georgia, serif', fontSize: '32px', color: '#c4956a',
     }).setOrigin(0.5);
 
-    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 35, `+${bonusFish} bonus fish collected`, {
-      fontFamily: 'Georgia, serif', fontSize: '14px', color: '#dda055',
+    const bonusLine = this.comboMaxBonus > 0
+      ? `+${bonusFish} fish (${this.dotsCollected} collected + ${this.comboMaxBonus} combo bonus)`
+      : `+${bonusFish} bonus fish collected`;
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 35, bonusLine, {
+      fontFamily: 'Georgia, serif', fontSize: '13px', color: '#dda055',
     }).setOrigin(0.5);
 
     this.time.delayedCall(1500, () => {
@@ -713,16 +862,79 @@ export class ChaseScene extends Phaser.Scene {
     } else {
       this.dogGfx = this.add.text(x, y, '\uD83D\uDC15', { fontSize: '20px' }).setOrigin(0.5);
     }
+
+    // Alert/state indicator — sits above the dog and shows "!" when alerted,
+    // puff when fleeing during catnip. Invisible during normal patrol.
+    this.dogAlertIcon = this.add.text(x, y - 16, '', {
+      fontFamily: 'Georgia, serif', fontSize: '14px', color: '#ff6b2a',
+    }).setOrigin(0.5).setDepth(15);
+    this.dogAlertIcon.setVisible(false);
+  }
+
+  /** Check if the dog can "see" the cat along a straight line of floor tiles.
+      Returns the Chebyshev distance if visible, -1 otherwise. This is the
+      Pac-Man-style sightline check that lets the dog react to the cat's
+      position without being omniscient. */
+  private dogSeesCat(): number {
+    const dr = this.catPos.r - this.dogPos.r;
+    const dc = this.catPos.c - this.dogPos.c;
+    if (dr !== 0 && dc !== 0) return -1; // only cardinal lines
+    const steps = Math.max(Math.abs(dr), Math.abs(dc));
+    if (steps === 0 || steps > 6) return -1; // max sightline range 6 tiles
+    const stepR = Math.sign(dr);
+    const stepC = Math.sign(dc);
+    for (let i = 1; i < steps; i++) {
+      const r = this.dogPos.r + stepR * i;
+      const c = this.dogPos.c + stepC * i;
+      if (this.grid[r]?.[c] === WALL) return -1;
+    }
+    return steps;
   }
 
   private moveDog(): void {
     if (this.caught || this.dogStunned) return;
 
-    // Dog patrols semi-randomly — 40% chance to move toward cat, 60% random
-    // This makes the dog an avoidable hazard rather than an unavoidable pursuer
+    // Scared state: flee the cat, moves cannot close the gap
+    if (this.isDogScared()) {
+      this.moveDogScared();
+      return;
+    }
+
+    // Determine state from sightline / proximity — transitions are driven by
+    // the cat's relative position, mimicking Pac-Man ghost scatter→chase logic.
+    const sightDist = this.dogSeesCat();
+    const manhattan = Math.abs(this.dogPos.r - this.catPos.r) + Math.abs(this.dogPos.c - this.catPos.c);
+    const prevState = this.dogState;
+    if (manhattan <= 3) {
+      this.dogState = 'chase';
+    } else if (sightDist > 0) {
+      this.dogState = 'alert';
+    } else {
+      this.dogState = 'patrol';
+    }
+
+    // Visual indicator + audio sting on state transitions
+    if (this.dogAlertIcon) {
+      if (this.dogState === 'chase') {
+        this.dogAlertIcon.setText('!');
+        this.dogAlertIcon.setColor('#cc3333');
+        this.dogAlertIcon.setVisible(true);
+      } else if (this.dogState === 'alert') {
+        this.dogAlertIcon.setText('?');
+        this.dogAlertIcon.setColor('#ff9933');
+        this.dogAlertIcon.setVisible(true);
+      } else {
+        this.dogAlertIcon.setVisible(false);
+      }
+    }
+    if (prevState !== 'chase' && this.dogState === 'chase') {
+      playSfx('bark', 0.5);
+    }
+
+    // Build candidate moves based on state
     const moves: { dr: number; dc: number }[] = [];
-    if (Math.random() < 0.4) {
-      // Move toward cat
+    if (this.dogState === 'chase' || this.dogState === 'alert') {
+      // Greedy move toward cat along the larger axis
       const dr = this.catPos.r - this.dogPos.r;
       const dc = this.catPos.c - this.dogPos.c;
       if (Math.abs(dr) >= Math.abs(dc)) {
@@ -732,10 +944,19 @@ export class ChaseScene extends Phaser.Scene {
         if (dc !== 0) moves.push({ dr: 0, dc: dc > 0 ? 1 : -1 });
         if (dr !== 0) moves.push({ dr: dr > 0 ? 1 : -1, dc: 0 });
       }
+      // Small chance to deviate on alert so the dog can be outmaneuvered
+      if (this.dogState === 'alert' && Math.random() < 0.25) {
+        const rnd = DIRS[Math.floor(Math.random() * DIRS.length)];
+        moves.unshift({ dr: rnd.dr, dc: rnd.dc });
+      }
+    } else {
+      // Patrol: purely random wander
+      const rnd = DIRS[Math.floor(Math.random() * DIRS.length)];
+      moves.push({ dr: rnd.dr, dc: rnd.dc });
+      // Fallback so the dog doesn't get stuck in a corner
+      const rnd2 = DIRS[Math.floor(Math.random() * DIRS.length)];
+      moves.push({ dr: rnd2.dr, dc: rnd2.dc });
     }
-    // Always add a random direction as fallback
-    const rndDir = DIRS[Math.floor(Math.random() * DIRS.length)];
-    moves.push({ dr: rndDir.dr, dc: rndDir.dc });
 
     for (const m of moves) {
       const nr = this.dogPos.r + m.dr;
@@ -744,23 +965,41 @@ export class ChaseScene extends Phaser.Scene {
       // Don't let the dog camp near the rat — stay at least 2 tiles away
       const distToRat = Math.abs(nr - this.ratPos.r) + Math.abs(nc - this.ratPos.c);
       if (distToRat < 2) continue;
-      {
-        this.dogPos = { r: nr, c: nc };
-        const dest = this.cellToWorld(nr, nc);
-        this.tweens.add({ targets: this.dogGfx, x: dest.x, y: dest.y, duration: 150, ease: 'Linear' });
-        break;
-      }
+      this.dogPos = { r: nr, c: nc };
+      const dest = this.cellToWorld(nr, nc);
+      this.tweens.add({ targets: this.dogGfx, x: dest.x, y: dest.y, duration: 150, ease: 'Linear' });
+      if (this.dogAlertIcon) this.dogAlertIcon.setPosition(dest.x, dest.y - 16);
+      break;
     }
 
-    // Bark when close to cat (within 3 tiles)
-    const distToCat = Math.abs(this.dogPos.r - this.catPos.r) + Math.abs(this.dogPos.c - this.catPos.c);
-    if (distToCat <= 3 && Math.random() < 0.3) {
+    // Bark when close to cat
+    if (manhattan <= 3 && Math.random() < 0.3) {
       playSfx('bark', 0.3);
     }
 
     // Check collision with cat
     if (this.dogPos.r === this.catPos.r && this.dogPos.c === this.catPos.c) {
       this.dogCaughtCat();
+    }
+  }
+
+  /** Catnip-mode movement: pick the step that maximises distance from the cat. */
+  private moveDogScared(): void {
+    let best: { dr: number; dc: number; dist: number } | null = null;
+    for (const { dr, dc } of DIRS) {
+      const nr = this.dogPos.r + dr;
+      const nc = this.dogPos.c + dc;
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS || this.grid[nr][nc] !== FLOOR) continue;
+      const distToRat = Math.abs(nr - this.ratPos.r) + Math.abs(nc - this.ratPos.c);
+      if (distToRat < 2) continue;
+      const d = Math.abs(nr - this.catPos.r) + Math.abs(nc - this.catPos.c);
+      if (!best || d > best.dist) best = { dr, dc, dist: d };
+    }
+    if (best) {
+      this.dogPos = { r: this.dogPos.r + best.dr, c: this.dogPos.c + best.dc };
+      const dest = this.cellToWorld(this.dogPos.r, this.dogPos.c);
+      this.tweens.add({ targets: this.dogGfx, x: dest.x, y: dest.y, duration: 180, ease: 'Linear' });
+      if (this.dogAlertIcon) this.dogAlertIcon.setPosition(dest.x, dest.y - 16);
     }
   }
 
