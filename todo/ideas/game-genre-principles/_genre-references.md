@@ -232,7 +232,7 @@ A "thinking chapter" that triples the brain-puzzle vocabulary. Three minigames h
 
 ---
 
-## RitualScene — Simon Says Candles (Chapter 4) - researching
+## RitualScene — Simon Says Candles (Chapter 4) - improving
 
 **Genre:** Sequence memory.
 
@@ -255,7 +255,7 @@ A "thinking chapter" that triples the brain-puzzle vocabulary. Three minigames h
 
 ---
 
-## ScentTrailScene — Hot/Cold Grid Search (Chapter 4)
+## ScentTrailScene — Hot/Cold Grid Search (Chapter 4) - researching
 
 **Genre:** Deduction / hot-cold / minesweeper-adjacent.
 
