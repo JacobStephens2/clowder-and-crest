@@ -81,7 +81,7 @@ Bustling, cheerful. Lively tin whistle melody over a plucky lute rhythm, hand dr
 ### Town Map — Dusk / Night - created
 Softer, watchful. Slow lute with distant harp accents. 65 BPM. Lantern light, empty cobblestones, the day winding down. The guild motif played low and quiet. Think: walking home through a town after the crowds have thinned. A fitting contrast to the daytime market track.
 
-### Castle Halls (ambient variant) - creating
+### Castle Halls (ambient variant) - created
 Dignified, echoing. Slow cittern drone under a sustained fiddle line. 65 BPM. The sound of a nobler part of town — stone arches, tapestries, footsteps in a long corridor. The guild motif plays as a distant harp refrain, as if from another room. Think: a medieval court where cats have business.
 
 ### Dawn Parapets (ambient variant)
