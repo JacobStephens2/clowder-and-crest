@@ -2200,75 +2200,113 @@ eventBus.on('chapter-advance', (chapter: number) => {
     }
   }
 
-  // Chapter intro narrative scenes
+  // Chapter intro narrative scenes — each with distinct tone, cat sprite, and sound design
   const catName = esc(gameState?.playerCatName ?? 'The wildcat');
-  const chapterScenes: Record<number, { scenes: string[]; image: string; onScene?: (i: number) => void; onComplete?: () => void }> = {
+  const catBreed = gameState?.cats.find(c => c.isPlayer)?.breed ?? 'wildcat';
+  const repLabel = getReputationLabel(gameState?.reputationScore ?? 0);
+
+  const chapterScenes: Record<number, Parameters<typeof showNarrativeOverlay>[0]> = {
     2: {
+      // The Crew — warm, hopeful. A partner arrives.
       scenes: [
-        `Word had spread. A stray who catches rats and earns fish — that was worth talking about.`,
-        `A second cat appeared at the lean-to one morning. Not a friend, not yet. But willing to work.`,
-        `${catName} looked at the newcomer. Two cats. Two sets of paws. The beginning of something.`,
-        'Courier jobs have appeared on the board. The Kitchen & Pantry can now be unlocked. A traveling merchant visits every third day.',
+        'Word had spread.',
+        `A stray who catches rats and earns fish — that was worth talking about.`,
+        `A second cat appeared at the lean-to one morning. Not a friend. Not yet.`,
+        `${catName} looked at the newcomer. Two cats. Two sets of paws.`,
+        'The beginning of something.',
       ],
       image: 'assets/sprites/scenes/guildhall.png',
+      catSprite: catBreed,
+      tone: 'warm',
+      onScene: (i) => { if (i === 1) playSfx('recruit', 0.4); },
     },
     3: {
+      // The Rat Plague — dark, urgent. The town is under siege.
       scenes: [
-        'The granary fell first. Rats poured from the walls like dark water, overrunning the flour stores in a single night.',
-        'By morning, the cathedral cellar was lost. The monks fled to the upper floors. The market stalls were abandoned.',
-        'The townsfolk whispered of St. Rosalia — how her bones once drove plague from Palermo. But there were no saints\' bones here. Only cats.',
-        `${catName} gathered the guild. This was no ordinary job. This was a siege.`,
-        'Guard, Sacred, and Detection jobs are now available. Complete 5 pest control jobs to drive the rats from the town.',
+        'The granary fell first.',
+        'Rats poured from the walls like dark water, overrunning the flour stores in a single night.',
+        'By morning, the cathedral cellar was lost. The monks fled. The market was abandoned.',
+        'Only cats.',
+        `${catName} gathered the guild. This was no ordinary job.`,
+        'This was a siege.',
       ],
       image: 'assets/sprites/scenes/town_plague.png',
-      onScene: (i) => { if (i === 0) playSfx('thunder'); },
+      catSprite: catBreed,
+      tone: 'urgent',
+      onScene: (i) => {
+        if (i === 0) playSfx('thunder');
+        if (i === 3) playSfx('hiss', 0.3);
+      },
     },
     4: {
+      // The Name — neutral, dignified. Recognition.
       scenes: [
-        'The guild had a reputation now. Not just strays doing odd jobs — an institution.',
-        `The town council sent a messenger: they wanted to give ${catName}'s guild a name. A formal recognition.`,
-        'Hard jobs were coming in from every quarter — the castle, the monastery, the docks. The guild was ready.',
-        'All job difficulties are now available. Logic puzzles and sacred rites await the guild\'s finest minds.',
+        'The guild had a reputation now.',
+        `Not strays. Not odd-jobbers. An institution.`,
+        `The town council sent a messenger. They wanted to give ${catName}'s guild a name.`,
+        'A formal recognition.',
+        'Hard jobs. Sacred rites. Logic puzzles. The guild was ready for all of it.',
       ],
       image: 'assets/sprites/scenes/town_day.png',
+      catSprite: catBreed,
+      tone: 'neutral',
+      onScene: (i) => { if (i === 3) playSfx('chapter', 0.4); },
     },
     5: {
+      // Established — warm, reflective. Home.
       scenes: [
-        'The lean-to behind the grain market is long gone. In its place stands a guildhall — warm, furnished, and full of life.',
-        `${catName} looks around the hall. Each cat with their own story, their own strength. A clowder.`,
-        'The town knows their names now. The merchants wave. The monks nod. Even the children leave fish by the door.',
-        `From a stray in a storm to ${getReputationLabel(gameState?.reputationScore ?? 0) === 'Noble' ? 'the most trusted guild in town' : getReputationLabel(gameState?.reputationScore ?? 0) === 'Shadowed' ? 'a guild that operates in the shadows' : 'a guild that has earned its place'}.`,
-        `This is what ${catName} built. Not just a guild — a home.`,
+        'The lean-to is gone.',
+        'In its place — a guildhall. Warm. Furnished. Full of life.',
+        `${catName} looks around. Each cat with their own story. Their own strength.`,
+        'A clowder.',
+        'The town knows their names. The merchants wave. The monks nod.',
+        `From a stray in a storm to ${repLabel === 'Noble' ? 'the most trusted guild in town' : repLabel === 'Shadowed' ? 'a guild feared and wealthy' : 'a guild that earned its place'}.`,
+        'Home.',
       ],
       image: 'assets/sprites/crest.png',
-      onScene: (i) => { if (i === 4) playSfx('chapter'); },
+      catSprite: catBreed,
+      tone: 'warm',
+      onScene: (i) => { if (i === 6) playSfx('chapter'); if (i === 3) playSfx('purr', 0.3); },
     },
     6: {
+      // The Rival — neutral turning tense. Competition.
       scenes: [
-        'Word arrived at dawn. A second guild had entered the town.',
-        'They called themselves the Silver Paws — sleek, well-funded, and hungry for work.',
-        'Their agents were already at the job board, undercutting prices and charming merchants.',
-        `${catName} watched from across the square. This was no longer about survival. This was about legacy.`,
-        'Contested jobs will appear on the board. Complete them before the Silver Paws do — or risk losing everything you\'ve built.',
+        'Word arrived at dawn.',
+        'A second guild had entered the town.',
+        'The Silver Paws.',
+        'Sleek. Well-funded. Hungry for work.',
+        `${catName} watched from across the square.`,
+        'This was no longer about survival.',
+        'This was about legacy.',
       ],
       image: 'assets/sprites/scenes/town_day.png',
+      catSprite: catBreed,
+      tone: 'neutral',
+      onScene: (i) => { if (i === 2) playSfx('alarm', 0.3); },
     },
     7: {
+      // The Inquisition — solemn, foreboding. Judgment.
       scenes: [
-        'A letter arrived bearing the Bishop\'s seal. An Inquisitor was coming.',
-        `"We have heard of your guild," it read. "Cats that serve the saints — or so you claim."`,
-        `${catName} read the words twice. Five days. Five days to prove what the guild truly was.`,
-        'Sacred and Guard work will earn the Inquisitor\'s favor. Shadow dealings will earn condemnation.',
-        'Choose your jobs wisely. The Bishop is watching.',
+        'A letter arrived.',
+        'It bore the Bishop\'s seal.',
+        `"We have heard of your guild. Cats that serve the saints — or so you claim."`,
+        `${catName} read the words twice.`,
+        'Five days.',
+        'Five days to prove what the guild truly was.',
+        'The Bishop is watching.',
       ],
       image: 'assets/sprites/scenes/guildhall.png',
-      onScene: (i) => { if (i === 0) playSfx('thunder'); },
+      catSprite: catBreed,
+      tone: 'solemn',
+      onScene: (i) => {
+        if (i === 0) playSfx('thunder');
+        if (i === 4) playSfx('day_bell', 0.3);
+      },
     },
   };
 
   if (chapterScenes[chapter]) {
-    const cs = chapterScenes[chapter];
-    setTimeout(() => showNarrativeOverlay(cs), 1500);
+    setTimeout(() => showNarrativeOverlay(chapterScenes[chapter]), 1500);
   }
 });
 
