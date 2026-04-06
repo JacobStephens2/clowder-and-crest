@@ -1,2 +1,2 @@
 [x] I went to hire Tuxedo, but I got stuck on the name screen. Clicking Recruit and Turn Away - neither did anything, so I had to close the browser and re-open it to unfreeze the game (fixed: .name-prompt-overlay was position:absolute z-index:50 inside #overlay-layer's z-10 stacking context, so any position:fixed z-index>10 modal could block its clicks. Also, document.getElementById would return the first matching element when prompts stacked, attaching listeners to stale DOM. Switched to position:fixed z-index:9999, scoped lookups via querySelector, and clear stale prompts before creating new ones.)
-[] build a new apk
+[x] build a new apk (v2.0.1, versionCode 21, signed release at android/app/build/outputs/apk/release/app-release.apk — 61.6MB)
