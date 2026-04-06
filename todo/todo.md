@@ -1,4 +1,5 @@
 [x] Revise movement according to this: /var/www/clowder.stephens.page/todo/ideas/What Matter.js games have the smoothest character.md
 [x] consider removing the % match by cat for job selection. I pretty much always just choose the highest percentage match, so perhaps the strength of each cat for the job should be a little more opaque, maybe just showing their relevant stat values or something?
-[] should the music prompts all share something common to help create a common thread between the game's music? (/var/www/clowder.stephens.page/todo/music-prompts.md)
+[x] should the music prompts all share something common to help create a common thread between the game's music? (/var/www/clowder.stephens.page/todo/music-prompts.md)
 [] consider the codebase in relation to the Phaser.js documentation: https://docs.phaser.io/
+[] would the game benefit from Howler.js? If so, implement
