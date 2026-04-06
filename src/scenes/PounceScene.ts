@@ -24,11 +24,12 @@ export class PounceScene extends Phaser.Scene {
   private totalRats = 0;
   private finished = false;
   private tutorialShowing = false;
-  private projectile: Phaser.Physics.Matter.Sprite | null = null;
   private canLaunch = true;
   private aimLine: Phaser.GameObjects.Graphics | null = null;
   private launchText!: Phaser.GameObjects.Text;
   private ratBodies: MatterJS.BodyType[] = [];
+  // Sprite-body pairs synced each frame in update() for smooth rendering
+  private bodySprites: { body: MatterJS.BodyType; sprite: Phaser.GameObjects.GameObject & { setPosition: (x: number, y: number) => void; setRotation?: (r: number) => void } }[] = [];
 
   constructor() {
     super({
@@ -50,6 +51,7 @@ export class PounceScene extends Phaser.Scene {
     this.finished = false;
     this.canLaunch = true;
     this.ratBodies = [];
+    this.bodySprites = [];
     this.maxLaunches = this.difficulty === 'hard' ? 3 : this.difficulty === 'medium' ? 4 : 5;
 
     const state = getGameState();
@@ -173,6 +175,30 @@ export class PounceScene extends Phaser.Scene {
     eventBus.emit('set-active-tab', 'town');
   }
 
+  update(): void {
+    // Sync visual sprites to physics bodies every render frame
+    for (const pair of this.bodySprites) {
+      const pos = pair.body.position;
+      if (pos) {
+        pair.sprite.setPosition(pos.x, pos.y);
+        if (pair.sprite.setRotation) pair.sprite.setRotation(pair.body.angle);
+      }
+    }
+
+    // Cap velocities to prevent extreme speeds from stacking
+    const MAX_VEL = 15;
+    const bodies = this.matter.world.getAllBodies();
+    for (const body of bodies) {
+      if (body.isStatic) continue;
+      const v = body.velocity;
+      if (Math.abs(v.x) > MAX_VEL || Math.abs(v.y) > MAX_VEL) {
+        const clampX = Math.max(-MAX_VEL, Math.min(MAX_VEL, v.x));
+        const clampY = Math.max(-MAX_VEL, Math.min(MAX_VEL, v.y));
+        this.matter.body.setVelocity(body, { x: clampX, y: clampY });
+      }
+    }
+  }
+
   private buildTarget(): void {
     const ratCount = this.difficulty === 'hard' ? 5 : this.difficulty === 'medium' ? 4 : 3;
     this.totalRats = ratCount;
@@ -188,25 +214,27 @@ export class PounceScene extends Phaser.Scene {
       const crate = this.matter.add.rectangle(cx, cy, crateSize - 2, crateSize - 2, {
         restitution: 0.2, friction: 0.8, density: 0.005,
       });
-      // Visual
-      this.add.rectangle(cx, cy, crateSize - 2, crateSize - 2, 0x4a3a28).setStrokeStyle(1, 0x3a2a18);
+      const crateVis = this.add.rectangle(cx, cy, crateSize - 2, crateSize - 2, 0x4a3a28).setStrokeStyle(1, 0x3a2a18);
+      this.bodySprites.push({ body: crate, sprite: crateVis });
     }
 
     // Second row: 2 crates
     for (let i = 0; i < 2; i++) {
       const cx = stackX - crateSize / 2 + i * crateSize;
       const cy = GROUND_Y - crateSize * 1.5;
-      this.matter.add.rectangle(cx, cy, crateSize - 2, crateSize - 2, {
+      const crate = this.matter.add.rectangle(cx, cy, crateSize - 2, crateSize - 2, {
         restitution: 0.2, friction: 0.8, density: 0.004,
       });
-      this.add.rectangle(cx, cy, crateSize - 2, crateSize - 2, 0x4a3a28).setStrokeStyle(1, 0x3a2a18);
+      const crateVis = this.add.rectangle(cx, cy, crateSize - 2, crateSize - 2, 0x4a3a28).setStrokeStyle(1, 0x3a2a18);
+      this.bodySprites.push({ body: crate, sprite: crateVis });
     }
 
     // Top crate
     const topCrate = this.matter.add.rectangle(stackX, GROUND_Y - crateSize * 2.5, crateSize - 2, crateSize - 2, {
       restitution: 0.2, friction: 0.8, density: 0.003,
     });
-    this.add.rectangle(stackX, GROUND_Y - crateSize * 2.5, crateSize - 2, crateSize - 2, 0x4a3a28).setStrokeStyle(1, 0x3a2a18);
+    const topVis = this.add.rectangle(stackX, GROUND_Y - crateSize * 2.5, crateSize - 2, crateSize - 2, 0x4a3a28).setStrokeStyle(1, 0x3a2a18);
+    this.bodySprites.push({ body: topCrate, sprite: topVis });
 
     // Place rats on top of the structure
     for (let i = 0; i < ratCount; i++) {
@@ -218,21 +246,12 @@ export class PounceScene extends Phaser.Scene {
       });
       this.ratBodies.push(ratBody);
 
-      // Rat visual
+      // Rat visual — synced to physics body in update()
       if (this.textures.exists('rat')) {
         const ratSprite = this.add.sprite(rx, ry, 'rat');
         ratSprite.setScale(0.6);
         ratSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
-        // Sync sprite to physics body
-        this.time.addEvent({
-          delay: 16, loop: true,
-          callback: () => {
-            if (ratBody.position) {
-              ratSprite.setPosition(ratBody.position.x, ratBody.position.y);
-              ratSprite.setRotation(ratBody.angle);
-            }
-          },
-        });
+        this.bodySprites.push({ body: ratBody, sprite: ratSprite });
       }
     }
   }
@@ -263,16 +282,9 @@ export class PounceScene extends Phaser.Scene {
     });
     this.matter.body.setVelocity(proj, { x: vx * 0.015, y: vy * 0.015 });
 
-    // Visual for projectile
+    // Visual for projectile — synced in update()
     const projVis = this.add.circle(LAUNCH_X, LAUNCH_Y, 8, 0xc4956a);
-    this.time.addEvent({
-      delay: 16, loop: true,
-      callback: () => {
-        if (proj.position) {
-          projVis.setPosition(proj.position.x, proj.position.y);
-        }
-      },
-    });
+    this.bodySprites.push({ body: proj, sprite: projVis });
 
     // Wait for physics to settle, then check result
     this.time.delayedCall(2500, () => {

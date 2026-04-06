@@ -642,7 +642,7 @@ function showTutorial(): void {
     { text: 'Welcome to your guildhall! This is where your cats live. Tap a room to go inside and see your cats.', highlight: 'canvas' },
     { text: 'Use the tabs at the bottom to navigate. The Town is where you find jobs, recruit cats, and buy supplies.', highlight: 'bottom-bar' },
     { text: 'Your fish count and day timer are shown at the top. Fish is your currency — earn it by completing jobs.', highlight: 'status-bar' },
-    { text: 'Head to the Town tab now to pick up your first job. Match your cat\'s stats to the job for the best results!', highlight: 'bottom-bar' },
+    { text: 'Head to the Town tab now to pick up your first job. Each job favors different stats — choose your cat wisely!', highlight: 'bottom-bar' },
     { text: 'Each day, pay upkeep for your cats and rooms. Complete jobs, recruit more cats, and grow your guild. Good luck!', highlight: null },
   ];
 
@@ -1292,14 +1292,19 @@ function showAssignOverlay(job: JobDef): void {
   // Show which stats matter for this job
   html += `<div style="font-size:11px;color:#6b5b3e;margin-bottom:8px">Key stats: ${job.keyStats.join(', ')}</div>`;
 
-  availableCats.forEach((cat) => {
-    const catIndex = gameState!.cats.indexOf(cat);
-    const match = getStatMatchScore(cat, job);
-    const matchPct = Math.round(match * 100);
-    const matchColor = matchPct >= 70 ? '#4a8a4a' : matchPct >= 40 ? '#8a8a4a' : '#8a4a4a';
+  // Sort cats by fit (best first) but don't reveal the score
+  const sortedCats = availableCats.slice().sort((a, b) => getStatMatchScore(b, job) - getStatMatchScore(a, job));
 
-    // Build fit details
-    const statDetails = job.keyStats.map((s) => `${s}: ${cat.stats[s]}`).join(', ');
+  sortedCats.forEach((cat) => {
+    const catIndex = gameState!.cats.indexOf(cat);
+
+    // Build key stat display with color-coded values
+    const statBadges = job.keyStats.map((s) => {
+      const val = cat.stats[s];
+      const color = val >= 7 ? '#4a8a4a' : val >= 4 ? '#8a8a4a' : '#8a4a4a';
+      return `<span style="color:${color}">${s} ${val}</span>`;
+    }).join(' <span style="color:#3a3a3a">|</span> ');
+
     const traitEffects: string[] = [];
     if ((cat.traits ?? []).includes('Brave') && job.difficulty === 'hard') traitEffects.push('Brave +');
     if ((cat.traits ?? []).includes('Lazy')) traitEffects.push('Lazy -');
@@ -1318,8 +1323,7 @@ function showAssignOverlay(job: JobDef): void {
         ${spriteImg}
         <div style="flex:1">
           <div style="color:#c4956a">${esc(cat.name)} <span style="font-size:11px;color:#6b5b3e">${BREED_NAMES[cat.breed] ?? cat.breed}</span>${cat.specialization ? ` <span style="font-size:10px;color:${cat.specialization === job.category ? '#6b8ea6' : '#6b5b3e'}">${SPECIALIZATION_CATEGORIES[cat.specialization]?.icon ?? ''} ${SPECIALIZATION_CATEGORIES[cat.specialization]?.name ?? ''}</span>` : ''}</div>
-          <div style="font-size:12px;color:${matchColor};font-weight:bold">Match: ${matchPct}%</div>
-          <div style="font-size:10px;color:#777">${statDetails}</div>
+          <div style="font-size:12px">${statBadges}</div>
           ${traitEffects.length > 0 ? `<div style="font-size:10px;color:#8b7355">${traitEffects.join(' | ')}</div>` : ''}
         </div>
       </button>
