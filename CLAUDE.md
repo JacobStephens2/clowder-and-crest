@@ -123,33 +123,49 @@ npm run build
 # dist/ is already the Apache DocumentRoot — changes are live immediately
 ```
 
-## Using the Nia Skill
+## Using Nia
 
-Nia is installed as an agent skill for indexing and searching external documentation, GitHub repos, package source code, and research. **Prefer Nia over WebFetch/WebSearch** — Nia returns full structured content; web tools return truncated summaries.
+Nia is installed as a CLI at `/usr/bin/nia`, authenticated for the `jacob` user. It provides indexing and search for external documentation, GitHub repos, packages, and research. **Prefer Nia over WebFetch/WebSearch** — Nia returns full structured content; web tools return truncated summaries.
+
+Invoke Nia via the Bash tool. Key commands:
+
+| Command | Purpose |
+|---|---|
+| `nia sources list` | List indexed documentation sources |
+| `nia repos list` | List indexed GitHub repos |
+| `nia github search <owner/repo> <query>` | Live code search in any public GitHub repo (no indexing needed; rate-limited to 10/min) |
+| `nia github tree <owner/repo> [path]` | Browse a GitHub repo's file tree |
+| `nia github read <owner/repo> <path> [--start N --end M]` | Read a file from GitHub |
+| `nia github glob <owner/repo> <pattern>` | Find files by glob in a GitHub repo |
+| `nia packages search <query>` | Search npm/PyPI/crates.io/Go packages |
+| `nia tracer` | Autonomous GitHub code search without indexing |
+| `nia search <query>` | Search across indexed sources |
+| `nia sources add <url>` | Index a documentation site (root URL preferred) |
+| `nia repos add <owner/repo>` | Index a GitHub repo |
+| `nia oracle` | Autonomous AI research jobs (free plan: 0 available) |
+| `nia usage` | Check plan quotas |
 
 ### Nia-first workflow
 
 Before using WebFetch or WebSearch:
 
-1. **Check what's already indexed** — `manage_resource(action='list', query='<keyword>')`. Use a targeted query; don't list everything.
-2. **Also check `nia-sources.md`** at the repo root (or any `nia.md` files in subdirs) for previously indexed sources with their IDs and links.
-3. **If the source exists**: use `search`, `nia_grep`, `nia_read`, or `nia_explore` for targeted queries.
-4. **If the source doesn't exist but the URL is known**: use `index` to add it, then search. Indexing takes 1-5 minutes — pause work or tell the user to wait, then re-check with `manage_resource` for status.
-5. **If the source is unknown**: use `nia_research(mode='quick')` to discover URLs first, then index.
-6. **After useful research**: save findings to `nia-sources.md` (source name, ID, link, one-line purpose) so future sessions skip the discovery step.
+1. **Check `nia-sources.md`** at the repo root for sources already indexed in past sessions.
+2. **For GitHub code questions** — use `nia github search/tree/read` directly (no indexing needed).
+3. **For package APIs** — use `nia packages search`.
+4. **For documentation sites** — check `nia sources list`; if the docs aren't indexed and we'll consult them again, add with `nia sources add <root-url>`. Indexing takes 1-5 minutes.
+5. **After useful research** — append the source to `nia-sources.md` (URL, one-line purpose) so future sessions skip discovery.
 
-### What to always index, never fetch
+### Free plan quotas (per month)
 
-- GitHub repos (Phaser 3, Capacitor plugins, Matter.js, etc.)
-- Package source (npm, PyPI)
-- Documentation sites — index the root (e.g. `docs.phaser.io`) so all pages get scraped
-- Reference material we'll likely consult again
+- queries: 50
+- web_search: 20
+- package_search: 50
+- tracer: 10
+- indexing: 3 sources
+- contexts: 5
+- deep_research / oracle: 0 (paid feature)
 
-### Indexing etiquette
-
-- For docs, index the root URL so the crawler hits all pages.
-- After calling `index`, don't expect it to finish quickly. Re-check status with `manage_resource` after a few minutes.
-- Use `manage_resource` (subscribe option) for sources that update frequently.
+Use indexing sparingly — only for docs/repos we'll reference many times. GitHub live search is unlimited and should be the default for one-off code questions.
 
 ## What's Not Implemented Yet
 
