@@ -66,7 +66,7 @@ Energetic, forward-driving. Fast strummed lute with a running bass line on citte
 
 These are for the non-minigame parts of the game: the title screen, the intro story, the guildhall, the town, the chapter intros, and other "moods" the player spends time in. They use the same shared block and same 1000-char constraint.
 
-### Prologue — The Storm (intro)
+### Prologue — The Storm (intro) - created
 Somber, foreboding. Low tin whistle drone over distant bodhrán thunder rolls. 70 BPM, D minor. The sound of rain on cobblestones — a lone wet wildcat seeking shelter. Sparse, lonely, no hope yet. The guild motif D-C-A-G is born at the end on a single soft harp phrase, like a seed planted. Think: the opening of a fairy tale about a cat who has nothing but tomorrow.
 
 ### Title Screen
