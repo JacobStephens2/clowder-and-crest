@@ -190,12 +190,12 @@ Invoke Nia via the Bash tool. Key commands:
 
 ### Nia-first workflow
 
-1. **Check `nia-sources.md`** at the repo root for sources already indexed.
+1. **Check `todo/nia-sources.md`** for sources already indexed.
 2. **For semantic questions about our code** — use `nia search query --repos ours`.
 3. **For Phaser/Capacitor docs** — both are indexed; query directly.
 4. **For external repos** — use `nia github search/tree/read`.
 5. **For new docs we'll use often** — `nia sources index <root-url>`. Indexing is abundant on Startup plan.
-6. **Update `nia-sources.md`** after indexing a new source.
+6. **Update `todo/nia-sources.md`** after indexing a new source.
 
 ## What's Not Implemented Yet
 
