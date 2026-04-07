@@ -70,6 +70,67 @@ const DIFFICULTY_MAP: Record<string, DifficultyConfig> = {
   },
 };
 
+// ── Fish behaviors ──
+//
+// Per the doc's #1 implication: "different species feel different to catch
+// at a motor level, not just a stat level". Each fish has a behavior that
+// changes how its zone moves during the catch phase. The same push-pull
+// mechanic produces distinct sensations because the zone motion patterns
+// are fundamentally different.
+type FishBehavior = 'steady' | 'darting' | 'diver' | 'runner' | 'lazy';
+
+type Rarity = 'common' | 'uncommon' | 'rare' | 'legendary';
+
+interface FishProfile {
+  name: string;
+  behavior: FishBehavior;
+  rarity: Rarity;
+}
+
+// Fish library by difficulty. Mix of behaviors per difficulty so the player
+// encounters variety even within a single tier. Rarity weighting is rolled
+// separately at scene init.
+const FISH_LIBRARY: Record<string, FishProfile[]> = {
+  easy: [
+    { name: 'Perch',    behavior: 'steady',  rarity: 'common'   },
+    { name: 'Minnow',   behavior: 'darting', rarity: 'common'   },
+    { name: 'Gudgeon',  behavior: 'lazy',    rarity: 'common'   },
+    { name: 'Dace',     behavior: 'runner',  rarity: 'uncommon' },
+    { name: 'Sunfish',  behavior: 'diver',   rarity: 'uncommon' },
+    { name: 'Crystal Perch', behavior: 'steady', rarity: 'rare' },
+  ],
+  medium: [
+    { name: 'Trout',    behavior: 'runner',  rarity: 'common'   },
+    { name: 'Carp',     behavior: 'lazy',    rarity: 'common'   },
+    { name: 'Bream',    behavior: 'steady',  rarity: 'common'   },
+    { name: 'Tench',    behavior: 'diver',   rarity: 'uncommon' },
+    { name: 'River Eel', behavior: 'darting', rarity: 'uncommon' },
+    { name: 'Moonfin Carp', behavior: 'lazy', rarity: 'rare' },
+  ],
+  hard: [
+    { name: 'Pike',     behavior: 'darting', rarity: 'common'   },
+    { name: 'Salmon',   behavior: 'runner',  rarity: 'common'   },
+    { name: 'Eel',      behavior: 'diver',   rarity: 'common'   },
+    { name: 'Sturgeon', behavior: 'lazy',    rarity: 'uncommon' },
+    { name: 'Pike King', behavior: 'darting', rarity: 'rare'    },
+    { name: 'Greatfin Salmon', behavior: 'runner', rarity: 'legendary' },
+  ],
+};
+
+const RARITY_BONUS: Record<Rarity, number> = {
+  common: 0,
+  uncommon: 1,
+  rare: 3,
+  legendary: 8,
+};
+
+const RARITY_COLOR: Record<Rarity, string> = {
+  common: '#c4956a',
+  uncommon: '#88dd88',
+  rare: '#88aaff',
+  legendary: '#ffd700',
+};
+
 export class FishingScene extends Phaser.Scene {
   private jobId = '';
   private catId = '';
@@ -77,15 +138,39 @@ export class FishingScene extends Phaser.Scene {
   private difficulty = 'easy';
   private diffConfig!: DifficultyConfig;
 
-  // State
-  private isReeling = false;
-  private hookY = 0;           // 0 = bottom of bar, BAR_HEIGHT = top
-  private zoneY = 0;           // bottom edge of zone in bar-local coords (0..BAR_HEIGHT)
-  private zoneDir = 1;         // 1 = moving up, -1 = moving down
-  private catchMeter = 0;      // 0..1
-  private elapsed = 0;         // seconds since start
-  private finished = false;
+  // ── State machine ──
+  // The doc's three-phase structure: approach (waiting for a bite, builds
+  // anticipation), bite (reaction window, the surprise spike), catch (the
+  // active push-pull fight). Each phase delivers a different emotional
+  // texture; jumping straight to catch sacrifices anticipation entirely.
+  phase: 'approach' | 'bite' | 'catch' | 'done' = 'approach';
+  /** When the current phase started (scene-relative seconds). */
+  phaseStart = 0;
+  /** How long the approach phase will last for this fish (randomized). */
+  approachDuration = 2;
+  /** Fixed window during which the player can react to a bite. Missing the
+      window means the fish escapes. */
+  biteWindow = 1.4;
+
+  isReeling = false;
+  hookY = 0;           // 0 = bottom of bar, BAR_HEIGHT = top
+  zoneY = 0;           // bottom edge of zone in bar-local coords (0..BAR_HEIGHT)
+  zoneDir = 1;         // 1 = moving up, -1 = moving down
+  catchMeter = 0;      // 0..1
+  elapsed = 0;         // seconds since start
+  finished = false;
   private tutorialShowing = false;
+
+  // Per-fish behavior state — driven by the active fish profile
+  fishProfile!: FishProfile;
+  /** Behavior-specific timer for runner sprint/pause cadences. */
+  private behaviorPhaseTimer = 0;
+  /** True during a runner's sprint phase (fast movement). */
+  private runnerSprinting = true;
+  /** Last time a darting fish flipped direction. */
+  private dartLastFlip = 0;
+  /** Last time a lazy fish "jumped". */
+  private lazyLastJump = 0;
 
   // Graphics objects
   private hookRect!: Phaser.GameObjects.Rectangle;
@@ -95,11 +180,15 @@ export class FishingScene extends Phaser.Scene {
   private timerText!: Phaser.GameObjects.Text;
   private instructionText!: Phaser.GameObjects.Text;
   private fishLine!: Phaser.GameObjects.Graphics;
+  /** Bobber circle in the water — visible during the approach + bite
+      phases. Twitches when a bite happens. */
+  private bobber!: Phaser.GameObjects.Arc;
+  private bobberHomeY = 0;
 
   // Water ripple
   private waterRippleTimer = 0;
-  private fishName = 'Fish';
-  private isRareCatch = false;
+  fishName = 'Fish';
+  fishRarity: Rarity = 'common';
   private ripples: Phaser.GameObjects.Arc[] = [];
 
   constructor() {
@@ -132,6 +221,48 @@ export class FishingScene extends Phaser.Scene {
     this.finished = false;
     this.ripples = [];
     this.waterRippleTimer = 0;
+    this.phase = 'approach';
+    this.phaseStart = 0;
+    this.approachDuration = 1.2 + Math.random() * 2.5; // 1.2 - 3.7s wait
+    this.behaviorPhaseTimer = 0;
+    this.runnerSprinting = true;
+    this.dartLastFlip = 0;
+    this.lazyLastJump = 0;
+
+    // Pick a fish profile + roll rarity. The doc's "variable interval
+    // reinforcement" pillar: rarity is a separate roll, so even a common
+    // species can occasionally surface as a rare specimen.
+    this.fishProfile = this.pickFishProfile();
+    this.fishRarity = this.rollRarity();
+    this.fishName = this.fishRarity === 'legendary' && !this.fishProfile.name.includes('Legendary')
+      ? `Legendary ${this.fishProfile.name}`
+      : this.fishRarity === 'rare' && this.fishProfile.rarity === 'common'
+        ? `Golden ${this.fishProfile.name}`
+        : this.fishProfile.name;
+  }
+
+  /** Pick a random fish from the difficulty's library. Public so tests can
+      verify the library has the expected behaviors. */
+  pickFishProfile(): FishProfile {
+    const list = FISH_LIBRARY[this.difficulty] ?? FISH_LIBRARY.easy;
+    return list[Math.floor(Math.random() * list.length)];
+  }
+
+  /** Roll a rarity tier independent of the fish profile. Tier weights:
+      common 60%, uncommon 25%, rare 12%, legendary 3%. The roll never
+      drops a fish BELOW its profile's intrinsic rarity — a "Pike King"
+      rated rare can never roll common. */
+  rollRarity(): Rarity {
+    const r = Math.random();
+    const baseRoll: Rarity = r < 0.03 ? 'legendary'
+      : r < 0.15 ? 'rare'
+      : r < 0.40 ? 'uncommon'
+      : 'common';
+    // Floor at the profile's intrinsic rarity
+    const tiers: Rarity[] = ['common', 'uncommon', 'rare', 'legendary'];
+    const profileIdx = tiers.indexOf(this.fishProfile.rarity);
+    const rollIdx = tiers.indexOf(baseRoll);
+    return tiers[Math.max(profileIdx, rollIdx)];
   }
 
   create(): void {
@@ -139,18 +270,20 @@ export class FishingScene extends Phaser.Scene {
     this.cameras.main.setZoom(DPR);
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
-    // Show tutorial on first play — pause game until dismissed
-    if (!localStorage.getItem('clowder_fishing_tutorial')) {
-      localStorage.setItem('clowder_fishing_tutorial', '1');
+    // Show tutorial on first play — bumped to v2 for the three-phase
+    // structure and behavioral fish variety so returning players see the
+    // updated rules.
+    if (!localStorage.getItem('clowder_fishing_tutorial_v2')) {
+      localStorage.setItem('clowder_fishing_tutorial_v2', '1');
       this.tutorialShowing = true;
       const tutorial = document.createElement('div');
       tutorial.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
       tutorial.innerHTML = `
         <div style="color:#c4956a;font-family:Georgia,serif;font-size:22px;margin-bottom:12px">Fishing</div>
-        <div style="color:#8b7355;font-family:Georgia,serif;font-size:14px;text-align:center;max-width:280px;line-height:1.6">
-          Hold <strong>click/tap</strong> or <strong>Space</strong> to reel in.<br><br>
-          Keep the gold hook inside the green fish zone to fill the catch meter.<br><br>
-          If the hook stays outside too long, the fish escapes!
+        <div style="color:#8b7355;font-family:Georgia,serif;font-size:14px;text-align:center;max-width:290px;line-height:1.6">
+          Watch the bobber. When you see <strong style="color:#dda055">BITE!</strong>, hold to set the hook fast.<br><br>
+          Then keep the gold hook inside the green fish zone to fill the catch meter.<br><br>
+          Different fish move differently — <strong style="color:#88dd88">runners sprint</strong>, <strong style="color:#88aaff">divers pull down</strong>, <strong style="color:#ff8888">darters flip</strong>.
         </div>
         <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:12px;margin-top:20px">Tap to start</div>
       `;
@@ -212,6 +345,25 @@ export class FishingScene extends Phaser.Scene {
     // ── Fishing line (will be redrawn every frame) ──
     this.fishLine = this.add.graphics();
 
+    // ── Bobber on the water ──
+    // Visible during the approach + bite phases. Per the doc's three-phase
+    // structure: a visible bobber gives the player something to watch
+    // during the anticipation period. It twitches when a bite happens.
+    const bobberX = GAME_WIDTH / 2 + 30;
+    this.bobberHomeY = waterTop + 80;
+    this.bobber = this.add.circle(bobberX, this.bobberHomeY, 6, 0xdda055)
+      .setStrokeStyle(2, 0x6b5b3e);
+    this.bobber.setDepth(5);
+    // Gentle idle bob — small Y oscillation while we wait for a bite
+    this.tweens.add({
+      targets: this.bobber,
+      y: this.bobberHomeY - 2,
+      duration: 700,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
     // ── Job name ──
     const job = getJob(this.jobId);
     if (job) {
@@ -219,19 +371,6 @@ export class FishingScene extends Phaser.Scene {
         fontFamily: 'Georgia, serif', fontSize: '14px', color: '#8b7355',
       }).setOrigin(0.5);
     }
-
-    // Fish type — varies by difficulty, adds flavor
-    const fishTypes: Record<string, string[]> = {
-      easy: ['Perch', 'Minnow', 'Gudgeon', 'Dace'],
-      medium: ['Trout', 'Carp', 'Bream', 'Tench'],
-      hard: ['Pike', 'Salmon', 'Eel', 'Sturgeon'],
-    };
-    const fishList = fishTypes[this.difficulty] ?? fishTypes.easy;
-    // 10% chance of a rare golden fish worth double
-    const isRareFish = Math.random() < 0.1;
-    const fishName = isRareFish ? 'Golden ' + fishList[Math.floor(Math.random() * fishList.length)] : fishList[Math.floor(Math.random() * fishList.length)];
-    this.fishName = fishName;
-    if (isRareFish) this.isRareCatch = true;
 
     // Stat bonuses display
     const gameSave = getGameState();
@@ -243,13 +382,9 @@ export class FishingScene extends Phaser.Scene {
     if (senses >= 5) bonuses.push(`Senses: wider zone`);
     const bonusText = bonuses.length > 0 ? ` (${bonuses.join(', ')})` : '';
 
-    // Fish sprite + name
-    if (this.textures.exists('fish_sprite')) {
-      const fishImg = this.add.sprite(GAME_WIDTH / 2 - 60, 48, 'fish_sprite');
-      fishImg.setScale(0.6);
-      fishImg.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
-    }
-    this.add.text(GAME_WIDTH / 2, 48, `Catch: ${fishName}${bonusText}`, {
+    // Fish identity stays generic until the bite — preserves the surprise
+    // about WHICH fish you'll be hooking. Hint at the difficulty pool only.
+    this.add.text(GAME_WIDTH / 2, 48, `Casting in${bonusText}`, {
       fontFamily: 'Georgia, serif', fontSize: '10px', color: '#6b5b3e',
     }).setOrigin(0.5);
 
@@ -340,8 +475,171 @@ export class FishingScene extends Phaser.Scene {
     const dt = delta / 1000; // seconds
     this.elapsed += dt;
 
+    // Phase dispatch — each phase delivers a different emotional texture
+    // per the doc's three-phase structure.
+    if (this.phase === 'approach') {
+      this.tickApproach();
+      return;
+    }
+    if (this.phase === 'bite') {
+      this.tickBite();
+      return;
+    }
+    if (this.phase === 'catch') {
+      this.tickCatch(dt);
+      return;
+    }
+  }
+
+  /** Approach phase: serene wait for a bite. The bobber idles, the bars
+      are hidden. After a randomized delay we transition to the bite phase. */
+  private tickApproach(): void {
+    // Hide the catch UI during approach
+    this.zoneRect?.setVisible(false);
+    this.hookRect?.setVisible(false);
+    this.catchFillRect?.setVisible(false);
+    this.bobber?.setVisible(true);
+
+    if (this.instructionText) {
+      this.instructionText.setText('Waiting for a bite...');
+      this.instructionText.setColor('#6b5b3e');
+    }
+    this.timerText?.setText('');
+
+    if (this.elapsed - this.phaseStart >= this.approachDuration) {
+      this.beginBite();
+    }
+  }
+
+  /** Bite phase: the line twitches, "BITE!" prompt flashes. The player has
+      a fixed window to react with a tap/hold or the fish escapes. */
+  private tickBite(): void {
+    if (this.instructionText) {
+      this.instructionText.setText('BITE! Hold to set the hook!');
+      this.instructionText.setColor('#dda055');
+    }
+    if (this.bobber) {
+      // Twitch — pulse scale to draw the eye
+      const t = this.elapsed - this.phaseStart;
+      const wobble = Math.sin(t * 30) * 4;
+      this.bobber.x = GAME_WIDTH / 2 + 30 + wobble;
+      this.bobber.setScale(1 + Math.abs(Math.sin(t * 20)) * 0.4);
+    }
+    // Player reacted in time → catch phase
+    if (this.isReeling) {
+      this.beginCatch();
+      return;
+    }
+    // Window expired → escape
+    if (this.elapsed - this.phaseStart >= this.biteWindow) {
+      this.onFailure('The fish stole your bait...');
+    }
+  }
+
+  /** Transition into the bite phase: play a sound, set the timer reference. */
+  beginBite(): void {
+    this.phase = 'bite';
+    this.phaseStart = this.elapsed;
+    playSfx('tap', 0.4);
+  }
+
+  /** Transition into the catch phase: hide bobber, show bars, reveal fish
+      identity, start the actual reel-in mechanic. */
+  beginCatch(): void {
+    this.phase = 'catch';
+    this.phaseStart = this.elapsed;
+    if (this.bobber) {
+      this.bobber.setVisible(false);
+      // Stop any pending tweens on the bobber so it doesn't rebob during catch
+      this.tweens.killTweensOf(this.bobber);
+    }
+    this.zoneRect?.setVisible(true);
+    this.hookRect?.setVisible(true);
+    this.catchFillRect?.setVisible(true);
+    if (this.instructionText) {
+      // Reveal which fish was hooked, with rarity-coded color
+      this.instructionText.setText(`${this.fishName}! (${this.fishProfile.behavior})`);
+      this.instructionText.setColor(RARITY_COLOR[this.fishRarity]);
+    }
+    playSfx('splash', 0.5);
+  }
+
+  /** Apply the active fish's behavior to the zone motion. Each behavior
+      computes a per-frame deltaY for the zone (and may flip direction
+      mid-bounce). The doc's #1 implication: same UI, different motor feel. */
+  applyFishBehavior(dt: number, speedMult: number, _zonePxHeight: number): void {
+    const baseSpeed = this.diffConfig.bounceSpeed * speedMult;
+    const behavior = this.fishProfile?.behavior ?? 'steady';
+
+    if (behavior === 'steady') {
+      // Constant linear bounce — the baseline.
+      this.zoneY += this.zoneDir * baseSpeed * dt;
+      return;
+    }
+
+    if (behavior === 'darting') {
+      // Faster baseline, random direction flips. Each flip is unannounced
+      // so the player has to react.
+      const speed = baseSpeed * 1.5;
+      this.zoneY += this.zoneDir * speed * dt;
+      if (this.elapsed - this.dartLastFlip > 0.4 + Math.random() * 0.6) {
+        this.dartLastFlip = this.elapsed;
+        if (Math.random() < 0.6) this.zoneDir *= -1;
+      }
+      return;
+    }
+
+    if (behavior === 'diver') {
+      // Biased downward — the zone drifts down faster than it climbs up,
+      // forcing the player to keep the hook low. Punishes overpowering.
+      const upSpeed = baseSpeed * 0.7;
+      const downSpeed = baseSpeed * 1.2;
+      this.zoneY += this.zoneDir * (this.zoneDir > 0 ? upSpeed : downSpeed) * dt;
+      // Add a constant downward drift on top
+      this.zoneY -= 18 * dt;
+      return;
+    }
+
+    if (behavior === 'runner') {
+      // Sprint-pause cadence: 0.6s sprint at 1.7x speed, then 0.5s pause.
+      this.behaviorPhaseTimer += dt;
+      const sprintDur = 0.6;
+      const pauseDur = 0.5;
+      if (this.runnerSprinting && this.behaviorPhaseTimer >= sprintDur) {
+        this.runnerSprinting = false;
+        this.behaviorPhaseTimer = 0;
+      } else if (!this.runnerSprinting && this.behaviorPhaseTimer >= pauseDur) {
+        this.runnerSprinting = true;
+        this.behaviorPhaseTimer = 0;
+        // Random direction flip on each new sprint — keeps the player honest
+        if (Math.random() < 0.5) this.zoneDir *= -1;
+      }
+      const speed = this.runnerSprinting ? baseSpeed * 1.7 : 0;
+      this.zoneY += this.zoneDir * speed * dt;
+      return;
+    }
+
+    if (behavior === 'lazy') {
+      // Slow baseline plus occasional sudden jumps — the player learns the
+      // slow pattern and gets ambushed by the jump.
+      this.zoneY += this.zoneDir * baseSpeed * 0.55 * dt;
+      if (this.elapsed - this.lazyLastJump > 1.8 + Math.random() * 1.2) {
+        this.lazyLastJump = this.elapsed;
+        const jumpDist = 60 + Math.random() * 40;
+        this.zoneY += (Math.random() < 0.5 ? -1 : 1) * jumpDist;
+      }
+      return;
+    }
+  }
+
+  /** Catch phase: the active reel-in. Same push-pull mechanic as before,
+      but the zone motion is now driven by the fish's behavior profile. */
+  private tickCatch(dt: number): void {
+    // Catch-phase elapsed time, used for time limit
+    const catchElapsed = this.elapsed - this.phaseStart;
+
     // ── Update timer ──
-    const remaining = Math.max(0, this.diffConfig.timeLimit - this.elapsed);
+    const remaining = Math.max(0, this.diffConfig.timeLimit - catchElapsed);
     this.timerText.setText(`Time: ${Math.ceil(remaining)}s`);
 
     if (remaining <= 0) {
@@ -350,15 +648,15 @@ export class FishingScene extends Phaser.Scene {
     }
 
     // ── Current surge — periodic speed boost that adds challenge ──
-    const surgeInterval = 6; // seconds between surges
+    const surgeInterval = 6;
     const surgeDuration = 1.5;
-    const timeSinceLastSurge = this.elapsed % surgeInterval;
-    const isSurging = timeSinceLastSurge < surgeDuration && this.elapsed > 3; // no surge in first 3s
+    const timeSinceLastSurge = catchElapsed % surgeInterval;
+    const isSurging = timeSinceLastSurge < surgeDuration && catchElapsed > 3;
     const speedMult = isSurging ? 2.0 : 1.0;
 
-    // ── Move fish zone (bounce up and down) ──
+    // ── Move fish zone — driven by the active behavior ──
     const zonePxHeight = BAR_HEIGHT * this.diffConfig.zoneSize;
-    this.zoneY += this.zoneDir * this.diffConfig.bounceSpeed * speedMult * dt;
+    this.applyFishBehavior(dt, speedMult, zonePxHeight);
 
     // Bounce at top/bottom
     if (this.zoneY + zonePxHeight > BAR_HEIGHT) {
@@ -372,7 +670,7 @@ export class FishingScene extends Phaser.Scene {
     // Update zone rect position (convert bar-local to world)
     this.zoneRect.y = BAR_Y + BAR_HEIGHT - this.zoneY - zonePxHeight / 2;
     // Flash zone during surge
-    this.zoneRect.setAlpha(isSurging ? 0.5 + Math.sin(this.elapsed * 10) * 0.3 : 0.6);
+    this.zoneRect.setAlpha(isSurging ? 0.5 + Math.sin(catchElapsed * 10) * 0.3 : 0.6);
 
     // ── Move hook ──
     if (this.isReeling) {
@@ -468,12 +766,14 @@ export class FishingScene extends Phaser.Scene {
     }
   }
 
-  private onSuccess(): void {
+  onSuccess(): void {
     this.finished = true;
     this.isReeling = false;
+    this.phase = 'done';
 
-    // Stars based on how quickly the catch was filled
-    const timeFraction = this.elapsed / this.diffConfig.timeLimit;
+    // Stars based on how quickly the catch was filled (catch-phase only)
+    const catchElapsed = this.elapsed - this.phaseStart;
+    const timeFraction = catchElapsed / this.diffConfig.timeLimit;
     let stars: number;
     if (timeFraction <= 0.4) {
       stars = 3;
@@ -483,14 +783,23 @@ export class FishingScene extends Phaser.Scene {
       stars = 1;
     }
 
-    // Show success text
-    playSfx(this.isRareCatch ? 'sparkle' : 'splash');
+    // Rarity-driven success styling. Per the doc's "layered reward tiers"
+    // pillar: each tier deserves its own visual treatment so the surprise
+    // of pulling a legendary fish lands at full force.
+    const rarityColor = RARITY_COLOR[this.fishRarity];
+    const isLegendary = this.fishRarity === 'legendary';
+    const isRare = this.fishRarity === 'rare';
+    playSfx(isLegendary || isRare ? 'sparkle' : 'splash');
+
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20, `${this.fishName} Caught!`, {
-      fontFamily: 'Georgia, serif', fontSize: '28px', color: this.isRareCatch ? '#ffd700' : '#c4956a',
+      fontFamily: 'Georgia, serif', fontSize: '28px', color: rarityColor,
     }).setOrigin(0.5);
-    if (this.isRareCatch) {
-      this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 40, 'Rare catch! Double value!', {
-        fontFamily: 'Georgia, serif', fontSize: '13px', color: '#ffd700',
+
+    if (this.fishRarity !== 'common') {
+      const tierLabel = this.fishRarity.charAt(0).toUpperCase() + this.fishRarity.slice(1);
+      const bonus = RARITY_BONUS[this.fishRarity];
+      this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 40, `${tierLabel}! +${bonus} bonus fish`, {
+        fontFamily: 'Georgia, serif', fontSize: '13px', color: rarityColor,
       }).setOrigin(0.5);
     }
 
@@ -502,25 +811,29 @@ export class FishingScene extends Phaser.Scene {
     this.time.delayedCall(1500, () => {
       eventBus.emit('puzzle-complete', {
         puzzleId: `fishing_${this.difficulty}`,
-        moves: Math.floor(this.elapsed),
+        moves: Math.floor(catchElapsed),
         minMoves: Math.floor(this.diffConfig.timeLimit * 0.3),
         stars,
         jobId: this.jobId,
         catId: this.catId,
-        bonusFish: this.isRareCatch ? 5 : 0,
+        bonusFish: RARITY_BONUS[this.fishRarity],
+        // Surfaced for downstream consumers (codex, journal, etc.)
+        fishName: this.fishName,
+        fishRarity: this.fishRarity,
       });
     });
   }
 
-  private onFailure(): void {
+  onFailure(message = 'The fish escaped!'): void {
     this.finished = true;
     this.isReeling = false;
+    this.phase = 'done';
 
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20, 'It got away...', {
       fontFamily: 'Georgia, serif', fontSize: '24px', color: '#aa4444',
     }).setOrigin(0.5);
 
-    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 15, 'The fish escaped!', {
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 15, message, {
       fontFamily: 'Georgia, serif', fontSize: '13px', color: '#8b7355',
     }).setOrigin(0.5);
 
