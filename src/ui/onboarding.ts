@@ -1,4 +1,5 @@
 import { BREED_NAMES } from '../utils/constants';
+import { esc } from '../utils/helpers';
 import { getChapterName, getNextChapterHint } from '../systems/ProgressionManager';
 import { getReputationLabel } from '../systems/ReputationSystem';
 import type { SaveData } from '../systems/SaveManager';
@@ -187,7 +188,7 @@ export function showGuildReport(save: SaveData): void {
   lines.push(`<div style="color:#8b7355;font-size:13px;margin-bottom:8px">${save.cats.length} cats | ${save.fish} fish | ${repLabel} reputation</div>`);
   if (strongest) {
     const specLabel = strongest.specialization ? ` (${strongest.specialization})` : '';
-    lines.push(`<div style="font-size:12px;color:#c4956a;margin-bottom:6px">Strongest: <strong>${strongest.name}</strong> the ${strongestBreed}, Lv.${strongest.level}${specLabel}</div>`);
+    lines.push(`<div style="font-size:12px;color:#c4956a;margin-bottom:6px">Strongest: <strong>${esc(strongest.name)}</strong> the ${strongestBreed}, Lv.${strongest.level}${specLabel}</div>`);
   }
 
   const netDaily = stationedEstimate - totalUpkeep;

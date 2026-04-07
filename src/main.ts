@@ -22,6 +22,7 @@ import { TownMapScene } from './scenes/TownMapScene';
 import { DungeonRunScene, getActiveDungeon, isDungeonRun } from './scenes/DungeonRunScene';
 import { eventBus } from './utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS, BREED_NAMES, STAT_NAMES, ALL_BREED_IDS, SCENES } from './utils/constants';
+import { esc } from './utils/helpers';
 import {
   type SaveData,
   createDefaultSave,
@@ -70,10 +71,9 @@ function numFlag(key: string): number {
   return Number(gameState?.flags[key] ?? 0);
 }
 
-/** Escape HTML entities in user-provided strings to prevent injection. */
-function esc(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+// HTML escaping helper now lives in src/utils/helpers.ts so other modules
+// (Panels.ts in particular) can import it without circular deps. Re-imported
+// here so the existing call sites in this file keep working unchanged.
 
 // ──── Phaser Game ────
 const config: Phaser.Types.Core.GameConfig = {
@@ -250,7 +250,7 @@ function updateGuildWishBanner(): void {
     actionHtml = `<span style="font-size:10px;color:#8b5b3e;white-space:nowrap">Needs: ${FURN_NAMES[needsFurn] ?? needsFurn}</span>`;
   } else if (roomMismatch) {
     const wishCat = gameState.cats.find((c) => c.id === wish.catId);
-    actionHtml = `<span style="font-size:9px;color:#8b5b3e;white-space:nowrap">Move ${wishCat?.name ?? 'cat'} to the right room</span>`;
+    actionHtml = `<span style="font-size:9px;color:#8b5b3e;white-space:nowrap">Move ${esc(wishCat?.name ?? 'cat')} to the right room</span>`;
   } else {
     actionHtml = `<button id="guild-fulfill-wish" style="padding:4px 10px;background:#2a2520;border:1px solid #dda055;border-radius:4px;color:#dda055;font-size:11px;font-family:Georgia,serif;cursor:pointer;white-space:nowrap">5 fish</button>`;
   }
@@ -1358,7 +1358,7 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
         crisis.innerHTML = `
           <h2>Station Crisis!</h2>
           <div style="color:#cc6666;font-size:14px;margin-bottom:8px;text-align:center">${msg}</div>
-          <div style="color:#8b7355;font-size:12px;margin-bottom:16px;text-align:center">${crisisCat.name} at ${crisisJob.name} needs backup.</div>
+          <div style="color:#8b7355;font-size:12px;margin-bottom:16px;text-align:center">${esc(crisisCat.name)} at ${crisisJob.name} needs backup.</div>
           <div style="display:flex;gap:12px;justify-content:center">
             <button class="btn-puzzle" id="crisis-help">Send Help (+bonus fish)</button>
             <button class="btn-auto" id="crisis-ignore" style="background:#2a2520;border:1px solid #3a3530">Ignore (mood drops)</button>
