@@ -12,18 +12,30 @@ interface Ring {
   rotation: number; // current rotation offset
   linkedTo: number; // -1 = none, else index of linked ring (rotates opposite)
   radius: number;
+  /** Original rotation at scene init — used to reset on a trap-notch trigger. */
+  startRotation: number;
+  /** True when the gap is currently aligned to the top (effective gap === 0).
+      Tracked explicitly so the scene can fire visual/audio "set" feedback
+      and so the player gets a clear progress signal. */
+  isSet: boolean;
+  /** Notch indices that are TRAP notches. Rotating the ring such that a
+      trap notch reaches the top position resets the ring to its starting
+      rotation. Empty on easy/medium; populated on hard. The doc's
+      "harder locks require different strategies" pillar in concrete form. */
+  trapNotches: number[];
 }
 
 export class HeistScene extends Phaser.Scene {
   private jobId = '';
   private catId = '';
-  private difficulty = 'easy';
-  private rings: Ring[] = [];
+  difficulty = 'easy';
+  rings: Ring[] = [];
   private timeLeft = 30;
-  private finished = false;
+  finished = false;
   private tutorialShowing = false;
   private timerText!: Phaser.GameObjects.Text;
   private movesText!: Phaser.GameObjects.Text;
+  private setText!: Phaser.GameObjects.Text;
   private moveCount = 0;
   private ringGfx!: Phaser.GameObjects.Graphics;
 
@@ -48,12 +60,20 @@ export class HeistScene extends Phaser.Scene {
     // Generate rings
     for (let i = 0; i < ringCount; i++) {
       const n = notches - (i % 2 === 0 ? 0 : 2); // slight variation
+      const gapPos = Math.floor(Math.random() * n);
+      let rot = Math.floor(Math.random() * n);
+      // Avoid spawning a ring already in the set position — would confuse
+      // the "you set a tumbler" feedback if it fires before any input.
+      if ((gapPos + rot) % n === 0) rot = (rot + 1) % n;
       this.rings.push({
         notches: n,
-        gapPos: Math.floor(Math.random() * n),
-        rotation: Math.floor(Math.random() * n), // randomize start
+        gapPos,
+        rotation: rot,
+        startRotation: rot,
         linkedTo: -1,
         radius: 50 + i * 28,
+        isSet: false,
+        trapNotches: [],
       });
     }
 
@@ -64,6 +84,41 @@ export class HeistScene extends Phaser.Scene {
         this.rings[2].linkedTo = 3;
       }
     }
+
+    // Hard difficulty: add trap notches. The doc's "harder locks require
+    // different strategies, not just more of the same" — trap notches
+    // change the gameplay from spam-clicking to careful path planning.
+    if (this.difficulty === 'hard') {
+      for (let i = 0; i < this.rings.length; i++) {
+        const ring = this.rings[i];
+        // Skip linked rings (the linking is already a strategic complication)
+        if (ring.linkedTo >= 0) continue;
+        // Pick 1-2 trap notches that are NOT the gap and NOT the starting
+        // position (so the player can read the situation before stepping
+        // into a trap on their first move)
+        const candidates: number[] = [];
+        for (let n = 0; n < ring.notches; n++) {
+          if (n === ring.gapPos) continue;
+          // Skip notches at the current top (player's first step is safe)
+          const effective = (n + ring.rotation) % ring.notches;
+          if (effective === 0) continue;
+          candidates.push(n);
+        }
+        // Shuffle and pick 1-2
+        for (let j = candidates.length - 1; j > 0; j--) {
+          const k = Math.floor(Math.random() * (j + 1));
+          [candidates[j], candidates[k]] = [candidates[k], candidates[j]];
+        }
+        const trapCount = Math.random() < 0.5 ? 2 : 1;
+        ring.trapNotches = candidates.slice(0, trapCount);
+      }
+    }
+
+    // Initial set-state pass — usually all false because of the avoidance
+    // above, but compute it for safety.
+    for (const ring of this.rings) {
+      ring.isSet = ((ring.gapPos + ring.rotation) % ring.notches) === 0;
+    }
   }
 
   create(): void {
@@ -71,10 +126,13 @@ export class HeistScene extends Phaser.Scene {
     this.cameras.main.setZoom(DPR);
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
-    if (showMinigameTutorial(this, 'clowder_heist_tutorial', 'Pick the Lock',
+    // Tutorial bumped to v2 — set feedback, counter-clockwise rotation,
+    // and trap notches are all new mechanics returning players should know.
+    if (showMinigameTutorial(this, 'clowder_heist_tutorial_v2', 'Pick the Lock',
       `Rotate the rings to align all gaps at the top.<br><br>
-      Tap a ring to rotate it one notch clockwise.<br><br>
-      Some rings are <strong>linked</strong> — rotating one moves its neighbor the opposite way!`,
+      Tap the <strong>right side</strong> of a ring to rotate clockwise, or the <strong>left side</strong> for counter-clockwise.<br><br>
+      A satisfying click means a tumbler is <strong style="color:#dda055">set</strong>.<br><br>
+      <strong style="color:#cc6666">Red trap notches</strong> reset the ring if you cross them. Plan your path!`,
       () => { this.tutorialShowing = false; }
     )) { this.tutorialShowing = true; }
 
@@ -98,6 +156,12 @@ export class HeistScene extends Phaser.Scene {
       fontFamily: 'Georgia, serif', fontSize: '12px', color: '#8b7355',
     });
 
+    // Tumbler progress text — shows how many rings are currently set so
+    // the player has a clear progress signal without having to count rings.
+    this.setText = this.add.text(GAME_WIDTH / 2, 75, `Set: 0/${this.rings.length}`, {
+      fontFamily: 'Georgia, serif', fontSize: '11px', color: '#dda055',
+    }).setOrigin(0.5);
+
     // Alignment indicator at top
     this.add.text(GAME_WIDTH / 2, 85, '\u25BC', {
       fontSize: '18px', color: '#dda055',
@@ -107,7 +171,9 @@ export class HeistScene extends Phaser.Scene {
     this.ringGfx = this.add.graphics();
     this.drawRings();
 
-    // Touch input — detect which ring was tapped
+    // Touch input — detect which ring was tapped, and which side (left =
+    // counter-clockwise, right = clockwise). Per the doc's "skill expression"
+    // pillar: lets the player choose the shorter rotation path.
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       if (this.finished || this.tutorialShowing) return;
       const wx = pointer.worldX;
@@ -120,7 +186,11 @@ export class HeistScene extends Phaser.Scene {
       for (let i = this.rings.length - 1; i >= 0; i--) {
         const r = this.rings[i];
         if (Math.abs(dist - r.radius) < 20) {
-          this.rotateRing(i, 1);
+          // Direction from tap position relative to ring center: tap on
+          // the right side (wx > cx) → clockwise (+1), left → counter-
+          // clockwise (-1).
+          const dir = wx >= cx ? 1 : -1;
+          this.rotateRing(i, dir);
           // Flash the tapped ring
           this.ringGfx.lineStyle(10, 0xdda055, 0.4);
           this.ringGfx.beginPath();
@@ -152,21 +222,70 @@ export class HeistScene extends Phaser.Scene {
     eventBus.emit('set-active-tab', 'town');
   }
 
-  private rotateRing(idx: number, dir: number): void {
+  rotateRing(idx: number, dir: number): void {
     const ring = this.rings[idx];
+    const oldSet = ring.isSet;
     ring.rotation = (ring.rotation + dir + ring.notches) % ring.notches;
     this.moveCount++;
     this.movesText.setText(`Moves: ${this.moveCount}`);
-    playSfx('lock_click', 0.4);
+
+    // Trap-notch check: if a trap notch landed at the top position after
+    // rotation, this ring resets to its starting rotation. The doc's
+    // "trap mechanics that punish naive extension" pillar.
+    let trapTriggered = false;
+    for (const trap of ring.trapNotches) {
+      const effective = (trap + ring.rotation) % ring.notches;
+      if (effective === 0) {
+        trapTriggered = true;
+        break;
+      }
+    }
+    if (trapTriggered) {
+      ring.rotation = ring.startRotation;
+      ring.isSet = ((ring.gapPos + ring.rotation) % ring.notches) === 0;
+      playSfx('fail', 0.4);
+      this.cameras.main.flash(120, 80, 30, 30);
+    } else {
+      // Update set state and play context-appropriate audio. The doc's
+      // "audio is primary" pillar: distinct sounds for set vs nudge.
+      ring.isSet = ((ring.gapPos + ring.rotation) % ring.notches) === 0;
+      if (!oldSet && ring.isSet) {
+        // Just clicked into place — high-pitched satisfying sound
+        playSfx('sparkle', 0.5);
+      } else if (oldSet && !ring.isSet) {
+        // Slipped out of place — soft "uh" feedback
+        playSfx('lock_click', 0.6);
+      } else {
+        // Normal nudge — standard click
+        playSfx('lock_click', 0.35);
+      }
+    }
 
     // Rotate linked ring in opposite direction
     if (ring.linkedTo >= 0 && ring.linkedTo < this.rings.length) {
       const linked = this.rings[ring.linkedTo];
+      const linkedOldSet = linked.isSet;
       linked.rotation = (linked.rotation - dir + linked.notches) % linked.notches;
+      linked.isSet = ((linked.gapPos + linked.rotation) % linked.notches) === 0;
+      // Audio cue when the linked ring's set state flips
+      if (!linkedOldSet && linked.isSet) {
+        playSfx('sparkle', 0.4);
+      }
     }
 
+    this.updateSetText();
     this.drawRings();
     this.checkWin();
+  }
+
+  /** Helper for the playtest: returns the count of currently-set rings. */
+  countSetRings(): number {
+    return this.rings.filter((r) => r.isSet).length;
+  }
+
+  private updateSetText(): void {
+    const setCount = this.countSetRings();
+    this.setText.setText(`Set: ${setCount}/${this.rings.length}`);
   }
 
   private drawRings(): void {
@@ -177,33 +296,33 @@ export class HeistScene extends Phaser.Scene {
     for (let i = 0; i < this.rings.length; i++) {
       const ring = this.rings[i];
       const segmentAngle = (Math.PI * 2) / ring.notches;
-      const gapAngle = ((ring.gapPos + ring.rotation) % ring.notches) * segmentAngle - Math.PI / 2;
 
-      // Draw ring segments
+      // Color depends on state: set rings get a gold tint to make progress
+      // visible at a glance, linked rings get purple, otherwise tan.
       const isLinked = ring.linkedTo >= 0;
-      const color = isLinked ? 0x8b6ea6 : 0x6b5b3e;
+      const baseColor = ring.isSet ? 0xdda055 : (isLinked ? 0x8b6ea6 : 0x6b5b3e);
+      const baseAlpha = ring.isSet ? 0.95 : 0.7;
 
       for (let n = 0; n < ring.notches; n++) {
         const startAngle = n * segmentAngle - Math.PI / 2 + 0.03;
         const endAngle = (n + 1) * segmentAngle - Math.PI / 2 - 0.03;
-        const isGap = ((ring.gapPos + ring.rotation) % ring.notches) === n;
+        const effective = (ring.gapPos + ring.rotation) % ring.notches;
+        const isGap = effective === n;
+        const isTrap = ring.trapNotches.includes(n);
 
-        if (!isGap) {
-          this.ringGfx.lineStyle(8, color, 0.7);
-          this.ringGfx.beginPath();
-          this.ringGfx.arc(cx, cy, ring.radius, startAngle, endAngle, false);
-          this.ringGfx.strokePath();
+        if (isGap) {
+          // Gap indicator — bright when set, dim when not
+          this.ringGfx.lineStyle(8, 0xdda055, ring.isSet ? 0.85 : 0.4);
+        } else if (isTrap) {
+          // Trap notch — red so the player can spot the danger
+          this.ringGfx.lineStyle(8, 0xcc4444, 0.85);
         } else {
-          // Draw gap indicator
-          this.ringGfx.lineStyle(8, 0xdda055, 0.4);
-          this.ringGfx.beginPath();
-          this.ringGfx.arc(cx, cy, ring.radius, startAngle, endAngle, false);
-          this.ringGfx.strokePath();
+          this.ringGfx.lineStyle(8, baseColor, baseAlpha);
         }
+        this.ringGfx.beginPath();
+        this.ringGfx.arc(cx, cy, ring.radius, startAngle, endAngle, false);
+        this.ringGfx.strokePath();
       }
-
-      // Ring label
-      this.ringGfx.fillStyle(0x8b7355, 0.5);
     }
 
     // Center keyhole
@@ -214,14 +333,13 @@ export class HeistScene extends Phaser.Scene {
     this.ringGfx.fillCircle(cx, cy - 15, 6);
   }
 
-  private checkWin(): void {
-    // All gaps must be at the top (position 0 after rotation)
-    for (const ring of this.rings) {
-      const effectiveGap = (ring.gapPos + ring.rotation) % ring.notches;
-      if (effectiveGap !== 0) return;
+  checkWin(): void {
+    // Win when every ring is set (gap at the top). The set state is now
+    // the source of truth — set transitions are tracked when rotations
+    // happen so this is just a final tally.
+    if (this.countSetRings() === this.rings.length) {
+      this.endGame(true);
     }
-
-    this.endGame(true);
   }
 
   private endGame(won: boolean): void {
