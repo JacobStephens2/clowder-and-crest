@@ -1,0 +1,98 @@
+{
+  "version": 2,
+  "day": 30,
+  "chapter": 4,
+  "fish": 78,
+  "playerCatName": "Tester",
+  "reputationScore": 6,
+  "totalFishEarned": 620,
+  "totalJobsCompleted": 28,
+  "cats": [
+    {
+      "id": "player_wildcat",
+      "name": "Tester",
+      "breed": "wildcat",
+      "level": 3,
+      "xp": 12,
+      "mood": "happy",
+      "traits": ["brave", "loyal"],
+      "stats": { "hunting": 6, "stealth": 5, "intelligence": 5, "endurance": 7, "charm": 5, "senses": 6 },
+      "isPlayer": true,
+      "assignedRoom": "sleeping"
+    },
+    {
+      "id": "cat_russian_blue_test",
+      "name": "Mist",
+      "breed": "russian_blue",
+      "level": 3,
+      "xp": 8,
+      "mood": "content",
+      "traits": ["loyal", "curious"],
+      "stats": { "hunting": 5, "stealth": 7, "intelligence": 7, "endurance": 5, "charm": 5, "senses": 6 },
+      "isPlayer": false,
+      "assignedRoom": "kitchen"
+    },
+    {
+      "id": "cat_tuxedo_test",
+      "name": "Inkwell",
+      "breed": "tuxedo",
+      "level": 2,
+      "xp": 18,
+      "mood": "content",
+      "traits": ["curious", "pious"],
+      "stats": { "hunting": 4, "stealth": 5, "intelligence": 6, "endurance": 5, "charm": 7, "senses": 5 },
+      "isPlayer": false,
+      "assignedRoom": "sleeping"
+    },
+    {
+      "id": "cat_maine_coon_test",
+      "name": "Thorne",
+      "breed": "maine_coon",
+      "level": 2,
+      "xp": 5,
+      "mood": "tired",
+      "traits": ["brave", "loyal"],
+      "stats": { "hunting": 6, "stealth": 4, "intelligence": 5, "endurance": 7, "charm": 5, "senses": 5 },
+      "isPlayer": false,
+      "assignedRoom": "kitchen"
+    }
+  ],
+  "rooms": [
+    { "id": "sleeping", "unlocked": true },
+    { "id": "kitchen", "unlocked": true },
+    { "id": "operations", "unlocked": false }
+  ],
+  "furniture": [
+    { "furnitureId": "straw_bed", "room": "sleeping", "gridX": 1, "gridY": 1 },
+    { "furnitureId": "scratching_post", "room": "sleeping", "gridX": 4, "gridY": 4 },
+    { "furnitureId": "stone_hearth", "room": "kitchen", "gridX": 1, "gridY": 1 },
+    { "furnitureId": "fish_barrel", "room": "kitchen", "gridX": 4, "gridY": 1 }
+  ],
+  "completedJobs": [],
+  "bonds": [],
+  "puzzlesCompleted": {},
+  "flags": {
+    "ratPlagueStarted": true,
+    "ratPlagueResolved": true,
+    "plaguePestDone": 5,
+    "rivalDefeated": false,
+    "rivalInfluence": 0,
+    "inquisitionStarted": false,
+    "inquisitionResolved": false,
+    "tutorialComplete": true,
+    "tutorial_shown": true,
+    "clowder_tutorial_shown": true
+  },
+  "availableRecruits": [],
+  "stationedCats": [],
+  "journal": [
+    { "day": 1, "text": "The wildcat arrived in the rain. The guild begins.", "type": "chapter" },
+    { "day": 10, "text": "Chapter 2: The Crew — Mist the Russian Blue joined the guild.", "type": "chapter" },
+    { "day": 14, "text": "Inkwell the Tuxedo answered the notice on the wall.", "type": "event" },
+    { "day": 20, "text": "Chapter 3: The Rat Plague descends on the town.", "type": "chapter" },
+    { "day": 22, "text": "Thorne the Maine Coon arrived to help fight the plague.", "type": "event" },
+    { "day": 25, "text": "The Rat Plague was driven from the town.", "type": "event" },
+    { "day": 30, "text": "Chapter 4: The Name — the guild has earned its reputation.", "type": "chapter" }
+  ],
+  "lastPlayedTimestamp": 1735000000000
+}

@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const SCREENSHOT_DIR = path.join(__dirname, 'screenshots', 'portfolio');
-const SAVE_PATH = path.join(__dirname, 'test-save-everything-unlocked.json');
+const SAVE_PATH = path.join(__dirname, 'test_saves/test-save-everything-unlocked.json');
 const PORTFOLIO_TARGET = '/var/www/stephens.page/screenshots/clowder.stephens.page.png';
 
 fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });

@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const SCREENSHOT_DIR = path.join(__dirname, 'screenshots', 'fishing');
-const SAVE_PATH = path.join(__dirname, 'test-save-everything-unlocked.json');
+const SAVE_PATH = path.join(__dirname, 'test_saves/test-save-everything-unlocked.json');
 fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
 
 const BASE = 'http://localhost:3200';
