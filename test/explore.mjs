@@ -60,7 +60,7 @@ async function clickCanvas(page, x, y) {
 /**
  * Inject the test save into localStorage via page.evaluate before Phaser boots.
  * The game uses slot-based saves: `clowder_save_slot_1/2/3`. We write to slot 1
- * and also the legacy `clowder_save` key (for the Import Save path). TitleScene
+ * and also the default autosave key `clowder_and_crest_save`. TitleScene
  * then shows a "Continue" button because getSlotSummary(1) finds data.
  */
 async function loadTestSave(page) {
@@ -72,26 +72,26 @@ async function loadTestSave(page) {
   };
   await page.evaluate((saveJson) => {
     localStorage.setItem('clowder_save_slot_1', saveJson);
-    localStorage.setItem('clowder_save', saveJson);
+    localStorage.setItem('clowder_and_crest_save', saveJson);
     // Suppress tutorial overlays — each scene checks localStorage for its key
     const tutorialKeys = [
       'clowder_tutorial_shown',
       'clowder_guildhall_tutorial',
       'clowder_town_tutorial',
-      'clowder_puzzle_tutorial',
-      'clowder_sokoban_tutorial',
-      'clowder_chase_tutorial',
-      'clowder_fishing_tutorial',
-      'clowder_hunt_tutorial',
-      'clowder_brawl_tutorial',
-      'clowder_nonogram_tutorial',
-      'clowder_stealth_tutorial',
-      'clowder_pounce_tutorial',
-      'clowder_patrol_tutorial',
-      'clowder_ritual_tutorial',
-      'clowder_scent_trail_tutorial',
-      'clowder_heist_tutorial',
-      'clowder_courier_run_tutorial',
+      'clowder_puzzle_tutorial_v2',
+      'clowder_sokoban_tutorial_v2',
+      'clowder_chase_tutorial_v3',
+      'clowder_fishing_tutorial_v2',
+      'clowder_hunt_tutorial_v2',
+      'clowder_brawl_tutorial_v2',
+      'clowder_nonogram_tutorial_v2',
+      'clowder_stealth_tutorial_v2',
+      'clowder_pounce_tutorial_v2',
+      'clowder_patrol_tutorial_v2',
+      'clowder_ritual_tutorial_v2',
+      'clowder_scent_tutorial_v2',
+      'clowder_heist_tutorial_v2',
+      'clowder_courier_tutorial_v2',
     ];
     for (const k of tutorialKeys) localStorage.setItem(k, '1');
   }, JSON.stringify(save));

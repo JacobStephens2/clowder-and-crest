@@ -108,7 +108,8 @@ async function main() {
   // First load — empty page, no save
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
 
-  // Plant the test save into slot 1 + legacy slot
+  // Plant the test save into slot 1 + the autosave key so both load paths
+  // reflect the same state as a real in-game save.
   const saveJson = fs.readFileSync(SAVE_PATH, 'utf-8');
   const save = JSON.parse(saveJson);
   // Make sure flags don't trigger any modal popups
@@ -119,7 +120,7 @@ async function main() {
   };
   await page.evaluate((s) => {
     localStorage.setItem('clowder_save_slot_1', s);
-    localStorage.setItem('clowder_save', s);
+    localStorage.setItem('clowder_and_crest_save', s);
   }, JSON.stringify(save));
 
   // Reload so the title screen sees the save and shows the Continue button
