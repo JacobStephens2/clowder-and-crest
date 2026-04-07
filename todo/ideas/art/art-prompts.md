@@ -350,6 +350,179 @@ Each as a single 16×16 sprite — the game's existing particle emitter handles 
 
 ---
 
+## Dialogue Character Portraits (480×640, illustrated — NOT pixel art)
+
+**This is the one art class that intentionally breaks from the pixel-art register.**
+
+The bond conversation system in `src/ui/Conversations.ts` uses a Fire-Emblem-style layout with two character portraits anchored bottom-left and bottom-right, plus a bottom text box. Today those slots are filled with the in-game south-facing pixel sprites scaled up to 240px tall — adequate but flat. The plan is to author proper illustrated character portraits at higher resolution and load them in instead, with the existing pixel sprite as an automatic fallback.
+
+**Why higher-res for this asset class only:**
+
+- Pixel art at any reasonable scale cannot convey nuanced expression. Bond conversations are the emotional payoff of the entire game (45 pair conversations + 3 group conversations) and they deserve faces.
+- Fire Emblem itself uses this contrast deliberately — pixel battle sprites + painted dialogue portraits. The visual register shift signals "this is a quiet moment that matters." Stardew Valley, Hades, Cult of the Lamb, and Cassette Beasts all do the same. It's a proven pattern.
+- The portrait slots and the active-speaker highlight system already exist in `Conversations.ts`. The only missing piece is the art.
+
+**Inspiration:** see `todo/archive/dialogue-full-screen-style-inspiration/` — Fire Emblem Path of Radiance and Awakening character portraits. Painterly cel-shading, expressive faces, anthropomorphized characters in medieval garb, waist-up framing.
+
+### New asset pipeline
+
+Unlike everything else in this file, **PixelLab is NOT the right tool for this register.** Use one of:
+
+- **Midjourney** (`--style raw --ar 3:4 --v 6`) — best for painterly Path-of-Radiance feel
+- **ChatGPT image gen / DALL-E 3** — best for character consistency across multiple expressions of the same breed (use the "edit" mode with the previous portrait as reference)
+- **Nano Banana** (Google) — strong character consistency, fast iteration
+
+The workflow is generate → save → drop into `public/assets/sprites/portraits/<breed>_<expression>.png`. There is no MCP integration for these tools today; this is a manual pipeline.
+
+### Specs
+
+- **Dimensions:** 480×640 PNG (3:4 portrait orientation, sized to fill the existing portrait slot at 240px display height with retina headroom)
+- **Background:** transparent (or a subtle radial vignette in the breed's color — see palette)
+- **Framing:** waist-up or chest-up, character facing slightly toward the camera (not full profile)
+- **Style:** anime-painted, cel-shaded, anthropomorphized cat character in medieval clothing. Think Fire Emblem Path of Radiance or Awakening, not chibi
+- **Continuity:** every portrait of the same breed must clearly read as the same character — same fur color, same ear shape, same eye color, same signature accessory. The AI prompt for each breed should lock these down explicitly.
+
+### Per-breed design notes
+
+These design notes are the *consistency anchors*. Every prompt for a given breed should include them verbatim so the AI keeps the character recognizable across expressions.
+
+#### Wildcat
+- **Fur:** brown tabby, dark stripes on warm umber base (#8b7355)
+- **Eyes:** fierce gold, slightly narrowed
+- **Ears:** tufted, tipped, one slightly notched (a battle scar)
+- **Build:** muscular, slightly broader than other breeds
+- **Signature:** simple leather collar with an iron ring; rough green-grey cloak over one shoulder
+- **Expression cues:** stoic at rest, eyes do most of the talking
+- **Personality:** the founding stray. Carries weight. Watchful. Speaks rarely.
+
+#### Russian Blue
+- **Fur:** sleek blue-grey (#6b8ea6), short, well-groomed
+- **Eyes:** gentle green
+- **Ears:** small, rounded, alert
+- **Build:** slim, elegant, slightly hunched
+- **Signature:** dark indigo scarf wrapped high around the neck; small silver clasp
+- **Expression cues:** quiet observer, often looking sideways or down before speaking
+- **Personality:** thoughtful, reserved, sees more than she says
+
+#### Tuxedo
+- **Fur:** crisp black with a white chest, white paws, white chin (the "tuxedo" pattern read clearly)
+- **Eyes:** sharp, intelligent yellow-green
+- **Ears:** upright, attentive
+- **Build:** trim, dignified, slightly tall
+- **Signature:** small silver-pin "office" badge at the collar; tiny round wire spectacles
+- **Expression cues:** dry, slightly amused — eyebrow raise > smile
+- **Personality:** the guild's quartermaster, intellectual, dryly funny
+
+#### Maine Coon
+- **Fur:** large, fluffy, orange-brown (#c4956a) with cream chest, prominent ear tufts and chin ruff
+- **Eyes:** warm amber, kind
+- **Ears:** very tufted, lynx-like
+- **Build:** the largest of the domestic breeds, broad shoulders, big paws
+- **Signature:** woven brown cloak with a small bone clasp; carved wooden charm on a cord
+- **Expression cues:** open, warm — the rare obvious smile
+- **Personality:** gentle giant, the guild's heart, slow to anger
+
+#### Siamese
+- **Fur:** cream body with dark sepia points (face, ears, paws, tail tip)
+- **Eyes:** vivid blue, dramatic
+- **Ears:** long, pointed, dark
+- **Build:** slender, elegant, slightly longer than the others
+- **Signature:** delicate gold chain with a small carved fish charm; bell on the wrist
+- **Expression cues:** dramatic, expressive — uses the whole face
+- **Personality:** dramatic, mystical, prone to monologue. The guild's oracle.
+
+#### Bengal
+- **Fur:** golden-tan base with bold dark rosettes and stripes (a real Bengal pattern at 480×640, not a tabby)
+- **Eyes:** intense gold-green
+- **Ears:** small, alert
+- **Build:** wiry, athletic, restless
+- **Signature:** simple red bandana around one wrist; tiny braided cord around the tail base
+- **Expression cues:** mischievous, restless — never quite still
+- **Personality:** the youngest, the troublemaker, the one with the best ideas and worst timing
+
+#### Big Cats (when added — see "New Cat Breeds" section above)
+
+- **Lynx** — short tail, black ear tufts, spotted grey-brown fur, gold eyes, watchful soldier posture. Wears a leather pauldron and carries a small wooden practice sword across her back. Expression range: stoic, focused, rarely surprised.
+- **Lion** — soft golden mane just filling in, amber fur, regal posture, gold-and-red ceremonial sash. Expression range: dignified, paternal, occasionally weary.
+- **Leopard** — golden fur with dark rosettes, slim build, predator-low posture. Wears dark hooded cloak, often half-shadowed in framing. Expression range: cool, knowing, rarely smiling. The guild's spy.
+
+### Expressions to generate (per breed)
+
+Minimum viable set: **3 expressions** per breed. Can expand later as conversations need them.
+
+| Expression | When used | Visual cue |
+|---|---|---|
+| `neutral` | Default opening line, listening | Eyes forward, mouth closed, calm |
+| `happy` | Warm bond moments, affection, success | Eyes softened, slight smile, ears relaxed |
+| `serious` | Concern, conflict, gravity | Eyes narrowed, mouth set, ears slightly back |
+
+**Optional later:**
+
+| Expression | When used | Visual cue |
+|---|---|---|
+| `sad` | Loss, parting, regret | Eyes downcast, ears flat |
+| `angry` | Direct confrontation, indignation | Eyes wide, ears back, fur bristled |
+| `surprised` | Reveal moments, shock | Eyes wide, ears forward, mouth open |
+
+### File naming convention
+
+```
+public/assets/sprites/portraits/
+  wildcat_neutral.png
+  wildcat_happy.png
+  wildcat_serious.png
+  russian_blue_neutral.png
+  russian_blue_happy.png
+  russian_blue_serious.png
+  tuxedo_neutral.png
+  tuxedo_happy.png
+  tuxedo_serious.png
+  maine_coon_neutral.png
+  maine_coon_happy.png
+  maine_coon_serious.png
+  siamese_neutral.png
+  siamese_happy.png
+  siamese_serious.png
+  bengal_neutral.png
+  bengal_happy.png
+  bengal_serious.png
+```
+
+That's the minimum viable 18 images (6 breeds × 3 expressions). Add big cats once they're created.
+
+### Code support — already scaffolded
+
+`src/ui/Conversations.ts` already has the portrait loading logic in place (`setPortrait()` helper). It tries to load `assets/sprites/portraits/<breed>_<expression>.png` first; on 404 it automatically falls back to the existing `assets/sprites/<breed>/south.png` pixel sprite with `image-rendering:pixelated` applied. **This means new portraits can be dropped in one breed and one expression at a time without any code changes** — the conversation overlay will pick them up automatically on the next page load.
+
+The conversation line schema in `src/data/conversations.json` accepts an optional `expression` field per line:
+
+```json
+{
+  "speaker": "wildcat",
+  "text": "I almost didn't hear you.",
+  "expression": "neutral"
+}
+```
+
+Existing conversation entries don't have `expression` set — they default to `neutral`. New entries (or edits to existing ones) can add expressions to drive the portrait swap mid-conversation. The listener keeps their last set expression — silence is its own posture.
+
+### Suggested generation prompt template
+
+```
+A waist-up character portrait of [BREED DESIGN NOTES — fur, eyes, ears, build, signature accessories], anthropomorphized as a medieval cat character, [EXPRESSION DESCRIPTION — see expression cues per breed], wearing [CLOTHING], soft painterly cel-shading, anime fantasy illustration style, Fire Emblem Path of Radiance / Awakening style, transparent or subtle vignette background, 3:4 portrait orientation, 480×640.
+```
+
+Lock the breed design notes verbatim across all expressions of the same breed. Vary only the expression description.
+
+### Risks and notes
+
+- **Character consistency is the biggest risk.** Use the same prompt structure every time. If the AI starts drifting on fur color or signature accessories, regenerate with reference images of earlier successful portraits.
+- **Don't redesign the cats from scratch.** The 6 breeds already have established pixel art and players have built mental models around them. The illustrated portraits should look like "the same Mist, but I can see her face now" — not "a different Russian Blue character."
+- **Start small.** Generate one breed first, in three expressions, and verify the result feels right in the game (drop the files in, reload, trigger any C-rank conversation). Iterate before scaling to the other 5.
+- **The fallback is permanent.** Even after portraits exist for some breeds, the others will still use pixel sprites. This is fine — it's better to have 3 breeds with great portraits than 6 with mediocre ones.
+
+---
+
 ## Dialogue Backdrops (320×180)
 
 Existing: granary, guildhall, rooftop. Bond conversations and group conversations could use more variety. Gaps:

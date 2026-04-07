@@ -6,6 +6,45 @@ import { getBondPairs, getAvailableConversation, markConversationViewed } from '
 import conversationsData from '../data/conversations.json';
 import type { SaveData } from '../systems/SaveManager';
 
+// ──── Dialogue Portrait System ────
+//
+// Conversations show two character portraits Fire-Emblem-style. The system
+// optimistically loads from `assets/sprites/portraits/<breed>_<expression>.png`
+// (the high-res illustrated register described in todo/ideas/art/art-prompts.md
+// → "Dialogue Character Portraits"). If that file doesn't exist yet — which is
+// the default until each breed's portraits are generated — it falls back to
+// the existing in-game south-facing pixel sprite, with `image-rendering:pixelated`
+// applied so the upscale stays crisp.
+//
+// This means portraits can be added incrementally one breed and one expression
+// at a time without any code changes — just drop the PNG into the right path.
+
+type Expression = 'neutral' | 'happy' | 'serious' | 'sad' | 'angry' | 'surprised';
+
+function portraitSrc(breed: string, expression: Expression): string {
+  return `assets/sprites/portraits/${breed}_${expression}.png`;
+}
+
+function fallbackSpriteSrc(breed: string): string {
+  return `assets/sprites/${breed}/south.png`;
+}
+
+/**
+ * Configure an <img> element to show a portrait. Tries the high-res illustrated
+ * portrait first; on 404 swaps to the pixel sprite fallback and toggles
+ * `image-rendering:pixelated` so the upscale stays sharp.
+ */
+function setPortrait(img: HTMLImageElement, breed: string, expression: Expression): void {
+  // Reset state — portraits are smooth, sprites are pixelated
+  img.style.imageRendering = 'auto';
+  img.onerror = () => {
+    img.onerror = null; // guard against infinite loops if the fallback also 404s
+    img.src = fallbackSpriteSrc(breed);
+    img.style.imageRendering = 'pixelated';
+  };
+  img.src = portraitSrc(breed, expression);
+}
+
 export interface ConversationDeps {
   getGameState: () => SaveData | null;
   overlayLayer: HTMLElement;
@@ -134,7 +173,7 @@ function showGroupConversation(key: string): void {
 
 function showConversation(breedA: string, breedB: string, rank: string): void {
   const gameState = deps.getGameState();
-  const convos = conversationsData as Record<string, Array<{ rank: string; title: string; lines: Array<{ speaker: string; text: string }> }>>;
+  const convos = conversationsData as Record<string, Array<{ rank: string; title: string; lines: Array<{ speaker: string; text: string; expression?: Expression }> }>>;
   const key1 = `${breedA}_${breedB}`;
   const key2 = `${breedB}_${breedA}`;
   const convoSet = convos[key1] ?? convos[key2];
@@ -145,35 +184,41 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
   const convo = convoMatch;
 
   let lineIndex = 0;
+  // Track each speaker's most recent expression so the listener keeps showing
+  // their last set face instead of resetting to neutral every line.
+  let exprA: Expression = 'neutral';
+  let exprB: Expression = 'neutral';
+
   const overlay = document.createElement('div');
   overlay.className = 'conversation-overlay';
 
   const sceneArt = rank === 'A' ? 'rooftop' : rank === 'B' ? 'granary' : 'guildhall';
   const catA = gameState!.cats.find((c) => c.breed === breedA);
   const catB = gameState!.cats.find((c) => c.breed === breedB);
-  const colorA = BREED_COLORS[breedA] ?? '#8b7355';
-  const colorB = BREED_COLORS[breedB] ?? '#8b7355';
   const nameA = catA?.name ?? BREED_NAMES[breedA] ?? breedA;
   const nameB = catB?.name ?? BREED_NAMES[breedB] ?? breedB;
   const breedNameA = BREED_NAMES[breedA] ?? breedA;
   const breedNameB = BREED_NAMES[breedB] ?? breedB;
 
-  const portraitImgA = `<img src="assets/sprites/${breedA}/south.png" style="width:72px;height:72px;image-rendering:pixelated;margin-bottom:4px" />`;
-  const portraitImgB = `<img src="assets/sprites/${breedB}/south.png" style="width:72px;height:72px;image-rendering:pixelated;margin-bottom:4px" />`;
-
   // Fire Emblem-style layout: full-screen background, large portraits, bottom text box
   overlay.style.cssText = 'position:fixed;inset:0;background:#0a0908;z-index:9999;cursor:pointer;overflow:hidden;';
 
+  // The portrait <img> elements are sized so that 1:1 pixel sprites still
+  // render well when the high-res portrait isn't available, and so that
+  // taller-than-wide illustrated portraits fit the screen reasonably.
+  // height is fixed; width auto to honor the source aspect ratio.
   overlay.innerHTML = `
     <!-- Full-screen scene background -->
     <img src="assets/sprites/dialogues/${sceneArt}.png" style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:100%;height:100%;object-fit:cover;image-rendering:pixelated;opacity:0.3;pointer-events:none" />
 
-    <!-- Large character portraits — left and right -->
+    <!-- Large character portraits — left and right.
+         Image src is set imperatively below so the high-res portrait fallback
+         can be applied per-line as expressions change. -->
     <div id="portrait-left" style="position:absolute;bottom:140px;left:10px;transition:opacity 0.2s,transform 0.2s;transform-origin:bottom left">
-      <img src="assets/sprites/${breedA}/south.png" style="width:120px;height:120px;image-rendering:pixelated;filter:drop-shadow(2px 4px 6px rgba(0,0,0,0.5))" />
+      <img id="portrait-img-left" alt="" style="height:240px;width:auto;max-width:55vw;filter:drop-shadow(2px 4px 6px rgba(0,0,0,0.5))" />
     </div>
     <div id="portrait-right" style="position:absolute;bottom:140px;right:10px;transition:opacity 0.2s,transform 0.2s;transform-origin:bottom right">
-      <img src="assets/sprites/${breedB}/south.png" style="width:120px;height:120px;image-rendering:pixelated;filter:drop-shadow(2px 4px 6px rgba(0,0,0,0.5))" />
+      <img id="portrait-img-right" alt="" style="height:240px;width:auto;max-width:55vw;filter:drop-shadow(2px 4px 6px rgba(0,0,0,0.5))" />
     </div>
 
     <!-- Text box at bottom -->
@@ -193,6 +238,13 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
   const text = document.getElementById('conv-text')!;
   const portraitLeft = document.getElementById('portrait-left')!;
   const portraitRight = document.getElementById('portrait-right')!;
+  const portraitImgLeft = document.getElementById('portrait-img-left') as HTMLImageElement;
+  const portraitImgRight = document.getElementById('portrait-img-right') as HTMLImageElement;
+
+  // Initial portrait load — both characters in their starting expressions.
+  // Subsequent lines re-call setPortrait when expressions change.
+  setPortrait(portraitImgLeft, breedA, exprA);
+  setPortrait(portraitImgRight, breedB, exprB);
 
   function showLine(): void {
     if (lineIndex >= convo.lines.length) {
@@ -218,6 +270,19 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
     const speakerBreed = isA ? breedNameA : breedNameB;
     speaker.innerHTML = `${speakerName} <span style="font-size:11px;color:#8b7355;font-weight:normal;margin-left:6px">${speakerBreed}</span>`;
     text.textContent = line.text;
+
+    // If this line carries an explicit expression, update the speaker's
+    // current expression and reload their portrait. Listener keeps their
+    // last expression — silence is its own posture.
+    if (line.expression) {
+      if (isA) {
+        exprA = line.expression;
+        setPortrait(portraitImgLeft, breedA, exprA);
+      } else {
+        exprB = line.expression;
+        setPortrait(portraitImgRight, breedB, exprB);
+      }
+    }
 
     // Fire Emblem style: active speaker bright + scaled up, inactive dimmed
     portraitLeft.style.opacity = isA ? '1' : '0.4';
