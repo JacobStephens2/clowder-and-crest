@@ -1,5 +1,6 @@
 import type { SaveData } from '../systems/SaveManager';
 import { BREED_COLORS, BREED_NAMES, STAT_NAMES, ALL_BREED_IDS } from '../utils/constants';
+import { esc } from '../utils/helpers';
 import { getJob } from '../systems/JobBoard';
 import { getBondPairs, getBondRank } from '../systems/BondSystem';
 import { getChapterName, getNextChapterHint } from '../systems/ProgressionManager';
@@ -72,7 +73,7 @@ export function showCatPanel(): void {
       <div class="cat-card-header">
         ${avatarHtml}
         <div style="flex:1">
-          <div class="cat-card-name">${cat.name}${cat.isPlayer ? ' (You)' : ''} <button class="rename-btn" data-cat-id="${cat.id}">Rename</button></div>
+          <div class="cat-card-name">${esc(cat.name)}${cat.isPlayer ? ' (You)' : ''} <button class="rename-btn" data-cat-id="${cat.id}">Rename</button></div>
           <div class="cat-card-breed">${breedName} | Lv.${cat.level}${cat.specialization ? ` | ${SPECIALIZATION_CATEGORIES[cat.specialization]?.icon ?? ''} ${SPECIALIZATION_CATEGORIES[cat.specialization]?.name ?? cat.specialization}` : ''} | ${cat.mood}</div>
         </div>
       </div>
@@ -123,7 +124,7 @@ export function showCatPanel(): void {
 
     html += `<div class="cat-card" style="padding:8px 12px">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:13px">${catA.name} & ${catB.name}</span>
+        <span style="font-size:13px">${esc(catA.name)} & ${esc(catB.name)}</span>
         <span style="font-size:12px;color:${rankColors[rank] ?? '#8b7355'}">${rank}</span>
       </div>
       <div style="font-size:10px;color:#6b5b3e">${points} pts${progressText}</div>
@@ -187,9 +188,9 @@ export function showRenamePrompt(cat: SaveData['cats'][number]): void {
   const breedName = BREED_NAMES[cat.breed] ?? cat.breed;
   prompt.innerHTML = `
     <div style="width:60px;height:60px;border-radius:50%;background:${color};border:2px solid #6b5b3e;margin-bottom:16px"></div>
-    <h2>Rename ${cat.name}</h2>
+    <h2>Rename ${esc(cat.name)}</h2>
     <p>${breedName} | Lv.${cat.level}</p>
-    <input type="text" class="rename-input" placeholder="${cat.name}" maxlength="20" autocomplete="off" value="${cat.name}" />
+    <input type="text" class="rename-input" placeholder="${esc(cat.name)}" maxlength="20" autocomplete="off" value="${esc(cat.name)}" />
     <button class="rename-submit">Rename</button>
   `;
   deps.overlayLayer.appendChild(prompt);
@@ -312,8 +313,8 @@ export function showMenuPanel(): void {
       <div style="margin-bottom:12px;color:#8b7355;font-size:13px">${earned}/${achievements.length} earned</div>
       ${achievements.map(a => `
         <div style="padding:6px 12px;margin-bottom:4px;background:rgba(42,37,32,${a.done ? 0.6 : 0.2});border-radius:4px;border-left:3px solid ${a.done ? '#4a8a4a' : '#3a3530'}">
-          <div style="color:${a.done ? '#c4956a' : '#555'};font-size:13px">${a.done ? '\u2705' : '\u2B1C'} ${a.name}</div>
-          <div style="color:${a.done ? '#8b7355' : '#444'};font-size:10px">${a.desc}</div>
+          <div style="color:${a.done ? '#c4956a' : '#555'};font-size:13px">${a.done ? '\u2705' : '\u2B1C'} ${esc(a.name)}</div>
+          <div style="color:${a.done ? '#8b7355' : '#444'};font-size:10px">${esc(a.desc)}</div>
         </div>
       `).join('')}
     `;
@@ -341,7 +342,7 @@ export function showMenuPanel(): void {
             <div style="display:flex;gap:8px;padding:6px 8px;border-bottom:1px solid rgba(107,91,62,0.2);font-size:12px">
               <span style="flex-shrink:0;width:50px;color:#6b5b3e">Day ${e.day}</span>
               <span style="flex-shrink:0">${typeIcons[e.type] ?? '\uD83D\uDCDD'}</span>
-              <span style="color:#c4956a">${e.text}</span>
+              <span style="color:#c4956a">${esc(e.text)}</span>
             </div>
           `).join('')}
       </div>
@@ -483,7 +484,7 @@ export function showFurnitureShop(): void {
         const spriteImg = spriteExists ? `<img src="assets/sprites/furniture/${item.id}.png" style="width:32px;height:32px;image-rendering:pixelated;margin-bottom:4px" />` : '';
         html += `<div class="shop-item ${canBuy ? '' : 'disabled'}" data-item-id="${item.id}">
           ${spriteImg}
-          <div class="shop-item-name">${item.name}</div>
+          <div class="shop-item-name">${esc(item.name)}</div>
           <div class="shop-item-cost">${item.cost > 0 ? item.cost + ' Fish' : 'Free'}</div>
         </div>`;
       }
@@ -531,7 +532,7 @@ export function showFurnitureShop(): void {
             roomPicker.className = 'assign-overlay';
             roomPicker.innerHTML = `
               <button class="panel-close" id="room-pick-close">&times;</button>
-              <h2>Place ${item.name}</h2>
+              <h2>Place ${esc(item.name)}</h2>
               <div style="color:#8b7355;margin-bottom:12px">Choose a room:</div>
               ${unlockedRooms.map((r) => {
                 const label = r.id === 'sleeping' ? 'Sleeping Quarters' : r.id === 'kitchen' ? 'Kitchen' : 'Operations';

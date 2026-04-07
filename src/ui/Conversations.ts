@@ -2,6 +2,7 @@
  * Conversation system — bond pair dialogues and group conversations.
  */
 import { BREED_COLORS, BREED_NAMES } from '../utils/constants';
+import { esc } from '../utils/helpers';
 import { getBondPairs, getAvailableConversation, markConversationViewed } from '../systems/BondSystem';
 import conversationsData from '../data/conversations.json';
 import type { SaveData } from '../systems/SaveManager';
@@ -123,7 +124,7 @@ function showGroupConversation(key: string): void {
     const color = BREED_COLORS[cat.breed] ?? '#8b7355';
     return `<div class="conversation-portrait" style="background:${color};width:60px;height:60px">
       <img src="assets/sprites/${cat.breed}/south.png" style="width:48px;height:48px;image-rendering:pixelated" />
-      <div style="font-size:8px;margin-top:2px">${cat.name}</div>
+      <div style="font-size:8px;margin-top:2px">${esc(cat.name)}</div>
     </div>`;
   }).join('');
 
@@ -154,7 +155,7 @@ function showGroupConversation(key: string): void {
     const cat = gameState!.cats.find((c) => c.breed === line.speaker);
     const name = cat?.name ?? BREED_NAMES[line.speaker] ?? line.speaker;
     const breedName = BREED_NAMES[line.speaker] ?? line.speaker;
-    speaker.innerHTML = `${name} <span class="speaker-breed">${breedName}</span>`;
+    speaker.innerHTML = `${esc(name)} <span class="speaker-breed">${breedName}</span>`;
     text.textContent = line.text;
     lineIndex++;
   }
@@ -268,7 +269,7 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
     const isA = line.speaker === breedA;
     const speakerName = isA ? nameA : nameB;
     const speakerBreed = isA ? breedNameA : breedNameB;
-    speaker.innerHTML = `${speakerName} <span style="font-size:11px;color:#8b7355;font-weight:normal;margin-left:6px">${speakerBreed}</span>`;
+    speaker.innerHTML = `${esc(speakerName)} <span style="font-size:11px;color:#8b7355;font-weight:normal;margin-left:6px">${speakerBreed}</span>`;
     text.textContent = line.text;
 
     // If this line carries an explicit expression, update the speaker's
