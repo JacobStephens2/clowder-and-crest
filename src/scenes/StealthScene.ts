@@ -23,6 +23,25 @@ const GRASS = 2; // hides the cat from guards
 // Guard vision range
 const VISION_RANGE = 3;
 
+// ── Guard state machine ──
+//
+// Per the doc's "detection as a spectrum, not a switch" pillar: a binary
+// instant-fail collapses every encounter into a single moment. The
+// graduated state machine turns failure into a chase-and-hide drama where
+// the player has a real recovery window.
+//
+//   patrol  → standard patrol; vision contact → alert
+//   alert   → guard moves toward cat's last seen position; if reached,
+//             game over. If the cat hides in grass for `RECOVERY_TICKS`
+//             consecutive guard ticks, the guard returns to patrol.
+//
+// Alert spreading: per the doc's "guards communicate" pillar, when one
+// guard enters alert state, nearby guards within ALERT_SPREAD_RADIUS also
+// flip to alert at the same target position.
+type GuardState = 'patrol' | 'alert';
+const RECOVERY_TICKS = 2;
+const ALERT_SPREAD_RADIUS = 3;
+
 interface Guard {
   r: number;
   c: number;
@@ -32,6 +51,16 @@ interface Guard {
   visionGfx: Phaser.GameObjects.Graphics;
   patrolPath: { r: number; c: number }[];
   patrolIdx: number;
+  state: GuardState;
+  /** When alerted, the cat's last known tile. The guard moves toward
+      this position and will catch the cat if it reaches it. */
+  alertTarget: { r: number; c: number } | null;
+  /** Counts the consecutive guard ticks the cat has been hidden in grass
+      while this guard is in alert state. When it reaches RECOVERY_TICKS,
+      the guard returns to patrol. */
+  hiddenTicks: number;
+  /** Alert state badge (! / ?) drawn above the guard. */
+  alertIcon: Phaser.GameObjects.Text | null;
 }
 
 export class StealthScene extends Phaser.Scene {
@@ -40,16 +69,22 @@ export class StealthScene extends Phaser.Scene {
   private catBreed = 'wildcat';
   private difficulty = 'easy';
   private grid: number[][] = [];
-  private catPos = { r: 7, c: 1 };
-  private targetPos = { r: 1, c: 7 };
+  catPos = { r: 7, c: 1 };
+  targetPos = { r: 1, c: 7 };
   private catSprite: Phaser.GameObjects.Sprite | null = null;
-  private guards: Guard[] = [];
+  guards: Guard[] = [];
   private isMoving = false;
-  private caught = false;
-  private succeeded = false;
+  caught = false;
+  succeeded = false;
   private moveCount = 0;
-  private inGrass = false;
+  inGrass = false;
   private tutorialShowing = false;
+  /** True if any guard ever entered alert state during this run. The
+      doc's "ghost run" reward layer: a perfect run is one where this
+      flag never flips. */
+  wasEverSpotted = false;
+  /** HUD readout for the current detection state. */
+  private statusText!: Phaser.GameObjects.Text;
 
   constructor() {
     super({ key: 'StealthScene' });
@@ -65,6 +100,8 @@ export class StealthScene extends Phaser.Scene {
     this.moveCount = 0;
     this.isMoving = false;
     this.guards = [];
+    this.wasEverSpotted = false;
+    this.inGrass = false;
   }
 
   create(): void {
@@ -74,10 +111,13 @@ export class StealthScene extends Phaser.Scene {
 
     this.input.addPointer(1);
 
-    if (showMinigameTutorial(this, 'clowder_stealth_tutorial', 'Stealth',
+    // Tutorial bumped to v2 — graduated detection and ghost-run reward
+    // are new mechanics returning players should know.
+    if (showMinigameTutorial(this, 'clowder_stealth_tutorial_v2', 'Stealth',
       `Sneak past the guards to reach the target.<br><br>
       Stay in the <strong style="color:#3a5a3a">tall grass</strong> to hide.<br><br>
-      Guards can see <strong>${VISION_RANGE} tiles</strong> ahead. Don't enter their vision!`,
+      If you're spotted, the guard <strong style="color:#cc6666">chases</strong> — duck back into grass to lose them.<br><br>
+      A <strong style="color:#88dd88">perfect ghost run</strong> (never spotted) earns bonus fish!`,
       () => { this.tutorialShowing = false; }
     )) {
       this.tutorialShowing = true;
@@ -91,6 +131,11 @@ export class StealthScene extends Phaser.Scene {
 
     this.add.text(GAME_WIDTH / 2, 52, 'Reach the target without being seen', {
       fontFamily: 'Georgia, serif', fontSize: '10px', color: '#6b5b3e',
+    }).setOrigin(0.5);
+
+    // Status HUD — shows current detection state across all guards
+    this.statusText = this.add.text(GAME_WIDTH / 2, 70, 'Undetected', {
+      fontFamily: 'Georgia, serif', fontSize: '11px', color: '#88dd88',
     }).setOrigin(0.5);
 
     // Generate level
@@ -242,9 +287,18 @@ export class StealthScene extends Phaser.Scene {
         guardSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
       }
 
+      // Alert badge — text floating above the guard, hidden in patrol state
+      const alertIcon = this.add.text(gx, gy - 18, '', {
+        fontFamily: 'Georgia, serif', fontSize: '14px', color: '#ff8844',
+      }).setOrigin(0.5).setDepth(15);
+
       const guard: Guard = {
         r: gr, c: gc, dir: Math.floor(Math.random() * 4),
         gfx, sprite: guardSprite, visionGfx, patrolPath: path, patrolIdx: 0,
+        state: 'patrol',
+        alertTarget: null,
+        hiddenTicks: 0,
+        alertIcon,
       };
       this.guards.push(guard);
       this.drawGuard(guard);
@@ -258,17 +312,27 @@ export class StealthScene extends Phaser.Scene {
     // Position guard sprite or draw fallback
     if (guard.sprite) {
       guard.sprite.setPosition(x, y);
+      // Tint red while alerted so the player can spot the threat at a glance
+      if (guard.state === 'alert') guard.sprite.setTint(0xff6666);
+      else guard.sprite.clearTint();
     } else {
       guard.gfx.clear();
-      guard.gfx.fillStyle(0xcc6666);
+      guard.gfx.fillStyle(guard.state === 'alert' ? 0xff4444 : 0xcc6666);
       guard.gfx.fillCircle(x, y, 8);
+    }
+    // Update alert badge above the guard
+    if (guard.alertIcon) {
+      guard.alertIcon.setPosition(x, y - 18);
+      guard.alertIcon.setText(guard.state === 'alert' ? '!' : '');
+      guard.alertIcon.setVisible(guard.state === 'alert');
     }
     const dirs = [{ dx: 0, dy: -1 }, { dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }];
     const d = dirs[guard.dir];
 
-    // Vision cone
+    // Vision cone — brighter red when alerted to telegraph the threat
     guard.visionGfx.clear();
-    guard.visionGfx.fillStyle(0xcc4444, 0.12);
+    const visionAlpha = guard.state === 'alert' ? 0.28 : 0.12;
+    guard.visionGfx.fillStyle(0xcc4444, visionAlpha);
     for (let i = 1; i <= VISION_RANGE; i++) {
       const vr = guard.r + d.dy * i;
       const vc = guard.c + d.dx * i;
@@ -347,56 +411,167 @@ export class StealthScene extends Phaser.Scene {
     }
   }
 
-  private moveGuards(): void {
+  moveGuards(): void {
     if (this.caught || this.succeeded || this.tutorialShowing) return;
 
     for (const guard of this.guards) {
-      // Move toward next patrol waypoint
-      const target = guard.patrolPath[guard.patrolIdx];
-      const dr = target.r - guard.r;
-      const dc = target.c - guard.c;
-
-      if (dr === 0 && dc === 0) {
-        guard.patrolIdx = (guard.patrolIdx + 1) % guard.patrolPath.length;
-        // Turn to face next waypoint
-        const next = guard.patrolPath[guard.patrolIdx];
-        const ndr = next.r - guard.r;
-        const ndc = next.c - guard.c;
-        if (Math.abs(ndr) >= Math.abs(ndc)) {
-          guard.dir = ndr > 0 ? 2 : 0;
-        } else {
-          guard.dir = ndc > 0 ? 1 : 3;
-        }
+      if (guard.state === 'alert') {
+        this.tickAlertedGuard(guard);
       } else {
-        // Step one tile toward target
-        let mr = 0, mc = 0;
-        if (Math.abs(dr) >= Math.abs(dc)) {
-          mr = dr > 0 ? 1 : -1;
-          guard.dir = mr > 0 ? 2 : 0;
-        } else {
-          mc = dc > 0 ? 1 : -1;
-          guard.dir = mc > 0 ? 1 : 3;
-        }
-        const nr = guard.r + mr;
-        const nc = guard.c + mc;
-        if (nr >= 0 && nr < GRID_ROWS && nc >= 0 && nc < GRID_COLS && this.grid[nr][nc] !== WALL) {
-          guard.r = nr;
-          guard.c = nc;
-        }
+        this.tickPatrolGuard(guard);
       }
-
       this.drawGuard(guard);
     }
 
     this.checkDetection();
+    this.updateStatusText();
   }
 
-  private checkDetection(): void {
-    if (this.caught || this.inGrass) return; // Hidden in grass — safe
+  /** Standard patrol movement: step toward the next patrol waypoint. */
+  private tickPatrolGuard(guard: Guard): void {
+    const target = guard.patrolPath[guard.patrolIdx];
+    const dr = target.r - guard.r;
+    const dc = target.c - guard.c;
+
+    if (dr === 0 && dc === 0) {
+      guard.patrolIdx = (guard.patrolIdx + 1) % guard.patrolPath.length;
+      // Turn to face next waypoint
+      const next = guard.patrolPath[guard.patrolIdx];
+      const ndr = next.r - guard.r;
+      const ndc = next.c - guard.c;
+      if (Math.abs(ndr) >= Math.abs(ndc)) {
+        guard.dir = ndr > 0 ? 2 : 0;
+      } else {
+        guard.dir = ndc > 0 ? 1 : 3;
+      }
+    } else {
+      // Step one tile toward target
+      let mr = 0, mc = 0;
+      if (Math.abs(dr) >= Math.abs(dc)) {
+        mr = dr > 0 ? 1 : -1;
+        guard.dir = mr > 0 ? 2 : 0;
+      } else {
+        mc = dc > 0 ? 1 : -1;
+        guard.dir = mc > 0 ? 1 : 3;
+      }
+      const nr = guard.r + mr;
+      const nc = guard.c + mc;
+      if (nr >= 0 && nr < GRID_ROWS && nc >= 0 && nc < GRID_COLS && this.grid[nr][nc] !== WALL) {
+        guard.r = nr;
+        guard.c = nc;
+      }
+    }
+  }
+
+  /** Pursuit movement: step toward the cat's last known position. If the
+      cat is currently hidden in grass, count toward recovery; if not,
+      refresh the alert target to the cat's current position so the chase
+      stays current. */
+  private tickAlertedGuard(guard: Guard): void {
+    if (this.inGrass) {
+      guard.hiddenTicks++;
+      if (guard.hiddenTicks >= RECOVERY_TICKS) {
+        // Cat lost — return to patrol from current position
+        guard.state = 'patrol';
+        guard.alertTarget = null;
+        guard.hiddenTicks = 0;
+        return;
+      }
+    } else {
+      // Cat is exposed — refresh alert target to its current position
+      guard.alertTarget = { r: this.catPos.r, c: this.catPos.c };
+      guard.hiddenTicks = 0;
+    }
+
+    if (!guard.alertTarget) return;
+    const dr = guard.alertTarget.r - guard.r;
+    const dc = guard.alertTarget.c - guard.c;
+
+    // Already at target tile and cat isn't there → return to patrol
+    if (dr === 0 && dc === 0) {
+      guard.state = 'patrol';
+      guard.alertTarget = null;
+      guard.hiddenTicks = 0;
+      return;
+    }
+
+    // Greedy step toward the target along the larger axis
+    let mr = 0, mc = 0;
+    if (Math.abs(dr) >= Math.abs(dc)) {
+      mr = dr > 0 ? 1 : -1;
+      guard.dir = mr > 0 ? 2 : 0;
+    } else {
+      mc = dc > 0 ? 1 : -1;
+      guard.dir = mc > 0 ? 1 : 3;
+    }
+    const nr = guard.r + mr;
+    const nc = guard.c + mc;
+    if (nr >= 0 && nr < GRID_ROWS && nc >= 0 && nc < GRID_COLS && this.grid[nr][nc] !== WALL) {
+      guard.r = nr;
+      guard.c = nc;
+    }
+  }
+
+  /** Move a guard into alert state aimed at a specific tile. Also spreads
+      the alert to nearby guards within ALERT_SPREAD_RADIUS — the doc's
+      "guards communicate" pillar. */
+  alertGuard(guard: Guard, targetR: number, targetC: number, spread = true): void {
+    const wasAlerted = guard.state === 'alert';
+    guard.state = 'alert';
+    guard.alertTarget = { r: targetR, c: targetC };
+    guard.hiddenTicks = 0;
+    if (!wasAlerted) {
+      this.wasEverSpotted = true;
+      playSfx('hiss', 0.4);
+    }
+    // Spread to nearby guards (one hop only — they don't re-spread)
+    if (spread) {
+      for (const other of this.guards) {
+        if (other === guard || other.state === 'alert') continue;
+        const dist = Math.abs(other.r - guard.r) + Math.abs(other.c - guard.c);
+        if (dist <= ALERT_SPREAD_RADIUS) {
+          this.alertGuard(other, targetR, targetC, false);
+        }
+      }
+    }
+  }
+
+  private updateStatusText(): void {
+    if (!this.statusText || this.caught || this.succeeded) return;
+    const anyAlert = this.guards.some((g) => g.state === 'alert');
+    if (anyAlert) {
+      this.statusText.setText('Spotted! Hide!');
+      this.statusText.setColor('#ff6666');
+    } else if (this.wasEverSpotted) {
+      this.statusText.setText('Lost them — keep moving');
+      this.statusText.setColor('#dda055');
+    } else {
+      this.statusText.setText('Undetected');
+      this.statusText.setColor('#88dd88');
+    }
+  }
+
+  /** Check whether any guard's vision cone reaches the cat's tile, OR
+      whether an alerted guard is standing ON the cat. Vision contact
+      transitions the guard to alert state (instead of instant fail);
+      direct collision while alerted ends the run. */
+  checkDetection(): void {
+    if (this.caught || this.succeeded) return;
 
     const dirs = [{ dx: 0, dy: -1 }, { dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }];
 
     for (const guard of this.guards) {
+      // An alerted guard standing on the cat = caught (only this collision
+      // path is fatal; vision contact only triggers alert).
+      if (guard.r === this.catPos.r && guard.c === this.catPos.c) {
+        this.onCaught();
+        return;
+      }
+
+      // Vision check — only when the cat is NOT in grass. Hidden cats are
+      // invisible to direct sight even if they walk through a vision cone.
+      if (this.inGrass) continue;
+
       const d = dirs[guard.dir];
       for (let i = 1; i <= VISION_RANGE; i++) {
         const vr = guard.r + d.dy * i;
@@ -404,14 +579,11 @@ export class StealthScene extends Phaser.Scene {
         if (vr < 0 || vr >= GRID_ROWS || vc < 0 || vc >= GRID_COLS) break;
         if (this.grid[vr][vc] === WALL) break;
         if (vr === this.catPos.r && vc === this.catPos.c) {
-          this.onCaught();
+          // Doc's #1 implication: vision contact alerts the guard, it
+          // doesn't end the run. The cat now has a recovery window.
+          this.alertGuard(guard, this.catPos.r, this.catPos.c);
           return;
         }
-      }
-      // Also caught if standing on guard
-      if (guard.r === this.catPos.r && guard.c === this.catPos.c) {
-        this.onCaught();
-        return;
       }
     }
   }
@@ -421,7 +593,7 @@ export class StealthScene extends Phaser.Scene {
     playSfx('hiss');
     this.cameras.main.flash(200, 139, 69, 19);
 
-    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'Spotted!', {
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'Caught!', {
       fontFamily: 'Georgia, serif', fontSize: '28px', color: '#cc6666',
     }).setOrigin(0.5);
 
@@ -431,16 +603,33 @@ export class StealthScene extends Phaser.Scene {
     });
   }
 
-  private checkWin(): void {
+  checkWin(): void {
     if (this.catPos.r === this.targetPos.r && this.catPos.c === this.targetPos.c) {
       this.succeeded = true;
       playSfx('victory');
 
-      const stars = this.moveCount <= 15 ? 3 : this.moveCount <= 25 ? 2 : 1;
+      // Star scoring now factors in ghost run status. A perfect
+      // never-spotted run is the 3-star prize regardless of move count;
+      // a detected-but-escaped run can earn 2 stars; messy runs earn 1.
+      const isGhostRun = !this.wasEverSpotted;
+      const stars = isGhostRun ? 3
+        : this.moveCount <= 25 ? 2
+        : 1;
 
       this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'Target Reached!', {
         fontFamily: 'Georgia, serif', fontSize: '24px', color: '#c4956a',
       }).setOrigin(0.5);
+
+      // Ghost run badge — earned reward feedback
+      if (isGhostRun) {
+        this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 32, 'Perfect Ghost Run! +3 fish', {
+          fontFamily: 'Georgia, serif', fontSize: '13px', color: '#88dd88',
+        }).setOrigin(0.5);
+      } else {
+        this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 32, 'Detected, but escaped', {
+          fontFamily: 'Georgia, serif', fontSize: '13px', color: '#dda055',
+        }).setOrigin(0.5);
+      }
 
       this.time.delayedCall(1500, () => {
         eventBus.emit('puzzle-complete', {
@@ -450,6 +639,9 @@ export class StealthScene extends Phaser.Scene {
           stars,
           jobId: this.jobId,
           catId: this.catId,
+          // Surface ghost run for downstream consumers (codex, journal).
+          ghostRun: isGhostRun,
+          bonusFish: isGhostRun ? 3 : 0,
         });
       });
     }
