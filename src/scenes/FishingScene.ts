@@ -578,25 +578,27 @@ export class FishingScene extends Phaser.Scene {
     }
 
     if (behavior === 'darting') {
-      // Faster baseline, random direction flips. Each flip is unannounced
-      // so the player has to react.
+      // Faster baseline + frequent random direction flips. Each flip is
+      // unannounced so the player has to react. Tuned to fire ~3-4 flips
+      // per second so the behavior is unambiguous.
       const speed = baseSpeed * 1.5;
       this.zoneY += this.zoneDir * speed * dt;
-      if (this.elapsed - this.dartLastFlip > 0.4 + Math.random() * 0.6) {
+      if (this.elapsed - this.dartLastFlip > 0.25 + Math.random() * 0.25) {
         this.dartLastFlip = this.elapsed;
-        if (Math.random() < 0.6) this.zoneDir *= -1;
+        if (Math.random() < 0.85) this.zoneDir *= -1;
       }
       return;
     }
 
     if (behavior === 'diver') {
-      // Biased downward — the zone drifts down faster than it climbs up,
-      // forcing the player to keep the hook low. Punishes overpowering.
-      const upSpeed = baseSpeed * 0.7;
-      const downSpeed = baseSpeed * 1.2;
+      // Strongly biased downward — the zone climbs slowly but drops fast,
+      // and a constant gravity term ensures it tends downward over any
+      // window. Punishes players who try to overpower it.
+      const upSpeed = baseSpeed * 0.45;
+      const downSpeed = baseSpeed * 1.5;
       this.zoneY += this.zoneDir * (this.zoneDir > 0 ? upSpeed : downSpeed) * dt;
-      // Add a constant downward drift on top
-      this.zoneY -= 18 * dt;
+      // Constant gravity drift so net direction is always downward over time
+      this.zoneY -= 40 * dt;
       return;
     }
 
