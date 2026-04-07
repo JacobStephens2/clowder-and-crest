@@ -98,42 +98,22 @@
     ]
   },
   {
-    "id": "hard_2",
-    "name": "Tower Block",
-    "concept": "A vertical block must drop before the row clears.",
-    "difficulty": "hard",
-    "minMoves": 12,
+    "id": "easy_3",
+    "name": "Drop and Slide",
+    "concept": "Two columns must drop before the way is clear.",
+    "difficulty": "easy",
+    "minMoves": 3,
     "exitSide": "right",
     "exitRow": 2,
     "blocks": [
       { "id": "cat", "x": 0, "y": 2, "length": 2, "orientation": "horizontal", "isTarget": true },
-      { "id": "a", "x": 2, "y": 0, "length": 3, "orientation": "vertical", "isTarget": false },
+      { "id": "a", "x": 2, "y": 1, "length": 3, "orientation": "vertical", "isTarget": false },
       { "id": "b", "x": 3, "y": 0, "length": 2, "orientation": "horizontal", "isTarget": false },
-      { "id": "c", "x": 5, "y": 0, "length": 3, "orientation": "vertical", "isTarget": false },
-      { "id": "d", "x": 3, "y": 2, "length": 2, "orientation": "horizontal", "isTarget": false },
-      { "id": "e", "x": 0, "y": 4, "length": 2, "orientation": "horizontal", "isTarget": false },
-      { "id": "f", "x": 3, "y": 3, "length": 3, "orientation": "vertical", "isTarget": false },
-      { "id": "g", "x": 4, "y": 4, "length": 2, "orientation": "horizontal", "isTarget": false }
-    ]
-  },
-  {
-    "id": "hard_3",
-    "name": "The Long Way Around",
-    "concept": "Move pieces away from the goal first.",
-    "difficulty": "hard",
-    "minMoves": 14,
-    "exitSide": "right",
-    "exitRow": 2,
-    "blocks": [
-      { "id": "cat", "x": 0, "y": 2, "length": 2, "orientation": "horizontal", "isTarget": true },
-      { "id": "a", "x": 2, "y": 1, "length": 2, "orientation": "vertical", "isTarget": false },
-      { "id": "b", "x": 3, "y": 0, "length": 2, "orientation": "horizontal", "isTarget": false },
-      { "id": "c", "x": 4, "y": 0, "length": 3, "orientation": "vertical", "isTarget": false },
-      { "id": "d", "x": 5, "y": 0, "length": 2, "orientation": "vertical", "isTarget": false },
-      { "id": "e", "x": 3, "y": 2, "length": 2, "orientation": "horizontal", "isTarget": false },
-      { "id": "f", "x": 5, "y": 3, "length": 2, "orientation": "vertical", "isTarget": false },
-      { "id": "g", "x": 0, "y": 4, "length": 3, "orientation": "horizontal", "isTarget": false },
-      { "id": "h", "x": 3, "y": 4, "length": 2, "orientation": "horizontal", "isTarget": false }
+      { "id": "c", "x": 5, "y": 0, "length": 2, "orientation": "vertical", "isTarget": false },
+      { "id": "d", "x": 4, "y": 2, "length": 2, "orientation": "vertical", "isTarget": false },
+      { "id": "e", "x": 1, "y": 3, "length": 3, "orientation": "vertical", "isTarget": false },
+      { "id": "f", "x": 3, "y": 5, "length": 2, "orientation": "horizontal", "isTarget": false },
+      { "id": "g", "x": 5, "y": 3, "length": 3, "orientation": "vertical", "isTarget": false }
     ]
   }
 ]
