@@ -5,6 +5,7 @@ import { getStatMatchScore } from '../systems/JobBoard';
 import { generatePuzzle, getPuzzleByDifficulty } from '../systems/PuzzleGenerator';
 import { isCatStationed } from '../systems/Economy';
 import { hasTrait } from '../systems/CatManager';
+import { getJobMomentLines } from '../systems/GuildFocus';
 
 export interface ResultInfo {
   jobName: string;
@@ -16,6 +17,7 @@ export interface ResultInfo {
   minMoves?: number;
   xp: number;
   leveled: boolean;
+  highlights?: string[];
 }
 
 export const SPECIALIZATION_CATEGORIES: Record<string, { name: string; desc: string; icon: string }> = {
@@ -157,7 +159,14 @@ export function showChoiceOverlay(job: JobDef, catIndex: number): void {
   overlay.className = 'assign-overlay';
 
   const guidance = getChoiceGuidance(job, cat);
+  const momentLines = getJobMomentLines(gameState, job, cat);
   const guidanceHtml = guidance.map((line) => `<div style="font-size:11px;color:#6b8ea6;margin-top:4px;text-align:center">${line}</div>`).join('');
+  const momentHtml = momentLines.length > 0
+    ? `<div style="margin-top:10px;padding:8px 10px;border:1px solid #3a3530;border-radius:6px;background:rgba(24,22,19,0.55)">
+        <div style="font-size:10px;color:#c4956a;text-align:center;margin-bottom:4px">Why This Matters Today</div>
+        ${momentLines.map((line) => `<div style="font-size:10px;color:#8b7355;margin-top:3px;text-align:center">${line}</div>`).join('')}
+      </div>`
+    : '';
 
   overlay.innerHTML = `
     <button class="panel-close" id="choice-close">&times;</button>
@@ -165,6 +174,7 @@ export function showChoiceOverlay(job: JobDef, catIndex: number): void {
     <div class="job-desc">${esc(cat.name)} the ${BREED_NAMES[cat.breed] ?? cat.breed} is ready.</div>
     <div style="font-size:11px;color:#6b5b3e;margin-bottom:8px;text-align:center">Choose your approach:</div>
     ${guidanceHtml}
+    ${momentHtml}
     <div class="assign-choice" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px">
       ${(() => {
         const ch = gameState.chapter ?? 1;
@@ -347,6 +357,9 @@ export function showResultOverlay(info: ResultInfo): void {
     gameState ? `Guild balance after this job: ${gameState.fish} fish.` : '',
     info.leveled ? `${info.catName} is pushing deeper into a long-term role.` : 'Keep repeating strong-fit work to shape this cat’s eventual specialization.',
   ].filter(Boolean).map((line) => `<div style="font-size:11px;color:#6b8ea6;margin-top:4px">${line}</div>`).join('');
+  const highlightHtml = (info.highlights ?? []).slice(0, 3).map((line) =>
+    `<div style="font-size:10px;color:#c4956a;margin-top:4px">${esc(line)}</div>`
+  ).join('');
 
   deps.playSfx('victory');
   deps.trackEvent('job_completed', { stars: info.stars, reward: info.reward, job: info.jobName });
@@ -362,6 +375,7 @@ export function showResultOverlay(info: ResultInfo): void {
       <br>+${info.xp} XP
     </div>
     ${info.leveled ? `<div style="color:#dda055;font-size:18px;margin-bottom:12px;animation:fadeSlideIn 0.5s ease">\u2B50 LEVEL UP! \u2B50<br><span style="font-size:13px">${info.catName} is now stronger.</span></div>` : ''}
+    ${highlightHtml ? `<div style="margin:10px 0 4px;padding:8px 10px;border:1px solid #3a3530;border-radius:6px;background:rgba(24,22,19,0.55)">${highlightHtml}</div>` : ''}
     ${strategicReads}
     <div style="font-size:12px;color:#6b5b3e;margin:16px 0">Balance: ${gameState?.fish ?? 0} fish</div>
     <button id="result-continue">Continue</button>

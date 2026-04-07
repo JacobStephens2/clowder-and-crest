@@ -1,2 +1,1 @@
-- Continue splitting [src/main.ts](/var/www/clowder.stephens.page/src/main.ts) into dedicated game-flow and save/session modules. Onboarding, feedback, and job-flow overlays are extracted now, but day-cycle orchestration and event wiring are still dense.
-- Push product tuning further on system differentiation. The assignment flow now explains longer-term tradeoffs more clearly, but the game still needs stronger signature loops so a few systems feel exceptional rather than merely present.
+No open Codex tasks right now.

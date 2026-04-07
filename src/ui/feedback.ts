@@ -1,6 +1,7 @@
 import { getCurrentFestival } from '../systems/GameSystems';
 import { generateDailyJobs } from '../systems/JobBoard';
 import { getAvailableConversation, getBondPairs, getBondRank } from '../systems/BondSystem';
+import { getGuildFocusLines } from '../systems/GuildFocus';
 import type { SaveData } from '../systems/SaveManager';
 
 function esc(str: string): string {
@@ -124,16 +125,8 @@ export function showDayTransitionOverlay(
     }
   }
 
-  const priorities: string[] = [];
-  if (save) {
-    const roomlessWishCats = save.cats.filter((cat) => cat.mood !== 'happy').slice(0, 2).map((cat) => cat.name);
-    if (roomlessWishCats.length > 0) priorities.push(`Check in on ${roomlessWishCats.join(' and ')}.`);
-    if (save.stationedCats.length === 0 && save.cats.length >= 2) priorities.push('Station a cat for passive income.');
-    if (save.reputationScore >= 10) priorities.push('Lean into Crest jobs to compound your reputation bonus.');
-    if (save.reputationScore <= -10) priorities.push('Shadow jobs are live now if you want higher-risk payouts.');
-  }
-  const prioritiesHtml = priorities.slice(0, 2).map((text) =>
-    `<div style="color:#8b7355;font-family:Georgia,serif;font-size:10px;margin-top:6px">${text}</div>`
+  const prioritiesHtml = (save ? getGuildFocusLines(save) : []).map((line) =>
+    `<div style="color:${line.color};font-family:Georgia,serif;font-size:10px;margin-top:6px">${line.text}</div>`
   ).join('');
 
   const teaserHtml = buildDayTeasers(save, day).map((teaser) =>

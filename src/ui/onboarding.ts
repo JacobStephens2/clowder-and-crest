@@ -2,6 +2,7 @@ import { BREED_NAMES } from '../utils/constants';
 import { getChapterName, getNextChapterHint } from '../systems/ProgressionManager';
 import { getReputationLabel } from '../systems/ReputationSystem';
 import type { SaveData } from '../systems/SaveManager';
+import { calculateDailyUpkeep, calculateStationedDailyIncome } from '../systems/GuildMetrics';
 
 interface IntroPanel {
   text: string;
@@ -173,10 +174,9 @@ export function showGuildReport(save: SaveData): void {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,9,8,0.95);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:24px;';
   const chapterName = getChapterName(save.chapter);
   const repLabel = getReputationLabel(save.reputationScore);
-  const catUpkeep = save.cats.reduce((sum, cat) => sum + 2 + Math.max(0, cat.level - 1), 0);
-  const roomUpkeep = save.rooms.filter((room) => room.unlocked).length;
-  const totalUpkeep = catUpkeep + roomUpkeep + Math.max(0, save.chapter - 1) * 2;
+  const totalUpkeep = calculateDailyUpkeep(save);
   const stationedCount = save.stationedCats.length;
+  const stationedEstimate = calculateStationedDailyIncome(save);
   const progressHint = getNextChapterHint(save);
   const strongest = [...save.cats].sort((a, b) => Object.values(b.stats).reduce((sum, value) => sum + value, 0) - Object.values(a.stats).reduce((sum, value) => sum + value, 0))[0];
   const strongestBreed = BREED_NAMES[strongest?.breed ?? ''] ?? strongest?.breed ?? '';
@@ -190,7 +190,6 @@ export function showGuildReport(save: SaveData): void {
     lines.push(`<div style="font-size:12px;color:#c4956a;margin-bottom:6px">Strongest: <strong>${strongest.name}</strong> the ${strongestBreed}, Lv.${strongest.level}${specLabel}</div>`);
   }
 
-  const stationedEstimate = stationedCount * 2;
   const netDaily = stationedEstimate - totalUpkeep;
   lines.push(`<div style="font-size:11px;color:${netDaily >= 0 ? '#4a8a4a' : '#cc6666'};margin-bottom:6px">Daily balance: ${netDaily >= 0 ? '+' : ''}${netDaily} fish/day (upkeep: ${totalUpkeep}, stationed income: ~${stationedEstimate})</div>`);
   if (save.fish < totalUpkeep * 2) {

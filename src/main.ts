@@ -44,12 +44,15 @@ import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDay
 import { initNative, registerAppLifecycle, scheduleDailyReturnNotification, cancelReturnNotification, haptic } from './systems/NativeFeatures';
 import { applyReputationShift, getReputationLabel, getReputationRecruitModifier, getReputationBonuses } from './systems/ReputationSystem';
 import { getComboMultiplier, updateCombo, getDailyWish, getCurrentFestival, trackEvent } from './systems/GameSystems';
+import { calculateDailyUpkeep, calculateOfflineStationedEarnings, calculateStationedDailyIncome } from './systems/GuildMetrics';
+import { getGuildFocusLines } from './systems/GuildFocus';
 import { showNarrativeOverlay } from './ui/narrativeOverlay';
 import { initPanels, showCatPanel, showMenuPanel, showFurnitureShop } from './ui/Panels';
 import { initConversations, checkAndShowConversation } from './ui/Conversations';
 import { showDayTransitionOverlay, showToast as renderToast } from './ui/feedback';
 import { showGuildReport, showIntroStory, showTutorial } from './ui/onboarding';
 import { initJobFlow, showAssignOverlay, showResultOverlay, type ResultInfo, SPECIALIZATION_CATEGORIES } from './ui/jobFlow';
+import { initSessionFlow } from './systems/SessionFlow';
 
 // ──── Game State ────
 let gameState: SaveData | null = null;
@@ -412,12 +415,33 @@ bottomBar.addEventListener('click', (e) => {
   }
 });
 
-// New game — name prompt
-let activeSlot = 1;
-function saveGame(data: SaveData): void {
-  rawSaveGame(data);
-  saveToSlot(activeSlot, data);
-}
+const sessionFlow = initSessionFlow({
+  overlayLayer,
+  getGameState: () => gameState,
+  setGameState: (save) => { gameState = save; },
+  createDefaultSave,
+  rawSaveGame,
+  saveToSlot,
+  deleteSave,
+  deleteSlot,
+  switchScene,
+  playIntroStory: (catName, onComplete) => showIntroStory(catName, onComplete, { playSfx }),
+  showTutorial,
+  showGuildReport,
+  showToast,
+  updateStatusBar,
+  startBgm,
+  startDayTimer,
+  clearTransientState: () => {
+    acceptedJob = null;
+    catsWorkedToday.clear();
+    jobsCompletedToday.clear();
+    cachedDailyJobs = null;
+  },
+  getOfflineStationedEarnings: calculateOfflineStationedEarnings,
+  getDailyUpkeep: calculateDailyUpkeep,
+});
+const saveGame = sessionFlow.saveGame;
 initPanels({
   getGameState: () => gameState,
   setGameState: (s) => { gameState = s; },
@@ -429,10 +453,7 @@ initPanels({
   stopDayTimer,
   guildEndDayBtn,
   guildWishBanner,
-  clearCurrentSave: () => {
-    deleteSave();
-    deleteSlot(activeSlot);
-  },
+  clearCurrentSave: sessionFlow.clearCurrentSave,
 });
 initConversations({
   getGameState: () => gameState,
@@ -459,102 +480,6 @@ initJobFlow({
   onAfterResult: () => checkAndShowConversation(),
   onSpecializationChosen: () => checkAndShowConversation(),
   catsWorkedToday,
-});
-eventBus.on('active-slot', (slot: number) => { activeSlot = slot; });
-eventBus.on('show-name-prompt', (data?: { slot?: number }) => {
-  if (data?.slot) activeSlot = data.slot;
-  // Remove any existing name prompt to prevent stacking
-  document.querySelectorAll('.name-prompt-overlay').forEach((el) => el.remove());
-
-  const prompt = document.createElement('div');
-  prompt.className = 'name-prompt-overlay';
-  prompt.innerHTML = `
-    <h2>Name Your Cat</h2>
-    <p>You are a wildcat stray, arriving at a crumbling settlement in a storm. What is your name?</p>
-    <input type="text" class="cat-name-input" placeholder="Enter name..." maxlength="20" autocomplete="off" />
-    <button class="cat-name-submit">Begin</button>
-  `;
-  overlayLayer.appendChild(prompt);
-
-  // Scope lookups to the new prompt element.
-  const input = prompt.querySelector<HTMLInputElement>('.cat-name-input')!;
-  const submit = prompt.querySelector<HTMLButtonElement>('.cat-name-submit')!;
-
-  input.focus();
-
-  let submitted = false;
-  const doSubmit = () => {
-    if (submitted) return; // Prevent double-submit on mobile
-    submitted = true;
-    const name = input.value.trim() || 'Stray';
-    prompt.remove();
-    gameState = createDefaultSave(name);
-    saveGame(gameState);
-      showIntroStory(name, () => {
-        eventBus.emit('game-loaded', gameState!);
-        switchScene('GuildhallScene');
-        // Start guided tutorial for new players
-        setTimeout(() => showTutorial(), 1500);
-      }, { playSfx });
-  };
-
-  submit.addEventListener('click', doSubmit);
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') doSubmit();
-  });
-});
-
-// Game loaded
-eventBus.on('game-loaded', (save: SaveData) => {
-  gameState = save;
-  acceptedJob = null; // Clear any stale accepted job from a previous save
-  catsWorkedToday.clear();
-  jobsCompletedToday.clear();
-  cachedDailyJobs = null;
-  updateStatusBar();
-  startBgm();
-  startDayTimer();
-
-  // Offline stationed earnings (capped at 5 days)
-  if (save.lastPlayedTimestamp && save.stationedCats.length > 0) {
-    const hoursAway = (Date.now() - save.lastPlayedTimestamp) / (1000 * 60 * 60);
-    const daysAway = Math.min(5, Math.floor(hoursAway / 1)); // 1 real hour = 1 game day offline
-    if (daysAway >= 1) {
-      let offlineEarnings = 0;
-      for (const stationed of save.stationedCats) {
-        const job = getJob(stationed.jobId);
-        if (!job) continue;
-        const cat = save.cats.find((c) => c.id === stationed.catId);
-        if (!cat) continue;
-        const match = getStatMatchScore(cat, job);
-        const dailyEarn = Math.max(1, Math.floor(job.baseReward * 0.3 + job.baseReward * match * 0.3));
-        offlineEarnings += dailyEarn * daysAway;
-      }
-      if (offlineEarnings > 0) {
-        earnFish(save, offlineEarnings);
-        saveGame(save);
-        setTimeout(() => showToast(`Your stationed cats earned ${offlineEarnings} fish while you were away! (${daysAway} day${daysAway > 1 ? 's' : ''})`), 500);
-      }
-    }
-  }
-
-  // Show Guild Report if away 24+ hours, otherwise a welcome toast
-  const hoursAwaySinceLastPlay = save.lastPlayedTimestamp ? (Date.now() - save.lastPlayedTimestamp) / (1000 * 60 * 60) : 0;
-  if (hoursAwaySinceLastPlay >= 24 && save.totalJobsCompleted > 0) {
-    setTimeout(() => showGuildReport(save), 800);
-  } else if (save.totalJobsCompleted > 0) {
-    const catNames = save.cats.slice(0, 3).map((c) => c.name).join(', ');
-    setTimeout(() => showToast(`Welcome back! ${catNames}${save.cats.length > 3 ? ` and ${save.cats.length - 3} others` : ''} await your orders.`), 500);
-  }
-
-  // Warn if can't afford today's upkeep
-  const unlockedRooms = save.rooms.filter((r) => r.unlocked).length;
-  const dailyCost = save.cats.reduce((sum, c) => sum + 2 + Math.max(0, c.level - 1), 0) + unlockedRooms;
-  if (save.fish < dailyCost && save.cats.length > 1 && hoursAwaySinceLastPlay < 24) {
-    setTimeout(() => {
-      showToast(`Warning: You have ${save.fish} fish but need ${dailyCost} for today's upkeep. Earn fish or a cat may leave!`);
-    }, 2500);
-  }
 });
 
 // Room unlock
@@ -685,10 +610,13 @@ eventBus.on('show-town-overlay', () => {
   const catUpkeep = gameState.cats.reduce((sum, c) => sum + 2 + Math.max(0, c.level - 1), 0);
   const roomUpkeep = gameState.rooms.filter(r => r.unlocked).length;
   const chapterCost = Math.max(0, gameState.chapter - 1) * 2;
-  const totalUpkeep = catUpkeep + roomUpkeep + chapterCost;
-  const stationedIncome = gameState.stationedCats.length > 0 ? gameState.stationedCats.length * 2 : 0;
+  const totalUpkeep = calculateDailyUpkeep(gameState);
+  const stationedIncome = calculateStationedDailyIncome(gameState);
   const netDaily = stationedIncome - totalUpkeep;
   const netColor = netDaily >= 0 ? '#4a8a4a' : '#cc6666';
+  const focusHtml = getGuildFocusLines(gameState).map((line) =>
+    `<div style="font-size:10px;color:${line.color};margin-top:4px">${line.text}</div>`
+  ).join('');
 
   let html = `
     <div class="town-header">
@@ -700,6 +628,10 @@ eventBus.on('show-town-overlay', () => {
       <span>Stationed: +${stationedIncome}/day</span>
       <span style="color:${netColor};font-weight:bold">Net: ${netDaily >= 0 ? '+' : ''}${netDaily}/day</span>
     </div>
+    ${focusHtml ? `<div style="padding:8px 12px;margin:0 12px 8px;border-radius:4px;background:rgba(24,22,19,0.55);border:1px solid #3a3530">
+      <div style="color:#c4956a;font-size:11px;font-family:Georgia,serif">Guild Focus</div>
+      ${focusHtml}
+    </div>` : ''}
     ${(() => {
       const rep = gameState.reputationScore;
       if (rep >= 30) return '<div style="padding:2px 12px;font-size:10px;color:#4a8a4a;text-align:center;font-family:Georgia,serif;font-style:italic">The townsfolk smile as your cats pass. Children wave from doorways.</div>';
@@ -1003,40 +935,47 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
   }
 
   let baseReward = calculateReward(job.baseReward, job.maxReward, stars);
+  const rewardHighlights: string[] = [];
 
   // Lucky Fishbone bonus
   if (gameState.flags.luckyFishbone) {
     baseReward = Math.floor(baseReward * 1.2);
     delete gameState.flags.luckyFishbone;
     showToast('Lucky Fishbone activated! +20% reward.');
+    rewardHighlights.push('Lucky Fishbone triggered: +20% reward.');
   }
 
   // Festival bonus
   const festival = getCurrentFestival(gameState.day);
   if (festival && (festival.category === 'all' || festival.category === job.category)) {
     baseReward = Math.floor(baseReward * festival.multiplier);
+    rewardHighlights.push(`${festival.name} boosted this payout.`);
   }
 
   // Reputation reward bonus
   const repBonuses = getReputationBonuses(gameState.reputationScore);
   if (repBonuses.rewardBonus !== 0) {
     baseReward = Math.floor(baseReward * (1 + repBonuses.rewardBonus));
+    rewardHighlights.push(`Reputation bonus applied: +${Math.round(repBonuses.rewardBonus * 100)}% fish.`);
   }
 
   // Bishop's Blessing: +5% all rewards
   if (gameState.flags.bishopBlessing) {
     baseReward = Math.floor(baseReward * 1.05);
+    rewardHighlights.push('Bishop blessing added +5% reward.');
   }
 
   // Underground Contact: shadow jobs pay +15% more
   if (gameState.flags.undergroundContact && job.category === 'shadow') {
     baseReward = Math.floor(baseReward * 1.15);
+    rewardHighlights.push('Underground contact paid extra for shadow work.');
   }
 
   // Job combo multiplier
   const comboMult = getComboMultiplier(cat.id, job.category, gameState.day);
   if (comboMult > 1) {
     baseReward = Math.floor(baseReward * comboMult);
+    rewardHighlights.push(`${esc(cat.name)} extended a ${job.category} streak to x${comboMult.toFixed(2)} reward.`);
   }
   const comboCount = updateCombo(cat.id, job.category, gameState.day);
   if (comboCount >= 3) {
@@ -1075,6 +1014,7 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
     const extra = baseReward - before;
     if (extra > 0) {
       showToast(`Teamwork with ${esc(teamworkPartner)}: +${extra} fish`);
+      rewardHighlights.push(`Bond teamwork with ${teamworkPartner}: +${extra} fish.`);
     }
   }
 
@@ -1166,6 +1106,7 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
     minMoves,
     xp,
     leveled,
+    highlights: rewardHighlights,
   });
 });
 
@@ -1226,11 +1167,7 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
   acceptedJob = null; // Clear stale accepted job when day changes
 
   // Daily upkeep scales with chapter and cat levels
-  const unlockedRooms = gameState.rooms.filter((r) => r.unlocked).length;
-  const chapterUpkeep = Math.max(0, gameState.chapter - 1) * 2;
-  // Higher-level cats eat more (1 extra fish per level above 1)
-  const catFoodCost = gameState.cats.reduce((sum, c) => sum + 2 + Math.max(0, c.level - 1), 0);
-  const foodCost = catFoodCost + unlockedRooms + chapterUpkeep;
+  const foodCost = calculateDailyUpkeep(gameState);
   if (gameState.fish >= foodCost) {
     gameState.fish -= foodCost;
     // Well-fed cats recover mood
