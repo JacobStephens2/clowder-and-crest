@@ -10,8 +10,8 @@ android/app/src/main/assets/capacitor.plugins.json
 *.apk
 .DS_Store
 screenshots/
-music/
-pixel_art/
+/music/
+/pixel_art/
 sound_effects/
 .env
 .env.local
