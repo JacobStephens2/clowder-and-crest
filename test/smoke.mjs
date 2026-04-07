@@ -72,6 +72,9 @@ async function main() {
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
   });
+  await ctx.addInitScript(() => {
+    localStorage.clear();
+  });
   const page = await ctx.newPage();
 
   let ignoreFailures = false;
@@ -128,7 +131,7 @@ async function main() {
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '02-after-new-game.png') });
 
     console.log('\n=== Name prompt ===');
-    const nameInput = await page.$('input[type="text"]');
+    const nameInput = await page.waitForSelector('input[type="text"]', { timeout: 5000 }).catch(() => null);
     if (nameInput) {
       await nameInput.fill('SmokeTest');
       const btn = await page.$('button:has-text("Begin"), button:has-text("Continue"), button:has-text("Start")');

@@ -28,10 +28,11 @@ import {
   saveGame as rawSaveGame,
   loadGame,
   deleteSave,
+  deleteSlot,
   addJournalEntry,
   saveToSlot,
 } from './systems/SaveManager';
-import { createCat, getBreed, addXp } from './systems/CatManager';
+import { createCat, getBreed, addXp, hasTrait } from './systems/CatManager';
 import { earnFish, spendFish, calculateReward, collectStationedEarnings, isCatStationed } from './systems/Economy';
 import { getJob, getStatMatchScore, generateDailyJobs, getJobFlavor, type JobDef } from './systems/JobBoard';
 import { getPuzzleByDifficulty, generatePuzzle } from './systems/PuzzleGenerator';
@@ -550,6 +551,10 @@ initPanels({
   stopDayTimer,
   guildEndDayBtn,
   guildWishBanner,
+  clearCurrentSave: () => {
+    deleteSave();
+    deleteSlot(activeSlot);
+  },
 });
 initConversations({
   getGameState: () => gameState,
@@ -1420,10 +1425,10 @@ function showAssignOverlay(job: JobDef): void {
     }).join(' <span style="color:#3a3a3a">|</span> ');
 
     const traitEffects: string[] = [];
-    if ((cat.traits ?? []).includes('Brave') && job.difficulty === 'hard') traitEffects.push('Brave +');
-    if ((cat.traits ?? []).includes('Lazy')) traitEffects.push('Lazy -');
-    if ((cat.traits ?? []).includes('Curious') && job.category === 'courier') traitEffects.push('Curious +');
-    if ((cat.traits ?? []).includes('Skittish') && job.difficulty === 'hard') traitEffects.push('Skittish -');
+    if (hasTrait(cat, 'brave') && job.difficulty === 'hard') traitEffects.push('Brave +');
+    if (hasTrait(cat, 'lazy')) traitEffects.push('Lazy -');
+    if (hasTrait(cat, 'curious') && job.category === 'courier') traitEffects.push('Curious +');
+    if (hasTrait(cat, 'skittish') && job.difficulty === 'hard') traitEffects.push('Skittish -');
     if (cat.mood === 'happy') traitEffects.push('Happy +');
     else if (cat.mood === 'unhappy') traitEffects.push('Unhappy -');
     else if (cat.mood === 'tired') traitEffects.push('Tired -');

@@ -6,10 +6,11 @@ import { getChapterName, getNextChapterHint } from '../systems/ProgressionManage
 import { getReputationLabel, getReputationBonuses } from '../systems/ReputationSystem';
 import { toggleMute, isMuted, setBgmVolume, getBgmVolume } from '../systems/MusicManager';
 import { toggleSfxMute, isSfxMuted, setSfxVolume, getSfxVolume } from '../systems/SfxManager';
-import { deleteSave, loadGame } from '../systems/SaveManager';
+import { loadGame } from '../systems/SaveManager';
 import { spendFish } from '../systems/Economy';
 import { playSfx } from '../systems/SfxManager';
 import { eventBus } from '../utils/events';
+import { getTraitLabel } from '../systems/CatManager';
 
 const SPECIALIZATION_CATEGORIES: Record<string, { name: string; desc: string; icon: string }> = {
   pest_control: { name: 'Ratcatcher', desc: '+20% pest control, -5% others', icon: '\uD83D\uDC00' },
@@ -32,6 +33,7 @@ export interface PanelDeps {
   stopDayTimer: () => void;
   guildEndDayBtn: HTMLElement;
   guildWishBanner: HTMLElement;
+  clearCurrentSave: () => void;
 }
 
 let deps: PanelDeps;
@@ -84,7 +86,8 @@ export function showCatPanel(): void {
           }).join('')}
         </select>
       </div>
-      <div style="font-size:12px;color:#8b7355;margin-bottom:4px">${cat.traits.map((t: string) => {
+      <div style="font-size:12px;color:#8b7355;margin-bottom:4px">${cat.traits.map((rawTrait: string) => {
+        const t = getTraitLabel(rawTrait);
         const effects: Record<string, string> = {
           Brave: '+10% hard jobs', Lazy: '-8% all jobs', Curious: '+8% courier',
           Pious: '+5% pest control', 'Night Owl': '+5% all', Skittish: '-10% hard jobs',
@@ -376,7 +379,7 @@ export function showMenuPanel(): void {
 
   document.getElementById('menu-export')!.addEventListener('click', () => {
     deps.saveGame(gameState!);
-    const json = localStorage.getItem('clowder_save');
+    const json = JSON.stringify(gameState);
     if (!json) { deps.showToast('No save to export'); return; }
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -400,7 +403,8 @@ export function showMenuPanel(): void {
         try {
           const data = JSON.parse(reader.result as string);
           if (!data.cats || !data.day) throw new Error('Invalid save');
-          localStorage.setItem('clowder_save', JSON.stringify(data));
+          deps.setGameState(data);
+          deps.saveGame(data);
           const save = loadGame()!;
           deps.setGameState(save);
           eventBus.emit('game-loaded', save);
@@ -429,7 +433,7 @@ export function showMenuPanel(): void {
 
   document.getElementById('menu-restart')!.addEventListener('click', () => {
     if (confirm('Restart the game? Your current save will be deleted and you will start fresh.')) {
-      deleteSave();
+      deps.clearCurrentSave();
       deps.setGameState(null);
       deps.stopDayTimer();
       deps.overlayLayer.querySelectorAll('.menu-overlay, .town-overlay, .assign-overlay').forEach((el) => el.remove());
@@ -439,7 +443,7 @@ export function showMenuPanel(): void {
 
   document.getElementById('menu-delete')!.addEventListener('click', () => {
     if (confirm('Delete your save? This cannot be undone.')) {
-      deleteSave();
+      deps.clearCurrentSave();
       deps.setGameState(null);
       deps.overlayLayer.querySelectorAll('.menu-overlay').forEach((el) => el.remove());
       deps.switchScene('TitleScene');

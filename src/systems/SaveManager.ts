@@ -1,4 +1,5 @@
 import type { StatName } from '../utils/constants';
+import { normalizeTraitId } from './CatManager';
 
 export interface CatSaveData {
   id: string;
@@ -84,6 +85,28 @@ export interface SaveData {
 const SAVE_KEY = 'clowder_and_crest_save';
 const SAVE_VERSION = 2;
 
+function migrateSaveData(data: SaveData): SaveData {
+  if (!Array.isArray(data.cats)) data.cats = [];
+  if (!Array.isArray(data.rooms)) data.rooms = [{ id: 'sleeping', unlocked: true }, { id: 'kitchen', unlocked: false }, { id: 'operations', unlocked: false }];
+  if (!data.stationedCats) data.stationedCats = [];
+  if (!data.bonds) data.bonds = [];
+  if (!data.flags) data.flags = {};
+  if (!data.availableRecruits) data.availableRecruits = [];
+  if (!data.puzzlesCompleted) data.puzzlesCompleted = {};
+  if (data.totalFishEarned === undefined) data.totalFishEarned = 0;
+  if (data.totalJobsCompleted === undefined) data.totalJobsCompleted = 0;
+  if (data.reputationScore === undefined) data.reputationScore = 0;
+  if (!data.journal) data.journal = [];
+  if (!data.dungeonHistory) {
+    data.dungeonHistory = { totalRuns: 0, totalClears: 0, bestFloor: 0, lastFailFloor: -1, lastFailCause: '' };
+  }
+  for (const cat of data.cats) {
+    cat.traits = (cat.traits ?? []).map(normalizeTraitId);
+  }
+  data.version = SAVE_VERSION;
+  return data;
+}
+
 export function createDefaultSave(playerCatName: string): SaveData {
   return {
     version: SAVE_VERSION,
@@ -150,24 +173,7 @@ export function loadGame(): SaveData | null {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
-    const data = JSON.parse(raw) as SaveData;
-    // Migrate saves forward instead of destroying them
-    if (!Array.isArray(data.cats)) data.cats = [];
-    if (!Array.isArray(data.rooms)) data.rooms = [{ id: 'sleeping', unlocked: true }, { id: 'kitchen', unlocked: false }, { id: 'operations', unlocked: false }];
-    if (!data.stationedCats) data.stationedCats = [];
-    if (!data.bonds) data.bonds = [];
-    if (!data.flags) data.flags = {};
-    if (!data.availableRecruits) data.availableRecruits = [];
-    if (!data.puzzlesCompleted) data.puzzlesCompleted = {};
-    if (data.totalFishEarned === undefined) data.totalFishEarned = 0;
-    if (data.totalJobsCompleted === undefined) data.totalJobsCompleted = 0;
-    if (data.reputationScore === undefined) data.reputationScore = 0;
-    if (!data.journal) data.journal = [];
-    if (!data.dungeonHistory) {
-      data.dungeonHistory = { totalRuns: 0, totalClears: 0, bestFloor: 0, lastFailFloor: -1, lastFailCause: '' };
-    }
-    data.version = SAVE_VERSION;
-    return data;
+    return migrateSaveData(JSON.parse(raw) as SaveData);
   } catch {
     return null;
   }
@@ -197,24 +203,7 @@ export function loadFromSlot(slot: number): SaveData | null {
   try {
     const raw = localStorage.getItem(`${SLOT_PREFIX}${slot}`);
     if (!raw) return null;
-    const data = JSON.parse(raw) as SaveData;
-    // Apply same migration as loadGame
-    if (!Array.isArray(data.cats)) data.cats = [];
-    if (!Array.isArray(data.rooms)) data.rooms = [{ id: 'sleeping', unlocked: true }, { id: 'kitchen', unlocked: false }, { id: 'operations', unlocked: false }];
-    if (!data.stationedCats) data.stationedCats = [];
-    if (!data.bonds) data.bonds = [];
-    if (!data.flags) data.flags = {};
-    if (!data.availableRecruits) data.availableRecruits = [];
-    if (!data.puzzlesCompleted) data.puzzlesCompleted = {};
-    if (data.totalFishEarned === undefined) data.totalFishEarned = 0;
-    if (data.totalJobsCompleted === undefined) data.totalJobsCompleted = 0;
-    if (data.reputationScore === undefined) data.reputationScore = 0;
-    if (!data.journal) data.journal = [];
-    if (!data.dungeonHistory) {
-      data.dungeonHistory = { totalRuns: 0, totalClears: 0, bestFloor: 0, lastFailFloor: -1, lastFailCause: '' };
-    }
-    data.version = SAVE_VERSION;
-    return data;
+    return migrateSaveData(JSON.parse(raw) as SaveData);
   } catch {
     return null;
   }

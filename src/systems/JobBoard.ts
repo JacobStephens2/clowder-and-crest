@@ -2,6 +2,7 @@ import jobsData from '../data/jobs.json';
 import type { SaveData, CatSaveData } from './SaveManager';
 import type { StatName } from '../utils/constants';
 import { shuffled } from '../utils/helpers';
+import { hasTrait } from './CatManager';
 
 export interface JobDef {
   id: string;
@@ -59,7 +60,7 @@ export function generateDailyJobs(save: SaveData): JobDef[] {
   }
 
   const count = Math.min(3 + Math.floor(save.chapter / 2), available.length);
-  const jobs = shuffled(available).slice(0, count);
+  const jobs = shuffled(available).slice(0, count).map((job) => ({ ...job, contested: false }));
 
   // Chapter 6+: Mark 1-2 jobs as contested by the Silver Paws rival guild
   if (save.chapter >= 6) {
@@ -79,17 +80,16 @@ export function getStatMatchScore(cat: CatSaveData, job: JobDef): number {
   let score = total / max;
 
   // Trait modifiers
-  const traits = cat.traits ?? [];
-  if (traits.includes('Brave') && job.difficulty === 'hard') score += 0.1;
-  if (traits.includes('Lazy')) score -= 0.08;
-  if (traits.includes('Curious') && (job.category === 'courier' || job.category === 'detection')) score += 0.08;
-  if (traits.includes('Pious') && (job.category === 'pest_control' || job.category === 'sacred')) score += 0.08;
-  if (traits.includes('Brave') && job.category === 'guard') score += 0.08;
-  if (traits.includes('Loyal') && job.category === 'guard') score += 0.05;
-  if (traits.includes('Night Owl')) score += 0.05;
-  if (traits.includes('Skittish') && job.difficulty === 'hard') score -= 0.1;
-  if (traits.includes('Loyal')) score += 0.03;
-  if (traits.includes('Mischievous')) score += Math.random() > 0.5 ? 0.1 : -0.05;
+  if (hasTrait(cat, 'brave') && job.difficulty === 'hard') score += 0.1;
+  if (hasTrait(cat, 'lazy')) score -= 0.08;
+  if (hasTrait(cat, 'curious') && (job.category === 'courier' || job.category === 'detection')) score += 0.08;
+  if (hasTrait(cat, 'pious') && (job.category === 'pest_control' || job.category === 'sacred')) score += 0.08;
+  if (hasTrait(cat, 'brave') && job.category === 'guard') score += 0.08;
+  if (hasTrait(cat, 'loyal') && job.category === 'guard') score += 0.05;
+  if (hasTrait(cat, 'night_owl')) score += 0.05;
+  if (hasTrait(cat, 'skittish') && job.difficulty === 'hard') score -= 0.1;
+  if (hasTrait(cat, 'loyal')) score += 0.03;
+  if (hasTrait(cat, 'mischievous')) score += Math.random() > 0.5 ? 0.1 : -0.05;
 
   // Mood modifiers
   if (cat.mood === 'happy') score += 0.1;

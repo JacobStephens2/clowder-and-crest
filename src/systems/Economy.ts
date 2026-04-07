@@ -1,6 +1,7 @@
 import type { SaveData, CatSaveData } from './SaveManager';
 import { getJob, getStatMatchScore } from './JobBoard';
 import { eventBus } from '../utils/events';
+import { hasTrait } from './CatManager';
 
 export function earnFish(save: SaveData, amount: number): void {
   save.fish += amount;
@@ -121,13 +122,13 @@ export function collectStationedEarnings(save: SaveData): StationedResult[] {
     }
 
     // Lazy cats occasionally slack off
-    if ((cat.traits ?? []).includes('Lazy') && Math.random() < 0.15) {
+    if (hasTrait(cat, 'lazy') && Math.random() < 0.15) {
       earned = Math.floor(earned * 0.5);
       event = `${cat.name} napped on the job — half earnings today.`;
     }
 
     // Curious cats occasionally find extra
-    if ((cat.traits ?? []).includes('Curious') && Math.random() < 0.1) {
+    if (hasTrait(cat, 'curious') && Math.random() < 0.1) {
       earned = Math.floor(earned * 1.3);
       event = `${cat.name} found something interesting — bonus fish!`;
     }

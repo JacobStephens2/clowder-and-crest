@@ -15,7 +15,32 @@ export interface BreedDef {
 }
 
 const breeds: BreedDef[] = breedsData as BreedDef[];
-const TRAITS = ['brave', 'lazy', 'curious', 'grumpy', 'playful', 'skittish', 'loyal', 'mischievous', 'pious', 'night_owl'];
+const TRAITS = ['brave', 'lazy', 'curious', 'grumpy', 'playful', 'skittish', 'loyal', 'mischievous', 'pious', 'night_owl'] as const;
+const TRAIT_LABELS: Record<string, string> = {
+  brave: 'Brave',
+  lazy: 'Lazy',
+  curious: 'Curious',
+  grumpy: 'Grumpy',
+  playful: 'Playful',
+  skittish: 'Skittish',
+  loyal: 'Loyal',
+  mischievous: 'Mischievous',
+  pious: 'Pious',
+  night_owl: 'Night Owl',
+};
+
+export function normalizeTraitId(trait: string): string {
+  return trait.trim().toLowerCase().replace(/\s+/g, '_');
+}
+
+export function hasTrait(cat: Pick<CatSaveData, 'traits'>, trait: string): boolean {
+  const wanted = normalizeTraitId(trait);
+  return (cat.traits ?? []).some((owned) => normalizeTraitId(owned) === wanted);
+}
+
+export function getTraitLabel(trait: string): string {
+  return TRAIT_LABELS[normalizeTraitId(trait)] ?? trait;
+}
 
 export function getBreed(id: string): BreedDef | undefined {
   return breeds.find((b) => b.id === id);
