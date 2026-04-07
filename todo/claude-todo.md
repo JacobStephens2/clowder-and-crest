@@ -1,0 +1,1 @@
+[x] rename 5.1 What Makes Deduction Hot-Cold Search Games Great to 4.3 What Makes Deduction Hot-Cold Search Games Great
