@@ -5,7 +5,7 @@ import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
 import { haptic } from '../systems/NativeFeatures';
-import { createDpad, showMinigameTutorial } from '../ui/sceneHelpers';
+import { createDpad, showMinigameTutorial, showSceneOutcomeBanner } from '../ui/sceneHelpers';
 
 // ── Arena layout ──
 const ARENA_LEFT = 20;
@@ -1068,13 +1068,11 @@ export class BrawlScene extends Phaser.Scene {
       haptic.success();
       const stars = this.catHp === this.catMaxHp ? 3 : this.catHp >= this.catMaxHp / 2 ? 2 : 1;
 
-      this.add.text(GAME_WIDTH / 2, ARENA_TOP + ARENA_H / 2 - 10, 'Victory!', {
-        fontFamily: 'Georgia, serif', fontSize: '28px', color: '#c4956a',
-      }).setOrigin(0.5);
-
-      this.add.text(GAME_WIDTH / 2, ARENA_TOP + ARENA_H / 2 + 25, `${this.ratsKilled} rats defeated`, {
-        fontFamily: 'Georgia, serif', fontSize: '13px', color: '#8b7355',
-      }).setOrigin(0.5);
+      showSceneOutcomeBanner(this, {
+        title: 'Victory!',
+        subtitle: `${this.ratsKilled} rats defeated`,
+        y: ARENA_TOP + ARENA_H / 2,
+      });
 
       this.time.delayedCall(1500, () => {
         eventBus.emit('puzzle-complete', {
@@ -1090,13 +1088,12 @@ export class BrawlScene extends Phaser.Scene {
       playSfx('fail');
       haptic.error();
 
-      this.add.text(GAME_WIDTH / 2, ARENA_TOP + ARENA_H / 2 - 10, 'Overwhelmed!', {
-        fontFamily: 'Georgia, serif', fontSize: '24px', color: '#cc6666',
-      }).setOrigin(0.5);
-
-      this.add.text(GAME_WIDTH / 2, ARENA_TOP + ARENA_H / 2 + 20, `${this.ratsKilled} rats defeated before falling`, {
-        fontFamily: 'Georgia, serif', fontSize: '12px', color: '#8b7355',
-      }).setOrigin(0.5);
+      showSceneOutcomeBanner(this, {
+        title: 'Overwhelmed!',
+        subtitle: `${this.ratsKilled} rats defeated before falling`,
+        titleColor: '#cc6666',
+        y: ARENA_TOP + ARENA_H / 2,
+      });
 
       this.time.delayedCall(2000, () => {
         eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });

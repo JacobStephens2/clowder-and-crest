@@ -5,7 +5,7 @@ import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
 import { haptic } from '../systems/NativeFeatures';
-import { showMinigameTutorial } from '../ui/sceneHelpers';
+import { showMinigameTutorial, showSceneOutcomeBanner } from '../ui/sceneHelpers';
 
 // ── Maze constants ──
 const COLS = 13;
@@ -894,16 +894,14 @@ export class ChaseScene extends Phaser.Scene {
 
     playSfx('rat_caught');
     haptic.success();
-    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'Caught!', {
-      fontFamily: 'Georgia, serif', fontSize: '32px', color: '#c4956a',
-    }).setOrigin(0.5);
-
     const bonusLine = this.comboMaxBonus > 0
       ? `+${bonusFish} fish (${this.dotsCollected} collected + ${this.comboMaxBonus} combo bonus)`
       : `+${bonusFish} bonus fish collected`;
-    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 35, bonusLine, {
-      fontFamily: 'Georgia, serif', fontSize: '13px', color: '#dda055',
-    }).setOrigin(0.5);
+    showSceneOutcomeBanner(this, {
+      title: 'Caught!',
+      subtitle: bonusLine,
+      subtitleColor: '#dda055',
+    });
 
     this.time.delayedCall(1500, () => {
       eventBus.emit('puzzle-complete', {
@@ -923,13 +921,11 @@ export class ChaseScene extends Phaser.Scene {
     this.moveTimer?.destroy();
     this.ratTimer?.destroy();
 
-    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'Time\'s up!', {
-      fontFamily: 'Georgia, serif', fontSize: '28px', color: '#aa4444',
-    }).setOrigin(0.5);
-
-    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 30, 'The rat escaped...', {
-      fontFamily: 'Georgia, serif', fontSize: '14px', color: '#8b7355',
-    }).setOrigin(0.5);
+    showSceneOutcomeBanner(this, {
+      title: 'Time\'s up!',
+      subtitle: 'The rat escaped...',
+      titleColor: '#aa4444',
+    });
 
     this.time.delayedCall(2000, () => {
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
@@ -1195,16 +1191,15 @@ export class ChaseScene extends Phaser.Scene {
     // Show WHICH dog caught the cat — the doc's "death must never feel
     // random" pillar. The player should walk away knowing what behavior
     // they failed to anticipate.
-    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20, `Caught by the ${dog.displayName}!`, {
-      fontFamily: 'Georgia, serif', fontSize: '22px', color: '#cc6666',
-    }).setOrigin(0.5);
-
     const explanation = dog.archetype === 'ambusher'
       ? 'The Ambusher pre-positioned ahead of you...'
       : 'The Tracker followed your trail...';
-    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 15, explanation, {
-      fontFamily: 'Georgia, serif', fontSize: '13px', color: '#8b7355',
-    }).setOrigin(0.5);
+    showSceneOutcomeBanner(this, {
+      title: `Caught by the ${dog.displayName}!`,
+      subtitle: explanation,
+      titleColor: '#cc6666',
+      y: GAME_HEIGHT / 2 - 10,
+    });
 
     this.time.delayedCall(2000, () => {
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
