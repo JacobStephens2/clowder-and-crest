@@ -31,43 +31,43 @@ Intimate, restful. Soft harp arpeggios over the quietest possible cittern hum �
 
 ## Minigame Tracks
 
-### Chase (Rat Maze) - created
+### Chase (Rat Maze)
 Medieval chase. Quick fiddle melody over a running bodhrán rhythm — tavern reel sped up. The cat is hunting; tension is in the pulse, not the harmony. **Mode:** D Aeolian — **BPM:** 130 — **Acoustic:** tight indoor maze, dry. The guild motif appears as a defiant fiddle hook in the second half. Think: a Celtic chase scene staged in stone alleys.
 
-### Hunt (Whack-a-Mole) - created
+### Hunt (Whack-a-Mole)
 Playful, percussive. Bodhrán and hand drums under a staccato tin whistle melody — light, bouncy, never stressful. Short 4-bar loops. **Mode:** D Mixolydian — **BPM:** 120 — **Acoustic:** carnival fair, open air. The guild motif slides through as a quick tin whistle phrase between rounds. Think: a medieval carnival game where the prize is dignity.
 
-### Fishing (Reel-In) - created
+### Fishing (Reel-In)
 Calm, patient, flowing. Gentle harp arpeggios over a soft cittern drone. Meditative with subtle tension — the fish is testing the line. **Mode:** D Dorian — **BPM:** 80 — **Acoustic:** open lakeside at dawn, soft natural reverb. The guild motif drifts in on harp once, like a distant memory. Think: Stardew Valley fishing meets Celtic lullaby.
 
-### Sokoban (Crate Pushing) - created
+### Sokoban (Crate Pushing)
 Thoughtful, methodical. Soft lute and cittern carrying a contemplative melody. Each note is a deliberate move. **Mode:** D Aeolian — **BPM:** 90 — **Acoustic:** stone monastery interior, modest reverb. The guild motif emerges as a slow lute line in the middle bars. Think: a monk solving a puzzle by candlelight.
 
-### Nonogram (Grid Logic) - created
+### Nonogram (Grid Logic)
 Minimal and clean. Plucked lute with occasional hand-bell tones. Quiet spaces between notes — the sound of careful deduction. **Mode:** D Dorian — **BPM:** 85 — **Acoustic:** scriptorium, dry close-mic. The guild motif rings out as a single hand-bell sequence near the end. Think: a monastery scribing room at dusk.
 
-### Stealth (Guard Avoidance) - created
+### Stealth (Guard Avoidance)
 Tense and suspenseful. Low cittern drone with occasional high fiddle harmonics — silence is part of the composition. The cat is holding its breath. **Mode:** D Phrygian (the flat-2 gives the dread) — **BPM:** 100 — **Acoustic:** stone corridors, distant. The guild motif is whispered as a ghostly harp phrase at the loop point. Think: medieval heist by candlelight.
 
-### Pounce (Physics Catapult) - created
+### Pounce (Physics Catapult)
 Dramatic, anticipatory. Building bodhrán rolls under held fiddle notes, then silence before release. **Mode:** D Dorian — **BPM:** 110 — **Acoustic:** outdoor siege camp, wide air. The guild motif appears as a sustained fiddle line over the final roll. Think: a siege engine loading.
 
-### Slide Blocks (Rush Hour) - created
+### Slide Blocks (Rush Hour)
 Light puzzle music. Wooden percussion (marimba-like tonewoods) with a simple lute melody — satisfying clicks implied in the rhythm. **Mode:** D Mixolydian — **BPM:** 95 — **Acoustic:** dry close-mic, tabletop. The guild motif punctuates as a wooden-block phrase between sections. Think: a wooden toy puzzle on a guildmaster's desk.
 
-### Patrol (Lantern Watch) - created
+### Patrol (Lantern Watch)
 Eerie and watchful. Low tin whistle with distant harp accents. A lone bell in the distance, still air. **Mode:** D Aeolian — **BPM:** 70 — **Acoustic:** outdoor night, wide reverb. The guild motif rings out softly as a distant hand-bell once per loop. Think: medieval night watch.
 
-### Ritual (Simon Says) - created
+### Ritual (Simon Says)
 Sacred and reverential. Sustained fiddle tones like a choir, gentle bell chimes on each sequence step. Ethereal, solemn. **Mode:** D Dorian — **BPM:** 60 — **Acoustic:** cathedral interior, long reverb tail. The guild motif rings as a four-bell sequence at the loop point. Think: Gregorian chant distilled to its simplest elements.
 
-### Scent Trail (Hot/Cold Search) - created
+### Scent Trail (Hot/Cold Search)
 Mysterious, curious. Pizzicato fiddle with a wandering melody that hesitates and doubles back. **Mode:** D Dorian — **BPM:** 95 — **Acoustic:** cobblestone alley, mid-distance. The guild motif surfaces in pizzicato fragments throughout. Think: detective noir meets medieval cloister.
 
-### Heist (Lock Picking) - created
+### Heist (Lock Picking)
 Clockwork, mechanical. Ticking woodblock percussion with metallic bell twangs — precise, careful manipulation. **Mode:** D Mixolydian — **BPM:** 105 — **Acoustic:** dry close-mic, metallic. The guild motif clicks out on bell twangs near the loop point. Think: a music box crossed with a medieval clock shop.
 
-### Courier Run (Auto-Scroller) - created
+### Courier Run (Auto-Scroller)
 Energetic, forward-driving. Fast strummed lute with a running bass line on cittern. Pure momentum — feet pounding cobblestones. **Mode:** D Mixolydian — **BPM:** 140 — **Acoustic:** outdoor street, mid air. The guild motif rides the bass line throughout. Think: medieval parkour.
 
 ---
@@ -76,39 +76,39 @@ Energetic, forward-driving. Fast strummed lute with a running bass line on citte
 
 These are for the non-minigame parts of the game: title screen, intro story, guildhall, town, chapter intros, and other "moods" the player spends time in.
 
-### Prologue — The Storm (intro) - created
+### Prologue — The Storm (intro)
 Somber, foreboding. Low tin whistle drone over distant bodhrán thunder rolls. Rain on cobblestones — a lone wet wildcat seeking shelter. Sparse, lonely, no hope yet. **Mode:** D Aeolian — **BPM:** 70 — **Acoustic:** open street in heavy rain, distant thunder. The guild motif (D-C-A-G) is born at the end on a single soft harp phrase, like a seed planted. Think: the opening of a fairy tale about a cat who has nothing but tomorrow.
 
-### Title Screen - created
+### Title Screen
 Reverent, promising. Held cittern drone with a slow harp arpeggio that rises then settles. The whole "guild identity" distilled — quiet, noble, patient. **Mode:** D Dorian — **BPM:** 60 — **Acoustic:** stone hall, medium reverb. The guild motif rings out clearly at the end as a hand-bell chime. Think: the logo card of a story about finding home. Sits gracefully beneath UI.
 
-### Guildhall — Main Hub - created
+### Guildhall — Main Hub
 Warm, unhurried. Gentle lute picking over a soft cittern drone, occasional bodhrán heartbeat. Cats napping, hearth crackling, the day's weight lifted. **Mode:** D Dorian — **BPM:** 72 — **Acoustic:** small stone hall interior, warm reverb. The guild motif plays once softly on lute, as if from memory. Think: a quiet evening inside stone walls while rain falls outside.
 
-### Town Map — Market Day - created
+### Town Map — Market Day
 Bustling, cheerful. Lively tin whistle over a plucky lute rhythm with hand drums keeping pace. Merchants haggling, children running, the guild's cats on the job. **Mode:** D Mixolydian — **BPM:** 100 — **Acoustic:** open square, outdoor air. The guild motif surfaces in the cittern bass line as the cats pass through. Think: a walk through a medieval town that knows your name.
 
-### Town Map — Dusk / Night - created
+### Town Map — Dusk / Night
 Softer, watchful. Slow lute with distant harp accents. Lantern light, empty cobblestones, the day winding down. **Mode:** D Aeolian — **BPM:** 65 — **Acoustic:** empty street at night, wide ambient reverb. The guild motif plays low and quiet on lute. Think: walking home through a town after the crowds have thinned. A fitting contrast to the daytime market track.
 
-### Castle Halls (ambient variant) - created
+### Castle Halls (ambient variant)
 Dignified, echoing. Slow cittern drone under a sustained fiddle line. Stone arches, tapestries, footsteps in a long corridor. **Mode:** D Dorian — **BPM:** 65 — **Acoustic:** large stone court, long reverb. The guild motif plays as a distant harp refrain, as if from another room. Think: a medieval court where cats have business.
 
-### Dawn Parapets (ambient variant) - created
+### Dawn Parapets (ambient variant)
 Hopeful, waking. Rising lute arpeggios over held cittern tones. Sunrise on a watchtower — the town stirring below, a new day beginning. **Mode:** D Mixolydian — **BPM:** 75 — **Acoustic:** outdoor stone battlements, mid air. The guild motif rises into the dawn on a bright tin whistle line. Think: first light on stone battlements, cats on the morning watch.
 
-### Sleeping Quarters (room) - created
+### Sleeping Quarters (room)
 Intimate, restful. Soft harp arpeggios over the quietest possible cittern hum — barely there, more ambience than music. **Mode:** D Dorian — **BPM:** 50 — **Acoustic:** small straw-floored room, dry intimate close-mic. The guild motif appears as a single delicate fiddle phrase at the end, like a lullaby being hummed. Think: moonlight through a small window onto straw bedding.
 
-### Kitchen & Pantry (room) - created
+### Kitchen & Pantry (room)
 Warm, domestic. Gentle bodhrán pulse like a simmering pot, soft lute melody weaving through. The sound of fish stew and friendship. **Mode:** D Dorian — **BPM:** 80 — **Acoustic:** small kitchen, warm close-mic. The guild motif echoes between lute and tin whistle. Think: a small kitchen in winter with something good on the stove and cats waiting by the door.
 
-### Operations Hall (room) - created
+### Operations Hall (room)
 Focused, strategic. Steady cittern pulse with a measured lute counterpoint. Maps unrolled, jobs assigned, decisions weighed. **Mode:** D Dorian — **BPM:** 85 — **Acoustic:** medium stone room, modest reverb. The guild motif recurs quietly as a bass line, grounding the thought. Think: a war table by candlelight, but the war is running a guild.
 
 ---
 
-## Chapter & Event Tracks (pending)
+## Chapter & Event Tracks
 
 ### Chapter 2 — The Crew
 Hopeful, warming. Gentle lute melody over a soft bodhrán heartbeat. The sound of "we" replacing "I" — two cats sharing a small meal under a proper roof. Modest triumph. **Mode:** D Aeolian → D Dorian (the track brightens halfway through) — **BPM:** 85 — **Acoustic:** small stone room, intimate. The guild motif played as a duet between fiddle and cittern — no longer solo. Think: the second cat answering the first, finally.
