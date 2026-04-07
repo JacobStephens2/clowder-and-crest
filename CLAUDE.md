@@ -1,6 +1,6 @@
 # Clowder & Crest
 
-Cat guild management game with Rush Hour sliding block puzzles. Built with Phaser 3 + TypeScript, deployed at https://clowder.stephens.page.
+Cat guild management game with 14 minigame types and Fire Emblem-style bond conversations. Built with Phaser 3 + TypeScript, deployed at https://clowderandcrest.com (also at https://clowder.stephens.page).
 
 ## Commands
 
@@ -33,21 +33,21 @@ src/
 │   ├── GuildhallScene.ts    # Room overview — cat sprites, furniture sprites, chapter-aware naming
 │   ├── RoomScene.ts         # Top-down room interior — 7x7 grid, wandering cats, furniture interaction with stat boosts
 │   ├── TownMapScene.ts      # Explorable 8x10 town map — walkable streets, buildings, stray cat recruitment
-│   ├── PuzzleScene.ts       # 6x6 Rush Hour grid — themed block sprites, drag controls
-│   ├── SokobanScene.ts      # 7x7 Sokoban crate-pushing — procedural generation + 8 fallbacks + swipe controls
-│   ├── ChaseScene.ts        # 13x13 Pac-Man style rat chase — guard dog, speed boosts, hold-to-move
-│   ├── FishingScene.ts      # Fishing reel-in — rare golden fish, current surges
-│   ├── HuntScene.ts         # Whack-a-mole rat hunting — golden/poison rats, 3 difficulties
-│   ├── BrawlScene.ts        # Zelda-style combat — waves, Rat King boss, powerups, joystick, multi-touch
-│   ├── NonogramScene.ts     # Grid logic puzzle — procedural with solvability validation
-│   ├── StealthScene.ts      # Stealth/avoidance — guard patrol, grass hiding, vision cones
-│   ├── PounceScene.ts       # Physics catapult — Matter.js, knock rats off crate stacks
-│   ├── PatrolScene.ts       # Lantern watch — reveal hidden rats, guard jobs (Ch.3)
-│   ├── RitualScene.ts       # Simon Says candle sequences, sacred jobs (Ch.4)
-│   ├── ScentTrailScene.ts   # Hot/cold grid search, detection jobs (Ch.4)
-│   ├── HeistScene.ts        # Lock-picking concentric rings, shadow jobs (Ch.6)
-│   ├── CourierRunScene.ts   # 3-lane auto-scroller, courier jobs (Ch.2)
-│   └── DungeonRunScene.ts   # Roguelike cellar — chain minigame floors with persistent HP (Ch.5+)
+│   ├── PuzzleScene.ts       # 6x6 Rush Hour — 6 themed named puzzles, BFS-validated par, PERFECT! callout, axis arrows on blocks
+│   ├── SokobanScene.ts      # 7x7 Sokoban — 8 themed hand-crafted levels with named concepts, restart button, BFS validator
+│   ├── ChaseScene.ts        # 13x13 Pac-Man style rat chase — Tracker + Ambusher dog AI, ghost combo on catnip
+│   ├── FishingScene.ts      # Reel-in — three-phase approach/bite/catch, 5 fish behaviors, 4-tier rarity system
+│   ├── HuntScene.ts         # Whack-a-mole rat hunt — speed escalation, fake-out rats, poison rats, 5-chain combo
+│   ├── BrawlScene.ts        # Zelda-style combat — telegraphed rat windups, hit-stop, Skirmisher type, boss phase 2 + minions
+│   ├── NonogramScene.ts     # Picross — 13 themed images, constraint-propagation validator, no penalty feedback, undo
+│   ├── StealthScene.ts      # Top-down stealth — graduated detection (alert+pursuit), grass recovery, ghost run reward
+│   ├── PounceScene.ts       # Matter.js slingshot — breed-specific mid-flight abilities, wood/stone/glass, 4 structure templates
+│   ├── PatrolScene.ts       # Lantern watch — threat-escalation curve, prowler intruders, relight cooldown, lantern loss tracking
+│   ├── RitualScene.ts       # Simon Says candles — pentatonic per-candle tones, speed escalation, adaptive replay slowdown
+│   ├── ScentTrailScene.ts   # Hot/cold deduction — exact Manhattan distance, remote probes, constraint-ring overlay
+│   ├── HeistScene.ts        # Lock picking — per-ring set state with sparkle SFX, counter-clockwise rotation, trap notches on hard
+│   ├── CourierRunScene.ts   # 3-lane runner — speed escalation curve, 9 obstacle phrases, mission system, juice
+│   └── DungeonRunScene.ts   # Roguelike chain (Ch.5+) — inter-floor upgrade picks, run history, Hades-style reactive narrative
 ├── systems/
 │   ├── SaveManager.ts       # Save/load to localStorage, 3 save slots, forward migration, failure notification
 │   ├── CatManager.ts        # 6 breed definitions, cat creation with variance, XP/leveling, specialization
@@ -70,14 +70,32 @@ src/
 ├── data/
 │   ├── breeds.json          # 6 breeds with base stats and stat biases
 │   ├── jobs.json            # 35 job templates (pest control, courier, guard, sacred, detection, shadow)
-│   ├── puzzles.json         # 5 hand-designed Rush Hour puzzles, BFS-validated
+│   ├── puzzles.json         # 6 themed Rush Hour puzzles (3 easy / 2 medium / 1 hard), each with name + concept, validated at module load
 │   ├── furniture.json       # 15 furniture items with pixel art sprites
 │   └── conversations.json   # 48 conversation scripts (45 pair + 3 group)
 └── utils/
     ├── constants.ts         # ALL_BREED_IDS, SCENES, dimensions, colors, stats, bonds, chapter triggers
     ├── events.ts            # GameEventBus singleton for canvas <-> overlay communication
     └── helpers.ts           # clamp, randomInt, pick, shuffled
+
+test/                        # Resilient Playwright playtests — one per minigame
+├── chase-playtest.mjs       # Verifies dog archetypes, ghost combo, death messaging
+├── sokoban-playtest.mjs     # Verifies themed levels load, BFS solver finds them, restart works
+├── courier-playtest.mjs     # Verifies speed ramp, obstacle phrases, mission generation
+├── brawl-playtest.mjs       # Verifies windups, hit-stop, Skirmisher behavior, boss phase 2
+├── patrol-playtest.mjs      # Verifies threat curve, prowler spawning, relight cooldown
+├── nonogram-playtest.mjs    # Verifies validator, themed images, no penalty path, undo
+├── ritual-playtest.mjs      # Verifies pentatonic frequencies, speed ramp, adaptive replay
+├── scent-playtest.mjs       # Verifies numeric distance, probe consumption, constraint ring
+├── puzzle-playtest.mjs      # Verifies BFS validation auto-correct, PERFECT, axis arrows
+├── fishing-playtest.mjs     # Verifies three phases, fish behaviors, rarity tiers
+├── pounce-playtest.mjs      # Verifies breed abilities, materials, structure templates
+├── heist-playtest.mjs       # Verifies set state, counter-clockwise, trap notches
+├── stealth-playtest.mjs     # Verifies graduated detection, alert spreading, ghost run
+└── dungeon-playtest.mjs     # Verifies upgrade picks, run history, reactive narrative
 ```
+
+All playtests use the same multi-layer resilience pattern: hard top-level setTimeout, process group kill (`kill -<pgid>`), signal handlers, finally cleanup. Recommended invocation is `timeout 150s node test/<name>-playtest.mjs` for a fourth outer kill switch.
 
 ## Game Flow
 
@@ -100,27 +118,34 @@ src/
 - **Player is the founding Wildcat** — always in the roster, named at game start, can't be dismissed
 - **All 6 breeds have PixelLab pixel art** — idle (4 directions), walk (6 frames x 4 dirs), scratch, sit, eat, sleep animations
 - **14 minigame types** — Rush Hour, Sokoban, Chase, Fishing, Hunt, Brawl, Nonogram, Stealth, Pounce, Patrol, Ritual, Scent Trail, Heist, Courier Run (staggered unlock across chapters)
-- **Roguelike dungeon run** — chain random minigame floors with persistent HP, unlocks Chapter 5+
+- **Genre-pillar pass** — every minigame has been audited against `todo/ideas/game-genre-principles/scenes/*.md`. Each scene now expresses the doc's biggest implication for its genre (e.g. Hunt has speed escalation + fake-outs, Brawl has telegraphed windups + hit-stop, Stealth has graduated detection, Sokoban has named themed levels). The genre docs are the source of truth for "why does this scene work this way?"
+- **Roguelike dungeon run** — chain random minigame floors with persistent HP, inter-floor upgrade picks (Slay-the-Spire model), and a Hades-style reactive narrative driven by `dungeonHistory` in SaveData. Unlocks Chapter 5+
 - **35 jobs across 6 categories** — pest control, courier, guard, sacred, detection, shadow (chapter-gated)
 - **Reputation system** — Sacred/Guard → Crest (noble), Detection → Shadow. Affects recruit costs and daily bonuses
-- **Bond system** — all 15 breed pairs track bonds, 48 conversation scripts
+- **Bond system** — all 15 breed pairs track bonds, 48 conversation scripts. Rank-ups grant a stat point to both cats in the pair.
 - **Economy** — 15 fish start, 2/cat + 1/room daily upkeep, combo chains, merchant items
 - **7 chapters** — including Rat Plague (Ch.3), Rival Guild (Ch.6), Inquisition (Ch.7)
-- **Save migration** — missing fields backfilled, saves never destroyed on updates
+- **Save migration** — missing fields backfilled, saves never destroyed on updates. Migration runs in both `loadGame` and `loadFromSlot`.
 - **ALL_BREED_IDS** and **SCENES** in constants.ts — single source of truth for breed lists and scene keys
 - **3 save slots** — multiple saves with slot picker on title screen
 - **Scene shutdown cleanup** — all scenes register shutdown handlers to prevent memory leaks
 - **HTML escaping** — user-provided names escaped with esc() to prevent injection
+- **Per-scene resilient playtests** — every minigame has a `test/*-playtest.mjs` script. They use direct method calls and state inspection (not Phaser timer waits, which are unreliable under page.evaluate scene launches). Three layers of hang protection: top-level setTimeout, process-group kill for the dev server, and an outer `timeout 150s` wrapper. **When changing a scene, run its playtest.**
 
 ## Deployment
 
-Apache VirtualHost at `/etc/apache2/sites-available/clowder.stephens.page.conf` points DocumentRoot to `/var/www/clowder.stephens.page/dist`. SSL via Let's Encrypt (auto-renewing). FallbackResource handles SPA routing.
+The game is served from two Apache VirtualHosts pointing at the same dist:
+
+- `/etc/apache2/sites-available/clowderandcrest.com.conf` (+ `-le-ssl.conf`) — primary domain
+- `/etc/apache2/sites-available/clowder.stephens.page.conf` (+ `-le-ssl.conf`) — legacy/secondary
+
+Both have DocumentRoot `/var/www/clowder.stephens.page/dist` with SSL via Let's Encrypt (auto-renewing) and `FallbackResource /index.html` for SPA routing.
 
 To redeploy after changes:
 
 ```bash
 npm run build
-# dist/ is already the Apache DocumentRoot — changes are live immediately
+# dist/ is already the Apache DocumentRoot — changes are live immediately on both domains
 ```
 
 ## Using Nia
