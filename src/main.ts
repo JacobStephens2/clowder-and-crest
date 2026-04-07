@@ -47,6 +47,8 @@ import { getComboMultiplier, updateCombo, getDailyWish, getCurrentFestival, trac
 import { showNarrativeOverlay } from './ui/narrativeOverlay';
 import { initPanels, showCatPanel, showMenuPanel, showFurnitureShop } from './ui/Panels';
 import { initConversations, checkAndShowConversation } from './ui/Conversations';
+import { showDayTransitionOverlay, showToast as renderToast } from './ui/feedback';
+import { showGuildReport, showIntroStory, showTutorial } from './ui/onboarding';
 
 // ──── Game State ────
 let gameState: SaveData | null = null;
@@ -153,6 +155,10 @@ const statusFish = document.getElementById('status-fish')!;
 const statusDay = document.getElementById('status-day')!;
 const statusChapter = document.getElementById('status-chapter')!;
 
+function showToast(message: string): void {
+  renderToast(overlayLayer, message);
+}
+
 // ──── Pause Button ────
 const pauseBtn = document.getElementById('status-pause');
 let pauseOverlay: HTMLDivElement | null = null;
@@ -193,7 +199,7 @@ guildEndDayBtn.addEventListener('click', () => {
   if (!gameState) return;
   playSfx('day_bell', 0.4);
   const result = advanceDay();
-  showDayTransition(gameState.day, result);
+  showDayTransitionOverlay(gameState.day, () => {}, gameState, result);
   saveGame(gameState);
   updateStatusBar();
   switchScene('GuildhallScene');
@@ -300,14 +306,6 @@ function updateStatusBar(): void {
   }
 }
 
-function showToast(message: string): void {
-  const toast = document.createElement('div');
-  toast.className = 'toast';
-  toast.textContent = message;
-  overlayLayer.appendChild(toast);
-  setTimeout(() => toast.remove(), 2500);
-}
-
 function setActiveTab(scene: string): void {
   bottomBar.querySelectorAll('.nav-btn').forEach((btn) => {
     btn.classList.toggle('active', btn.getAttribute('data-scene') === scene);
@@ -337,131 +335,10 @@ function switchScene(target: string, data?: object): void {
 }
 
 // ──── Day Timer Callback ────
-function showDayTransition(day: number, recap?: { foodCost: number; stationedEarned: number; events: string[]; fishRemaining?: number }): void {
-  playSfx('day_bell', 0.4);
-  const overlay = document.createElement('div');
-  // Class lets switchScene's z-index:9999 cleanup spare this element. Without
-  // it, clicking End Day in the guildhall would create the overlay and then
-  // immediately destroy it via switchScene's overlay sweep.
-  overlay.className = 'day-transition-overlay';
-  overlay.style.cssText = `
-    position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    opacity:0;transition:opacity 0.5s;pointer-events:none;
-  `;
-  let recapHtml = '';
-  if (recap) {
-    const lines: string[] = [];
-    if (recap.foodCost > 0) lines.push(`Upkeep: -${recap.foodCost} fish`);
-    if (recap.stationedEarned > 0) lines.push(`Stationed: +${recap.stationedEarned} fish`);
-    if (recap.fishRemaining !== undefined) lines.push(`Fish remaining: ${recap.fishRemaining}`);
-    for (const e of recap.events) lines.push(e);
-    if (lines.length > 0) {
-      recapHtml = `<div style="color:#8b7355;font-family:Georgia,serif;font-size:11px;margin-top:12px;text-align:center;max-width:280px">${lines.join('<br>')}</div>`;
-    }
-  }
-  // Tomorrow teasers — dangling threads that create "just one more day" pull.
-  // Per todo/ideas/Great Guild Management Games.md: ending each day with at
-  // least one unresolved hook across multiple systems reliably generates the
-  // compulsion to start the next day. We surface up to 4 hooks: bond ready,
-  // cat needing attention, festival, tomorrow's job.
-  const teasers: { icon: string; color: string; text: string }[] = [];
-  if (gameState) {
-    // Hook 1: A bond conversation is ready to view — strongest emotional hook
-    for (const [a, b] of getBondPairs()) {
-      const catA = gameState.cats.find((c) => c.breed === a);
-      const catB = gameState.cats.find((c) => c.breed === b);
-      if (!catA || !catB) continue;
-      const convoRank = getAvailableConversation(gameState, a, b);
-      if (convoRank) {
-        teasers.push({
-          icon: '\u{2764}',
-          color: '#cc6677',
-          text: `${esc(catA.name)} & ${esc(catB.name)} have something to talk about...`,
-        });
-        break; // Only surface one bond hook per day-end
-      }
-    }
-
-    // Hook 2: A cat is close to a bond rank-up (80%+ of threshold)
-    for (const bond of gameState.bonds) {
-      const rank = getBondRank(bond.points);
-      if (rank === 'bonded') continue;
-      const nextThreshold = rank === 'stranger' ? 10 : rank === 'acquaintance' ? 25 : 50;
-      const progress = bond.points / nextThreshold;
-      if (progress >= 0.8 && progress < 1) {
-        const catA = gameState.cats.find((c) => c.breed === bond.catA);
-        const catB = gameState.cats.find((c) => c.breed === bond.catB);
-        if (catA && catB) {
-          teasers.push({
-            icon: '\u{1F31F}',
-            color: '#c4956a',
-            text: `${esc(catA.name)} & ${esc(catB.name)} are nearly at the next bond rank.`,
-          });
-          break;
-        }
-      }
-    }
-
-    // Hook 3: A cat is unhappy and needs attention
-    const unhappyCat = gameState.cats.find((c) => c.mood === 'unhappy' && c.id !== 'player_wildcat');
-    if (unhappyCat) {
-      teasers.push({
-        icon: '\u{1F622}',
-        color: '#6b8ea6',
-        text: `${esc(unhappyCat.name)} is feeling down — maybe tomorrow will be better.`,
-      });
-    }
-
-    // Hook 4: Festival today
-    const festival = getCurrentFestival(day);
-    if (festival) {
-      teasers.push({
-        icon: '\u{1F389}',
-        color: '#dda055',
-        text: `${festival.name} today!`,
-      });
-    }
-
-    // Hook 5: Preview tomorrow's job board (always last so it's a low-key anchor)
-    const previewJobs = generateDailyJobs(gameState);
-    if (previewJobs.length > 0) {
-      const teaser = previewJobs[Math.floor(Math.random() * previewJobs.length)];
-      teasers.push({
-        icon: '',
-        color: '#6b8ea6',
-        text: `"${teaser.name}" appears on the job board...`,
-      });
-    }
-  }
-
-  const previewHtml = teasers.slice(0, 4).map((t) =>
-    `<div style="color:${t.color};font-family:Georgia,serif;font-size:10px;margin-top:6px;font-style:italic">${t.icon ? t.icon + ' ' : ''}${t.text}</div>`
-  ).join('');
-
-  overlay.innerHTML = `
-    <div style="color:#c4956a;font-family:Georgia,serif;font-size:28px;margin-bottom:4px">Day ${day}</div>
-    <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:14px">A new day dawns...</div>
-    ${recapHtml}
-    ${previewHtml}
-    <div style="color:#555;font-family:Georgia,serif;font-size:11px;margin-top:20px">Tap to continue</div>
-  `;
-  document.body.appendChild(overlay);
-  requestAnimationFrame(() => {
-    overlay.style.opacity = '1';
-    overlay.style.pointerEvents = 'auto';
-    overlay.style.cursor = 'pointer';
-  });
-  overlay.addEventListener('click', () => {
-    overlay.style.opacity = '0';
-    setTimeout(() => overlay.remove(), 500);
-  });
-}
-
 setOnDayEnd(() => {
   if (!gameState) return;
   const recap = advanceDay();
-  showDayTransition(gameState.day, recap);
+  showDayTransitionOverlay(gameState.day, () => playSfx('day_bell', 0.4), gameState, recap);
   const townOverlay = overlayLayer.querySelector('.town-overlay');
   if (townOverlay) {
     townOverlay.remove();
@@ -594,12 +471,12 @@ eventBus.on('show-name-prompt', (data?: { slot?: number }) => {
     prompt.remove();
     gameState = createDefaultSave(name);
     saveGame(gameState);
-    showIntroStory(name, () => {
-      eventBus.emit('game-loaded', gameState!);
-      switchScene('GuildhallScene');
-      // Start guided tutorial for new players
-      setTimeout(() => showTutorial(), 1500);
-    });
+      showIntroStory(name, () => {
+        eventBus.emit('game-loaded', gameState!);
+        switchScene('GuildhallScene');
+        // Start guided tutorial for new players
+        setTimeout(() => showTutorial(), 1500);
+      }, { playSfx });
   };
 
   submit.addEventListener('click', doSubmit);
@@ -607,313 +484,6 @@ eventBus.on('show-name-prompt', (data?: { slot?: number }) => {
     if (e.key === 'Enter') doSubmit();
   });
 });
-
-// Intro story sequence for new games
-function showIntroStory(catName: string, onComplete: () => void): void {
-  const panels = [
-    {
-      text: `The storm came without warning. Rain hammered the cobblestones as lightning split the sky over the sleeping town.`,
-      scene: 'town',
-    },
-    {
-      text: `${catName} — thin, soaked, and hungry — stumbled through the market square, seeking shelter from the downpour.`,
-      scene: 'town',
-    },
-    {
-      text: `Behind the grain market, ${catName} found a lean-to — little more than a few boards propped against the stone wall. But it was dry, and the smell of mice drifted through the cracks.`,
-      scene: 'guildhall',
-    },
-    {
-      text: `On the market wall nearby, a notice fluttered in the wind: "PEST CONTROL NEEDED — Payment in fish." ${catName}'s ears perked up.`,
-      scene: 'guildhall',
-    },
-    {
-      text: `${catName} curled up under the lean-to's sagging roof. Tomorrow, there would be work. Tonight, this shelter was enough.`,
-      scene: 'guildhall',
-    },
-    {
-      text: `Every guild starts somewhere. ${catName}'s starts here — a stray, a storm, and a lean-to behind the grain market.`,
-      scene: 'town',
-    },
-  ];
-
-  let panelIndex = 0;
-
-  const overlay = document.createElement('div');
-  overlay.style.cssText = `
-    position:fixed;inset:0;background:#0a0908;z-index:9999;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    cursor:pointer;padding:30px;
-  `;
-
-  const sceneImg = document.createElement('img');
-  sceneImg.style.cssText = 'width:280px;max-height:160px;image-rendering:pixelated;margin-bottom:16px;border-radius:4px;opacity:0.4;object-fit:cover;';
-  overlay.appendChild(sceneImg);
-
-  // Wildcat sprite
-  const catImg = document.createElement('img');
-  catImg.src = 'assets/sprites/wildcat/south.png';
-  catImg.style.cssText = 'width:72px;height:72px;image-rendering:pixelated;margin-bottom:16px;display:none;';
-  overlay.appendChild(catImg);
-
-  const textDiv = document.createElement('div');
-  textDiv.style.cssText = 'color:#c4956a;font-family:Georgia,serif;font-size:16px;text-align:center;max-width:320px;line-height:1.7;min-height:80px;';
-  overlay.appendChild(textDiv);
-
-  const hintDiv = document.createElement('div');
-  hintDiv.style.cssText = 'color:#555;font-family:Georgia,serif;font-size:11px;margin-top:20px;';
-  hintDiv.textContent = 'Tap to continue';
-  overlay.appendChild(hintDiv);
-
-  const skipBtn = document.createElement('button');
-  skipBtn.textContent = 'Skip';
-  skipBtn.style.cssText = 'position:absolute;top:16px;right:16px;background:none;border:1px solid #3a3530;color:#6b5b3e;padding:6px 14px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer;';
-  overlay.appendChild(skipBtn);
-
-  // Panel-specific SFX
-  const panelSounds: (string | null)[] = [
-    'thunder',       // Storm — thunder and rain
-    null,            // Wildcat stumbles — cat appears
-    'purr',          // Found the lean-to — quiet purr
-    'job_accept',    // Notice on wall — quill scratch
-    null,            // Curls up — silence, reflective
-    null,            // Every guild starts somewhere — quiet resolve
-  ];
-
-  function showPanel(): void {
-    if (panelIndex >= panels.length) {
-      overlay.style.transition = 'opacity 0.5s';
-      overlay.style.opacity = '0';
-      // Fade out intro music and rain
-      const fadeOut = setInterval(() => {
-        if (introMusic.volume > 0.05) introMusic.volume -= 0.05;
-        if (rainAmbience.volume > 0.03) rainAmbience.volume -= 0.03;
-        if (introMusic.volume <= 0.05 && rainAmbience.volume <= 0.03) {
-          introMusic.pause();
-          rainAmbience.pause();
-          clearInterval(fadeOut);
-        }
-      }, 100);
-      setTimeout(() => { overlay.remove(); onComplete(); }, 500);
-      return;
-    }
-    const panel = panels[panelIndex];
-    const sceneSrc = panel.scene === 'town' ? 'assets/sprites/scenes/town.png' : 'assets/sprites/scenes/guildhall.png';
-    sceneImg.src = sceneSrc;
-
-    // Show wildcat on panels 1-4 (the character panels)
-    catImg.style.display = (panelIndex >= 1 && panelIndex <= 4) ? 'block' : 'none';
-
-    // Play SFX
-    const sfx = panelSounds[panelIndex];
-    if (sfx) {
-      setTimeout(() => playSfx(sfx, 0.35), 300);
-    }
-
-    // Fade in text
-    textDiv.style.opacity = '0';
-    textDiv.textContent = panel.text;
-    setTimeout(() => { textDiv.style.transition = 'opacity 0.6s'; textDiv.style.opacity = '1'; }, 50);
-
-    panelIndex++;
-  }
-
-  showPanel();
-
-  overlay.addEventListener('click', (e) => {
-    if (e.target === skipBtn) return;
-    showPanel();
-  });
-
-  skipBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    overlay.remove();
-    introMusic.pause();
-    rainAmbience.pause();
-    onComplete();
-  });
-
-  // Play intro music + rain ambience
-  const introMusic = new Audio('assets/audio/intro.mp3');
-  introMusic.volume = 0.4;
-  introMusic.loop = false;
-  introMusic.play().catch(() => {});
-
-  const rainAmbience = new Audio('assets/sfx/rain_loop.mp3');
-  rainAmbience.volume = 0.25;
-  rainAmbience.loop = true;
-  rainAmbience.play().catch(() => {});
-
-  document.body.appendChild(overlay);
-}
-
-function showTutorial(): void {
-  const steps = [
-    { text: 'Welcome to your guildhall! This is where your cats live. Tap a room to go inside and see your cats.', highlight: 'canvas' },
-    { text: 'Use the tabs at the bottom to navigate. The Town is where you find jobs, recruit cats, and buy supplies.', highlight: 'bottom-bar' },
-    { text: 'Your fish count and day timer are shown at the top. Fish is your currency — earn it by completing jobs.', highlight: 'status-bar' },
-    { text: 'Head to the Town tab now to pick up your first job. Each job favors different stats — choose your cat wisely!', highlight: 'bottom-bar' },
-    { text: 'Each day, pay upkeep for your cats and rooms. Complete jobs, recruit more cats, and grow your guild. Good luck!', highlight: null },
-  ];
-
-  let stepIndex = 0;
-
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:9998;pointer-events:none;';
-
-  const backdrop = document.createElement('div');
-  backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9997;pointer-events:auto;cursor:pointer;';
-
-  const bubble = document.createElement('div');
-  bubble.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:320px;padding:16px 20px;background:#1c1b19;border:2px solid #c4956a;border-radius:12px;z-index:9999;pointer-events:auto;cursor:pointer;';
-
-  const textDiv = document.createElement('div');
-  textDiv.style.cssText = 'color:#c4956a;font-family:Georgia,serif;font-size:14px;line-height:1.6;text-align:center;';
-
-  const hint = document.createElement('div');
-  hint.style.cssText = 'color:#6b5b3e;font-family:Georgia,serif;font-size:11px;margin-top:8px;text-align:center;';
-  hint.textContent = 'Tap to continue';
-
-  const counter = document.createElement('div');
-  counter.style.cssText = 'color:#555;font-family:Georgia,serif;font-size:10px;margin-top:4px;text-align:center;';
-
-  bubble.appendChild(textDiv);
-  bubble.appendChild(hint);
-  bubble.appendChild(counter);
-
-  function showStep(): void {
-    if (stepIndex >= steps.length) {
-      backdrop.remove();
-      overlay.remove();
-      bubble.remove();
-      return;
-    }
-    const step = steps[stepIndex];
-    textDiv.textContent = step.text;
-    counter.textContent = `${stepIndex + 1}/${steps.length}`;
-
-    // Highlight target element
-    if (step.highlight) {
-      const el = document.getElementById(step.highlight) ?? document.querySelector(step.highlight);
-      if (el) {
-        (el as HTMLElement).style.position = 'relative';
-        (el as HTMLElement).style.zIndex = '9998';
-        // Reset previous highlights
-        setTimeout(() => {
-          (el as HTMLElement).style.zIndex = '';
-        }, 5000);
-      }
-    }
-    stepIndex++;
-  }
-
-  showStep();
-
-  backdrop.addEventListener('click', showStep);
-  bubble.addEventListener('click', (e) => { e.stopPropagation(); showStep(); });
-
-  document.body.appendChild(backdrop);
-  document.body.appendChild(overlay);
-  document.body.appendChild(bubble);
-}
-
-function showGuildReport(save: SaveData): void {
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,9,8,0.95);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:24px;';
-
-  // Gather intel
-  const chapterName = getChapterName(save.chapter);
-  const repLabel = getReputationLabel(save.reputationScore);
-  const catUpkeep = save.cats.reduce((sum, c) => sum + 2 + Math.max(0, c.level - 1), 0);
-  const roomUpkeep = save.rooms.filter(r => r.unlocked).length;
-  const totalUpkeep = catUpkeep + roomUpkeep + Math.max(0, save.chapter - 1) * 2;
-  const stationedCount = save.stationedCats.length;
-  const progressHint = getNextChapterHint(save);
-
-  // Find strongest cat
-  const strongest = [...save.cats].sort((a, b) => {
-    const totalA = Object.values(a.stats).reduce((s, v) => s + v, 0);
-    const totalB = Object.values(b.stats).reduce((s, v) => s + v, 0);
-    return totalB - totalA;
-  })[0];
-  const strongestBreed = BREED_NAMES[strongest?.breed ?? ''] ?? strongest?.breed ?? '';
-
-  // Current situation analysis
-  const lines: string[] = [];
-
-  // Status line
-  lines.push(`<div style="color:#c4956a;font-size:18px;margin-bottom:4px">Guild Report</div>`);
-  lines.push(`<div style="color:#6b5b3e;font-size:11px;margin-bottom:16px">Chapter ${save.chapter}: ${chapterName} | Day ${save.day}</div>`);
-
-  // Core stats
-  lines.push(`<div style="color:#8b7355;font-size:13px;margin-bottom:8px">${save.cats.length} cats | ${save.fish} fish | ${repLabel} reputation</div>`);
-
-  // Strongest cat
-  if (strongest) {
-    const specLabel = strongest.specialization ? ` (${strongest.specialization})` : '';
-    lines.push(`<div style="font-size:12px;color:#c4956a;margin-bottom:6px">Strongest: <strong>${strongest.name}</strong> the ${strongestBreed}, Lv.${strongest.level}${specLabel}</div>`);
-  }
-
-  // Economy
-  const netDaily = (stationedCount * 2) - totalUpkeep;
-  const econColor = netDaily >= 0 ? '#4a8a4a' : '#cc6666';
-  lines.push(`<div style="font-size:11px;color:${econColor};margin-bottom:6px">Daily balance: ${netDaily >= 0 ? '+' : ''}${netDaily} fish/day (upkeep: ${totalUpkeep}, stationed income: ~${stationedCount * 2})</div>`);
-
-  // Fish warning
-  if (save.fish < totalUpkeep * 2) {
-    lines.push(`<div style="font-size:11px;color:#cc6666;margin-bottom:6px">\u26A0 Low on fish — you can only cover ${Math.floor(save.fish / Math.max(1, totalUpkeep))} more day${save.fish >= totalUpkeep ? 's' : ''} of upkeep.</div>`);
-  }
-
-  // Active events
-  if (save.flags.ratPlagueStarted && !save.flags.ratPlagueResolved) {
-    const progress = Number(save.flags.plaguePestDone ?? 0);
-    lines.push(`<div style="font-size:11px;color:#cc6666;margin-bottom:6px">\u{1F400} The Rat Plague is active — ${progress}/5 pest jobs completed. Take PLAGUE-marked jobs to resolve it.</div>`);
-  }
-  if (save.flags.inquisitionStarted && !save.flags.inquisitionResolved) {
-    const inqStart = Number(save.flags.inquisitionDayStarted ?? save.day);
-    const daysLeft = Math.max(0, 5 - (save.day - inqStart));
-    lines.push(`<div style="font-size:11px;color:#bb88cc;margin-bottom:6px">The Inquisitor is watching — ${daysLeft} days remain. Sacred/Guard jobs earn favor.</div>`);
-  }
-  if (save.chapter >= 6 && !save.flags.rivalDefeated) {
-    const rivalInf = Number(save.flags.rivalInfluence ?? 0);
-    lines.push(`<div style="font-size:11px;color:#cc8844;margin-bottom:6px">The Silver Paws are contesting jobs — influence: ${rivalInf}. Complete contested jobs to push them out.</div>`);
-  }
-
-  // Chapter goal
-  if (progressHint) {
-    lines.push(`<div style="font-size:11px;color:#6b8ea6;margin-bottom:6px;font-style:italic">Next chapter: ${progressHint}</div>`);
-  }
-
-  // Pressing need
-  const unlockedRoomIds = save.rooms.filter(r => r.unlocked).map(r => r.id);
-  const lockedRooms = save.rooms.filter(r => !r.unlocked);
-  if (lockedRooms.length > 0) {
-    const nextRoom = lockedRooms[0];
-    const roomCosts: Record<string, number> = { kitchen: 50, operations: 100 };
-    const cost = roomCosts[nextRoom.id] ?? 0;
-    if (cost > 0 && save.fish < cost) {
-      const roomNames: Record<string, string> = { kitchen: 'Kitchen & Pantry', operations: 'Operations Hall' };
-      lines.push(`<div style="font-size:11px;color:#8b7355;margin-bottom:6px">Tip: The ${roomNames[nextRoom.id] ?? nextRoom.id} costs ${cost} fish to unlock.</div>`);
-    }
-  }
-
-  // Suggestion
-  if (save.cats.length < 6) {
-    lines.push(`<div style="font-size:11px;color:#8b7355;margin-bottom:6px">Look for stray cats in town to recruit.</div>`);
-  } else if (stationedCount === 0) {
-    lines.push(`<div style="font-size:11px;color:#8b7355;margin-bottom:6px">Tip: Station level 2+ cats at jobs for passive daily income.</div>`);
-  }
-
-  overlay.innerHTML = `
-    <div style="max-width:340px;text-align:center;font-family:Georgia,serif">
-      ${lines.join('')}
-      <div style="color:#555;font-size:10px;margin-top:16px">Tap to begin</div>
-    </div>
-  `;
-
-  overlay.addEventListener('click', () => overlay.remove());
-  document.body.appendChild(overlay);
-}
 
 // Game loaded
 eventBus.on('game-loaded', (save: SaveData) => {
@@ -1362,7 +932,7 @@ eventBus.on('show-town-overlay', () => {
   document.getElementById('town-end-day')!.addEventListener('click', () => {
     overlay.remove();
     const recap = advanceDay();
-    showDayTransition(gameState!.day, recap);
+    showDayTransitionOverlay(gameState!.day, () => playSfx('day_bell', 0.4), gameState, recap);
     checkAndShowConversation();
   });
 });
@@ -2361,7 +1931,7 @@ function suggestEndDay(): void {
   document.getElementById('end-day-yes')!.addEventListener('click', () => {
     overlay.remove();
     const recap = advanceDay();
-    showDayTransition(gameState!.day, recap);
+    showDayTransitionOverlay(gameState!.day, () => playSfx('day_bell', 0.4), gameState, recap);
     playSfx('day_bell', 0.4);
     // Refresh town if open
     const townOverlay = overlayLayer.querySelector('.town-overlay');

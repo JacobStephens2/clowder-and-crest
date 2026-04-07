@@ -5,7 +5,7 @@ import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
 import { haptic } from '../systems/NativeFeatures';
-import { attachStandardCleanup } from '../ui/sceneHelpers';
+import { attachStandardCleanup, showMinigameTutorial } from '../ui/sceneHelpers';
 
 // ── Layout constants ──
 const BAR_HEIGHT = 360;
@@ -274,25 +274,16 @@ export class FishingScene extends Phaser.Scene {
     // Show tutorial on first play — bumped to v2 for the three-phase
     // structure and behavioral fish variety so returning players see the
     // updated rules.
-    if (!localStorage.getItem('clowder_fishing_tutorial_v2')) {
-      localStorage.setItem('clowder_fishing_tutorial_v2', '1');
+    if (showMinigameTutorial(
+      this,
+      'clowder_fishing_tutorial_v2',
+      'Fishing',
+      `Watch the bobber. When you see <strong style="color:#dda055">BITE!</strong>, hold to set the hook fast.<br><br>
+      Then keep the gold hook inside the green fish zone to fill the catch meter.<br><br>
+      Different fish move differently — <strong style="color:#88dd88">runners sprint</strong>, <strong style="color:#88aaff">divers pull down</strong>, <strong style="color:#ff8888">darters flip</strong>.`,
+      () => { this.tutorialShowing = false; },
+    )) {
       this.tutorialShowing = true;
-      const tutorial = document.createElement('div');
-      tutorial.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
-      tutorial.innerHTML = `
-        <div style="color:#c4956a;font-family:Georgia,serif;font-size:22px;margin-bottom:12px">Fishing</div>
-        <div style="color:#8b7355;font-family:Georgia,serif;font-size:14px;text-align:center;max-width:290px;line-height:1.6">
-          Watch the bobber. When you see <strong style="color:#dda055">BITE!</strong>, hold to set the hook fast.<br><br>
-          Then keep the gold hook inside the green fish zone to fill the catch meter.<br><br>
-          Different fish move differently — <strong style="color:#88dd88">runners sprint</strong>, <strong style="color:#88aaff">divers pull down</strong>, <strong style="color:#ff8888">darters flip</strong>.
-        </div>
-        <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:12px;margin-top:20px">Tap to start</div>
-      `;
-      tutorial.addEventListener('click', () => {
-        tutorial.remove();
-        this.tutorialShowing = false;
-      });
-      document.body.appendChild(tutorial);
     }
 
     // ── Water background ──

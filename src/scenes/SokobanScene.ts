@@ -5,6 +5,7 @@ import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
 import { haptic } from '../systems/NativeFeatures';
+import { showMinigameTutorial } from '../ui/sceneHelpers';
 
 // ──── Constants ────
 const SOKOBAN_GRID = 7;
@@ -695,23 +696,15 @@ export class SokobanScene extends Phaser.Scene {
     // Tutorial on first play. Bumped to v2 when themed levels + Restart button
     // were introduced — returning players need to know about Restart now that
     // they can paint themselves into a corner with no Undo.
-    if (!localStorage.getItem('clowder_sokoban_tutorial_v2')) {
-      localStorage.setItem('clowder_sokoban_tutorial_v2', '1');
-      const t = document.createElement('div');
-      t.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
-      t.innerHTML = `
-        <div style="color:#c4956a;font-family:Georgia,serif;font-size:22px;margin-bottom:12px">Push Crates</div>
-        <div style="color:#8b7355;font-family:Georgia,serif;font-size:14px;text-align:center;max-width:290px;line-height:1.6">
-          Push crates onto the <strong style="color:#4a8a4a">fish targets</strong>.<br><br>
-          Use <strong>WASD</strong>, <strong>arrows</strong>, <strong>tap</strong>, or the on-screen <strong>d-pad</strong>.<br><br>
-          You can only <strong>push</strong>, never pull. Think before you commit.<br><br>
-          Stuck? Tap <strong style="color:#c4956a">Restart</strong> — there's no undo, but you can always start over.
-        </div>
-        <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:12px;margin-top:20px">Tap to start</div>
-      `;
-      t.addEventListener('click', () => t.remove());
-      document.body.appendChild(t);
-    }
+    showMinigameTutorial(
+      this,
+      'clowder_sokoban_tutorial_v2',
+      'Push Crates',
+      `Push crates onto the <strong style="color:#4a8a4a">fish targets</strong>.<br><br>
+      Use <strong>WASD</strong>, <strong>arrows</strong>, <strong>tap</strong>, or the on-screen <strong>d-pad</strong>.<br><br>
+      You can only <strong>push</strong>, never pull. Think before you commit.<br><br>
+      Stuck? Tap <strong style="color:#c4956a">Restart</strong> — there is no undo, but you can always start over.`,
+    );
 
     // Generate or pick a level
     this.level = getLevelForDifficulty(this.difficulty);

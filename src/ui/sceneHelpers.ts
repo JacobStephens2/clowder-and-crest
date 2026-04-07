@@ -107,9 +107,11 @@ export function showMinigameTutorial(
   title: string,
   body: string,
   onDismiss?: () => void,
+  options?: { pauseScene?: boolean },
 ): boolean {
   if (localStorage.getItem(storageKey)) return false;
   localStorage.setItem(storageKey, '1');
+  if (options?.pauseScene) scene.scene.pause();
 
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
@@ -120,6 +122,7 @@ export function showMinigameTutorial(
   `;
   t.addEventListener('click', () => {
     t.remove();
+    if (options?.pauseScene) scene.scene.resume();
     onDismiss?.();
   });
   document.body.appendChild(t);

@@ -5,6 +5,7 @@ import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
 import { haptic } from '../systems/NativeFeatures';
+import { showMinigameTutorial } from '../ui/sceneHelpers';
 
 // ── Maze constants ──
 const COLS = 13;
@@ -254,28 +255,18 @@ export class ChaseScene extends Phaser.Scene {
     // Tutorial on first play — pause scene until dismissed.
     // Bumped to v3 when the dog pack (Tracker + Ambusher) was added so
     // returning players see the new archetype rules.
-    if (!localStorage.getItem('clowder_chase_tutorial_v3')) {
-      localStorage.setItem('clowder_chase_tutorial_v3', '1');
-      this.scene.pause();
-      const t = document.createElement('div');
-      t.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
-      t.innerHTML = `
-        <div style="color:#c4956a;font-family:Georgia,serif;font-size:22px;margin-bottom:12px">Chase the Rat!</div>
-        <div style="color:#8b7355;font-family:Georgia,serif;font-size:13px;text-align:center;max-width:290px;line-height:1.55">
-          Navigate the maze to <strong>catch the rat</strong> before time runs out.<br><br>
-          Move with the <strong>joystick</strong>, <strong>swipe</strong>, or <strong>WASD/arrows</strong>.<br><br>
-          Grab <strong style="color:#dda055">fish dots</strong> — chain pickups for <strong>combo bonuses</strong>.<br><br>
-          <strong style="color:#6abe3f">Catnip pellets</strong> scare every dog — touch them while scared for an escalating chain bonus!<br><br>
-          Beware the dog pack: the <strong style="color:#ff6b2a">Tracker</strong> follows you directly, the <strong style="color:#b47ad9">Ambusher</strong> pre-positions ahead of you. Watch for the (?) and (!) icons.
-        </div>
-        <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:12px;margin-top:20px">Tap to start</div>
-      `;
-      t.addEventListener('click', () => {
-        t.remove();
-        this.scene.resume();
-      });
-      document.body.appendChild(t);
-    }
+    showMinigameTutorial(
+      this,
+      'clowder_chase_tutorial_v3',
+      'Chase the Rat!',
+      `Navigate the maze to <strong>catch the rat</strong> before time runs out.<br><br>
+      Move with the <strong>joystick</strong>, <strong>swipe</strong>, or <strong>WASD/arrows</strong>.<br><br>
+      Grab <strong style="color:#dda055">fish dots</strong> for <strong>combo bonuses</strong>.<br><br>
+      <strong style="color:#6abe3f">Catnip pellets</strong> scare every dog — touch them while scared for an escalating chain bonus.<br><br>
+      Watch the pack: the <strong style="color:#ff6b2a">Tracker</strong> follows you directly, while the <strong style="color:#b47ad9">Ambusher</strong> sets up ahead of you.`,
+      undefined,
+      { pauseScene: true },
+    );
 
     // Generate maze
     this.grid = generateMaze();

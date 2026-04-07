@@ -5,6 +5,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT, GRID_SIZE, TILE_SIZE, PUZZLE_OFFSET_X, PU
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { haptic } from '../systems/NativeFeatures';
+import { showMinigameTutorial } from '../ui/sceneHelpers';
 
 const GRID_COLOR = 0x2a2520;
 const GRID_LINE_COLOR = 0x3a3530;
@@ -66,23 +67,15 @@ export class PuzzleScene extends Phaser.Scene {
 
     // Tutorial bumped to v2 for the themed names + axis arrows + PERFECT
     // celebration so returning players see the updated rules.
-    if (!localStorage.getItem('clowder_puzzle_tutorial_v2')) {
-      localStorage.setItem('clowder_puzzle_tutorial_v2', '1');
-      const t = document.createElement('div');
-      t.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
-      t.innerHTML = `
-        <div style="color:#c4956a;font-family:Georgia,serif;font-size:22px;margin-bottom:12px">Slide Blocks</div>
-        <div style="color:#8b7355;font-family:Georgia,serif;font-size:14px;text-align:center;max-width:290px;line-height:1.6">
-          Slide blocks to clear a path for your <strong style="color:#c4956a">cat</strong> to reach the <strong style="color:#4a8a4a">exit</strong>.<br><br>
-          The little <strong>arrows</strong> on each block show which way it can slide.<br><br>
-          Hit <strong style="color:#dda055">Par</strong> moves to score a <strong style="color:#dda055">PERFECT</strong>!<br><br>
-          Use <strong>Undo</strong> freely — there's no penalty for trying.
-        </div>
-        <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:12px;margin-top:20px">Tap to start</div>
-      `;
-      t.addEventListener('click', () => t.remove());
-      document.body.appendChild(t);
-    }
+    showMinigameTutorial(
+      this,
+      'clowder_puzzle_tutorial_v2',
+      'Slide Blocks',
+      `Slide blocks to clear a path for your <strong style="color:#c4956a">cat</strong> to reach the <strong style="color:#4a8a4a">exit</strong>.<br><br>
+      The little <strong>arrows</strong> on each block show which way it can slide.<br><br>
+      Hit <strong style="color:#dda055">Par</strong> moves to score a <strong style="color:#dda055">PERFECT</strong>.<br><br>
+      Use <strong>Undo</strong> freely — there is no penalty for trying.`,
+    );
 
     // Draw grid background
     const gridPx = GRID_SIZE * TILE_SIZE;
