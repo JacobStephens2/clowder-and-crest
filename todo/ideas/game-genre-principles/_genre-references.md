@@ -51,11 +51,11 @@ Unlock summary:
 
 ---
 
-# Chapter 1 — First minigames - improved
+## Chapter 1 — First minigames - improved
 
 The player's onboarding window. Whatever lands here sets the player's expectation for *every* minigame to follow. These should be ruthlessly readable in the first 5 seconds of play.
 
-## ChaseScene — Rat Maze (Chapter 1) - improved
+### ChaseScene — Rat Maze (Chapter 1) - improved
 
 **Genre:** Maze-chase arcade.
 
@@ -79,7 +79,7 @@ The player's onboarding window. Whatever lands here sets the player's expectatio
 
 ---
 
-## HuntScene — Whack-a-Mole (Chapter 1) - improved
+### HuntScene — Whack-a-Mole (Chapter 1) - improved
 
 **Genre:** Reaction / click-timing / target-clicker.
 
