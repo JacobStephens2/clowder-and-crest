@@ -4,6 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
+import { haptic } from '../systems/NativeFeatures';
 import { showMinigameTutorial } from '../ui/sceneHelpers';
 
 // Layout
@@ -461,6 +462,8 @@ export class PounceScene extends Phaser.Scene {
     this.launchText.setText(`Shots: ${this.launches}/${this.maxLaunches}`);
 
     playSfx('tap', 0.5);
+    // Slingshot release — medium thump pairs with the visible launch impulse.
+    haptic.medium();
 
     // Create physics projectile
     const proj = this.matter.add.circle(LAUNCH_X, LAUNCH_Y, 8, {
@@ -501,6 +504,8 @@ export class PounceScene extends Phaser.Scene {
   triggerBreedAbility(targetX: number, targetY: number): void {
     if (!this.activeProjectile || !this.abilityAvailable) return;
     this.abilityAvailable = false;
+    // Every breed ability is a "burst" moment — heavy impact regardless of variant.
+    haptic.heavy();
     const proj = this.activeProjectile;
     const ability = getBreedAbility(this.catBreed).ability;
     const v = proj.velocity;
@@ -590,6 +595,7 @@ export class PounceScene extends Phaser.Scene {
     if (this.finished) return;
     this.finished = true;
     playSfx('victory');
+    haptic.success();
 
     const stars = this.launches <= 1 ? 3 : this.launches <= 2 ? 2 : 1;
 
@@ -633,6 +639,7 @@ export class PounceScene extends Phaser.Scene {
     if (this.finished) return;
     this.finished = true;
     playSfx('fail');
+    haptic.error();
 
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 40, 'Out of shots!', {
       fontFamily: 'Georgia, serif', fontSize: '22px', color: '#cc6666',

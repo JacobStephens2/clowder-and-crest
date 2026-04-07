@@ -4,6 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
+import { haptic } from '../systems/NativeFeatures';
 import { createSceneButton, showMinigameTutorial } from '../ui/sceneHelpers';
 
 // ── Layout ──
@@ -366,6 +367,7 @@ export class HuntScene extends Phaser.Scene {
         this.combo = 0;
         if (this.comboText) this.comboText.setVisible(false);
         playSfx('hiss', 0.5);
+        haptic.warning();
         this.cameras.main.flash(120, 200, 50, 50);
         this.cameras.main.shake(100, 0.005);
         const warn = this.add.text(hole.x, hole.y - 30, 'POISON!', {
@@ -403,6 +405,7 @@ export class HuntScene extends Phaser.Scene {
         if (this.combo > 0 && this.combo % 5 === 0) {
           this.comboMaxBonus += 2;
           playSfx('sparkle', 0.5);
+          haptic.success();
           const cb = this.add.text(hole.x, hole.y - 36, `COMBO x${this.combo}!`, {
             fontFamily: 'Georgia, serif', fontSize: '14px', color: '#ffd700',
           }).setOrigin(0.5);
@@ -423,6 +426,9 @@ export class HuntScene extends Phaser.Scene {
           playSfx(isGolden ? 'sparkle' : 'rat_caught', 0.4);
           this.lastCatchSfx = now;
         }
+        // Light tap on every hit, throttled lightly so spammed hits aren't oppressive.
+        if (isGolden) haptic.medium();
+        else haptic.light();
       }
 
       // Pop effect + particle burst

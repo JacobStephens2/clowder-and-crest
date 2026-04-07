@@ -3,6 +3,7 @@ import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
+import { haptic } from '../systems/NativeFeatures';
 import { showMinigameTutorial } from '../ui/sceneHelpers';
 
 // Grid sizes per difficulty — multiples of 5 per the genre's UX rule.
@@ -758,6 +759,7 @@ export class NonogramScene extends Phaser.Scene {
     this.solved = true;
     localStorage.setItem('clowder_nonogram_completed', '1');
     playSfx('victory');
+    haptic.success();
 
     // Auto-mark remaining unmarked-empty cells so the picture stands out
     for (let r = 0; r < this.gridSize; r++) {

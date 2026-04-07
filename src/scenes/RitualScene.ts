@@ -4,6 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
+import { haptic } from '../systems/NativeFeatures';
 import { showMinigameTutorial } from '../ui/sceneHelpers';
 
 const CANDLE_COLORS = [0xcc4444, 0x44aa44, 0x4488cc, 0xddaa33, 0xaa44cc, 0xcc8844];
@@ -303,6 +304,7 @@ export class RitualScene extends Phaser.Scene {
 
     // Same tone for tap as for show — symmetric audio reinforcement
     this.playTone(this.getCandleFrequency(idx), 0.22);
+    haptic.light();
 
     this.playerInput.push(idx);
     const step = this.playerInput.length - 1;
@@ -313,6 +315,7 @@ export class RitualScene extends Phaser.Scene {
       this.livesText.setText(`Lives: ${this.lives}`);
       this.currentRoundPerfect = false;
       playSfx('fail', 0.4);
+      haptic.error();
       this.cameras.main.flash(100, 80, 30, 30);
       // Apply adaptive slowdown — the replay runs at ~70% speed so the
       // immediate retry is reachable. Doc's "near-fail mechanics" pillar.
@@ -344,6 +347,7 @@ export class RitualScene extends Phaser.Scene {
     // Correct — check if sequence complete
     if (this.playerInput.length === this.sequence.length) {
       playSfx('sparkle', 0.4);
+      haptic.success();
       // Round complete without failure → tally as perfect
       if (this.currentRoundPerfect) {
         this.perfectRounds++;
@@ -362,6 +366,7 @@ export class RitualScene extends Phaser.Scene {
 
     if (won) {
       playSfx('victory');
+      haptic.success();
       // Tiered mastery scoring per Rhythm Heaven's model: perfect rounds,
       // not remaining lives, drive the star count. A run completed without
       // ever failing is the 3-star prize; failing once or twice still earns
@@ -383,6 +388,7 @@ export class RitualScene extends Phaser.Scene {
       });
     } else {
       playSfx('fail');
+      haptic.error();
       this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'The ritual failed...', {
         fontFamily: 'Georgia, serif', fontSize: '22px', color: '#cc6666',
       }).setOrigin(0.5);

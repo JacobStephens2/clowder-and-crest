@@ -61,6 +61,7 @@ src/
 │   ├── SfxManager.ts        # 22 sound effects with audio pooling for concurrent playback
 │   ├── ReputationSystem.ts  # Crest/Shadow scoring, recruit cost modifiers, tier bonuses
 │   ├── GameSystems.ts       # Combos, daily wishes, festivals, analytics
+│   ├── NativeFeatures.ts    # Capacitor facade — haptics, local notifications, app lifecycle, status bar (no-ops on web)
 ├── ui/
 │   ├── overlay.css          # All HTML overlay styles
 │   ├── Panels.ts            # Cat panel, menu, rename prompt, furniture shop
@@ -131,6 +132,7 @@ All playtests use the same multi-layer resilience pattern: hard top-level setTim
 - **Scene shutdown cleanup** — all scenes register shutdown handlers to prevent memory leaks
 - **HTML escaping** — user-provided names escaped with esc() to prevent injection
 - **Per-scene resilient playtests** — every minigame has a `test/*-playtest.mjs` script. They use direct method calls and state inspection (not Phaser timer waits, which are unreliable under page.evaluate scene launches). Three layers of hang protection: top-level setTimeout, process-group kill for the dev server, and an outer `timeout 150s` wrapper. **When changing a scene, run its playtest.**
+- **Native Capacitor features** — `src/systems/NativeFeatures.ts` is the single facade for all native plugins (`@capacitor/haptics`, `@capacitor/local-notifications`, `@capacitor/app`, `@capacitor/status-bar`). Every entry point checks `Capacitor.isNativePlatform()` and silently no-ops on web. Haptics are wired at high-leverage emotional beats across all 14 minigame scenes (kills, perfects, fails, lock clicks). The app lifecycle hook pauses the day timer and music when Android backgrounds the app. Day-end schedules a single ~16h "your cats are waiting" local notification (cancelled on next launch).
 
 ## Deployment
 

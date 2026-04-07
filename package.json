@@ -1,6 +1,6 @@
 {
   "name": "clowder-and-crest",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,8 +12,12 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",
+    "@capacitor/app": "^8.1.0",
     "@capacitor/cli": "^8.3.0",
     "@capacitor/core": "^8.3.0",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/local-notifications": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.2",
     "phaser": "^3.80.1"
   },
   "devDependencies": {

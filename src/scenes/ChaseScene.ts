@@ -4,6 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
+import { haptic } from '../systems/NativeFeatures';
 
 // ── Maze constants ──
 const COLS = 13;
@@ -730,6 +731,7 @@ export class ChaseScene extends Phaser.Scene {
     if (bonus > 0) {
       this.comboMaxBonus += bonus;
       playSfx('sparkle', 0.4);
+      haptic.success();
       const t = this.add.text(x, y - 18, `COMBO x${this.comboCount} +${bonus}!`, {
         fontFamily: 'Georgia, serif', fontSize: '12px', color: '#dda055',
       }).setOrigin(0.5).setDepth(20);
@@ -759,6 +761,7 @@ export class ChaseScene extends Phaser.Scene {
     // Reset ghost-combo counter for the fresh window
     this.scaredEatenThisWindow = 0;
     playSfx('sparkle', 0.6);
+    haptic.medium();
 
     // Visual pop where collected
     const pop = this.add.text(x, y - 14, 'CATNIP!', {
@@ -793,6 +796,7 @@ export class ChaseScene extends Phaser.Scene {
       scaled down for our economy: 5 → 10 → 20 → 40 fish. */
   private catScaredDog(dog: Dog): void {
     playSfx('sparkle', 0.8);
+    haptic.heavy();
     this.cameras.main.shake(120, 0.006);
 
     // Geometric escalation: each subsequent eat doubles the previous reward
@@ -898,6 +902,7 @@ export class ChaseScene extends Phaser.Scene {
     const bonusFish = this.dotsCollected + this.comboMaxBonus;
 
     playSfx('rat_caught');
+    haptic.success();
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'Caught!', {
       fontFamily: 'Georgia, serif', fontSize: '32px', color: '#c4956a',
     }).setOrigin(0.5);
@@ -1193,6 +1198,7 @@ export class ChaseScene extends Phaser.Scene {
 
     playSfx('bark', 0.6);
     playSfx('hiss');
+    haptic.error();
     this.cameras.main.flash(300, 139, 69, 19, false);
 
     // Show WHICH dog caught the cat — the doc's "death must never feel

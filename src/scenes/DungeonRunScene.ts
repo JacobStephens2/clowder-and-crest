@@ -9,6 +9,7 @@ import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_NAMES, BREED_COLORS } from '../utils/constants';
 import { getGameState } from '../main';
 import { playSfx } from '../systems/SfxManager';
+import { haptic } from '../systems/NativeFeatures';
 import { saveGame } from '../systems/SaveManager';
 import { showNarrativeOverlay } from '../ui/narrativeOverlay';
 
@@ -561,6 +562,7 @@ export class DungeonRunScene extends Phaser.Scene {
     if (!save) return;
 
     playSfx('victory');
+    haptic.success();
 
     // Reward: fish + stat boost
     const fishReward = 20 + d.totalFloors * 5;
@@ -615,6 +617,7 @@ export class DungeonRunScene extends Phaser.Scene {
     if (!save) return;
 
     playSfx('cat_sad');
+    haptic.error();
 
     // Cat returns exhausted — mood drops
     const cat = save.cats.find(c => c.id === d.catId);

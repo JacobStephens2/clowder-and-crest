@@ -4,6 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
+import { haptic } from '../systems/NativeFeatures';
 
 // ──── Constants ────
 const SOKOBAN_GRID = 7;
@@ -999,7 +1000,10 @@ export class SokobanScene extends Phaser.Scene {
     this.playerPos.c = newC;
     this.moveCount++;
     this.updateMoveText();
-    if (crateIdx >= 0) playSfx('crate_push', 0.3);
+    if (crateIdx >= 0) {
+      playSfx('crate_push', 0.3);
+      haptic.light();
+    }
 
     // Animate
     this.animateMove(direction, crateIdx);
@@ -1077,6 +1081,7 @@ export class SokobanScene extends Phaser.Scene {
 
   private winPuzzle(): void {
     this.solved = true;
+    haptic.success();
 
     const stars = this.calculateStars();
 

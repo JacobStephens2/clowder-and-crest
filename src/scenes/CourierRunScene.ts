@@ -4,6 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
+import { haptic } from '../systems/NativeFeatures';
 import { showMinigameTutorial, attachStandardCleanup } from '../ui/sceneHelpers';
 
 const LANE_Y = [280, 400, 520]; // 3 lanes
@@ -412,6 +413,7 @@ export class CourierRunScene extends Phaser.Scene {
     this.lives--;
     this.livesText.setText(`Lives: ${this.lives}`);
     playSfx('hiss', 0.4);
+    haptic.warning();
     this.cameras.main.flash(100, 80, 30, 30);
     this.cameras.main.shake(120, 0.008); // subtle shake — juice pillar
   }
@@ -509,6 +511,7 @@ export class CourierRunScene extends Phaser.Scene {
 
     if (won) {
       playSfx('victory');
+      haptic.success();
       const stars = this.lives >= 3 ? 3 : this.lives >= 2 ? 2 : 1;
       this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'Delivered!', {
         fontFamily: 'Georgia, serif', fontSize: '28px', color: '#c4956a',
@@ -548,6 +551,7 @@ export class CourierRunScene extends Phaser.Scene {
       });
     } else {
       playSfx('fail');
+      haptic.error();
       this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'Package lost!', {
         fontFamily: 'Georgia, serif', fontSize: '22px', color: '#cc6666',
       }).setOrigin(0.5);

@@ -4,6 +4,7 @@ import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, GRID_SIZE, TILE_SIZE, PUZZLE_OFFSET_X, PUZZLE_OFFSET_Y } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
+import { haptic } from '../systems/NativeFeatures';
 
 const GRID_COLOR = 0x2a2520;
 const GRID_LINE_COLOR = 0x3a3530;
@@ -377,6 +378,7 @@ export class PuzzleScene extends Phaser.Scene {
         block.x = newGridPos;
         this.moveCount++;
         this.updateMoveText();
+        haptic.light();
       }
 
       sprite.container.x = offsetX + block.x * TILE_SIZE + block.length * TILE_SIZE / 2;
@@ -390,6 +392,7 @@ export class PuzzleScene extends Phaser.Scene {
         block.y = newGridPos;
         this.moveCount++;
         this.updateMoveText();
+        haptic.light();
       }
 
       sprite.container.x = offsetX + block.x * TILE_SIZE + TILE_SIZE / 2;
@@ -417,6 +420,7 @@ export class PuzzleScene extends Phaser.Scene {
     // par. The doc's "minimum-moves scoring unlocks a mastery layer"
     // pillar: par scoring is meaningless without a payoff for hitting it.
     if (this.moveCount <= this.config.minMoves) {
+      haptic.success();
       const callout = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'PERFECT!', {
         fontFamily: 'Georgia, serif',
         fontSize: '36px',

@@ -4,6 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
+import { haptic } from '../systems/NativeFeatures';
 import { showMinigameTutorial } from '../ui/sceneHelpers';
 
 interface Ring {
@@ -244,6 +245,7 @@ export class HeistScene extends Phaser.Scene {
       ring.rotation = ring.startRotation;
       ring.isSet = ((ring.gapPos + ring.rotation) % ring.notches) === 0;
       playSfx('fail', 0.4);
+      haptic.error();
       this.cameras.main.flash(120, 80, 30, 30);
     } else {
       // Update set state and play context-appropriate audio. The doc's
@@ -252,12 +254,15 @@ export class HeistScene extends Phaser.Scene {
       if (!oldSet && ring.isSet) {
         // Just clicked into place — high-pitched satisfying sound
         playSfx('sparkle', 0.5);
+        haptic.medium();
       } else if (oldSet && !ring.isSet) {
         // Slipped out of place — soft "uh" feedback
         playSfx('lock_click', 0.6);
+        haptic.warning();
       } else {
         // Normal nudge — standard click
         playSfx('lock_click', 0.35);
+        haptic.light();
       }
     }
 
@@ -348,6 +353,7 @@ export class HeistScene extends Phaser.Scene {
 
     if (won) {
       playSfx('lock_open', 0.6);
+      haptic.success();
       this.time.delayedCall(500, () => playSfx('victory'));
       const stars = this.timeLeft > 15 ? 3 : this.timeLeft > 8 ? 2 : 1;
       this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 130, 'Lock Picked!', {
@@ -361,6 +367,7 @@ export class HeistScene extends Phaser.Scene {
       });
     } else {
       playSfx('fail');
+      haptic.error();
       this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 130, 'Time\'s up!', {
         fontFamily: 'Georgia, serif', fontSize: '22px', color: '#cc6666',
       }).setOrigin(0.5);

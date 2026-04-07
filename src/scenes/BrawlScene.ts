@@ -4,6 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
+import { haptic } from '../systems/NativeFeatures';
 import { createDpad, showMinigameTutorial } from '../ui/sceneHelpers';
 
 // ── Arena layout ──
@@ -623,6 +624,7 @@ export class BrawlScene extends Phaser.Scene {
     this.cameras.main.flash(100, 80, 20, 20);
     this.cameras.main.shake(120, 0.008);
     playSfx('hiss', 0.4);
+    haptic.warning();
   }
 
   /** Trigger boss phase 2 at 50% HP. Per "boss fights need an emotional
@@ -637,6 +639,7 @@ export class BrawlScene extends Phaser.Scene {
     this.cameras.main.shake(220, 0.012);
     playSfx('hiss', 0.7);
     playSfx('rat_caught', 0.4);
+    haptic.heavy();
     // Visual: brief "ENRAGED" tag above the boss
     const tag = this.add.text(rat.x, rat.y - 36, 'ENRAGED', {
       fontFamily: 'Georgia, serif', fontSize: '12px', color: '#ff5555',
@@ -782,6 +785,8 @@ export class BrawlScene extends Phaser.Scene {
       this.ratsKilled++;
       this.killText.setText(`Rats: ${this.ratsKilled}`);
       playSfx('rat_caught', 0.5);
+      // Pair the hit-stop with a medium tap so the freeze frame has a tactile body.
+      haptic.medium();
 
       // Hit-stop — brief 60ms freeze on kill so the impact has weight.
       // The doc's juice pillar: "this is what makes attacks feel heavy".
@@ -1032,6 +1037,7 @@ export class BrawlScene extends Phaser.Scene {
     this.powerup.gfx.destroy();
     this.powerup = null;
     playSfx('sparkle', 0.5);
+    haptic.success();
 
     const label = this.add.text(GAME_WIDTH / 2, ARENA_TOP + 20,
       type === 'fishbone' ? 'Fish Bone! Bigger swipe!' : type === 'catnip' ? 'Catnip! Speed boost!' : 'Yarn Ball! Rats stunned!',
@@ -1059,6 +1065,7 @@ export class BrawlScene extends Phaser.Scene {
 
     if (won) {
       playSfx('victory');
+      haptic.success();
       const stars = this.catHp === this.catMaxHp ? 3 : this.catHp >= this.catMaxHp / 2 ? 2 : 1;
 
       this.add.text(GAME_WIDTH / 2, ARENA_TOP + ARENA_H / 2 - 10, 'Victory!', {
@@ -1081,6 +1088,7 @@ export class BrawlScene extends Phaser.Scene {
       });
     } else {
       playSfx('fail');
+      haptic.error();
 
       this.add.text(GAME_WIDTH / 2, ARENA_TOP + ARENA_H / 2 - 10, 'Overwhelmed!', {
         fontFamily: 'Georgia, serif', fontSize: '24px', color: '#cc6666',

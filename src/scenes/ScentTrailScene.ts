@@ -4,6 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
+import { haptic } from '../systems/NativeFeatures';
 import { createDpad, showMinigameTutorial, attachStandardCleanup } from '../ui/sceneHelpers';
 
 const TILE = 38;
@@ -363,6 +364,7 @@ export class ScentTrailScene extends Phaser.Scene {
     if (nr === this.targetR && nc === this.targetC) {
       this.finished = true;
       playSfx('victory');
+      haptic.success();
       const stars = this.movesLeft > 10 ? 3 : this.movesLeft > 5 ? 2 : 1;
       this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 100, 'Target Found!', {
         fontFamily: 'Georgia, serif', fontSize: '24px', color: '#c4956a',
@@ -382,6 +384,7 @@ export class ScentTrailScene extends Phaser.Scene {
     if (this.movesLeft <= 0) {
       this.finished = true;
       playSfx('fail');
+      haptic.error();
       this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 100, 'Out of moves!', {
         fontFamily: 'Georgia, serif', fontSize: '22px', color: '#cc6666',
       }).setOrigin(0.5);

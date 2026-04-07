@@ -40,6 +40,7 @@ import { checkChapterAdvance, checkRatPlagueResolution, checkInquisitionResoluti
 import { startBgm, toggleMute, isMuted, switchToPuzzleMusic, switchToFightMusic, switchToNormalMusic, pauseMusic, resumeMusic } from './systems/MusicManager';
 import { playSfx } from './systems/SfxManager';
 import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDayEnd, pauseDayTimer, resumeDayTimer, isPaused } from './systems/DayTimer';
+import { initNative, registerAppLifecycle, scheduleDailyReturnNotification, cancelReturnNotification, haptic } from './systems/NativeFeatures';
 import { applyReputationShift, getReputationLabel, getReputationRecruitModifier, getReputationBonuses } from './systems/ReputationSystem';
 import { getComboMultiplier, updateCombo, getDailyWish, getCurrentFestival, trackEvent } from './systems/GameSystems';
 import { showNarrativeOverlay } from './ui/narrativeOverlay';
@@ -97,6 +98,31 @@ const game = new Phaser.Game(config);
 (window as unknown as { __clowderGame: Phaser.Game }).__clowderGame = game;
 
 // ──── OTA Updates (Capacitor only, silent) ────
+
+// ──── Native (Capacitor) ────
+// Status bar styling, notification permission warm-up, and lifecycle hooks
+// that pause the day timer + music when Android backgrounds the app.
+// All entry points are no-ops on web.
+initNative().catch(() => {});
+cancelReturnNotification().catch(() => {}); // user is back — clear pending reminder
+let pausedByLifecycle = false;
+registerAppLifecycle({
+  onPause: () => {
+    if (gameState) saveGame(gameState);
+    if (!isPaused()) {
+      pausedByLifecycle = true;
+      pauseDayTimer();
+      pauseMusic();
+    }
+  },
+  onResume: () => {
+    if (pausedByLifecycle) {
+      pausedByLifecycle = false;
+      resumeDayTimer();
+      resumeMusic();
+    }
+  },
+});
 
 // ──── Keyboard shortcuts ────
 window.addEventListener('keydown', (e) => {
@@ -2181,6 +2207,10 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
   checkChapterAdvance(gameState);
   saveGame(gameState);
   updateStatusBar();
+
+  // Schedule (or replace) the "your cats are waiting" reminder for ~16h.
+  // No-op on web; on Android it will fire even if the app is closed.
+  scheduleDailyReturnNotification(gameState.playerCatName).catch(() => {});
 
   const events = stationedResults.filter((r) => r.event).map((r) => r.event!);
   return { foodCost, stationedEarned: stationedTotal, events, fishRemaining: gameState.fish };

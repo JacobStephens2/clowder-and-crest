@@ -4,6 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
+import { haptic } from '../systems/NativeFeatures';
 import { createDpad, showMinigameTutorial, attachStandardCleanup } from '../ui/sceneHelpers';
 
 // ── Layout ──
@@ -523,6 +524,7 @@ export class StealthScene extends Phaser.Scene {
     if (!wasAlerted) {
       this.wasEverSpotted = true;
       playSfx('hiss', 0.4);
+      haptic.warning();
     }
     // Spread to nearby guards (one hop only — they don't re-spread)
     if (spread) {
@@ -591,6 +593,7 @@ export class StealthScene extends Phaser.Scene {
   private onCaught(): void {
     this.caught = true;
     playSfx('hiss');
+    haptic.error();
     this.cameras.main.flash(200, 139, 69, 19);
 
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'Caught!', {
@@ -607,6 +610,7 @@ export class StealthScene extends Phaser.Scene {
     if (this.catPos.r === this.targetPos.r && this.catPos.c === this.targetPos.c) {
       this.succeeded = true;
       playSfx('victory');
+      haptic.success();
 
       // Star scoring now factors in ghost run status. A perfect
       // never-spotted run is the 3-star prize regardless of move count;

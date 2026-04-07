@@ -4,6 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
+import { haptic } from '../systems/NativeFeatures';
 import { showMinigameTutorial } from '../ui/sceneHelpers';
 
 const LANTERN_RADIUS = 18;
@@ -233,6 +234,7 @@ export class PatrolScene extends Phaser.Scene {
       this.lives--;
       this.livesText.setText(`Lives: ${this.lives}`);
       playSfx('fail', 0.4);
+      haptic.warning();
       this.cameras.main.flash(100, 80, 30, 30);
       lantern.brightness = 0;
       lantern.flame.setAlpha(0);
@@ -247,6 +249,7 @@ export class PatrolScene extends Phaser.Scene {
     lantern.brightness = 1;
     lantern.failed = false;
     playSfx('match_strike', 0.35);
+    haptic.light();
     // Flash bright on relight
     lantern.flame.setScale(1.4);
     lantern.glow.setAlpha(0.6);
@@ -398,6 +401,7 @@ export class PatrolScene extends Phaser.Scene {
 
     if (won) {
       playSfx('victory');
+      haptic.success();
       // Star scoring now factors in lanternsLost — a flawless watch is
       // 3 stars; lost a couple is 2; messy is 1. Failure propagates into
       // the player's score even on a "win".
@@ -421,6 +425,7 @@ export class PatrolScene extends Phaser.Scene {
       });
     } else {
       playSfx('fail');
+      haptic.error();
       this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'Intruders got through!', {
         fontFamily: 'Georgia, serif', fontSize: '22px', color: '#cc6666',
       }).setOrigin(0.5);

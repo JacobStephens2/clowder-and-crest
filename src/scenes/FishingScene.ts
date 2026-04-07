@@ -4,6 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
+import { haptic } from '../systems/NativeFeatures';
 import { attachStandardCleanup } from '../ui/sceneHelpers';
 
 // ── Layout constants ──
@@ -541,6 +542,8 @@ export class FishingScene extends Phaser.Scene {
     this.phase = 'bite';
     this.phaseStart = this.elapsed;
     playSfx('tap', 0.4);
+    // The bite is the most important read in fishing — give it a tactile thump.
+    haptic.medium();
   }
 
   /** Transition into the catch phase: hide bobber, show bars, reveal fish
@@ -792,6 +795,8 @@ export class FishingScene extends Phaser.Scene {
     const isLegendary = this.fishRarity === 'legendary';
     const isRare = this.fishRarity === 'rare';
     playSfx(isLegendary || isRare ? 'sparkle' : 'splash');
+    if (isLegendary || isRare) haptic.success();
+    else haptic.medium();
 
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20, `${this.fishName} Caught!`, {
       fontFamily: 'Georgia, serif', fontSize: '28px', color: rarityColor,
@@ -830,6 +835,7 @@ export class FishingScene extends Phaser.Scene {
     this.finished = true;
     this.isReeling = false;
     this.phase = 'done';
+    haptic.warning();
 
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20, 'It got away...', {
       fontFamily: 'Georgia, serif', fontSize: '24px', color: '#aa4444',

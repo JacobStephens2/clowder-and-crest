@@ -45,6 +45,7 @@ Plus the **Dungeon Run** roguelike meta-loop (Ch.5+) that chains random minigame
 - **3 save slots** with forward migration (saves never destroyed on updates)
 - **Guild journal** — chapter beats, recruits, level-ups, bond rank-ups, dungeon runs
 - **14 music tracks** + 22 sound effects + rain ambience (most via ElevenLabs)
+- **Native Android features** (Capacitor build) — haptic feedback wired into every minigame's emotional beats, pause-on-background lifecycle so the day timer doesn't drain when the app is closed, daily "your cats are waiting" return notification, dark status bar matching the game theme
 - **Resilient playtest harness** — every minigame has a `test/*-playtest.mjs` script with hard timeouts, process group cleanup, and direct-method verification
 
 ## Tech stack
