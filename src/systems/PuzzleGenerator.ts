@@ -11,6 +11,13 @@ export interface PuzzleBlock {
 
 export interface PuzzleConfig {
   id: string;
+  /** Themed name surfaced above the puzzle (e.g. "Gridlock", "First Slide").
+      Optional — generated puzzles use a generic "Random Jam" label. The
+      doc's "level-as-lesson" pillar: every puzzle should have an identity. */
+  name?: string;
+  /** One-line description of the insight the puzzle teaches. Hand-curated
+      puzzles get authored concepts; procgen puzzles fall back to a generic. */
+  concept?: string;
   difficulty: 'easy' | 'medium' | 'hard';
   minMoves: number;
   exitSide: 'right' | 'left' | 'top' | 'bottom';
@@ -18,7 +25,29 @@ export interface PuzzleConfig {
   blocks: PuzzleBlock[];
 }
 
-const puzzles: PuzzleConfig[] = puzzlesData as PuzzleConfig[];
+// Validate every authored puzzle at module load. The BFS solver acts as
+// the source of truth for minMoves: if the authored value drifts from the
+// BFS optimum (e.g. someone edited the JSON without recomputing par), we
+// log a warning and silently auto-correct so the player still sees the
+// correct target. Unsolvable puzzles are excluded entirely.
+const puzzles: PuzzleConfig[] = (() => {
+  const raw = puzzlesData as PuzzleConfig[];
+  const validated: PuzzleConfig[] = [];
+  for (const p of raw) {
+    const result = isSolvable(p);
+    if (!result.solvable) {
+      console.warn(`[PuzzleGenerator] Puzzle "${p.id}" (${p.name ?? 'unnamed'}) is UNSOLVABLE — excluding from library`);
+      continue;
+    }
+    if (result.minMoves !== p.minMoves) {
+      console.warn(`[PuzzleGenerator] Puzzle "${p.id}" (${p.name ?? 'unnamed'}) authored minMoves=${p.minMoves} but BFS optimum is ${result.minMoves} — auto-correcting`);
+      validated.push({ ...p, minMoves: result.minMoves });
+    } else {
+      validated.push(p);
+    }
+  }
+  return validated;
+})();
 
 export function getPuzzle(id: string): PuzzleConfig | undefined {
   return puzzles.find((p) => p.id === id);
@@ -118,6 +147,8 @@ export function generatePuzzle(difficulty: 'easy' | 'medium' | 'hard'): PuzzleCo
 
     const config: PuzzleConfig = {
       id: `gen_${difficulty}_${Date.now()}_${gen}`,
+      name: 'Random Jam',
+      concept: 'A procedurally generated traffic snarl.',
       difficulty,
       minMoves: 0,
       exitSide: 'right',

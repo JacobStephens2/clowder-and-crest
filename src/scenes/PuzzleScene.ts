@@ -63,17 +63,19 @@ export class PuzzleScene extends Phaser.Scene {
     this.cameras.main.setZoom(DPR);
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
-    // Tutorial on first play
-    if (!localStorage.getItem('clowder_puzzle_tutorial')) {
-      localStorage.setItem('clowder_puzzle_tutorial', '1');
+    // Tutorial bumped to v2 for the themed names + axis arrows + PERFECT
+    // celebration so returning players see the updated rules.
+    if (!localStorage.getItem('clowder_puzzle_tutorial_v2')) {
+      localStorage.setItem('clowder_puzzle_tutorial_v2', '1');
       const t = document.createElement('div');
       t.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
       t.innerHTML = `
         <div style="color:#c4956a;font-family:Georgia,serif;font-size:22px;margin-bottom:12px">Slide Blocks</div>
-        <div style="color:#8b7355;font-family:Georgia,serif;font-size:14px;text-align:center;max-width:280px;line-height:1.6">
+        <div style="color:#8b7355;font-family:Georgia,serif;font-size:14px;text-align:center;max-width:290px;line-height:1.6">
           Slide blocks to clear a path for your <strong style="color:#c4956a">cat</strong> to reach the <strong style="color:#4a8a4a">exit</strong>.<br><br>
-          <strong>Drag</strong> blocks along their axis (horizontal or vertical).<br><br>
-          Fewer moves = more stars = bigger reward!
+          The little <strong>arrows</strong> on each block show which way it can slide.<br><br>
+          Hit <strong style="color:#dda055">Par</strong> moves to score a <strong style="color:#dda055">PERFECT</strong>!<br><br>
+          Use <strong>Undo</strong> freely — there's no penalty for trying.
         </div>
         <div style="color:#6b5b3e;font-family:Georgia,serif;font-size:12px;margin-top:20px">Tap to start</div>
       `;
@@ -164,9 +166,32 @@ export class PuzzleScene extends Phaser.Scene {
         }
       }
 
-      // Assemble container with children (order = render order: rect below, overlay above, label on top)
+      // Axis indicators — small arrow chevrons at each end of the block
+      // showing its movement axis. The doc's "board reads as a diagram of
+      // its own solution" pillar: a player should be able to look at any
+      // block and immediately see which way it can slide. Drawn as tiny
+      // graphics that ride along inside the container.
+      const axisGfx = this.add.graphics();
+      const indicatorAlpha = block.isTarget ? 0 : 0.55; // hide on the cat block
+      axisGfx.fillStyle(0xffffff, indicatorAlpha);
+      if (block.orientation === 'horizontal') {
+        // Left chevron pointing left, right chevron pointing right
+        const cx = w / 2 - 5;
+        const cy = 0;
+        axisGfx.fillTriangle(-cx, cy - 4, -cx, cy + 4, -cx - 4, cy);
+        axisGfx.fillTriangle(cx, cy - 4, cx, cy + 4, cx + 4, cy);
+      } else {
+        // Top chevron pointing up, bottom chevron pointing down
+        const cy = h / 2 - 5;
+        const cx = 0;
+        axisGfx.fillTriangle(cx - 4, -cy, cx + 4, -cy, cx, -cy - 4);
+        axisGfx.fillTriangle(cx - 4, cy, cx + 4, cy, cx, cy + 4);
+      }
+
+      // Assemble container with children (order = render order: rect below, overlay + axisGfx above, label on top)
       const children: Phaser.GameObjects.GameObject[] = [rect];
       if (overlay) children.push(overlay);
+      children.push(axisGfx);
       children.push(label);
       const container = this.add.container(px, py, children);
       container.setSize(w, h);
@@ -196,29 +221,44 @@ export class PuzzleScene extends Phaser.Scene {
       });
     });
 
-    // Job name
+    // Job name (small, top)
     const job = getJob(this.jobId);
     if (job) {
-      this.add.text(GAME_WIDTH / 2, 42, `${job.name} (${this.config.difficulty})`, {
+      this.add.text(GAME_WIDTH / 2, 32, `${job.name} (${this.config.difficulty})`, {
         fontFamily: 'Georgia, serif',
-        fontSize: '14px',
-        color: '#8b7355',
+        fontSize: '12px',
+        color: '#6b5b3e',
       }).setOrigin(0.5);
     }
 
-    // Move counter text (below status bar)
-    this.add.text(GAME_WIDTH / 2, 58, 'Moves: 0', {
-      fontFamily: 'Georgia, serif',
-      fontSize: '18px',
-      color: '#c4956a',
-    }).setOrigin(0.5).setName('moveText');
+    // Puzzle name (the doc's "level-as-lesson" pillar made visible).
+    // The themed name + one-line concept give each puzzle an identity so
+    // players consciously recognize what each board is teaching, instead
+    // of seeing "another set of blocks".
+    if (this.config.name) {
+      this.add.text(GAME_WIDTH / 2, 50, this.config.name, {
+        fontFamily: 'Georgia, serif',
+        fontSize: '17px',
+        color: '#c4956a',
+        fontStyle: 'italic',
+      }).setOrigin(0.5);
+    }
+    if (this.config.concept) {
+      this.add.text(GAME_WIDTH / 2, 67, this.config.concept, {
+        fontFamily: 'Georgia, serif',
+        fontSize: '11px',
+        color: '#8b7355',
+        align: 'center',
+        wordWrap: { width: 320 },
+      }).setOrigin(0.5);
+    }
 
-    // Min moves display
-    this.add.text(GAME_WIDTH / 2, 78, `Target: ${this.config.minMoves} moves`, {
+    // Move counter + par on a single line
+    this.add.text(GAME_WIDTH / 2, 84, `Moves: 0  /  Par: ${this.config.minMoves}`, {
       fontFamily: 'Georgia, serif',
       fontSize: '13px',
-      color: '#6b5b3e',
-    }).setOrigin(0.5);
+      color: '#c4956a',
+    }).setOrigin(0.5).setName('moveText');
 
     // Undo button
     this.createButton(60, offsetY + gridPx + 50, 'Undo', () => this.undo());
@@ -373,6 +413,30 @@ export class PuzzleScene extends Phaser.Scene {
 
     const stars = this.calculateStars();
 
+    // PERFECT! callout when the player ties or beats the BFS-optimal
+    // par. The doc's "minimum-moves scoring unlocks a mastery layer"
+    // pillar: par scoring is meaningless without a payoff for hitting it.
+    if (this.moveCount <= this.config.minMoves) {
+      const callout = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'PERFECT!', {
+        fontFamily: 'Georgia, serif',
+        fontSize: '36px',
+        color: '#dda055',
+        fontStyle: 'italic',
+      }).setOrigin(0.5).setDepth(20).setAlpha(0).setScale(0.5);
+      this.tweens.add({
+        targets: callout,
+        alpha: 1,
+        scale: 1,
+        duration: 250,
+        ease: 'Back.easeOut',
+        yoyo: true,
+        hold: 600,
+        onComplete: () => callout.destroy(),
+      });
+      // Gold camera flash for emphasis
+      this.cameras.main.flash(180, 220, 170, 90);
+    }
+
     // Show win message after animation
     this.time.delayedCall(600, () => {
       eventBus.emit('puzzle-complete', {
@@ -394,7 +458,14 @@ export class PuzzleScene extends Phaser.Scene {
 
   private updateMoveText(): void {
     const moveText = this.children.getByName('moveText') as Phaser.GameObjects.Text;
-    if (moveText) moveText.setText(`Moves: ${this.moveCount}`);
+    if (moveText) moveText.setText(`Moves: ${this.moveCount}  /  Par: ${this.config.minMoves}`);
+    // Color shifts as the player approaches/exceeds par — gentle visual
+    // mastery feedback without being penalty-heavy.
+    if (moveText) {
+      if (this.moveCount <= this.config.minMoves) moveText.setColor('#dda055');
+      else if (this.moveCount <= this.config.minMoves * 1.5) moveText.setColor('#c4956a');
+      else moveText.setColor('#8b7355');
+    }
   }
 
   private undo(): void {

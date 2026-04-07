@@ -1,6 +1,8 @@
 [
   {
     "id": "easy_1",
+    "name": "First Slide",
+    "concept": "Two simple shifts open the way.",
     "difficulty": "easy",
     "minMoves": 4,
     "exitSide": "right",
@@ -16,6 +18,8 @@
   },
   {
     "id": "easy_2",
+    "name": "Two Towers",
+    "concept": "Drop a pillar before the path appears.",
     "difficulty": "easy",
     "minMoves": 5,
     "exitSide": "right",
@@ -32,6 +36,8 @@
   },
   {
     "id": "medium_1",
+    "name": "Three Locks",
+    "concept": "Three blockers must move in the right order.",
     "difficulty": "medium",
     "minMoves": 8,
     "exitSide": "right",
@@ -50,6 +56,8 @@
   },
   {
     "id": "medium_2",
+    "name": "The Squeeze",
+    "concept": "Find the only path through a tight cluster.",
     "difficulty": "medium",
     "minMoves": 5,
     "exitSide": "right",
@@ -69,6 +77,8 @@
   },
   {
     "id": "hard_1",
+    "name": "Gridlock",
+    "concept": "A counter-intuitive retreat unlocks the path.",
     "difficulty": "hard",
     "minMoves": 16,
     "exitSide": "right",
@@ -85,6 +95,45 @@
       { "id": "h", "x": 4, "y": 4, "length": 2, "orientation": "horizontal", "isTarget": false },
       { "id": "j", "x": 0, "y": 5, "length": 2, "orientation": "horizontal", "isTarget": false },
       { "id": "k", "x": 2, "y": 5, "length": 2, "orientation": "horizontal", "isTarget": false }
+    ]
+  },
+  {
+    "id": "hard_2",
+    "name": "Tower Block",
+    "concept": "A vertical block must drop before the row clears.",
+    "difficulty": "hard",
+    "minMoves": 12,
+    "exitSide": "right",
+    "exitRow": 2,
+    "blocks": [
+      { "id": "cat", "x": 0, "y": 2, "length": 2, "orientation": "horizontal", "isTarget": true },
+      { "id": "a", "x": 2, "y": 0, "length": 3, "orientation": "vertical", "isTarget": false },
+      { "id": "b", "x": 3, "y": 0, "length": 2, "orientation": "horizontal", "isTarget": false },
+      { "id": "c", "x": 5, "y": 0, "length": 3, "orientation": "vertical", "isTarget": false },
+      { "id": "d", "x": 3, "y": 2, "length": 2, "orientation": "horizontal", "isTarget": false },
+      { "id": "e", "x": 0, "y": 4, "length": 2, "orientation": "horizontal", "isTarget": false },
+      { "id": "f", "x": 3, "y": 3, "length": 3, "orientation": "vertical", "isTarget": false },
+      { "id": "g", "x": 4, "y": 4, "length": 2, "orientation": "horizontal", "isTarget": false }
+    ]
+  },
+  {
+    "id": "hard_3",
+    "name": "The Long Way Around",
+    "concept": "Move pieces away from the goal first.",
+    "difficulty": "hard",
+    "minMoves": 14,
+    "exitSide": "right",
+    "exitRow": 2,
+    "blocks": [
+      { "id": "cat", "x": 0, "y": 2, "length": 2, "orientation": "horizontal", "isTarget": true },
+      { "id": "a", "x": 2, "y": 1, "length": 2, "orientation": "vertical", "isTarget": false },
+      { "id": "b", "x": 3, "y": 0, "length": 2, "orientation": "horizontal", "isTarget": false },
+      { "id": "c", "x": 4, "y": 0, "length": 3, "orientation": "vertical", "isTarget": false },
+      { "id": "d", "x": 5, "y": 0, "length": 2, "orientation": "vertical", "isTarget": false },
+      { "id": "e", "x": 3, "y": 2, "length": 2, "orientation": "horizontal", "isTarget": false },
+      { "id": "f", "x": 5, "y": 3, "length": 2, "orientation": "vertical", "isTarget": false },
+      { "id": "g", "x": 0, "y": 4, "length": 3, "orientation": "horizontal", "isTarget": false },
+      { "id": "h", "x": 3, "y": 4, "length": 2, "orientation": "horizontal", "isTarget": false }
     ]
   }
 ]
