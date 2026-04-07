@@ -5,7 +5,7 @@ import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
 import { haptic } from '../systems/NativeFeatures';
-import { showMinigameTutorial } from '../ui/sceneHelpers';
+import { showMinigameTutorial, showSceneOutcomeBanner } from '../ui/sceneHelpers';
 
 // ──── Constants ────
 const SOKOBAN_GRID = 7;
@@ -1077,6 +1077,9 @@ export class SokobanScene extends Phaser.Scene {
     haptic.success();
 
     const stars = this.calculateStars();
+    const summary = stars === 3
+      ? `Perfect route in ${this.moveCount} moves.`
+      : `${this.moveCount} moves against a ${this.level.minMoves}-move target.`;
 
     // Flash all crates green
     for (const sprite of this.crateSprites) {
@@ -1088,6 +1091,13 @@ export class SokobanScene extends Phaser.Scene {
         duration: 200,
       });
     }
+
+    showSceneOutcomeBanner(this, {
+      title: stars === 3 ? 'Perfect!' : 'Solved!',
+      subtitle: summary,
+      subtitleColor: stars === 3 ? '#dda055' : '#8b7355',
+      y: OFFSET_Y + GRID_PX / 2,
+    });
 
     // Emit puzzle-complete event after brief celebration
     this.time.delayedCall(800, () => {

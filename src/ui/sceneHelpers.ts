@@ -128,3 +128,32 @@ export function showMinigameTutorial(
   document.body.appendChild(t);
   return true;
 }
+
+// ── Outcome Banner ──
+
+interface OutcomeBannerOptions {
+  title: string;
+  subtitle?: string;
+  titleColor?: string;
+  subtitleColor?: string;
+  y?: number;
+}
+
+export function showSceneOutcomeBanner(scene: Phaser.Scene, options: OutcomeBannerOptions): void {
+  const y = options.y ?? scene.scale.height / 2;
+  scene.add.text(scene.scale.width / 2, y - 10, options.title, {
+    fontFamily: 'Georgia, serif',
+    fontSize: options.title.length > 12 ? '24px' : '28px',
+    color: options.titleColor ?? '#c4956a',
+  }).setOrigin(0.5);
+
+  if (options.subtitle) {
+    scene.add.text(scene.scale.width / 2, y + 25, options.subtitle, {
+      fontFamily: 'Georgia, serif',
+      fontSize: '13px',
+      color: options.subtitleColor ?? '#8b7355',
+      align: 'center',
+      wordWrap: { width: Math.max(220, scene.scale.width - 60) },
+    }).setOrigin(0.5);
+  }
+}
