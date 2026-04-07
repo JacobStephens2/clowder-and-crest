@@ -45,6 +45,19 @@ export interface JournalEntry {
   type: 'chapter' | 'recruit' | 'level' | 'bond' | 'event' | 'specialization' | 'reputation';
 }
 
+/** Persistent dungeon-run history. Drives the Hades-style reactive
+    narrative — early runs use the standard intro/outro, later runs branch
+    on attempt count, best floor, and most recent failure. */
+export interface DungeonHistory {
+  totalRuns: number;
+  totalClears: number;
+  bestFloor: number;
+  /** Floor index of the most recent failure, -1 if no prior failure. */
+  lastFailFloor: number;
+  /** Cause label of the most recent failure (minigame name or 'retreat'). */
+  lastFailCause: string;
+}
+
 export interface SaveData {
   version: number;
   day: number;
@@ -64,6 +77,7 @@ export interface SaveData {
   availableRecruits: string[];
   stationedCats: StationedJob[];
   journal: JournalEntry[];
+  dungeonHistory?: DungeonHistory;
   lastPlayedTimestamp?: number;
 }
 
@@ -106,6 +120,7 @@ export function createDefaultSave(playerCatName: string): SaveData {
     availableRecruits: [],
     stationedCats: [],
     journal: [],
+    dungeonHistory: { totalRuns: 0, totalClears: 0, bestFloor: 0, lastFailFloor: -1, lastFailCause: '' },
   };
 }
 
@@ -148,6 +163,9 @@ export function loadGame(): SaveData | null {
     if (data.totalJobsCompleted === undefined) data.totalJobsCompleted = 0;
     if (data.reputationScore === undefined) data.reputationScore = 0;
     if (!data.journal) data.journal = [];
+    if (!data.dungeonHistory) {
+      data.dungeonHistory = { totalRuns: 0, totalClears: 0, bestFloor: 0, lastFailFloor: -1, lastFailCause: '' };
+    }
     data.version = SAVE_VERSION;
     return data;
   } catch {
@@ -192,6 +210,9 @@ export function loadFromSlot(slot: number): SaveData | null {
     if (data.totalJobsCompleted === undefined) data.totalJobsCompleted = 0;
     if (data.reputationScore === undefined) data.reputationScore = 0;
     if (!data.journal) data.journal = [];
+    if (!data.dungeonHistory) {
+      data.dungeonHistory = { totalRuns: 0, totalClears: 0, bestFloor: 0, lastFailFloor: -1, lastFailCause: '' };
+    }
     data.version = SAVE_VERSION;
     return data;
   } catch {
