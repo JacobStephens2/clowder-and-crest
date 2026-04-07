@@ -1,9 +1,14 @@
 // Portfolio screenshot capture for clowderandcrest.com on stephens.page.
-// Loads test-save-everything-unlocked.json (6 cats, 3 unlocked rooms,
-// chapter 7) into save slot 1, then drives the title screen Continue
-// flow normally so the game initializes via its real load path.
-// Captures the guildhall, town map, and a room interior; copies the
-// guildhall as the portfolio hero shot.
+// Loads test-save-mid-game.json (4 cats, 2 of 3 rooms unlocked, chapter 4,
+// day 30) into save slot 1, then drives the title screen Continue flow
+// normally so the game initializes via its real load path. Captures the
+// guildhall, town map, and a room interior; copies the guildhall as the
+// portfolio hero shot.
+//
+// The mid-game state was chosen over the "everything unlocked" save
+// because it shows the game in progress — a guild that has earned its
+// name but still has rooms to unlock and cats to recruit. More honest
+// than the maxed-out chapter-7 state.
 //
 // Run: `timeout 90s node test/capture-portfolio-screenshot.mjs`
 
@@ -17,13 +22,13 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const SCREENSHOT_DIR = path.join(__dirname, 'screenshots', 'portfolio');
-const SAVE_PATH = path.join(__dirname, 'test_saves/test-save-everything-unlocked.json');
+const SAVE_PATH = path.join(__dirname, 'test_saves/test-save-mid-game.json');
 const PORTFOLIO_TARGET = '/var/www/stephens.page/screenshots/clowder.stephens.page.png';
 
 fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
 
 const BASE = 'http://localhost:3200';
-const HARD_TIMEOUT_MS = 90_000;
+const HARD_TIMEOUT_MS = 120_000;
 
 let server;
 let browser;
@@ -119,7 +124,7 @@ async function main() {
 
   // Reload so the title screen sees the save and shows the Continue button
   await page.reload({ waitUntil: 'networkidle' });
-  await wait(3000); // let TitleScene fully render with rain particles
+  await wait(5000); // let TitleScene fully render with rain particles + scene transitions
   console.log('\n=== Title screen loaded ===');
   await page.screenshot({ path: path.join(SCREENSHOT_DIR, '00-title.png') });
 
@@ -127,11 +132,14 @@ async function main() {
   // when slots exist (TitleScene.ts:161). Tested in the existing smoke test.
   console.log('\n=== Clicking Continue ===');
   await tap(page, 195, 470);
-  await wait(800);
-
-  // Slot picker is an HTML overlay with .slot-btn[data-slot] elements.
-  // Click slot 1 to load our planted save.
-  const slotBtn = await page.$('.slot-btn[data-slot="1"]');
+  // Slot picker is an HTML overlay; poll for it for up to 5 seconds rather
+  // than relying on a fixed wait, since title scene transitions can be flaky.
+  let slotBtn = null;
+  for (let i = 0; i < 25; i++) {
+    await wait(200);
+    slotBtn = await page.$('.slot-btn[data-slot="1"]');
+    if (slotBtn) break;
+  }
   if (!slotBtn) {
     console.log('  ⚠ slot picker not found — dumping body classes');
     const bodyHtml = await page.evaluate(() => document.body.innerHTML.slice(0, 1500));
@@ -143,7 +151,7 @@ async function main() {
   console.log('  slot 1 clicked — loading save');
   await wait(4000); // load + scene transition + cat sprites populating
 
-  // Capture 1: Guildhall overview
+  // Capture 1: Guildhall overview — this is the portfolio hero shot
   console.log('\n=== Capturing Guildhall overview ===');
   const guildPath = path.join(SCREENSHOT_DIR, '01-guildhall.png');
   await page.screenshot({ path: guildPath });
@@ -153,6 +161,19 @@ async function main() {
   // Sanity check — if it's still mostly black, something is wrong
   if (guildSize < 50_000) {
     console.log('  ⚠ guildhall screenshot is suspiciously small (likely black)');
+  }
+
+  // Copy the hero shot to the portfolio target IMMEDIATELY so the secondary
+  // captures (town map, room interior) failing or timing out can't block
+  // the main goal of this script.
+  console.log('\n=== Copying hero shot to portfolio ===');
+  if (guildSize > 50_000) {
+    fs.copyFileSync(guildPath, PORTFOLIO_TARGET);
+    const stat = fs.statSync(PORTFOLIO_TARGET);
+    console.log(`  → ${PORTFOLIO_TARGET}`);
+    console.log(`  size: ${(stat.size / 1024).toFixed(1)} KB`);
+  } else {
+    console.log('  ⚠ guildhall shot too small — leaving portfolio image alone');
   }
 
   // Capture 2: Town Map
@@ -182,17 +203,6 @@ async function main() {
     const roomPath = path.join(SCREENSHOT_DIR, '03-room.png');
     await page.screenshot({ path: roomPath });
     console.log(`  saved → ${roomPath}`);
-  }
-
-  // Pick the guildhall as the hero shot for the portfolio
-  console.log('\n=== Copying hero shot to portfolio ===');
-  if (fs.existsSync(guildPath) && fs.statSync(guildPath).size > 50_000) {
-    fs.copyFileSync(guildPath, PORTFOLIO_TARGET);
-    const stat = fs.statSync(PORTFOLIO_TARGET);
-    console.log(`  → ${PORTFOLIO_TARGET}`);
-    console.log(`  size: ${(stat.size / 1024).toFixed(1)} KB`);
-  } else {
-    console.log('  ⚠ guildhall shot too small — leaving portfolio image alone');
   }
 
   cleanup(0);
