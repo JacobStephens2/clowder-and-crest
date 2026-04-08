@@ -4,6 +4,7 @@ import { getChapterName, getNextChapterHint } from '../systems/ProgressionManage
 import { getReputationLabel } from '../systems/ReputationSystem';
 import type { SaveData } from '../systems/SaveManager';
 import { calculateDailyUpkeep, calculateStationedDailyIncome } from '../systems/GuildMetrics';
+import { pauseMusic } from '../systems/MusicManager';
 
 interface IntroPanel {
   text: string;
@@ -52,9 +53,16 @@ export function showIntroStory(catName: string, onComplete: () => void, deps: In
   overlay.appendChild(skipBtn);
 
   const panelSounds: (string | null)[] = ['thunder', null, 'purr', 'job_accept', null, null];
+  // Stop whatever the MusicManager was playing (the title trackset) before
+  // we start the raw-Audio prologue track. Without this, two songs play
+  // simultaneously through the entire intro — title music plus prologue.
+  pauseMusic();
   // Pick one of the two prologue variants from the shared-leitmotif music set.
   // Both are "Tin-Rain DCA" — sparse tin whistle drone over distant bodhrán
   // thunder rolls, the leitmotif born at the end on a soft harp phrase.
+  // Played as a raw Audio element (not via MusicManager) because the intro
+  // needs one-shot loop=false semantics + a paired rain ambience layer
+  // that the looping trackset model doesn't support.
   const prologueTracks = ['assets/audio/prologue_1.mp3', 'assets/audio/prologue_2.mp3'];
   const introMusic = new Audio(prologueTracks[Math.floor(Math.random() * prologueTracks.length)]);
   introMusic.volume = 0.4;
