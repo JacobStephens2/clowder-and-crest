@@ -1,4 +1,4 @@
-import { getCurrentFestival } from '../systems/GameSystems';
+import { getCurrentFestival, getDailyWish } from '../systems/GameSystems';
 import { generateDailyJobs } from '../systems/JobBoard';
 import { getAvailableConversation, getBondPairs, getBondRank } from '../systems/BondSystem';
 import { getGuildFocusLines } from '../systems/GuildFocus';
@@ -82,6 +82,19 @@ function buildDayTeasers(save: SaveData | null, day: number): DayTeaser[] {
       icon: '\u{1F389}',
       color: '#dda055',
       text: `${festival.name} today!`,
+    });
+  }
+
+  // Daily wish teaser — show the SPECIFIC wish content (not just a hint)
+  // so the player doesn't have to remember to walk back to the guild to
+  // check what their cat wants. Per user feedback: "the wishes should
+  // be not only hinted at, but the specific of the wish listed".
+  const wish = getDailyWish(day, save.cats, save.furniture.map((f) => f.furnitureId));
+  if (wish && !save.flags[`wish_day_${day}`]) {
+    teasers.push({
+      icon: '\u{1F4AD}',
+      color: '#dda055',
+      text: `${esc(wish.catName)} ${esc(wish.wish)} (5 fish to fulfill)`,
     });
   }
 
