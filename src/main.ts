@@ -58,6 +58,8 @@ import { showDayTransitionOverlay, showToast as renderToast } from './ui/feedbac
 import { showGuildReport, showIntroStory, showTutorial } from './ui/onboarding';
 import { initJobFlow, showAssignOverlay, showResultOverlay, type ResultInfo, SPECIALIZATION_CATEGORIES } from './ui/jobFlow';
 import { initSessionFlow } from './systems/SessionFlow';
+import { isPracticeRun, endPracticeRun } from './systems/PracticeMode';
+import { initDayOfRest, showDayOfRestPanel } from './ui/DayOfRestPanel';
 
 // ──── Game State ────
 let gameState: SaveData | null = null;
@@ -462,7 +464,27 @@ function setActiveTab(scene: string): void {
   });
 }
 
+// Scene keys that count as "minigame" — used by switchScene below to
+// detect when a Day of Rest practice run is being abandoned via the
+// bottom-nav (rather than completed via the puzzle-complete event).
+const MINIGAME_SCENE_KEYS: ReadonlySet<string> = new Set([
+  'PuzzleScene', 'SokobanScene', 'ChaseScene', 'FishingScene', 'HuntScene',
+  'NonogramScene', 'BrawlScene', 'StealthScene', 'PounceScene', 'PatrolScene',
+  'RitualScene', 'ScentTrailScene', 'HeistScene', 'CourierRunScene', 'DungeonRunScene',
+]);
+
 function switchScene(target: string, data?: object): void {
+  // If a Day of Rest practice run is in flight and the player navigates
+  // OUT of the minigame to anywhere other than another minigame (e.g.
+  // they tap the bottom-nav guildhall button mid-Sokoban), clear the
+  // practice flag so the next real puzzle complete/quit doesn't get
+  // short-circuited. The puzzle-complete and puzzle-quit handlers
+  // already call endPracticeRun() before reaching switchScene on the
+  // happy path, so this branch only catches the bail-out case.
+  if (isPracticeRun() && !MINIGAME_SCENE_KEYS.has(target)) {
+    endPracticeRun();
+    resumeDayTimer();
+  }
   const sceneKeys = Object.values(SCENES);
   for (const key of sceneKeys) {
     if (game.scene.isActive(key) || game.scene.isPaused(key)) {
@@ -604,6 +626,14 @@ initPanels({
   guildEndDayBtn,
   guildWishBanner,
   clearCurrentSave: sessionFlow.clearCurrentSave,
+});
+initDayOfRest({
+  getGameState: () => gameState,
+  overlayLayer,
+  switchScene,
+  pauseDayTimer,
+  switchToTrackset,
+  showToast,
 });
 initConversations({
   getGameState: () => gameState,
@@ -1240,6 +1270,20 @@ eventBus.on('start-accepted-job', () => {
 // Puzzle complete
 eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId, bonusFish }: any) => {
   switchToNormalMusic();
+  // Day of Rest practice run — short-circuit BEFORE resumeDayTimer so we
+  // don't accidentally start the campaign clock when the player was just
+  // poking at memories. The day timer was paused at launch and stays
+  // paused; we route the player back to the Day of Rest panel and clear
+  // the practice flag. None of the reward / XP / mood / job-flag logic
+  // below runs.
+  if (isPracticeRun()) {
+    endPracticeRun();
+    void puzzleId; void moves; void minMoves; void jobId; void catId; void bonusFish;
+    showToast(stars >= 3 ? 'Practice run \u2014 perfect!' : 'Practice run complete.');
+    switchScene('GuildhallScene');
+    setTimeout(() => showDayOfRestPanel(), 400);
+    return;
+  }
   resumeDayTimer();
   if (!gameState) return;
 
@@ -1444,6 +1488,15 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
 
 eventBus.on('puzzle-quit', ({ jobId, catId }: any = {}) => {
   switchToNormalMusic();
+  // Day of Rest quits never count: no fish penalty, no mood drop, no
+  // cat-of-the-day burn. Just route back to the panel.
+  if (isPracticeRun()) {
+    endPracticeRun();
+    void jobId; void catId;
+    switchScene('GuildhallScene');
+    setTimeout(() => showDayOfRestPanel(), 400);
+    return;
+  }
   resumeDayTimer();
   playSfx('fail');
   if (!gameState) return;

@@ -48,6 +48,7 @@ Plus the **Dungeon Run** roguelike meta-loop (Ch.5+) that chains random minigame
 - **Guild journal** — chapter beats, recruits, level-ups, bond rank-ups, dungeon runs
 - **14 music tracks** + 22 sound effects + rain ambience (most via ElevenLabs)
 - **Native Android features** (Capacitor build) — haptic feedback wired into every minigame's emotional beats, pause-on-background lifecycle so the day timer doesn't drain when the app is closed, daily "your cats are waiting" return notification, dark status bar matching the game theme
+- **Day of Rest** — in-universe minigame archive unlocked through play. Each of the 14 minigames appears as a "memory" card the first time the player completes it in a job; tapping a card replays the game in a no-stakes sandbox (no fish, no XP, no penalties). Lives behind the menu so it never competes with the campaign's pacing. A hidden showcase entry (`?showcase=1` URL parameter on web, five quick taps on the title-screen crest on web + APK) loads a fully-unlocked demo save for portfolio reviewers
 - **Resilient playtest harness** — every minigame has a `test/*-playtest.mjs` script with hard timeouts, process group cleanup, and direct-method verification
 
 ## Tech stack
