@@ -281,9 +281,27 @@ export class HeistScene extends Phaser.Scene {
     if (trapTriggered) {
       ring.rotation = ring.startRotation;
       ring.isSet = ((ring.gapPos + ring.rotation) % ring.notches) === 0;
-      playSfx('fail', 0.4);
+      playSfx('fail', 0.6);
       haptic.error();
-      this.cameras.main.flash(120, 80, 30, 30);
+      // Stronger feedback per user feedback (2026-04-08): "I didn't
+      // notice a penalty in the heist scene when I moved a ring over
+      // a red spot." A 120ms flash and a quiet hiss were too subtle —
+      // the player needs to know unmistakably that the trap fired.
+      this.cameras.main.flash(220, 180, 40, 40);
+      this.cameras.main.shake(220, 0.012);
+      // Big red "TRAP!" callout floating up from the lock
+      const callout = this.add.text(GAME_WIDTH / 2, 290, 'TRAP! Ring reset \u2014 +4 noise', {
+        fontFamily: 'Georgia, serif', fontSize: '16px', color: '#cc6666',
+        backgroundColor: '#1a1010', padding: { x: 10, y: 4 },
+      }).setOrigin(0.5).setDepth(50);
+      this.tweens.add({
+        targets: callout,
+        y: 250,
+        alpha: 0,
+        duration: 1100,
+        ease: 'Sine.easeOut',
+        onComplete: () => callout.destroy(),
+      });
       // Slip is loud — adds extra noise on top of the per-rotation cost.
       this.addNoise(4);
     } else {
