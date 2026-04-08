@@ -1,12 +1,12 @@
-type EventCallback = (detail?: any) => void;
+type EventCallback = (...args: any[]) => void;
 
 class GameEventBus {
   private listeners: Map<string, Set<EventCallback>> = new Map();
 
-  emit(event: string, detail?: any): void {
+  emit(event: string, ...args: any[]): void {
     const set = this.listeners.get(event);
     if (set) {
-      for (const cb of set) cb(detail);
+      for (const cb of set) cb(...args);
     }
   }
 
@@ -22,9 +22,9 @@ class GameEventBus {
   }
 
   once(event: string, callback: EventCallback): void {
-    const wrapped: EventCallback = (detail) => {
+    const wrapped: EventCallback = (...args) => {
       this.off(event, wrapped);
-      callback(detail);
+      callback(...args);
     };
     this.on(event, wrapped);
   }
