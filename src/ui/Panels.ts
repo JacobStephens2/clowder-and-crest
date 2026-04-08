@@ -270,12 +270,12 @@ export function showMenuPanel(): void {
     <button class="menu-btn" id="menu-mute">${isMuted() ? 'Unmute Music' : 'Mute Music'}</button>
     <div style="display:flex;align-items:center;gap:8px;padding:0 12px;margin:-4px 0 8px">
       <span style="font-size:11px;color:#8b7355;white-space:nowrap">Music Vol</span>
-      <input type="range" id="menu-vol-bgm" min="0" max="100" value="${Math.round(getBgmVolume() * 100)}" style="flex:1;accent-color:#c4956a;height:6px">
+      <input type="range" id="menu-vol-bgm" min="0" max="100" value="${Math.round(getBgmVolume() * 100)}" style="flex:1;accent-color:#c4956a;height:6px;touch-action:pan-y">
     </div>
     <button class="menu-btn" id="menu-mute-sfx">${isSfxMuted() ? 'Unmute Sound Effects' : 'Mute Sound Effects'}</button>
     <div style="display:flex;align-items:center;gap:8px;padding:0 12px;margin:-4px 0 8px">
       <span style="font-size:11px;color:#8b7355;white-space:nowrap">SFX Vol</span>
-      <input type="range" id="menu-vol-sfx" min="0" max="100" value="${Math.round(getSfxVolume() * 100)}" style="flex:1;accent-color:#c4956a;height:6px">
+      <input type="range" id="menu-vol-sfx" min="0" max="100" value="${Math.round(getSfxVolume() * 100)}" style="flex:1;accent-color:#c4956a;height:6px;touch-action:pan-y">
     </div>
     <button class="menu-btn" id="menu-export">Export Save</button>
     <button class="menu-btn" id="menu-import">Import Save</button>
