@@ -33,6 +33,12 @@ function getRooms(chapter: number): RoomDef[] {
 }
 
 export class GuildhallScene extends Phaser.Scene {
+  /** The currently-active daily wish, computed once in create() and
+   *  passed to drawCats so the wishing cat gets a tappable thought
+   *  bubble above its sprite. Null when no wish is active or when the
+   *  wish has already been fulfilled. */
+  private activeWish: ReturnType<typeof getDailyWish> | null = null;
+
   constructor() {
     super({ key: 'GuildhallScene' });
   }
@@ -150,6 +156,15 @@ export class GuildhallScene extends Phaser.Scene {
       this.tweens.killAll();
     });
 
+    // Compute the daily wish before drawing rooms so drawRooms can
+    // pass it down to drawCats and render a thought bubble above the
+    // wishing cat. Both the inline panel below the rooms AND the
+    // bubble above the cat are visible simultaneously when there's an
+    // unfulfilled wish.
+    const wish = getDailyWish(save.day, save.cats, save.furniture.map((f) => f.furnitureId));
+    const activeWish = wish && !save.flags[`wish_day_${save.day}`] ? wish : null;
+    this.activeWish = activeWish;
+
     this.drawRooms(save);
 
     // Inline wish display — sits below the rooms so the wish stays
@@ -157,15 +172,14 @@ export class GuildhallScene extends Phaser.Scene {
     // Per user feedback (2026-04-08): "add a way to dismiss wishes
     // from the top of the screen, but always display them above or
     // below the rooms in the guild view / scene."
-    const wish = getDailyWish(save.day, save.cats, save.furniture.map((f) => f.furnitureId));
-    if (wish && !save.flags[`wish_day_${save.day}`]) {
+    if (activeWish) {
       const wishY = ROOM_START_Y + 3 * (ROOM_HEIGHT + ROOM_GAP) - 10;
       this.add.rectangle(GAME_WIDTH / 2, wishY, ROOM_WIDTH, 38, 0x2a2520, 0.85)
         .setStrokeStyle(1, 0x6b5b3e);
-      this.add.text(GAME_WIDTH / 2, wishY - 8, `\u{1F4AD} ${wish.catName}\u2019s wish`, {
+      this.add.text(GAME_WIDTH / 2, wishY - 8, `\u{1F4AD} ${activeWish.catName}\u2019s wish`, {
         fontFamily: 'Georgia, serif', fontSize: '11px', color: '#dda055',
       }).setOrigin(0.5);
-      this.add.text(GAME_WIDTH / 2, wishY + 7, `"${wish.wish}"`, {
+      this.add.text(GAME_WIDTH / 2, wishY + 7, `"${activeWish.wish}"`, {
         fontFamily: 'Georgia, serif', fontSize: '10px', color: '#8b7355',
       }).setOrigin(0.5);
     }
@@ -418,6 +432,11 @@ export class GuildhallScene extends Phaser.Scene {
           repeat: -1,
           ease: 'Sine.easeInOut',
         });
+
+        // Wish thought bubble — only for the cat with the active wish.
+        if (this.activeWish && this.activeWish.catId === cat.id) {
+          this.drawWishBubble(x + 14, y - 30);
+        }
       } else {
         const color = parseInt((BREED_COLORS[cat.breed] ?? '#8B7355').replace('#', ''), 16);
         const gfx = this.add.graphics();
@@ -448,6 +467,11 @@ export class GuildhallScene extends Phaser.Scene {
           repeat: -1,
           ease: 'Sine.easeInOut',
         });
+
+        // Wish thought bubble — same affordance for the no-sprite path.
+        if (this.activeWish && this.activeWish.catId === cat.id) {
+          this.drawWishBubble(x + 14, y - 30);
+        }
       }
 
       this.add.text(x, y + 14, cat.name, {
@@ -455,6 +479,78 @@ export class GuildhallScene extends Phaser.Scene {
         fontSize: '9px',
         color: moodColors[cat.mood] ?? '#c4956a',
       }).setOrigin(0.5);
+    });
+  }
+
+  /** Draw a small thought bubble above a cat sprite. Per user feedback
+   *  (2026-04-08): "maybe there can be a thought bubble above the cat
+   *  on the guild view if they have a wish, and the player can tap
+   *  that bubble to see the wish, then they can close it again."
+   *  The bubble is a circle with a small pendant trail and a 💭
+   *  glyph; tapping it pops up a bordered text panel with the wish
+   *  text, and tapping the panel (or its close button) hides it. */
+  private drawWishBubble(x: number, y: number): void {
+    if (!this.activeWish) return;
+    // Two small trail dots leading from the cat up to the bubble
+    this.add.circle(x - 7, y + 8, 2, 0xfff8e0, 0.85).setDepth(15);
+    this.add.circle(x - 4, y + 4, 2.5, 0xfff8e0, 0.9).setDepth(15);
+    // Bubble body
+    const bubble = this.add.circle(x, y, 9, 0xfff8e0, 0.95).setDepth(15);
+    bubble.setStrokeStyle(1, 0x8b7355);
+    const glyph = this.add.text(x, y, '\u{1F4AD}', {
+      fontFamily: 'Georgia, serif', fontSize: '11px',
+    }).setOrigin(0.5).setDepth(16);
+    void glyph;
+    bubble.setInteractive({ useHandCursor: true });
+    // Gentle pulse so the player notices it
+    this.tweens.add({
+      targets: bubble,
+      scale: { from: 1, to: 1.18 },
+      duration: 1200,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+    bubble.on('pointerdown', () => this.toggleWishPopup(x, y));
+  }
+
+  /** Show or hide a small wish-text popup near the bubble. The popup
+   *  is a single bordered rectangle pinned at the bubble's location;
+   *  tapping it (or its inner X) hides it. Stores the popup in the
+   *  scene registry so a second bubble tap toggles it cleanly. */
+  private wishPopupContainer: Phaser.GameObjects.Container | null = null;
+  private toggleWishPopup(anchorX: number, anchorY: number): void {
+    if (this.wishPopupContainer) {
+      this.wishPopupContainer.destroy();
+      this.wishPopupContainer = null;
+      return;
+    }
+    if (!this.activeWish) return;
+    const wishText = this.activeWish.wish;
+    const catName = this.activeWish.catName;
+    // Position the popup above the bubble; clamp to screen bounds.
+    const w = 220;
+    const h = 70;
+    let px = Phaser.Math.Clamp(anchorX, w / 2 + 10, GAME_WIDTH - w / 2 - 10);
+    let py = anchorY - h / 2 - 14;
+    if (py < h / 2 + 10) py = anchorY + h / 2 + 14; // flip below if no room above
+    const bg = this.add.rectangle(0, 0, w, h, 0x1a1612, 0.96).setStrokeStyle(1, 0x6b5b3e);
+    const title = this.add.text(0, -h / 2 + 12, `\u{1F4AD} ${catName}\u2019s wish`, {
+      fontFamily: 'Georgia, serif', fontSize: '11px', color: '#dda055',
+    }).setOrigin(0.5);
+    const body = this.add.text(0, 6, `"${wishText}"`, {
+      fontFamily: 'Georgia, serif', fontSize: '10px', color: '#c4956a',
+      align: 'center', wordWrap: { width: w - 20 },
+    }).setOrigin(0.5);
+    const closeBtn = this.add.text(w / 2 - 10, -h / 2 + 8, '\u00D7', {
+      fontFamily: 'Georgia, serif', fontSize: '14px', color: '#8b7355',
+    }).setOrigin(0.5);
+    const container = this.add.container(px, py, [bg, title, body, closeBtn]).setDepth(50);
+    this.wishPopupContainer = container;
+    bg.setInteractive({ useHandCursor: true });
+    bg.on('pointerdown', () => {
+      container.destroy();
+      this.wishPopupContainer = null;
     });
   }
 }
