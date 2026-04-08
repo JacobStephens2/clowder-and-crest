@@ -52,13 +52,23 @@ Plus the **Dungeon Run** roguelike meta-loop (Ch.5+) that chains random minigame
 
 ## Tech stack
 
+**Runtime**
+
 - **Phaser 3** + TypeScript (canvas game scenes)
 - **HTML/CSS overlays** (UI chrome — bottom nav, panels, dialogues)
 - **Vite** (dev server + production build)
 - **Capacitor** (Android packaging)
-- **PixelLab** (AI-generated pixel art)
-- **ElevenLabs** (AI sound effects + music tracks)
 - **Apache** + Let's Encrypt (web deploy)
+
+**Built with**
+
+- **PixelLab** — AI pixel art (idle, walk, scratch, sit, eat, sleep animations × 6 breeds)
+- **Midjourney** — illustrated dialogue portraits (5 expressions × 6 breeds)
+- **ElevenLabs** — sound effects
+- **Suno** — 68-track shared-leitmotif soundtrack
+- **Claude Code** with Claude Opus 4.6 — primary code authoring + design dialogue
+- **Codex CLI** with GPT-5.4 Codex — secondary code authoring lane (`todo/codex-todo.md`)
+- **Gemini CLI** with Gemini 3.1 Pro Preview — third coding lane (`todo/gemini-todo.md`)
 
 ## Development
 
