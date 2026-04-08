@@ -104,6 +104,7 @@ export class TownMapScene extends Phaser.Scene {
   private promptText: Phaser.GameObjects.Text | null = null;
   private activeDoor: BuildingDef | null = null;
   private strayCats: { breed: string; col: number; row: number; sprite: Phaser.GameObjects.Sprite; nameLabel: Phaser.GameObjects.Text }[] = [];
+  private merchantTile: { col: number; row: number } | null = null;
 
   constructor() {
     super({ key: 'TownMapScene' });
@@ -137,6 +138,7 @@ export class TownMapScene extends Phaser.Scene {
 
     // Spawn recruitable stray cats
     this.spawnStrayCats();
+    this.spawnMerchant();
 
     // Spawn plague rats if active
     const save2 = getGameState();
@@ -670,6 +672,98 @@ export class TownMapScene extends Phaser.Scene {
         loop: true,
       });
     }
+  }
+
+  /** Visible-on-the-map traveling merchant. Per user request: "make the
+   *  presence of the traveling merchant more clear - perhaps make a
+   *  sprite / pixel art for him and place him on the town map when
+   *  he's around and let the player click him to talk with him."
+   *
+   *  Mirrors the merchant trigger in main.ts:968 (chapter ≥ 2 every
+   *  3rd day). Uses the existing guard.png NPC sprite as the visual
+   *  until a dedicated merchant sprite is generated. Tap walks the cat
+   *  to the merchant and then opens the town overlay (which contains
+   *  the merchant section). */
+  private spawnMerchant(): void {
+    const save = getGameState();
+    if (!save) return;
+    if (save.chapter < 2 || save.day % 3 !== 0) return;
+
+    // Anchor near the market building (col 6, row 4) so the merchant
+    // visually associates with the market area. Use a fixed walkable
+    // tile next to the market.
+    const merchantCol = 5;
+    const merchantRow = 5;
+    if (this.grid[merchantRow][merchantCol] !== PATH) return;
+    this.merchantTile = { col: merchantCol, row: merchantRow };
+
+    const { x, y } = toWorld(merchantCol, merchantRow);
+
+    let sprite: Phaser.GameObjects.Sprite;
+    if (this.textures.exists('guard')) {
+      sprite = this.add.sprite(x, y, 'guard');
+      sprite.setScale(0.85);
+      sprite.setTint(0xddaa55); // warm tint to distinguish from a guard
+      sprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+    } else {
+      // Fallback rectangle if the asset failed to load
+      const rect = this.add.rectangle(x, y, 18, 24, 0xddaa55).setStrokeStyle(1, 0x6b5b3e);
+      sprite = rect as unknown as Phaser.GameObjects.Sprite;
+    }
+
+    // Label + bobbing coin indicator above the merchant
+    const label = this.add.text(x, y - 22, 'Merchant', {
+      fontFamily: 'Georgia, serif', fontSize: '8px', color: '#dda055',
+    }).setOrigin(0.5);
+    const coin = this.add.text(x, y - 32, '\u{1FA99}', {
+      fontFamily: 'Georgia, serif', fontSize: '14px',
+    }).setOrigin(0.5);
+    this.tweens.add({
+      targets: coin, y: y - 36, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+
+    // Click → walk to the merchant tile, then open the town overlay
+    // (which contains the merchant section). The town overlay handles
+    // the actual purchase UI; this is just the discoverable entry point.
+    sprite.setInteractive({ useHandCursor: true });
+    sprite.on('pointerdown', () => {
+      const dist = Math.abs(this.playerPos.col - merchantCol) + Math.abs(this.playerPos.row - merchantRow);
+      if (dist <= 1) {
+        eventBus.emit('show-town-overlay');
+      } else {
+        // Walk-then-open mirrors the building tap pattern
+        const path = this.findPath(merchantCol, merchantRow);
+        if (path && path.length > 0) {
+          this.walkPathThenMerchant(path, sprite, label, coin);
+        }
+      }
+    });
+  }
+
+  /** Walk the cat to the merchant, then open the town overlay. Mirrors
+   *  walkPathThenEnter for buildings. */
+  private walkPathThenMerchant(
+    path: Array<{ col: number; row: number }>,
+    _sprite: Phaser.GameObjects.Sprite,
+    _label: Phaser.GameObjects.Text,
+    _coin: Phaser.GameObjects.Text,
+  ): void {
+    if (path.length === 0) {
+      eventBus.emit('show-town-overlay');
+      return;
+    }
+    const next = path[0];
+    const stepDc = next.col - this.playerPos.col;
+    const stepDr = next.row - this.playerPos.row;
+    this.movePlayer(stepDc, stepDr);
+    this.time.delayedCall(220, () => {
+      if (this.playerPos.col === next.col && this.playerPos.row === next.row) {
+        this.walkPathThenMerchant(path.slice(1), _sprite, _label, _coin);
+      } else if (this.merchantTile) {
+        const replan = this.findPath(this.merchantTile.col, this.merchantTile.row);
+        if (replan) this.walkPathThenMerchant(replan, _sprite, _label, _coin);
+      }
+    });
   }
 
   private spawnPlagueRats(): void {
