@@ -1,3 +1,4 @@
+[x] - Build new debug APK at v2.5.0 (versionCode 27) with showcase entry, Day of Rest archive, and weekly rest cadence — saved to `todo/clowder-and-crest-2.5.0-debug.apk`
 [x] - Implement weekly rest day mechanic — every 7th in-game day (suppressed during plague/winter/inquisition) the cats observe a day of rest: day timer pauses, town job board closes, menu emphasizes the Day of Rest entry. Stationed cats still earn from their post.
 [x] - Add hidden showcase entry (`?showcase=1` URL parameter on web + 5-tap crest gesture on web/APK) that loads a fully-unlocked demo save into slot 1 so portfolio reviewers can poke at every minigame without playing the campaign first.
 [x] - Add Day of Rest minigame archive — in-universe replay mode lived behind the menu, progressive unlocks tied to first-completion of each minigame in the campaign, sandbox runs that never touch fish/XP/mood/penalty state.
