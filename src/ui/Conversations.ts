@@ -77,8 +77,20 @@ export function checkAndShowConversation(): void {
   // dialogues per day in chapter 4 once enough bond pairs are unlocked.
   // The cap throttles without disabling: meaningful conversations still
   // play, just at the rate the player can savor them.
+  //
+  // CRITICAL: when the cap blocks a conversation, we MUST still navigate
+  // to the town map. checkAndShowConversation is the post-puzzle hook
+  // (called from puzzle-complete via onAfterResult), and the bottom of
+  // this function does `deps.switchScene('TownMapScene')` as the
+  // fall-through behavior. A bare `return` here was a bug — after a
+  // brawl/hunt/etc result the player got stuck on the puzzle scene with
+  // no way back. Reported as: "after a fight game I got the complete
+  // screen, then after clicking to dismiss it, I was brought back to
+  // the fight / brawl scene".
   const lastDay = Number(gameState.flags.lastConversationDay ?? 0);
   if (lastDay >= gameState.day) {
+    deps.switchScene('TownMapScene');
+    setTimeout(() => deps.suggestEndDay(), 500);
     return;
   }
 
