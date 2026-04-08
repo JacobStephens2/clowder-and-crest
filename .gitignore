@@ -1,8 +1,13 @@
-node_modules/
+# Patterns that match both directories AND symlinks (no trailing slash).
+# After the 2026-04-08 disk migration, several of these became symlinks
+# pointing at /mnt/volume_nyc3_01/jacob/clowder/, and trailing-slash
+# patterns only matched real directories — so the symlinks showed up as
+# untracked files until the slashes were dropped.
+node_modules
 dist/
 android/.gradle/
 android/build/
-android/app/build/
+android/app/build
 android/capacitor-cordova-android-plugins/build/
 android/app/src/main/assets/public/
 android/app/src/main/assets/capacitor.config.json
