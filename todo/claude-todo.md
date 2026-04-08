@@ -1,3 +1,0 @@
-- add a thought bubble above each cat in the guild view when they have a wish; tap the bubble to see the wish text, tap again to close (wish dismissal + inline panel under the rooms is already done in v2.5.8 — this is the next iteration)
-- add a spot on the town map that lets the player return to the guild by movement rather than needing to tap on the guild icon on the bottom of the screen — sort of physically moving back to their home and entering that place
-- make each building on the map a place the player can enter to view a new scene that is inside that building
