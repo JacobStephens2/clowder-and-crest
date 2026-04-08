@@ -194,6 +194,7 @@ export function showChoiceOverlay(job: JobDef, catIndex: number): void {
           case 'courier':
             add('courier_run', '\u{1F3C3} Sprint', 2);
             add('sokoban', '\u{1F4E6} Navigate', 2);
+            add('roof_scout', '\u{1F3D8}\u{FE0F} Rooftops', 3);
             add('puzzle', '\u{1F9E9} Slide Blocks', 5);
             break;
           case 'guard':
@@ -278,6 +279,9 @@ export function showChoiceOverlay(job: JobDef, catIndex: number): void {
         break;
       case 'courier_run':
         deps.switchScene('CourierRunScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id, catBreed: cat.breed });
+        break;
+      case 'roof_scout':
+        deps.switchScene('RoofScoutScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id, catBreed: cat.breed });
         break;
       case 'pounce':
         deps.switchScene('PounceScene', { difficulty: job.difficulty, jobId: job.id, catId: cat.id, catBreed: cat.breed });

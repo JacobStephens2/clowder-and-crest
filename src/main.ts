@@ -18,6 +18,7 @@ import { RitualScene } from './scenes/RitualScene';
 import { ScentTrailScene } from './scenes/ScentTrailScene';
 import { HeistScene } from './scenes/HeistScene';
 import { CourierRunScene } from './scenes/CourierRunScene';
+import { RoofScoutScene } from './scenes/RoofScoutScene';
 import { TownMapScene } from './scenes/TownMapScene';
 import { DungeonRunScene, getActiveDungeon, isDungeonRun } from './scenes/DungeonRunScene';
 import { eventBus } from './utils/events';
@@ -148,7 +149,7 @@ const config: Phaser.Types.Core.GameConfig = {
   input: {
     activePointers: 2,
   },
-  scene: [BootScene, TitleScene, GuildhallScene, TownMapScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene, HuntScene, NonogramScene, BrawlScene, StealthScene, PounceScene, PatrolScene, RitualScene, ScentTrailScene, HeistScene, CourierRunScene, DungeonRunScene],
+  scene: [BootScene, TitleScene, GuildhallScene, TownMapScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene, HuntScene, NonogramScene, BrawlScene, StealthScene, PounceScene, PatrolScene, RitualScene, ScentTrailScene, HeistScene, CourierRunScene, RoofScoutScene, DungeonRunScene],
 };
 
 const game = new Phaser.Game(config);
@@ -470,7 +471,7 @@ function setActiveTab(scene: string): void {
 const MINIGAME_SCENE_KEYS: ReadonlySet<string> = new Set([
   'PuzzleScene', 'SokobanScene', 'ChaseScene', 'FishingScene', 'HuntScene',
   'NonogramScene', 'BrawlScene', 'StealthScene', 'PounceScene', 'PatrolScene',
-  'RitualScene', 'ScentTrailScene', 'HeistScene', 'CourierRunScene', 'DungeonRunScene',
+  'RitualScene', 'ScentTrailScene', 'HeistScene', 'CourierRunScene', 'RoofScoutScene', 'DungeonRunScene',
 ]);
 
 function switchScene(target: string, data?: object): void {
