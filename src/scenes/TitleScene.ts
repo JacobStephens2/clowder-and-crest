@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { hasSave, loadGame, saveGame, getSlotSummary, loadFromSlot, saveToSlot, deleteSlot } from '../systems/SaveManager';
+import { hasSave, loadGame, saveGame, getSlotSummary, loadFromSlot, saveToSlot, deleteSlot, pruneExpiredBackups, getRecentBackup, restoreBackup } from '../systems/SaveManager';
 import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { esc } from '../utils/helpers';
@@ -197,6 +197,10 @@ export class TitleScene extends Phaser.Scene {
     const title = mode === 'load' ? 'Choose a Save' : 'Choose a Slot';
     let html = `<div style="color:#c4956a;font-family:Georgia,serif;font-size:22px;margin-bottom:20px">${title}</div>`;
 
+    // Prune any backups older than the 48h retention window before we
+    // surface the recovery option below.
+    pruneExpiredBackups();
+
     for (let slot = 1; slot <= 3; slot++) {
       const summary = getSlotSummary(slot);
       if (summary) {
@@ -210,6 +214,16 @@ export class TitleScene extends Phaser.Scene {
           html += `<button class="slot-btn" data-slot="${slot}" style="display:block;width:300px;padding:12px;margin:6px 0;background:#1a1614;border:1px dashed #3a3530;border-radius:6px;color:#6b5b3e;font-family:Georgia,serif;font-size:13px;cursor:pointer;text-align:left">Slot ${slot}: Empty</button>`;
         } else {
           html += `<div style="width:300px;padding:12px;margin:6px 0;background:#15110f;border:1px dashed #2a2520;border-radius:6px;color:#4a4034;font-family:Georgia,serif;font-size:13px;text-align:left">Slot ${slot}: Empty</div>`;
+        }
+
+        // If a recent backup exists for this empty slot, surface a
+        // Recover button so the player can undo an accidental delete
+        // within the 48h retention window.
+        const backup = getRecentBackup(slot);
+        if (backup) {
+          const ageHours = Math.max(1, Math.floor(backup.ageMs / (60 * 60 * 1000)));
+          const recoverLabel = `\u21BA Recover "${esc(backup.summary.name)}" — Day ${backup.summary.day}, Ch.${backup.summary.chapter} (${ageHours}h ago)`;
+          html += `<button class="slot-recover" data-slot="${slot}" data-bak="${esc(backup.key)}" style="display:block;width:300px;padding:6px;margin:0 0 8px 0;background:#1a2018;border:1px solid #4a8a4a;border-radius:4px;color:#88dd88;font-family:Georgia,serif;font-size:11px;cursor:pointer;text-align:center">${recoverLabel}</button>`;
         }
       }
     }
@@ -248,8 +262,21 @@ export class TitleScene extends Phaser.Scene {
         e.stopPropagation();
         const slot = parseInt((btn as HTMLElement).dataset.slot!, 10);
         const summary = getSlotSummary(slot);
-        if (summary && confirm(`Delete "${summary.name}"'s save? This cannot be undone.`)) {
+        if (summary && confirm(`Delete "${summary.name}"'s save?\n\nThe save will be backed up for 48 hours and can be recovered from the title screen during that window.`)) {
           deleteSlot(slot);
+          overlay.remove();
+          this.showSlotPicker(mode);
+        }
+      });
+    });
+
+    overlay.querySelectorAll('.slot-recover').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const slot = parseInt((btn as HTMLElement).dataset.slot!, 10);
+        const bakKey = (btn as HTMLElement).dataset.bak!;
+        const ok = restoreBackup(slot, bakKey);
+        if (ok) {
           overlay.remove();
           this.showSlotPicker(mode);
         }

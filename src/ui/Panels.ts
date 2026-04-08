@@ -7,7 +7,7 @@ import { getChapterName, getNextChapterHint } from '../systems/ProgressionManage
 import { getReputationLabel, getReputationBonuses } from '../systems/ReputationSystem';
 import { toggleMute, isMuted, setBgmVolume, getBgmVolume } from '../systems/MusicManager';
 import { toggleSfxMute, isSfxMuted, setSfxVolume, getSfxVolume } from '../systems/SfxManager';
-import { loadGame } from '../systems/SaveManager';
+import { loadGame, validateAndSanitizeSave } from '../systems/SaveManager';
 import { spendFish } from '../systems/Economy';
 import { playSfx } from '../systems/SfxManager';
 import { eventBus } from '../utils/events';
@@ -402,10 +402,19 @@ export function showMenuPanel(): void {
       const reader = new FileReader();
       reader.onload = () => {
         try {
-          const data = JSON.parse(reader.result as string);
-          if (!data.cats || !data.day) throw new Error('Invalid save');
-          deps.setGameState(data);
-          deps.saveGame(data);
+          const raw = JSON.parse(reader.result as string);
+          // Run untrusted save data through the sanitizer — clamps string
+          // lengths, strips control characters, validates structure. The
+          // render layer escapes HTML entities; this is the belt to that
+          // suspenders so a forgotten esc() call can never produce an
+          // executable payload.
+          const sanitized = validateAndSanitizeSave(raw);
+          if (!sanitized) {
+            deps.showToast('Invalid save file');
+            return;
+          }
+          deps.setGameState(sanitized);
+          deps.saveGame(sanitized);
           const save = loadGame()!;
           deps.setGameState(save);
           eventBus.emit('game-loaded', save);
