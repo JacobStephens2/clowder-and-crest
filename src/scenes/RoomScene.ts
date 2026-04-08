@@ -379,15 +379,18 @@ export class RoomScene extends Phaser.Scene {
 
       let dragStartPos = { x: 0, y: 0 };
       let didDrag = false;
+      let maxDragDist = 0;
 
       dragHit.on('dragstart', (pointer: Phaser.Input.Pointer) => {
         dragStartPos = { x: pointer.x, y: pointer.y };
         didDrag = false;
+        maxDragDist = 0;
       });
 
       dragHit.on('drag', (pointer: Phaser.Input.Pointer, dragX: number, dragY: number) => {
         const dist = Math.hypot(pointer.x - dragStartPos.x, pointer.y - dragStartPos.y);
-        if (dist > 8) didDrag = true;
+        maxDragDist = Math.max(maxDragDist, dist);
+        if (dist > 18) didDrag = true;
         if (didDrag) {
           dragHit.setPosition(dragX, dragY);
           const spriteObj = this.children.getByName(`furn_sprite_${f.furnitureId}_${col}_${row}`) as Phaser.GameObjects.Sprite | null;
@@ -465,6 +468,12 @@ export class RoomScene extends Phaser.Scene {
 
         // Actual drag — rearrange or move to another room
         const grid = worldToGrid(dragHit.x, dragHit.y);
+        if (maxDragDist < 28 || (grid.col === col && grid.row === row)) {
+          dragHit.setPosition(x, y);
+          const spriteObj = this.children.getByName(`furn_sprite_${f.furnitureId}_${col}_${row}`) as Phaser.GameObjects.Sprite | null;
+          if (spriteObj) spriteObj.setPosition(x, y);
+          return;
+        }
         if (grid.col >= 0 && grid.col < GRID_COLS && grid.row >= 0 && grid.row < GRID_ROWS) {
           f.gridX = grid.col;
           f.gridY = grid.row;
