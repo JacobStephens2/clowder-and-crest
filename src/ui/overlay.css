@@ -79,16 +79,27 @@ html, body {
   font-size: 12px;
 }
 
-/* Bottom Navigation */
+/* Bottom Navigation
+ *
+ * Pinned to the viewport bottom rather than the game-wrapper bottom so
+ * it stays put regardless of container sizing edge cases (Capacitor
+ * WebView, iOS safe areas, viewport shorter than 100vh, stale builds).
+ * env(safe-area-inset-bottom) keeps the buttons clear of the iOS home
+ * indicator and Android system nav bar — without it the buttons can
+ * appear "above the bottom" because the system bar covers the actual
+ * bottom edge.
+ */
 #bottom-bar {
-  position: absolute;
+  position: fixed;
   bottom: 0;
   left: 0;
-  width: 100%;
+  right: 0;
   display: flex;
   background: rgba(26, 24, 20, 0.95);
   border-top: 1px solid #3a3530;
   height: 64px;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  z-index: 100;
 }
 
 .nav-btn {
