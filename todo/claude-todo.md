@@ -1,4 +1,3 @@
-[] for the patrol game, I when I click on the intruders / purple circles, nothing happens, so I can never succeed at the game
 [] when all other claude todo is done, build a new apk and put it in todo
 [] hide wishes in the day of rest view
 [] I keep running out of space on this server. How big of a volume should I add to this server? 50GB? 100GB? Some other size?

@@ -355,6 +355,13 @@ export class PatrolScene extends Phaser.Scene {
       p.x += (dx / dist) * move;
       p.y += (dy / dist) * move;
       p.gfx.setPosition(p.x, p.y);
+      // Critical: keep the tap zone glued to the visual. The previous
+      // version only moved the container; the zone stayed at the spawn
+      // point on the screen edge, so taps that visually landed on the
+      // prowler missed the actual hit-test target and the player
+      // couldn't dispatch any intruders. Reported as a game-breaking
+      // bug in todo/claude-todo.md.
+      p.zone.setPosition(p.x, p.y);
     }
     // Garbage-collect dead prowlers
     this.prowlers = this.prowlers.filter((p) => p.alive);
