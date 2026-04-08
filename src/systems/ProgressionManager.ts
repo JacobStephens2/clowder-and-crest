@@ -113,6 +113,34 @@ export function isLongWinterRelationalDay(save: SaveData): boolean {
   return getLongWinterDay(save) === LONG_WINTER_RELATIONAL_DAY && !save.flags.longWinterRelationalDone;
 }
 
+// ──── Day of Rest ────
+//
+// Every 7 in-game days the cats observe a day of rest. The job board is
+// closed, the day timer pauses (so the player can take their time and
+// dip into the Day of Rest archive without burning real-time), and any
+// stationed cats still earn their daily fish (resting from active work,
+// not from their post). The next "End Day" advances normally.
+//
+// Day 7, 14, 21, 28… all qualify. Day 1 never does (the rest day is
+// always at the END of a work week, not the start). Rest days are
+// suppressed during narrative crises where a "weekend off" would feel
+// tonally wrong: the Rat Plague (chapter 3), the Long Winter (chapters
+// 4-5 transition), and the Inquisition investigation window (chapter 7).
+// Those events have their own pacing already and the player doesn't
+// need extra friction.
+
+export function isRestDay(save: SaveData): boolean {
+  if (!save) return false;
+  if (save.day < 7) return false;
+  if (save.day % 7 !== 0) return false;
+  // Suppress during active narrative crises — they have their own pacing
+  // and the rest-day framing would clash with the tone.
+  if (save.flags.ratPlagueStarted && !save.flags.ratPlagueResolved) return false;
+  if (save.flags.longWinterStarted && !save.flags.longWinterResolved) return false;
+  if (save.flags.inquisitionStarted && !save.flags.inquisitionResolved) return false;
+  return true;
+}
+
 export function checkRatPlagueResolution(save: SaveData): boolean {
   if (!save.flags.ratPlagueStarted || save.flags.ratPlagueResolved) return false;
 
