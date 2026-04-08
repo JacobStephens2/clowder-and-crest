@@ -19,6 +19,7 @@ import { ScentTrailScene } from './scenes/ScentTrailScene';
 import { HeistScene } from './scenes/HeistScene';
 import { CourierRunScene } from './scenes/CourierRunScene';
 import { RoofScoutScene } from './scenes/RoofScoutScene';
+import { BuildingInteriorScene } from './scenes/BuildingInteriorScene';
 import { TownMapScene } from './scenes/TownMapScene';
 import { DungeonRunScene, getActiveDungeon, isDungeonRun } from './scenes/DungeonRunScene';
 import { eventBus } from './utils/events';
@@ -150,7 +151,7 @@ const config: Phaser.Types.Core.GameConfig = {
   input: {
     activePointers: 2,
   },
-  scene: [BootScene, TitleScene, GuildhallScene, TownMapScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene, HuntScene, NonogramScene, BrawlScene, StealthScene, PounceScene, PatrolScene, RitualScene, ScentTrailScene, HeistScene, CourierRunScene, RoofScoutScene, DungeonRunScene],
+  scene: [BootScene, TitleScene, GuildhallScene, TownMapScene, PuzzleScene, SokobanScene, ChaseScene, RoomScene, FishingScene, HuntScene, NonogramScene, BrawlScene, StealthScene, PounceScene, PatrolScene, RitualScene, ScentTrailScene, HeistScene, CourierRunScene, RoofScoutScene, BuildingInteriorScene, DungeonRunScene],
 };
 
 const game = new Phaser.Game(config);
@@ -1308,6 +1309,23 @@ eventBus.on('start-accepted-job', () => {
   const job = acceptedJob;
   acceptedJob = null;
   showAssignOverlay(job);
+});
+
+// Generic building-entry router (added 2026-04-08): if the player has
+// an accepted job, fall through to start-accepted-job semantics so the
+// existing job flow works. Otherwise open the BuildingInteriorScene
+// with the building id so the player can step inside and read the
+// flavor text. Per user feedback in todo/claude-todo.md: "make each
+// building on the map a place the player can enter to view a new
+// scene that is inside that building."
+eventBus.on('enter-building', (buildingId: string) => {
+  if (acceptedJob && gameState) {
+    const job = acceptedJob;
+    acceptedJob = null;
+    showAssignOverlay(job);
+    return;
+  }
+  switchScene('BuildingInteriorScene', { buildingId });
 });
 
 
