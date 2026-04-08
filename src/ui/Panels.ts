@@ -65,6 +65,12 @@ export function showCatPanel(): void {
 
   let html = `<button class="panel-close" id="cats-close">&times;</button><h2>Your Cats</h2>`;
 
+  // Compute the daily wish once so each cat card can show its
+  // own wish line. Per user feedback (2026-04-08): "show wishes in
+  // the cat view under the cat with the wish."
+  const dailyWish = getDailyWish(gameState.day, gameState.cats, gameState.furniture.map((f) => f.furnitureId));
+  const wishCatId = dailyWish && !gameState.flags[`wish_day_${gameState.day}`] ? dailyWish.catId : null;
+
   gameState.cats.forEach((cat) => {
     const color = BREED_COLORS[cat.breed] ?? '#8b7355';
     const breedName = BREED_NAMES[cat.breed] ?? cat.breed;
@@ -85,6 +91,7 @@ export function showCatPanel(): void {
         </div>
       </div>
       ${stationedJob ? `<div class="stationed-badge">Stationed: ${stationedJob.name} (since day ${stationed!.dayStarted})<button class="recall-btn" data-cat-id="${cat.id}">Recall</button></div>` : ''}
+      ${wishCatId === cat.id && dailyWish ? `<div style="margin:6px 0;padding:6px 10px;background:rgba(221,160,85,0.12);border-left:3px solid #dda055;border-radius:3px;font-size:11px;color:#dda055">\u{1F4AD} Wish: <span style="color:#c4956a;font-style:italic">&quot;${esc(dailyWish.wish)}&quot;</span></div>` : ''}
       <div style="font-size:11px;margin-bottom:4px">
         <label style="color:#6b5b3e">Room: </label>
         <select class="room-select" data-cat-id="${cat.id}" style="background:#2a2520;color:#c4956a;border:1px solid #3a3530;padding:2px 4px;font-size:11px;font-family:Georgia,serif">
