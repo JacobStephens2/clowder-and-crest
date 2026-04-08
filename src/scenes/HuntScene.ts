@@ -34,7 +34,17 @@ interface ActiveRat {
   timer: Phaser.Time.TimerEvent;
   caught: boolean;
   type: RatType;
+  /** Wall-clock spawn time so the safety sweep can force-clean rats that
+   *  outlive their expected window (defends against any cleanup-failure
+   *  path leaving a rat visible at a hole forever). */
+  spawnedAt: number;
 }
+
+/** Hard cap on rat lifetime — anything older than this gets force-cleaned
+ *  by the safety sweep regardless of which spawn path created it. The
+ *  longest legitimate lifetime is the doublepop chain (~1700ms), so 4000ms
+ *  is comfortably above any expected case. */
+const RAT_MAX_LIFETIME_MS = 4000;
 
 export class HuntScene extends Phaser.Scene {
   private jobId = '';
@@ -273,6 +283,29 @@ export class HuntScene extends Phaser.Scene {
       this.onEmptyTap(wx, wy);
     });
 
+    // Safety sweep — every second, force-clean any rat that's been alive
+    // longer than RAT_MAX_LIFETIME_MS. This is a belt-and-suspenders defense
+    // against any spawn path (especially the doublepop nested onComplete
+    // chain) failing to clean up its own rat. Symptom this fixes: rats
+    // visible at holes that can't be tapped and stay until end of game,
+    // blocking those holes from spawning new rats.
+    this.time.addEvent({
+      delay: 1000,
+      loop: true,
+      callback: () => {
+        if (this.finished) return;
+        const now = Date.now();
+        const stuck = this.activeRats.filter((r) => now - r.spawnedAt > RAT_MAX_LIFETIME_MS && !r.caught);
+        for (const rat of stuck) {
+          // Treat as an escape so the rat is removed from activeRats and
+          // the hole becomes spawnable again. handleRatEscape applies the
+          // miss penalty for non-poison rats, which is the correct behavior
+          // — the player had their chance and the rat got away.
+          this.handleRatEscape(rat);
+        }
+      },
+    });
+
     // Clean up on scene stop (prevent timer/tween memory leaks)
     this.events.once('shutdown', () => {
       this.time.removeAllEvents();
@@ -321,6 +354,13 @@ export class HuntScene extends Phaser.Scene {
     const hole = HOLES[holeIndex];
     this.totalSpawned++;
 
+    // Stamp the spawn time so the safety sweep can force-clean rats whose
+    // lifetime has run wildly past their visible window. Without this,
+    // any failure in the doublepop's nested onComplete chain (or any other
+    // edge case) leaves a rat visible at a hole forever, blocking that
+    // hole from spawning new rats and frustrating the player.
+    const spawnedAt = Date.now();
+
     const type = this.pickRatType();
     const isGolden = type === 'golden';
     const isPoison = type === 'poison';
@@ -357,6 +397,7 @@ export class HuntScene extends Phaser.Scene {
       hitZone,
       caught: false,
       type,
+      spawnedAt,
       timer: this.time.delayedCall(0, () => {}), // placeholder, set below
     };
 
