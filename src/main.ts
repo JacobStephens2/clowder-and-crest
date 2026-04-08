@@ -38,7 +38,7 @@ import { earnFish, spendFish, calculateReward, collectStationedEarnings, isCatSt
 import { getJob, getStatMatchScore, generateDailyJobs, getJobFlavor, type JobDef } from './systems/JobBoard';
 import { getPuzzleByDifficulty, generatePuzzle } from './systems/PuzzleGenerator';
 import { addBondPoints, processDailyBonds, grantBondRankReward, getBondRank, getBondPairs, getAvailableConversation } from './systems/BondSystem';
-import { checkChapterAdvance, checkRatPlagueResolution, checkInquisitionResolution, getChapterName, getNextChapterHint } from './systems/ProgressionManager';
+import { checkChapterAdvance, checkRatPlagueResolution, checkInquisitionResolution, checkLongWinterStart, checkLongWinterResolution, getLongWinterDay, isLongWinterForcedChoiceDay, isLongWinterRelationalDay, getChapterName, getNextChapterHint } from './systems/ProgressionManager';
 import { startBgm, toggleMute, isMuted, switchToPuzzleMusic, switchToFightMusic, switchToNormalMusic, switchToTrackset, pauseMusic, resumeMusic } from './systems/MusicManager';
 import { playSfx } from './systems/SfxManager';
 import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDayEnd, pauseDayTimer, resumeDayTimer, isPaused } from './systems/DayTimer';
@@ -658,6 +658,8 @@ eventBus.on('show-town-overlay', () => {
   const dailyJobs = cachedDailyJobs.filter((j) => !jobsCompletedToday.has(j.id));
 
   const plagueActive = gameState.flags.ratPlagueStarted && !gameState.flags.ratPlagueResolved;
+  const winterActive = !!gameState.flags.longWinterStarted && !gameState.flags.longWinterResolved;
+  const winterDay = winterActive ? getLongWinterDay(gameState) : 0;
 
   // Calculate daily budget summary
   const catUpkeep = gameState.cats.reduce((sum, c) => sum + 2 + Math.max(0, c.level - 1), 0);
@@ -705,6 +707,14 @@ eventBus.on('show-town-overlay', () => {
         <div style="font-size:10px;color:#aa5555;margin-top:4px">Each day the plague persists, upkeep rises and cats may fall ill.</div>
       </div>`;
     })() : ''}
+    ${winterActive ? `<div style="background:#1f2a3a;color:#a8c0d8;padding:10px 12px;margin:0 12px 8px;border-radius:4px;font-size:12px;text-align:center;font-family:Georgia,serif;border:1px solid #2f4258">
+      <strong>\u2744 THE LONG WINTER — Day ${winterDay}/5</strong><br>
+      <div style="margin:6px 0;font-size:11px">The town is shut down. The job board is closed until the storm passes.</div>
+      <div style="background:#0e1620;border-radius:3px;height:8px;margin:4px 0;overflow:hidden">
+        <div style="background:#a8c0d8;height:100%;width:${winterDay * 20}%;transition:width 0.3s"></div>
+      </div>
+      <div style="font-size:10px;color:#7d96b3;margin-top:4px">Upkeep is doubled. Cats are tested. The guild has only itself.</div>
+    </div>` : ''}
     <div class="town-section-divider"></div>
     <div class="town-section-title">Job Board</div>
     ${gameState.totalJobsCompleted < 3 ? '<div style="padding:0 12px 8px;font-size:11px;color:#6b5b3e;font-family:Georgia,serif">Accept a job and assign one of your cats to complete it. Solve puzzles to earn fish.</div>' : ''}
@@ -722,7 +732,14 @@ eventBus.on('show-town-overlay', () => {
     manor: 'castle', night: 'night',
   };
 
-  dailyJobs.forEach((job) => {
+  if (winterActive) {
+    html += `<div style="padding:24px 12px;text-align:center;font-family:Georgia,serif;color:#7d96b3;font-style:italic">
+      The job board is empty. The storm has the town in its grip.<br>
+      Wait it out. End the day to advance the winter.
+    </div>`;
+  }
+
+  if (!winterActive) dailyJobs.forEach((job) => {
     const diffClass = `diff-${job.difficulty}`;
     const categoryIcons: Record<string, string> = {
       pest_control: '\u{1F400}', courier: '\u{1F4DC}', guard: '\u{1F6E1}', sacred: '\u{1F54A}', detection: '\u{1F50D}', shadow: '\u{1F5E1}',
@@ -1317,6 +1334,44 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
     }
   }
 
+  // Long Winter daily logic — the structural fall (see story-audit-council.md)
+  // Trigger check fires once chapter 4 has been settled for a few days.
+  if (gameState.chapter === 4 && !gameState.flags.longWinterStarted && !gameState.flags.longWinterResolved) {
+    checkLongWinterStart(gameState);
+  }
+  // Active winter — apply pressure each day until resolved.
+  if (gameState.flags.longWinterStarted && !gameState.flags.longWinterResolved) {
+    const winterDay = getLongWinterDay(gameState);
+
+    // Doubled upkeep — extra fish drained for firewood + storm rations.
+    const extraUpkeep = Math.min(gameState.fish, calculateDailyUpkeep(gameState));
+    if (extraUpkeep > 0) {
+      gameState.fish -= extraUpkeep;
+      setTimeout(() => showToast(`The storm doubles your upkeep. -${extraUpkeep} fish for firewood.`), 800);
+    }
+
+    // Mood drops — one cat per day, never the player.
+    const eligibleMood = gameState.cats.filter((c) => !c.isPlayer && c.mood !== 'unhappy');
+    if (eligibleMood.length > 0 && winterDay <= 3) {
+      const target = eligibleMood[Math.floor(Math.random() * eligibleMood.length)];
+      if (target.mood === 'happy') target.mood = 'content';
+      else if (target.mood === 'content') target.mood = 'tired';
+      else target.mood = 'unhappy';
+      setTimeout(() => showToast(`The cold wears on ${target.name}.`), 1400);
+    }
+
+    // Day 3 — the granary forced choice
+    if (isLongWinterForcedChoiceDay(gameState)) {
+      setTimeout(() => eventBus.emit('long-winter-forced-choice'), 2200);
+    }
+    // Day 4 — relational beat (a cat almost leaves OR confronts the wildcat about the granary)
+    if (isLongWinterRelationalDay(gameState)) {
+      setTimeout(() => eventBus.emit('long-winter-relational'), 2200);
+    }
+    // Day 5 — resolution
+    checkLongWinterResolution(gameState);
+  }
+
   // Inquisition daily check
   if (gameState.flags.inquisitionStarted && !gameState.flags.inquisitionResolved) {
     const inqStart = numFlag("inquisitionDayStarted") || gameState.day;
@@ -1675,6 +1730,9 @@ eventBus.on('chapter-advance', (chapter: number) => {
         'In its place — a guildhall. Warm. Furnished. Full of life.',
         `${catName} looks around. Each cat with their own story. Their own strength.`,
         'A clowder.',
+        // Prologue callback (story-audit-council.md item 6) — explicit echo
+        // of the rain-soaked notice from the opening 6-panel intro story.
+        `The notice is gone from the market wall. ${catName} took it down weeks ago, after the third recruit arrived. It was the only thing left from the lean-to.`,
         'The town knows their names. The merchants wave. The monks nod.',
         `From a stray in a storm to ${repLabel === 'Noble' ? 'the most trusted guild in town' : repLabel === 'Shadowed' ? 'a guild feared and wealthy' : 'a guild that earned its place'}.`,
         'Home.',
@@ -1682,7 +1740,8 @@ eventBus.on('chapter-advance', (chapter: number) => {
       image: 'assets/sprites/crest.png',
       catSprite: catBreed,
       tone: 'warm',
-      onScene: (i) => { if (i === 6) playSfx('chapter'); if (i === 3) playSfx('purr', 0.3); },
+      // Index shifted by +1 from the prologue-callback panel insert.
+      onScene: (i) => { if (i === 7) playSfx('chapter'); if (i === 3) playSfx('purr', 0.3); },
     },
     6: {
       // The Rival — neutral turning tense. Competition.
@@ -1762,6 +1821,179 @@ eventBus.on('rat-plague-resolved', () => {
     ],
     image: 'assets/sprites/scenes/town_day.png',
     onScene: (i) => { if (i === 4) playSfx('chapter'); },
+  });
+});
+
+// ──── Long Winter ────
+//
+// The structural fall stage. Fires automatically ~5 days into chapter 4.
+// 5 winter days total: pressure on days 1-2, granary choice on day 3,
+// relational beat on day 4, resolution on day 5.
+//
+// See todo/story/story-audit-council.md for the design rationale: this
+// event exists because the rags-to-riches arc was previously missing a
+// non-conditional "loss of everything" moment for all players.
+
+eventBus.on('long-winter-start', () => {
+  const catName = esc(gameState?.playerCatName ?? 'The wildcat');
+  if (gameState) {
+    addJournalEntry(gameState, 'A storm has settled over the town. The job board is closed. The Long Winter has begun.', 'event');
+  }
+  showNarrativeOverlay({
+    scenes: [
+      'The first snow came at dawn. Then the second. Then the third.',
+      'By the fourth, the town stopped pretending it would pass.',
+      'Shutters bolted. The market emptied. The job board went dark.',
+      'The merchant\'s caravan turned back at the southern gate. The cathedral bells slowed to once a day.',
+      `${catName} stood at the guildhall window and watched the snow swallow the cobblestones.`,
+      'For five days, the work would have to wait. For five days, the guild would have only itself.',
+    ],
+    image: 'assets/sprites/scenes/town.png',
+    onScene: (i) => {
+      if (i === 0) playSfx('thunder', 0.4);
+      if (i === 5) playSfx('cat_sad', 0.3);
+    },
+  });
+});
+
+eventBus.on('long-winter-forced-choice', () => {
+  if (!gameState) return;
+  const catName = esc(gameState.playerCatName);
+
+  // Build the modal — the granary choice. Mirrors the existing crisis dialog
+  // pattern (assign-overlay class) so it inherits the modal styling.
+  const overlay = document.createElement('div');
+  overlay.className = 'assign-overlay';
+  overlay.innerHTML = `
+    <div class="panel" style="max-width:420px">
+      <h2>The Locked Granary</h2>
+      <p style="font-size:12px;line-height:1.5;color:#5a4a3a">
+        Day three of the storm. The fish stores are nearly out.
+      </p>
+      <p style="font-size:12px;line-height:1.5;color:#5a4a3a">
+        ${catName} stands in the snow outside the town granary. The lock is old. The storm is loud. No one would see.
+      </p>
+      <p style="font-size:12px;line-height:1.5;color:#5a4a3a">
+        The other cats are inside the guildhall, waiting. They are getting hungry.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+        <button id="lw-break-in" class="btn-primary">Break the lock (+50 fish, Shadow +20)</button>
+        <button id="lw-wait" class="btn-secondary">Walk away (cost yet to come)</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('overlay-layer')!.appendChild(overlay);
+
+  document.getElementById('lw-break-in')!.addEventListener('click', () => {
+    overlay.remove();
+    if (!gameState) return;
+    gameState.fish += 50;
+    gameState.reputationScore -= 20; // Shadow shift
+    gameState.flags.longWinterChoice = 'breakIn';
+    gameState.flags.longWinterChoiceMade = true;
+    addJournalEntry(gameState, `${gameState.playerCatName} broke the granary lock. The storm pressed harder than the law. (+50 fish, Shadow +20)`, 'event');
+    playSfx('alarm', 0.3);
+    showToast('You took what wasn\'t yours. The cats will eat tonight.');
+  });
+
+  document.getElementById('lw-wait')!.addEventListener('click', () => {
+    overlay.remove();
+    if (!gameState) return;
+    gameState.flags.longWinterChoice = 'waited';
+    gameState.flags.longWinterChoiceMade = true;
+    addJournalEntry(gameState, `${gameState.playerCatName} walked away from the granary. The storm tightens its grip.`, 'event');
+    playSfx('cat_sad', 0.3);
+    showToast('The cats will go to bed hungry. The storm is not done with you.');
+  });
+});
+
+eventBus.on('long-winter-relational', () => {
+  if (!gameState) return;
+  const catName = esc(gameState.playerCatName);
+  const choice = gameState.flags.longWinterChoice;
+
+  // Pick the cat for the relational beat. Prefer a non-player cat.
+  const candidates = gameState.cats.filter((c) => !c.isPlayer);
+  if (candidates.length === 0) {
+    // Edge case: only the player cat. Skip the beat, just mark done.
+    gameState.flags.longWinterRelationalDone = true;
+    return;
+  }
+  const otherCat = candidates[Math.floor(Math.random() * candidates.length)];
+  gameState.flags.longWinterCatId = otherCat.id;
+  gameState.flags.longWinterRelationalDone = true;
+
+  let scenes: string[];
+  if (choice === 'breakIn') {
+    // The pious / loyal cat confronts the wildcat about the granary theft.
+    scenes = [
+      `${esc(otherCat.name)} found ${catName} in the kitchen, alone with the stolen fish.`,
+      `"You promised this would be different from the lean-to. You promised this would be a guild that didn't have to take."`,
+      `${catName} could not meet ${esc(otherCat.name)}'s eyes.`,
+      `"I know."`,
+      `"Then we'll make it right when the storm passes. Together. All of us. That's what a guild does."`,
+      'The kitchen was warm. The fish would last. But the founder had learned what it cost to forget.',
+    ];
+  } else {
+    // A cat almost leaves. The wildcat must persuade them to stay.
+    // This is the founder-flaw beat: "I always thought I had to do everything alone."
+    scenes = [
+      `${esc(otherCat.name)} stood by the door with their bag packed.`,
+      `"I'm sorry. I can't watch the others starve. I'll find work in the next town."`,
+      `${catName} reached for words and found none.`,
+      `Then: "I always thought the only way to keep the guild safe was to do everything alone."`,
+      `"I thought asking for help meant I'd already failed."`,
+      `"Stay. Let me try to learn the other way. Stay, and we'll find a way through this together — or we'll fall together."`,
+      `${esc(otherCat.name)} set the bag down. The storm howled outside, but inside the lean-to was no longer alone.`,
+    ];
+    addJournalEntry(gameState, `${otherCat.name} almost left. ${gameState.playerCatName} asked for help — for the first time. They stayed.`, 'bond');
+  }
+
+  showNarrativeOverlay({
+    scenes,
+    image: 'assets/sprites/scenes/guildhall.png',
+    catSprite: otherCat.breed,
+    tone: 'warm',
+    onScene: (i) => {
+      if (i === 0) playSfx('cat_sad', 0.3);
+      if (i === scenes.length - 1) playSfx('purr', 0.4);
+    },
+  });
+});
+
+eventBus.on('long-winter-resolved', () => {
+  if (!gameState) return;
+  const catName = esc(gameState.playerCatName);
+  const choice = gameState.flags.longWinterChoice;
+
+  if (gameState) {
+    addJournalEntry(gameState, 'The Long Winter has broken. The town stirs again. The guild held.', 'event');
+    // Mood recovers slightly — survival is its own reward.
+    for (const cat of gameState.cats) {
+      if (cat.mood === 'unhappy') cat.mood = 'tired';
+      else if (cat.mood === 'tired') cat.mood = 'content';
+    }
+  }
+
+  const closingLine = choice === 'breakIn'
+    ? 'The fish that fed them this winter were not theirs. The guild knew. The guild would remember.'
+    : 'They had nothing left to give the storm. So they had given each other everything.';
+
+  showNarrativeOverlay({
+    scenes: [
+      'On the sixth morning, the wind dropped.',
+      'A pale sun rose over the cobblestones. The cathedral bells rang twice — and then a third time, like a town remembering how.',
+      'The market reopened by noon. The merchant\'s caravan picked its way through the slush. The job board was nailed back to the wall.',
+      `${catName} stepped outside and felt the cold sun on their face.`,
+      closingLine,
+      'What was almost lost was now held with both paws.',
+    ],
+    image: 'assets/sprites/scenes/town_day.png',
+    tone: 'warm',
+    onScene: (i) => {
+      if (i === 1) playSfx('day_bell', 0.5);
+      if (i === 5) playSfx('chapter', 0.4);
+    },
   });
 });
 
