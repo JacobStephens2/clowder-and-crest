@@ -136,6 +136,25 @@ export class TownMapScene extends Phaser.Scene {
     this.catBreed = playerCat?.breed ?? 'wildcat';
     this.isMoving = false;
     this.activeDoor = null;
+    // Defensive resets per user feedback (2026-04-08): "I clicked the
+    // guildhall on the town scene and my cat went to the guildhall,
+    // but I couldn't enter the guildhall, and then my cat got stuck
+    // on the guildhall entry spot and couldn't move to any other
+    // spots." Two latent state-leak risks fixed:
+    //   1. walkingToBuilding wasn't reset in create(), so a directed
+    //      walk that ended via the auto-enter path (which doesn't go
+    //      through walkPathThenEnter's clearing branch) left the
+    //      flag pointing at the previous destination. On the next
+    //      scene load, that flag would re-enable the auto-enter for
+    //      the SAME building.
+    //   2. playerPos persisted across scene loads, so if the player
+    //      had walked to the guildhall door, the next TownMapScene
+    //      load spawned them ON the door tile — and the next time
+    //      checkDoorProximity ran, the auto-enter could refire and
+    //      bounce them right back into the guildhall.
+    // Both are now explicitly reset on every create().
+    this.walkingToBuilding = null;
+    this.playerPos = { col: 4, row: 8 };
     this.buildingLabels = new Map();
 
     // Build grid
