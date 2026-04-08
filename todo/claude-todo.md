@@ -1,0 +1,1 @@
+- consider todo/tech/Wall Jump Advice.md for ideas on how to improve the roof scout scene
