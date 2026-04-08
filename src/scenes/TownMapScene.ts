@@ -38,6 +38,13 @@ interface BuildingDef {
 
 const BUILDINGS: BuildingDef[] = [
   { id: 'cathedral', name: 'Cathedral', col: 0, row: 0, w: 3, h: 2, doorCol: 1, doorRow: 2, color: 0x282622, roofColor: 0x3a3530 },
+  // Guildhall sits in the gap between the cathedral and the castle.
+  // Per user feedback (2026-04-08): "add a spot on the town map that
+  // lets the player return to the guild by movement rather than
+  // needing to tap on the guild icon on the bottom of the screen."
+  // Walking onto the door tile auto-enters via checkDoorProximity,
+  // mirroring the Job Board pattern.
+  { id: 'guildhall', name: 'Guildhall', col: 3, row: 0, w: 2, h: 2, doorCol: 3, doorRow: 2, color: 0x4a3a28, roofColor: 0x6b4a28 },
   { id: 'castle', name: 'Castle', col: 5, row: 0, w: 3, h: 2, doorCol: 6, doorRow: 2, color: 0x2e2a26, roofColor: 0x3a3632 },
   { id: 'tavern', name: 'Tavern', col: 0, row: 4, w: 2, h: 2, doorCol: 1, doorRow: 6, color: 0x2a2420, roofColor: 0x3a2a22 },
   { id: 'market', name: 'Market', col: 6, row: 4, w: 2, h: 2, doorCol: 6, doorRow: 6, color: 0x2a2620, roofColor: 0x3a2e28 },
@@ -942,8 +949,13 @@ export class TownMapScene extends Phaser.Scene {
       }
     }
 
-    // Auto-enter the Job Board when stepping on its door tile
-    if (this.activeDoor && this.activeDoor.id === 'jobs' &&
+    // Auto-enter on door tile for buildings that don't need an
+    // intermediate prompt — Job Board (opens job overlay) and
+    // Guildhall (returns to the home scene). Per user feedback
+    // (2026-04-08): walking onto the guildhall door is the physical
+    // "go home" affordance the player wanted as an alternative to
+    // the bottom-nav guildhall button.
+    if (this.activeDoor && (this.activeDoor.id === 'jobs' || this.activeDoor.id === 'guildhall') &&
         this.playerPos.col === this.activeDoor.doorCol && this.playerPos.row === this.activeDoor.doorRow) {
       this.enterBuilding(this.activeDoor);
     }
@@ -1049,8 +1061,14 @@ export class TownMapScene extends Phaser.Scene {
       eventBus.emit('show-furniture-shop');
     } else if (b.id === 'jobs') {
       eventBus.emit('show-town-overlay');
+    } else if (b.id === 'guildhall') {
+      // Walking-back-to-home affordance: route to the GuildhallScene
+      // the same way the bottom-nav button does.
+      eventBus.emit('navigate', 'GuildhallScene');
     } else {
-      // Non-job-board buildings: start accepted job if one exists
+      // Non-job-board buildings: start accepted job if one exists,
+      // OR open the generic interior view if no job is accepted.
+      // Routing happens in main.ts via the 'enter-building' event.
       eventBus.emit('start-accepted-job');
     }
   }
