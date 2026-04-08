@@ -200,6 +200,38 @@ function isUnlocked(mg: MinigameDef, completedKeys: string[]): boolean {
   return mg.unlockedBy.test(completedKeys);
 }
 
+/** Pause every active Phaser scene so its input handlers stop firing
+ *  while the Day of Rest panel is open. Without this, taps on the panel
+ *  could fall through to the underlying scene (e.g. clicking "easy" on
+ *  the difficulty picker also triggered the recruit-cat prompt because
+ *  TownMapScene's pointer handlers fired on the same touch). Returns
+ *  the list of scene keys that were paused so they can be resumed if
+ *  the player closes the panel without launching a minigame. */
+function pauseActiveScenes(): string[] {
+  const paused: string[] = [];
+  const game = (window as unknown as { __clowderGame?: Phaser.Game }).__clowderGame;
+  if (!game) return paused;
+  for (const scene of game.scene.getScenes(true)) {
+    const key = scene.scene.key;
+    if (key === 'BootScene') continue;
+    game.scene.pause(key);
+    paused.push(key);
+  }
+  return paused;
+}
+
+/** Resume scenes paused by pauseActiveScenes(). No-op for any that have
+ *  since been stopped (e.g. switchScene tore them down). */
+function resumeScenes(keys: string[]): void {
+  const game = (window as unknown as { __clowderGame?: Phaser.Game }).__clowderGame;
+  if (!game) return;
+  for (const key of keys) {
+    if (game.scene.isPaused(key)) game.scene.resume(key);
+  }
+}
+
+let pausedSceneKeys: string[] = [];
+
 /** Render the Day of Rest panel as an overlay. Called from the menu. */
 export function showDayOfRestPanel(): void {
   const gameState = deps.getGameState();
@@ -208,6 +240,14 @@ export function showDayOfRestPanel(): void {
   // Remove any existing menu overlays so we don't stack on top of the
   // main menu when the player taps "Day of Rest".
   deps.overlayLayer.querySelectorAll('.menu-overlay, .day-of-rest-overlay').forEach((el) => el.remove());
+
+  // Pause underlying Phaser scenes so their pointer handlers don't
+  // fire on taps that visually land on the panel. Resumed by the
+  // close button (or implicitly stopped by switchScene when the
+  // player launches a practice run).
+  if (pausedSceneKeys.length === 0) {
+    pausedSceneKeys = pauseActiveScenes();
+  }
 
   const completedKeys = Object.keys(gameState.puzzlesCompleted ?? {});
   const unlockedGames = MINIGAMES.filter((mg) => isUnlocked(mg, completedKeys));
@@ -246,7 +286,13 @@ export function showDayOfRestPanel(): void {
   panel.innerHTML = html;
   deps.overlayLayer.appendChild(panel);
 
-  document.getElementById('dor-close')!.addEventListener('click', () => panel.remove());
+  document.getElementById('dor-close')!.addEventListener('click', () => {
+    panel.remove();
+    // Closing the panel without launching anything — resume the scenes
+    // we paused on open.
+    resumeScenes(pausedSceneKeys);
+    pausedSceneKeys = [];
+  });
 
   panel.querySelectorAll('.dor-card').forEach((card) => {
     card.addEventListener('click', () => {
@@ -288,6 +334,8 @@ function showDifficultyPicker(mg: MinigameDef): void {
 
   document.getElementById('dor-diff-close')!.addEventListener('click', () => {
     panel.remove();
+    // Stay paused — showDayOfRestPanel re-opens but its pause guard
+    // sees pausedSceneKeys is non-empty and skips the re-pause.
     showDayOfRestPanel();
   });
 
@@ -337,6 +385,10 @@ function launchPracticeRun(mg: MinigameDef, difficulty: 'easy' | 'medium' | 'har
   // and puzzle-quit handlers check this flag at the very top of their
   // bodies and short-circuit if it's set.
   beginPracticeRun({ resumeTrackset: 'normal' });
+
+  // Clear our paused-scenes tracking — switchScene below will stop them
+  // entirely, so there's nothing left to resume.
+  pausedSceneKeys = [];
 
   deps.pauseDayTimer();
   deps.switchToTrackset(trackset);
