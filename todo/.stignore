@@ -17,6 +17,7 @@
 !/archive
 !/archive/**
 !/game
+!/game/*
 !/game/**
 !/ideas
 !/ideas/**
