@@ -167,6 +167,13 @@
   },
   "flags": {
     "demoSave": true,
+    "viewed_group_guild_meeting": true,
+    "viewed_group_plague_aftermath": true,
+    "viewed_group_celebration": true,
+    "viewed_group_shadow_crisis": true,
+    "viewed_group_noble_recognition": true,
+    "viewed_group_rival_defeated": true,
+    "viewed_group_inquisition_verdict": true,
     "ratPlagueStarted": true,
     "ratPlagueResolved": true,
     "plaguePestDone": 5,
