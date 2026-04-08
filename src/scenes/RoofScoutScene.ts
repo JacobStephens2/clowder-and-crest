@@ -36,11 +36,21 @@ const TARGET_Y = 120;
 const COYOTE_MS = 120;
 const JUMP_BUFFER_MS = 150;
 
-const BASE_JUMP_VELOCITY = -560;
-const WALL_KICK_X = 200;
-const LEAN_X = 110;
+// Physics tuning, second pass (2026-04-08): the first version had drag=400
+// and lean=110 which combined to kill the horizontal lean velocity after
+// ~15px of travel. The player couldn't reach the side platforms in the
+// first chunk because the lateral distance was 35-100px and the lean
+// momentum died too quickly. Tuned for more carry-through:
+//   - jump velocity bumped slightly so a max-hold jump clears 1.5 chunks
+//   - lean increased so a tap travels meaningfully
+//   - drag dropped from 400 → 120 so momentum carries through the arc
+//   - drag still > 0 so the player doesn't slide forever after release
+const BASE_JUMP_VELOCITY = -600;
+const WALL_KICK_X = 220;
+const LEAN_X = 170;
 const WALL_FALL_CAP = 80;
 const MAX_FALL_VELOCITY = 900;
+const PLAYER_DRAG_X = 120;
 
 // Each chunk is one vertical band of authored level. Chunks are stacked
 // upward from the start until the world is filled. Y values are RELATIVE
@@ -64,16 +74,24 @@ const CHUNK_HEIGHT = 200;
 // 12 hand-crafted chunks across 3 difficulty tiers. Tier 1 chunks are
 // wide, close, and forgiving (the warm-up). Tier 2 introduces wall
 // cling gaps. Tier 3 demands wall-jumping and tighter timing.
+//
+// IMPORTANT: t1-stairs is always the FIRST chunk loaded above the
+// spawn (chunkIndex 0 → tier 1 → eligible[0]). Its lowest platform
+// must be reachable with a single straight-up jump from x=GAME_WIDTH/2,
+// or new players get stuck on the ground floor on their very first
+// attempt. Reported as a bug 2026-04-08.
 const CHUNKS: ChunkDef[] = [
   // ── Tier 1: shallow stairs, wide ledges ──
   {
     id: 't1-stairs', difficulty: 1,
     platforms: [
-      { x: 60, y: -20, width: 100 },
-      { x: 230, y: -80, width: 90 },
-      { x: 90, y: -140, width: 110 },
+      // Wide central starter — directly above the spawn (GAME_WIDTH/2 = 195),
+      // so a straight-up jump always lands.
+      { x: 130, y: -30, width: 130 },
+      { x: 30, y: -100, width: 110 },
+      { x: 240, y: -160, width: 100 },
     ],
-    fish: [{ x: 270, y: -110 }],
+    fish: [{ x: 195, y: -55 }],
   },
   {
     id: 't1-wide', difficulty: 1,
@@ -335,8 +353,8 @@ export class RoofScoutScene extends Phaser.Scene {
     playerBody.setSize(PLAYER_W, PLAYER_H);
     playerBody.setOffset(0, 0);
     this.player.setCollideWorldBounds(true);
-    this.player.setMaxVelocity(220, MAX_FALL_VELOCITY);
-    this.player.setDragX(400);
+    this.player.setMaxVelocity(260, MAX_FALL_VELOCITY);
+    this.player.setDragX(PLAYER_DRAG_X);
 
     this.playerVisual = this.add.rectangle(GAME_WIDTH / 2, START_Y, PLAYER_W, PLAYER_H, 0xc4956a);
     this.playerVisual.setStrokeStyle(1, 0x6b4a28);
@@ -629,14 +647,20 @@ export class RoofScoutScene extends Phaser.Scene {
       this.player.setVelocityY(this.jumpVelocity);
       this.player.setVelocityX(pushDir * WALL_KICK_X);
       this.isWallClinging = false;
-      playSfx('block_slide', 0.25);
+      // Wall-jump is a relatively rare moment so it gets a soft tactile
+      // sound. Volume dropped from 0.25 → 0.08 per user feedback.
+      playSfx('block_slide', 0.08);
       haptic.tap();
     } else {
-      // Ground / coyote jump — directional lean from tap side
+      // Ground / coyote jump — directional lean from tap side.
+      // No SFX here per user feedback (2026-04-08): "the constant jump
+      // sound is a little annoying." The squash/stretch tween + haptic
+      // tap already give the player launch confirmation, and the
+      // landing crate_push (in update()) is the only end-of-jump sound
+      // the player needs.
       this.player.setVelocityY(this.jumpVelocity);
       const leanX = direction === 'left' ? -LEAN_X : LEAN_X;
       this.player.setVelocityX(leanX);
-      playSfx('tap', 0.2);
       haptic.tap();
     }
     this.playJumpStretch();
