@@ -95,6 +95,19 @@ Show an explicit "Before you reinstall, export your save!" warning the first tim
 
 **Do** consider Alternative A (Capacitor Filesystem export to a survives-reinstall path) as a near-term improvement that solves 80% of the user's stated need with one day of work. It can ship before the full cloud system and the cloud system can supersede it later.
 
+## Status (2026-04-08)
+
+**Alternatives A + B shipped in v2.4.0+1** as the practical solution. The user explicitly chose this path: *"maybe that means the cloud save is not necessary, though it would still be nice"*.
+
+What landed:
+- `@capacitor/filesystem` plugin added
+- `exportSaveToFilesystem()` writes the manual export to `Documents/clowder-save-day{N}.json` on Capacitor (Documents survives APK uninstall on Android)
+- `writeAutoSnapshot()` overwrites `Documents/clowder-save-autosnapshot.json` on every day-end (not every save — disk IO would lag the per-tile loop)
+- TitleScene first-launch detection: when localStorage has no slots but a Documents snapshot exists, a green "↺ Restore Save (Day X, Ch.Y)" button appears above the New Game button. One tap restores the snapshot to slot 1 and loads the game.
+- The web export path is unchanged (standard `<a download>` still drops in Downloads folder).
+
+The full cloud system (steps 1-7 above) remains deferred. The user noted it would "still be nice" so it's not removed from the queue — but it's no longer urgent because the reinstall-loss problem is solved by the Capacitor Filesystem path. If multi-device sync becomes a real player ask later, this doc is the starting point for that work.
+
 **If** the full system is later prioritized, the steps above (server backend → email → UI → sync → migration → testing) are the rough order. The Mandrill creds at `/var/www/wedding.stephens.page/private/.env` are the right SMTP source — re-use them via a shared `.env` or copy the relevant keys into a new `clowder/private/.env`.
 
 ## Open questions
