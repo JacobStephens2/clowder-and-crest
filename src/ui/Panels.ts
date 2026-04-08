@@ -250,6 +250,27 @@ export function showRenamePrompt(cat: SaveData['cats'][number]): void {
 
 // ──── Menu Panel ────
 
+/** Scene keys that count as "in a minigame" — used to decide whether
+ *  the Menu panel should show an "Exit Minigame" affordance. Mirrors
+ *  the same set used by main.ts switchScene cleanup. */
+const MINIGAME_SCENE_KEYS: ReadonlySet<string> = new Set([
+  'PuzzleScene', 'SokobanScene', 'ChaseScene', 'FishingScene', 'HuntScene',
+  'NonogramScene', 'BrawlScene', 'StealthScene', 'PounceScene', 'PatrolScene',
+  'RitualScene', 'ScentTrailScene', 'HeistScene', 'CourierRunScene',
+  'RoofScoutScene', 'DungeonRunScene',
+]);
+
+/** Returns the scene key of the currently-active minigame, or null if
+ *  none is active. Reads window.__clowderGame which main.ts exposes. */
+function activeMinigameSceneKey(): string | null {
+  const game = (window as unknown as { __clowderGame?: { scene: { getScenes: (active?: boolean) => Array<{ scene: { key: string } }> } } }).__clowderGame;
+  if (!game) return null;
+  for (const s of game.scene.getScenes(true)) {
+    if (MINIGAME_SCENE_KEYS.has(s.scene.key)) return s.scene.key;
+  }
+  return null;
+}
+
 export function showMenuPanel(): void {
   const gameState = deps.getGameState();
   if (!gameState) return;
@@ -261,10 +282,12 @@ export function showMenuPanel(): void {
 
   const chapterName = getChapterName(gameState.chapter);
   const progressHint = getNextChapterHint(gameState);
+  const activeMinigame = activeMinigameSceneKey();
 
   panel.innerHTML = `
     <button class="panel-close" id="menu-close">&times;</button>
     <h2>Menu</h2>
+    ${activeMinigame ? `<button class="menu-btn" id="menu-exit-minigame" style="border-color:#cc6666;color:#cc6666">\u2715 Exit Minigame</button>` : ''}
     <div style="margin-bottom:12px;color:#8b7355;font-size:14px">
       Chapter ${gameState.chapter}: ${chapterName}<br>
       Day ${gameState.day} | ${gameState.cats.length} cats | ${gameState.totalJobsCompleted} jobs done<br>
@@ -384,6 +407,18 @@ export function showMenuPanel(): void {
   document.getElementById('menu-day-of-rest')?.addEventListener('click', () => {
     panel.remove();
     showDayOfRestPanel();
+  });
+
+  // Exit Minigame — only present when the menu was opened from inside
+  // a minigame scene. Routes through puzzle-quit so the existing
+  // main.ts handler picks up practice-mode / dungeon-mode / normal-job
+  // semantics correctly. Per user feedback (2026-04-08): "if the user
+  // opens the menu while they are in a minigame scene, there should be
+  // an option there to exit the mini game."
+  document.getElementById('menu-exit-minigame')?.addEventListener('click', () => {
+    panel.remove();
+    eventBus.emit('puzzle-quit', {});
+    deps.switchScene('TownMapScene');
   });
 
   document.getElementById('menu-save')!.addEventListener('click', () => {
