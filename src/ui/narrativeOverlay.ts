@@ -11,6 +11,10 @@ export interface NarrativeConfig {
   catSprite?: string;
   /** Tone affects background color, text color, and fade speed */
   tone?: 'neutral' | 'dark' | 'warm' | 'urgent' | 'solemn';
+  /** Apply a cool-tint + CSS snow particle layer over the background.
+   *  Used by the Long Winter scenes so the town visibly looks wintery
+   *  without requiring a new pixel art asset. */
+  winterOverlay?: boolean;
   onScene?: (index: number) => void;
   onComplete?: () => void;
 }
@@ -35,8 +39,52 @@ export function showNarrativeOverlay(config: NarrativeConfig): void {
   if (image) {
     const img = document.createElement('img');
     img.src = image;
-    img.style.cssText = `position:absolute;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:420px;image-rendering:pixelated;opacity:${tone.imgOpacity};pointer-events:none;`;
+    const winterFilter = config.winterOverlay
+      ? 'grayscale(0.5) brightness(0.7) contrast(1.1) hue-rotate(180deg)'
+      : '';
+    img.style.cssText = `position:absolute;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:420px;image-rendering:pixelated;opacity:${tone.imgOpacity};pointer-events:none;${winterFilter ? `filter:${winterFilter};` : ''}`;
     overlay.appendChild(img);
+  }
+
+  // Winter overlay — cool tint plus CSS snow particles. The 30 particles
+  // are absolutely-positioned divs that animate downward with slight
+  // horizontal drift via CSS keyframes injected once per overlay. No new
+  // art, no canvas, just enough motion to read as "snowstorm" over the
+  // existing town.png placeholder.
+  if (config.winterOverlay) {
+    const tint = document.createElement('div');
+    tint.style.cssText = 'position:absolute;inset:0;background:linear-gradient(180deg,rgba(120,150,200,0.18) 0%,rgba(180,200,230,0.12) 100%);pointer-events:none;';
+    overlay.appendChild(tint);
+
+    // Inject the snow keyframes once
+    const styleId = 'narrative-snow-keyframes';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        @keyframes narrative-snow {
+          0%   { transform: translate(0, -10vh); opacity: 0; }
+          10%  { opacity: 0.9; }
+          90%  { opacity: 0.9; }
+          100% { transform: translate(var(--drift, 0), 110vh); opacity: 0; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    const snowLayer = document.createElement('div');
+    snowLayer.style.cssText = 'position:absolute;inset:0;pointer-events:none;overflow:hidden;';
+    for (let i = 0; i < 30; i++) {
+      const flake = document.createElement('div');
+      const size = 2 + Math.random() * 3;
+      const left = Math.random() * 100;
+      const drift = `${(Math.random() - 0.5) * 60}px`;
+      const duration = 6 + Math.random() * 6;
+      const delay = -Math.random() * duration;
+      flake.style.cssText = `position:absolute;left:${left}vw;top:0;width:${size}px;height:${size}px;background:#e8eef5;border-radius:50%;--drift:${drift};animation:narrative-snow ${duration}s linear infinite;animation-delay:${delay}s;box-shadow:0 0 4px rgba(232,238,245,0.6);`;
+      snowLayer.appendChild(flake);
+    }
+    overlay.appendChild(snowLayer);
   }
 
   // Character sprite — large, pixel-art, centered above text

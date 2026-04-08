@@ -2098,6 +2098,7 @@ eventBus.on('long-winter-start', () => {
       'For five days, the work would have to wait. For five days, the guild would have only itself.',
     ],
     image: 'assets/sprites/scenes/town.png',
+    winterOverlay: true,
     onScene: (i) => {
       if (i === 0) playSfx('thunder', 0.4);
       if (i === 5) playSfx('cat_sad', 0.3);
