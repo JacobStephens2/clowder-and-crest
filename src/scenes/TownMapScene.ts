@@ -1066,10 +1066,14 @@ export class TownMapScene extends Phaser.Scene {
       // the same way the bottom-nav button does.
       eventBus.emit('navigate', 'GuildhallScene');
     } else {
-      // Non-job-board buildings: start accepted job if one exists,
-      // OR open the generic interior view if no job is accepted.
-      // Routing happens in main.ts via the 'enter-building' event.
-      eventBus.emit('start-accepted-job');
+      // Other buildings (cathedral, castle, tavern, market, docks, mill).
+      // Route through 'enter-building' which main.ts handles: if there's
+      // an accepted job for this location it shows the assign overlay
+      // (the existing behavior); otherwise it opens BuildingInteriorScene
+      // for a quick atmospheric look inside. Per user feedback (2026-04-08):
+      // "make each building on the map a place the player can enter to
+      // view a new scene that is inside that building."
+      eventBus.emit('enter-building', b.id);
     }
   }
 }
