@@ -253,17 +253,21 @@ export class ChaseScene extends Phaser.Scene {
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
     // Tutorial on first play — pause scene until dismissed.
-    // Bumped to v3 when the dog pack (Tracker + Ambusher) was added so
-    // returning players see the new archetype rules.
+    //
+    // Deliberately minimal per todo/game/What Makes Games Fun.md (Koster):
+    // explaining patterns up-front robs the player of the discovery dopamine.
+    // Fish dots, catnip, and the two dog archetypes are all visually obvious
+    // after a few seconds of play — leave them to be discovered. Only the
+    // controls need explanation because they're not derivable from looking.
+    //
+    // Bumped to v4 when the tutorial was cut from 5 explained mechanics
+    // down to 1, so returning players see the new shorter version.
     showMinigameTutorial(
       this,
-      'clowder_chase_tutorial_v3',
+      'clowder_chase_tutorial_v4',
       'Chase the Rat!',
-      `Navigate the maze to <strong>catch the rat</strong> before time runs out.<br><br>
-      Move with the <strong>joystick</strong>, <strong>swipe</strong>, or <strong>WASD/arrows</strong>.<br><br>
-      Grab <strong style="color:#dda055">fish dots</strong> for <strong>combo bonuses</strong>.<br><br>
-      <strong style="color:#6abe3f">Catnip pellets</strong> scare every dog — touch them while scared for an escalating chain bonus.<br><br>
-      Watch the pack: the <strong style="color:#ff6b2a">Tracker</strong> follows you directly, while the <strong style="color:#b47ad9">Ambusher</strong> sets up ahead of you.`,
+      `Catch the rat before time runs out.<br><br>
+      Move with the <strong>joystick</strong>, <strong>swipe</strong>, or <strong>WASD/arrows</strong>.`,
       undefined,
       { pauseScene: true },
     );
