@@ -5,7 +5,20 @@ const sfxPool = new Map<string, HTMLAudioElement[]>();
 let sfxMuted = localStorage.getItem('clowder_sfx_muted') === '1';
 let sfxVolume = parseFloat(localStorage.getItem('clowder_sfx_volume') ?? '0.5');
 
+// Variant pools — when one of these keys is requested, playSfx picks a
+// random child key each time. The previously-played child is excluded
+// from the next pick so the player never hears the same sound twice in
+// a row. Per user feedback (2026-04-08): the single victory.mp3 was
+// repetitive at the end of every minigame, so 'victory' rotates through
+// a pool of triumphant sounds (the dedicated fanfare plus chapter-up,
+// sparkle, and bell chime).
+const SFX_POOLS: Record<string, string[]> = {
+  victory: ['victory_fanfare', 'chapter', 'sparkle', 'bell_chime'],
+};
+const lastPoolPick: Record<string, string> = {};
+
 const SFX_PATHS: Record<string, string> = {
+  victory_fanfare: 'assets/sfx/victory.mp3',
   fish_earn: 'assets/sfx/fish_earn.mp3',
   block_slide: 'assets/sfx/block_slide.mp3',
   purr: 'assets/sfx/purr.mp3',
@@ -14,7 +27,9 @@ const SFX_PATHS: Record<string, string> = {
   chapter: 'assets/sfx/chapter_complete.mp3',
   tap: 'assets/sfx/ui_tap.mp3',
   hiss: 'assets/sfx/cat_hiss.mp3',
-  victory: 'assets/sfx/victory.mp3',
+  // 'victory' is dispatched through SFX_POOLS above; the underlying
+  // file is registered as 'victory_fanfare' to keep the pool dispatch
+  // path the only way to play it.
   recruit: 'assets/sfx/recruit.mp3',
   furniture: 'assets/sfx/furniture_place.mp3',
   rat_caught: 'assets/sfx/rat_caught.mp3',
@@ -63,6 +78,27 @@ function getAvailableAudio(key: string): HTMLAudioElement | null {
 
 export function playSfx(key: string, volume?: number): void {
   if (sfxMuted) return;
+  // Variant-pool dispatch: pools rotate through child sounds, never
+  // playing the same one twice in a row. The pool key itself isn't a
+  // real audio file — it's a category name like 'victory'.
+  const pool = SFX_POOLS[key];
+  if (pool && pool.length > 0) {
+    let pick: string;
+    if (pool.length === 1) {
+      pick = pool[0];
+    } else {
+      const last = lastPoolPick[key];
+      const candidates = pool.filter((k) => k !== last);
+      pick = candidates[Math.floor(Math.random() * candidates.length)];
+    }
+    lastPoolPick[key] = pick;
+    const audio = getAvailableAudio(pick);
+    if (!audio) return;
+    audio.volume = volume ?? sfxVolume;
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+    return;
+  }
   const audio = getAvailableAudio(key);
   if (!audio) return;
   audio.volume = volume ?? sfxVolume;
