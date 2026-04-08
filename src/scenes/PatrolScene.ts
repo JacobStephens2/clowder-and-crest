@@ -242,11 +242,16 @@ export class PatrolScene extends Phaser.Scene {
     eventBus.emit('set-active-tab', 'town');
   }
 
-  /** Tap-to-relight handler. Respects the relight cooldown so the player
-      can't spam-tap their way out of a triage problem. */
+  /** Tap-to-relight handler. Per user feedback (2026-04-08): "I want
+   *  to be able to light the lanterns faster. I feel like there's a
+   *  time lag arbitrary limiting how fast I relight them." Removed the
+   *  per-tap relight cooldown — fast thumbing is now always responsive.
+   *  Trap taps still cost a life and disable the trap so spamming a
+   *  trap can't cascade lives away in one frame. The triage pressure
+   *  comes from the global threat curve and prowler spawn rate, not
+   *  from input throttling. */
   tapLantern(lantern: Lantern): void {
     if (this.finished || this.tutorialShowing) return;
-    if (Date.now() < this.relightCooldownUntil) return;
 
     if (lantern.isTrap) {
       this.lives--;
@@ -258,7 +263,6 @@ export class PatrolScene extends Phaser.Scene {
       lantern.flame.setAlpha(0);
       lantern.glow.setAlpha(0);
       lantern.zone.disableInteractive();
-      this.relightCooldownUntil = Date.now() + 400;
       if (this.lives <= 0) this.gameOver(false);
       return;
     }
@@ -275,7 +279,6 @@ export class PatrolScene extends Phaser.Scene {
       lantern.flame.setScale(1);
       lantern.glow.setAlpha(0.3);
     });
-    this.relightCooldownUntil = Date.now() + 400;
   }
 
   /** Per-tick dim update. Applies the global threat multiplier so the
@@ -402,15 +405,14 @@ export class PatrolScene extends Phaser.Scene {
     zone.on('pointerdown', () => this.tapProwler(prowler));
   }
 
-  /** Tap-to-dispatch handler for prowlers. Respects the same relight
-      cooldown — every tap costs the same opportunity. */
+  /** Tap-to-dispatch handler for prowlers. Cooldown removed alongside
+   *  the lantern cooldown so the player can swat several prowlers in
+   *  quick succession during a heavy wave. */
   tapProwler(prowler: Prowler): void {
     if (this.finished || this.tutorialShowing) return;
-    if (Date.now() < this.relightCooldownUntil) return;
     if (!prowler.alive) return;
     playSfx('tap', 0.4);
     this.killProwler(prowler);
-    this.relightCooldownUntil = Date.now() + 400;
   }
 
   private killProwler(p: Prowler): void {
