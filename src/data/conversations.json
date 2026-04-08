@@ -202,23 +202,28 @@
       "lines": [
         {
           "speaker": "maine_coon",
-          "text": "You're fast. Faster than any cat I've seen."
+          "text": "You're fast. Faster than any cat I've seen.",
+          "expression": "surprised"
         },
         {
           "speaker": "wildcat",
-          "text": "Speed keeps you alive when you're small."
+          "text": "Speed keeps you alive when you're small.",
+          "expression": "neutral"
         },
         {
           "speaker": "maine_coon",
-          "text": "I wouldn't know about small. But I can hold a door all night."
+          "text": "I wouldn't know about small. But I can hold a door all night.",
+          "expression": "happy"
         },
         {
           "speaker": "wildcat",
-          "text": "That's... actually useful. The granary gate doesn't latch properly."
+          "text": "That's... actually useful. The granary gate doesn't latch properly.",
+          "expression": "happy"
         },
         {
           "speaker": "maine_coon",
-          "text": "Show me. I'll keep it shut."
+          "text": "Show me. I'll keep it shut.",
+          "expression": "neutral"
         }
       ]
     },
@@ -658,23 +663,28 @@
       "lines": [
         {
           "speaker": "wildcat",
-          "text": "You reorganized the job board."
+          "text": "You reorganized the job board.",
+          "expression": "surprised"
         },
         {
           "speaker": "tuxedo",
-          "text": "By difficulty, then by reward ratio. It was chaos before."
+          "text": "By difficulty, then by reward ratio. It was chaos before.",
+          "expression": "neutral"
         },
         {
           "speaker": "wildcat",
-          "text": "It was my chaos. I knew where everything was."
+          "text": "It was my chaos. I knew where everything was.",
+          "expression": "angry"
         },
         {
           "speaker": "tuxedo",
-          "text": "Did you though?"
+          "text": "Did you though?",
+          "expression": "happy"
         },
         {
           "speaker": "wildcat",
-          "text": "...Fine. It's better now."
+          "text": "...Fine. It's better now.",
+          "expression": "neutral"
         }
       ]
     },
@@ -762,23 +772,28 @@
       "lines": [
         {
           "speaker": "siamese",
-          "text": "The saints sent you here. I'm sure of it."
+          "text": "The saints sent you here. I'm sure of it.",
+          "expression": "happy"
         },
         {
           "speaker": "wildcat",
-          "text": "A storm sent me here. And an empty stomach."
+          "text": "A storm sent me here. And an empty stomach.",
+          "expression": "sad"
         },
         {
           "speaker": "siamese",
-          "text": "Same thing, from the right angle."
+          "text": "Same thing, from the right angle.",
+          "expression": "happy"
         },
         {
           "speaker": "wildcat",
-          "text": "That's not how angles work."
+          "text": "That's not how angles work.",
+          "expression": "neutral"
         },
         {
           "speaker": "siamese",
-          "text": "It is from mine."
+          "text": "It is from mine.",
+          "expression": "happy"
         }
       ]
     },
@@ -1054,23 +1069,28 @@
       "lines": [
         {
           "speaker": "bengal",
-          "text": "I came from another guild. One that promised glory and delivered politics."
+          "text": "I came from another guild. One that promised glory and delivered politics.",
+          "expression": "angry"
         },
         {
           "speaker": "wildcat",
-          "text": "And now you're here because...?"
+          "text": "And now you're here because...?",
+          "expression": "surprised"
         },
         {
           "speaker": "bengal",
-          "text": "Because you fight for something real. I want to see what that looks like from the inside."
+          "text": "Because you fight for something real. I want to see what that looks like from the inside.",
+          "expression": "neutral"
         },
         {
           "speaker": "wildcat",
-          "text": "You'll get tired of us eventually. Most guilds chew up their best."
+          "text": "You'll get tired of us eventually. Most guilds chew up their best.",
+          "expression": "sad"
         },
         {
           "speaker": "bengal",
-          "text": "The ones that promise everything do. The ones that promise the next meal? Those are different."
+          "text": "The ones that promise everything do. The ones that promise the next meal? Those are different.",
+          "expression": "happy"
         }
       ]
     },
