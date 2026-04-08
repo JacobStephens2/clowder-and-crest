@@ -1983,7 +1983,7 @@ eventBus.on('rat-plague-resolved', () => {
       'Word spread through the town like sunlight after a storm. The cats had done what no one else could.',
       'The monks emerged from the cathedral, carrying candles. The townsfolk lined the cobblestone streets.',
       `They walked in procession — ${catName} at the front — through every quarter the rats had touched. Like Rosalia's bones through the streets of Palermo.`,
-      'The plague was over. The guild had earned its name. And the town would not forget.',
+      'The plague was over. The guild had earned its place. And the town would not forget.',
     ],
     image: 'assets/sprites/scenes/town_day.png',
     onScene: (i) => { if (i === 4) playSfx('chapter'); },
