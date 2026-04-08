@@ -244,8 +244,9 @@ function testLongWinterFiresAfterChapter4Settles() {
 
 function testLongWinterBlocksChapter5Advance() {
   const save = makeChapter4Save();
-  // Meet all chapter 5 numerics.
-  save.totalJobsCompleted = 30;
+  // Meet all chapter 5 numerics — bumped to 45 jobs in the post-v2.4.0
+  // pacing slowdown so the player can't speedrun chapter 5 by day 30.
+  save.totalJobsCompleted = 45;
   save.totalFishEarned = 500;
   save.cats.push({ ...save.cats[0], id: 'cat_6', isPlayer: false, breed: 'russian_blue', name: 'Blue' });
   save.flags.ratPlagueResolved = true;

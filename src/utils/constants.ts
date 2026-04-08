@@ -40,14 +40,24 @@ export const BOND_THRESHOLDS: Record<BondRank, number> = {
   bonded: 50,
 };
 
+// Per user feedback (2026-04-08): "I got to chapter 5 and 6 cats by day
+// 30. That pace seemed a little fast." Bumped the chapter 5/6/7 job
+// requirements so late-game chapters require meaningful additional play.
+// Early chapters (1-4) are unchanged — the opening flow should stay
+// snappy and the chapter 4 → 5 gap already has the Long Winter forced
+// 5-day event between them.
+//
+//   chapter 5: 30 → 45 jobs (50% more)
+//   chapter 6: 50 → 75 jobs + 500 → 600 fish
+//   chapter 7: 70 → 100 jobs + 800 → 1000 fish
 export const CHAPTER_TRIGGERS = [
   { chapter: 1, jobs: 0, cats: 1, fish: 0 },
   { chapter: 2, jobs: 5, cats: 2, fish: 0 },
   { chapter: 3, jobs: 0, cats: 3, fish: 200 },
   { chapter: 4, jobs: 15, cats: 4, fish: 0 },
-  { chapter: 5, jobs: 30, cats: 5, fish: 0 },
-  { chapter: 6, jobs: 50, cats: 5, fish: 500 },
-  { chapter: 7, jobs: 70, cats: 5, fish: 800 },
+  { chapter: 5, jobs: 45, cats: 5, fish: 0 },
+  { chapter: 6, jobs: 75, cats: 5, fish: 600 },
+  { chapter: 7, jobs: 100, cats: 5, fish: 1000 },
 ];
 
 // Scene keys — use these instead of string literals to prevent typo bugs
