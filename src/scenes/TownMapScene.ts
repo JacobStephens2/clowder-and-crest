@@ -227,15 +227,26 @@ export class TownMapScene extends Phaser.Scene {
       fontFamily: 'Georgia, serif', fontSize: '12px', color: '#c4956a',
     }).setOrigin(0.5).setAlpha(0);
 
-    // Accepted job banner
+    // Accepted job banner — bigger and clearer when there's a job in
+    // hand so the player has unambiguous guidance about what to do
+    // next. The previous 10px text was easy to miss; the user asked
+    // "should the player still be moving wildcat around the town if
+    // wildcat is assigned to a job?" and the right answer is YES
+    // (free movement matches the cozy aesthetic + walkToThenEnter
+    // auto-walks once a building is tapped), but the hint about
+    // WHERE to go needed to be louder.
     const accepted = getAcceptedJob();
     if (accepted) {
-      const jobBanner = this.add.text(GAME_WIDTH / 2, GRID_TOP + GRID_H + 22,
-        `\u{1F4CB} Job: ${accepted.name} — go to a location to start`, {
-        fontFamily: 'Georgia, serif', fontSize: '10px', color: '#dda055',
+      const bannerY = GRID_TOP + GRID_H + 22;
+      // Background plate so the banner reads even on top of mist/scenery
+      const bannerBg = this.add.rectangle(GAME_WIDTH / 2, bannerY, GAME_WIDTH - 30, 22, 0x2a2520, 0.85)
+        .setStrokeStyle(1, 0xdda055);
+      const jobBanner = this.add.text(GAME_WIDTH / 2, bannerY,
+        `\u{1F4CB} ${accepted.name} — tap a building to walk there`, {
+        fontFamily: 'Georgia, serif', fontSize: '12px', color: '#dda055',
       }).setOrigin(0.5);
-      // Pulse to draw attention
-      this.tweens.add({ targets: jobBanner, alpha: 0.5, duration: 800, yoyo: true, repeat: -1 });
+      // Pulse the bg + banner together to draw attention
+      this.tweens.add({ targets: [jobBanner, bannerBg], alpha: 0.6, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     }
 
     // Ambient mist
