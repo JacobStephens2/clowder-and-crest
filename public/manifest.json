@@ -1,17 +1,20 @@
 {
   "name": "Clowder & Crest",
   "short_name": "Clowder",
-  "description": "A cozy medieval cat guild management game",
+  "description": "A cozy medieval cat guild management game with 14 minigames, an explorable town, and Fire Emblem-style bond conversations between cats.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#1c1b19",
   "theme_color": "#c4956a",
+  "categories": ["games", "entertainment"],
   "icons": [
     {
       "src": "/favicon.png",
       "sizes": "128x128",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
