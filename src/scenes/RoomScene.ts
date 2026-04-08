@@ -6,6 +6,7 @@ import type { SaveData } from '../systems/SaveManager';
 import { saveGame } from '../systems/SaveManager';
 import { isCatStationed } from '../systems/Economy';
 import { addBondPoints } from '../systems/BondSystem';
+import { getDailyWish } from '../systems/GameSystems';
 
 import { ALL_BREED_IDS } from '../utils/constants';
 const BREEDS_WITH_SPRITES = new Set(ALL_BREED_IDS as readonly string[]);
@@ -881,6 +882,29 @@ export class RoomScene extends Phaser.Scene {
           const playerCat = save.cats.find((c) => c.id === 'player_wildcat');
           if (playerCat) {
             addBondPoints(save, playerCat.breed, cat.breed, 1);
+
+            // "Wants to play with a friend" wishes should fulfill from
+            // a real cat-to-cat interaction, not just from spending fish.
+            // Per user request: "wishes to play with friends shouldn't
+            // only cost fish, but should require going into a room and
+            // clicking another cat to have a moment with that cat".
+            // If the active daily wish is the play-with-friend wish AND
+            // either participant is the wishing cat, mark it fulfilled
+            // and grant its mood/bond reward.
+            const wish = getDailyWish(save.day, save.cats, save.furniture.map((f) => f.furnitureId));
+            if (wish && !save.flags[`wish_day_${save.day}`] && wish.wish === 'wants to play with a friend') {
+              if (wish.catId === playerCat.id || wish.catId === cat.id) {
+                save.flags[`wish_day_${save.day}`] = true;
+                const wishCat = save.cats.find((c) => c.id === wish.catId);
+                if (wishCat && wish.reward.includes('mood')) wishCat.mood = 'happy';
+                if (wish.reward.includes('bond')) {
+                  for (const other of save.cats) {
+                    if (wishCat && other.id !== wishCat.id) addBondPoints(save, wishCat.breed, other.breed, 2);
+                  }
+                }
+              }
+            }
+
             saveGame(save);
             // Possible rank-up — let main.ts check for newly-available
             // conversations. The conversation overlay can render on top
