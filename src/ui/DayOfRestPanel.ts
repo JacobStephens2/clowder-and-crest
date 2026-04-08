@@ -211,6 +211,13 @@ interface DayOfRestDeps {
   pauseDayTimer: () => void;
   switchToTrackset: (set: string) => void;
   showToast: (msg: string) => void;
+  /** Floating wish banner element. The Day of Rest panel is supposed
+   *  to be a quiet "no stakes today" view, but the wish banner is a
+   *  campaign hook nudging the player to act on a daily desire — both
+   *  thematically wrong AND visually distracting from the panel
+   *  content. We hide it while the panel is open and restore it on
+   *  close (the next render cycle re-evaluates visibility). */
+  guildWishBanner: HTMLElement;
 }
 
 let deps: DayOfRestDeps;
@@ -287,6 +294,12 @@ export function showDayOfRestPanel(): void {
   if (pausedSceneKeys.length === 0) {
     pausedSceneKeys = pauseActiveScenes();
   }
+
+  // Hide the floating wish banner while the panel is open. The Day
+  // of Rest is the "no stakes today" view; a wish banner pinned to
+  // the top is both thematically wrong and visually competing with
+  // the catalogue.
+  deps.guildWishBanner.style.display = 'none';
 
   const completedKeys = Object.keys(gameState.puzzlesCompleted ?? {});
   const unlockedGames = MINIGAMES.filter((mg) => isUnlocked(mg, completedKeys));

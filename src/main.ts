@@ -648,6 +648,7 @@ initDayOfRest({
   pauseDayTimer,
   switchToTrackset,
   showToast,
+  guildWishBanner,
 });
 initConversations({
   getGameState: () => gameState,
