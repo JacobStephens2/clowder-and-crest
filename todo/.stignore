@@ -11,6 +11,7 @@
 
 // Allow markdown files at the root (claude-todo.md, jacob-done.md, etc)
 !/*.md
+!/*.apk
 
 // Allow the curated subdirectories that actually belong here
 !/archive
