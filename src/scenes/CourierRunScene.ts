@@ -149,6 +149,8 @@ export class CourierRunScene extends Phaser.Scene {
   fishCollected = 0;
   fishCollectedPreHalf = 0;
   laneChangeCount = 0;
+  private fishSpawned = 0;
+  private phraseCount = 0;
   private finished = false;
   private tutorialShowing = false;
   private livesText!: Phaser.GameObjects.Text;
@@ -175,6 +177,8 @@ export class CourierRunScene extends Phaser.Scene {
     this.fishCollected = 0;
     this.fishCollectedPreHalf = 0;
     this.laneChangeCount = 0;
+    this.fishSpawned = 0;
+    this.phraseCount = 0;
     this.finished = false;
     this.spawnTimer = 0;
     this.missionRewarded = false;
@@ -185,7 +189,7 @@ export class CourierRunScene extends Phaser.Scene {
     // minigame. New values land closer to 15-25 seconds at avg speed,
     // matching the pacing of Hunt/Chase. The obstacle phrase pool is
     // already large enough to fill the longer runs without repeating.
-    this.targetDistance = this.difficulty === 'hard' ? 2400 : this.difficulty === 'medium' ? 2000 : 1600;
+    this.targetDistance = this.difficulty === 'hard' ? 2600 : this.difficulty === 'medium' ? 2200 : 1800;
 
     const state = getGameState();
     const cat = state?.cats.find((c) => c.id === this.catId);
@@ -488,7 +492,14 @@ export class CourierRunScene extends Phaser.Scene {
       items. Phrases produce coherent challenges instead of pure-random
       lane picks, which is the doc's "structured randomness" pillar. */
   spawnPhrase(): string {
-    const phrase = PHRASES[Math.floor(Math.random() * PHRASES.length)];
+    const fishPhrases = PHRASES.filter((phrase) => phrase.items.some((item) => item.kind === 'fish'));
+    const beforeHalfway = this.distance < this.targetDistance / 2;
+    const shouldForceFishPhrase =
+      this.phraseCount === 0 ||
+      (beforeHalfway && this.fishSpawned < 3 && this.phraseCount % 2 === 1);
+    const pool = shouldForceFishPhrase ? fishPhrases : PHRASES;
+    const phrase = pool[Math.floor(Math.random() * pool.length)];
+    this.phraseCount++;
     for (const item of phrase.items) {
       if (item.kind === 'obstacle') {
         this.spawnObstacleAt(item.lane, GAME_WIDTH + 30 + item.dx);
@@ -516,6 +527,7 @@ export class CourierRunScene extends Phaser.Scene {
   }
 
   private spawnFishAt(lane: number, x: number): void {
+    this.fishSpawned++;
     let gfx: Phaser.GameObjects.Sprite | Phaser.GameObjects.Arc;
     if (this.textures.exists('fish_sprite')) {
       const fish = this.add.sprite(x, LANE_Y[lane], 'fish_sprite');
