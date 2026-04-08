@@ -891,7 +891,10 @@ export class RoomScene extends Phaser.Scene {
         }
         const actionText = document.createElement('div');
         actionText.className = 'toast';
-        actionText.textContent = `${cat.name} and your wildcat share a moment.`;
+        // The player IS the wildcat, so "your wildcat" reads as a third
+        // party. Use the player's actual name (or "you" as fallback).
+        const playerName = getGameState()?.playerCatName ?? 'you';
+        actionText.textContent = `${cat.name} and ${playerName} share a moment.`;
         document.getElementById('overlay-layer')?.appendChild(actionText);
         setTimeout(() => actionText.remove(), 2500);
       });

@@ -751,11 +751,11 @@ eventBus.on('show-town-overlay', () => {
     </div>` : ''}
     ${(() => {
       const rep = gameState.reputationScore;
-      if (rep >= 30) return '<div style="padding:2px 12px;font-size:10px;color:#4a8a4a;text-align:center;font-family:Georgia,serif;font-style:italic">The townsfolk smile as your cats pass. Children wave from doorways.</div>';
+      if (rep >= 30) return '<div style="padding:2px 12px;font-size:10px;color:#4a8a4a;text-align:center;font-family:Georgia,serif;font-style:italic">The townsfolk smile as the guild passes. Children wave from doorways.</div>';
       if (rep >= 10) return '<div style="padding:2px 12px;font-size:10px;color:#6b8ea6;text-align:center;font-family:Georgia,serif;font-style:italic">The town respects your guild. Merchants nod in greeting.</div>';
       if (rep > -10) return '';
-      if (rep > -30) return '<div style="padding:2px 12px;font-size:10px;color:#8a6a4a;text-align:center;font-family:Georgia,serif;font-style:italic">People eye your cats warily. Some whisper behind closed shutters.</div>';
-      return '<div style="padding:2px 12px;font-size:10px;color:#8a4a4a;text-align:center;font-family:Georgia,serif;font-style:italic">Doors lock as your cats approach. The town fears what your guild has become.</div>';
+      if (rep > -30) return '<div style="padding:2px 12px;font-size:10px;color:#8a6a4a;text-align:center;font-family:Georgia,serif;font-style:italic">People eye the guild warily. Some whisper behind closed shutters.</div>';
+      return '<div style="padding:2px 12px;font-size:10px;color:#8a4a4a;text-align:center;font-family:Georgia,serif;font-style:italic">Doors lock as the guild approaches. The town fears what you have become.</div>';
     })()}
     ${plagueActive ? (() => {
       const progress = Math.min(5, numFlag("plaguePestDone"));
@@ -779,7 +779,7 @@ eventBus.on('show-town-overlay', () => {
     </div>` : ''}
     <div class="town-section-divider"></div>
     <div class="town-section-title">Job Board</div>
-    ${gameState.totalJobsCompleted < 3 ? '<div style="padding:0 12px 8px;font-size:11px;color:#6b5b3e;font-family:Georgia,serif">Accept a job and assign one of your cats to complete it. Solve puzzles to earn fish.</div>' : ''}
+    ${gameState.totalJobsCompleted < 3 ? '<div style="padding:0 12px 8px;font-size:11px;color:#6b5b3e;font-family:Georgia,serif">Accept a job and assign a cat from the guild to complete it. Solve puzzles to earn fish.</div>' : ''}
     ${(() => {
       const festival = getCurrentFestival(gameState.day);
       return festival ? `<div style="background:#3a3520;color:#dda055;padding:8px 12px;margin:0 0 8px;border-radius:4px;font-size:12px;text-align:center;font-family:Georgia,serif;border:1px solid #6b5b3e">\u{1F389} <strong>${festival.name}</strong><br>${festival.bonus}</div>` : '';
@@ -1001,7 +1001,7 @@ eventBus.on('show-town-overlay', () => {
         showToast(`${esc(cat.name)}'s ${stat} increased to ${cat.stats[stat]}!`);
       } else if (itemId === 'blessing') {
         gameState!.flags.saintBlessing = true;
-        showToast('Saint\'s Blessing protects your cats from the next mood drop.');
+        showToast('Saint\'s Blessing protects the guild from the next mood drop.');
       }
 
       saveGame(gameState!);
@@ -1286,7 +1286,7 @@ eventBus.on('puzzle-quit', ({ jobId, catId }: any = {}) => {
   saveGame(gameState);
   updateStatusBar();
 
-  const catName = cat?.name ?? 'Your cat';
+  const catName = cat?.name ?? 'A cat';
   const jobName = job?.name ?? 'the job';
   showToast(`${catName} failed ${jobName}. Lost ${penalty} fish and can't work again today.`);
 
@@ -1322,7 +1322,7 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
     // Saint's Blessing prevents one mood drop
     if (gameState.flags.saintBlessing) {
       delete gameState.flags.saintBlessing;
-      showToast('Saint\'s Blessing protected your cats from hunger!');
+      showToast('Saint\'s Blessing protected the guild from hunger!');
     } else {
       for (const cat of gameState.cats) {
         if (cat.mood === 'happy') cat.mood = 'content';
