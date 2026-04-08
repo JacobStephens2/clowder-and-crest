@@ -106,8 +106,6 @@ const game = new Phaser.Game(config);
 // production code; safe to leave in.
 (window as unknown as { __clowderGame: Phaser.Game }).__clowderGame = game;
 
-// ──── OTA Updates (Capacitor only, silent) ────
-
 // ──── Service Worker (web only) ────
 // Register the offline cache SW so the web build works offline after
 // the first visit (matching the Capacitor APK's offline capability)

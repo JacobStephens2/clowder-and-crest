@@ -4,6 +4,8 @@ A cozy medieval cat guild management game. Recruit cats, take jobs, solve puzzle
 
 **Play now:** [clowderandcrest.com](https://clowderandcrest.com) (also at [clowder.stephens.page](https://clowder.stephens.page))
 
+**Listen to the soundtrack:** [Clowder & Crest Suno playlist](https://suno.com/playlist/76de63b1-aa56-47a9-a2e8-f11499e93cf2)
+
 ## What it is
 
 A hybrid daily-life sim and minigame anthology, framed as a Fire Emblem-style support drama between cats. You play the founding Wildcat of a fledgling guild, recruit other breeds, take jobs from the town board, and survive a 7-chapter narrative arc that builds from "stray under a tarp" to a Church Inquisition. Every job is a minigame; every cat has stats, mood, and bond conversations with the rest of the guild.
@@ -53,7 +55,7 @@ Plus the **Dungeon Run** roguelike meta-loop (Ch.5+) that chains random minigame
 - **Phaser 3** + TypeScript (canvas game scenes)
 - **HTML/CSS overlays** (UI chrome — bottom nav, panels, dialogues)
 - **Vite** (dev server + production build)
-- **Capacitor** (Android packaging + OTA updates)
+- **Capacitor** (Android packaging)
 - **PixelLab** (AI-generated pixel art)
 - **ElevenLabs** (AI sound effects + music tracks)
 - **Apache** + Let's Encrypt (web deploy)
@@ -63,7 +65,6 @@ Plus the **Dungeon Run** roguelike meta-loop (Ch.5+) that chains random minigame
 ```bash
 npm run dev          # Dev server on port 3200
 npm run build        # Type-check + production build to dist/
-npm run ota:publish  # Build + zip dist/ + write updates/manifest.json
 ```
 
 Each minigame has a Playwright-based playtest:
