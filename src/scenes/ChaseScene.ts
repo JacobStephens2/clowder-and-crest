@@ -427,10 +427,27 @@ export class ChaseScene extends Phaser.Scene {
       homeX: GAME_WIDTH / 2,
       homeY: MAZE_Y + MAZE_H + 70,
       activationMinY: MAZE_Y + MAZE_H,
-      cooldownMs: 150,
+      // 130ms is just above the 120ms cat-tween duration so a tile
+      // step finishes visually before the next one starts. Lower
+      // values feel snappier; higher feel laggy.
+      cooldownMs: 130,
       onMoveTick: (dr, dc) => {
         if (this.caught) return;
-        this.moveCat(dr, dc);
+        // Pac-man wall-slide: try the input direction first, and if
+        // it's blocked by a wall, fall back to the cat's last open
+        // direction. This is what makes the joystick feel like
+        // pac-man — holding "right" against a wall while moving down
+        // a corridor keeps the cat moving DOWN until the corridor
+        // bends right, instead of stopping dead. The fallback only
+        // fires when the player IS holding the stick (joystick
+        // callback), so releasing the stick still stops the cat.
+        if (!this.moveCat(dr, dc) && (this.catLastDir.dr !== 0 || this.catLastDir.dc !== 0)) {
+          // Don't overwrite the input direction with the fallback —
+          // moveCat() already updates catLastDir on a successful
+          // move, so the player's intent stays queued for the next
+          // valid intersection.
+          this.moveCat(this.catLastDir.dr, this.catLastDir.dc);
+        }
       },
     });
 
@@ -571,10 +588,14 @@ export class ChaseScene extends Phaser.Scene {
     return null;
   }
 
-  private moveCat(dr: number, dc: number): void {
+  /** Move the cat by one tile in the given direction.
+   *  @returns true if the move succeeded, false if blocked (wall or
+   *  out-of-bounds). The boolean lets the joystick callback fall back
+   *  to the cat's last open direction for pac-man-style wall-sliding. */
+  private moveCat(dr: number, dc: number): boolean {
     const nr = this.catPos.r + dr;
     const nc = this.catPos.c + dc;
-    if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS || this.grid[nr][nc] === WALL) return;
+    if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS || this.grid[nr][nc] === WALL) return false;
 
     this.catPos = { r: nr, c: nc };
     // Remember which way we're heading so the Ambusher can pre-position 4 tiles
@@ -647,6 +668,7 @@ export class ChaseScene extends Phaser.Scene {
         break;
       }
     }
+    return true;
   }
 
   /** One-shot particle burst centered at (x, y) using the global
