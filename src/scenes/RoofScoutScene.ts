@@ -649,10 +649,20 @@ export class RoofScoutScene extends Phaser.Scene {
       }
     }
 
-    // Wall cling — if airborne and pressing into a wall, slow the fall
+    // Wall cling — if airborne and pressing into a wall, register as
+    // clinging so attemptJump's canJump check passes and the player
+    // can wall-jump. The previous version required velocity.y >= 0
+    // (i.e. falling or stationary) which meant a still-ascending cat
+    // brushing a platform side couldn't wall-jump until it peaked and
+    // started falling. Per user feedback (2026-04-08): "if my right
+    // side is touching the left side of a platform, I should be able
+    // to click left jump to jump up and left." Removing the velocity
+    // gate makes wall-jumps responsive on contact, not on apex.
     const touchingLeft = body.blocked.left || body.touching.left;
     const touchingRight = body.blocked.right || body.touching.right;
-    this.isWallClinging = (touchingLeft || touchingRight) && !onGround && body.velocity.y >= 0;
+    this.isWallClinging = (touchingLeft || touchingRight) && !onGround;
+    // Slow the fall only when actually descending — clinging while
+    // ascending shouldn't drag the player to a stop.
     if (this.isWallClinging && body.velocity.y > this.wallFallCap) {
       this.player.setVelocityY(this.wallFallCap);
     }
