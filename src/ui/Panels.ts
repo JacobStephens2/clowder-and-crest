@@ -17,6 +17,7 @@ import { isNative, exportSaveToFilesystem } from '../systems/NativeFeatures';
 import { addBondPoints } from '../systems/BondSystem';
 import { getDailyWish } from '../systems/GameSystems';
 import { showDayOfRestPanel, hasAnyDayOfRestUnlock } from './DayOfRestPanel';
+import { isRestDay } from '../systems/ProgressionManager';
 
 const SPECIALIZATION_CATEGORIES: Record<string, { name: string; desc: string; icon: string }> = {
   pest_control: { name: 'Ratcatcher', desc: '+20% pest control, -5% others', icon: '\uD83D\uDC00' },
@@ -291,7 +292,7 @@ export function showMenuPanel(): void {
     </div>
     <button class="menu-btn" id="menu-achievements">Achievements</button>
     <button class="menu-btn" id="menu-journal">Guild Journal</button>
-    ${hasAnyDayOfRestUnlock(gameState) ? `<button class="menu-btn" id="menu-day-of-rest">Day of Rest</button>` : ''}
+    ${(hasAnyDayOfRestUnlock(gameState) || isRestDay(gameState)) ? `<button class="menu-btn" id="menu-day-of-rest"${isRestDay(gameState) ? ' style="border-color:#9d8bb3;color:#bfa8d8"' : ''}>Day of Rest${isRestDay(gameState) ? ' \u00B7 today' : ''}</button>` : ''}
     <button class="menu-btn" id="menu-save">Save Game</button>
     <div style="padding:4px 12px;font-size:10px;color:#555;font-style:italic;text-align:center">Visit the Carpenter in town to buy furniture</div>
     <button class="menu-btn" id="menu-mute">${isMuted() ? 'Unmute Music' : 'Mute Music'}</button>

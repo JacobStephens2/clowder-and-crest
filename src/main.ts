@@ -39,7 +39,7 @@ import { earnFish, spendFish, calculateReward, collectStationedEarnings, isCatSt
 import { getJob, getStatMatchScore, generateDailyJobs, getJobFlavor, type JobDef } from './systems/JobBoard';
 import { getPuzzleByDifficulty, generatePuzzle } from './systems/PuzzleGenerator';
 import { addBondPoints, processDailyBonds, grantBondRankReward, getBondRank, getBondPairs, getAvailableConversation } from './systems/BondSystem';
-import { checkChapterAdvance, checkRatPlagueResolution, checkInquisitionResolution, checkLongWinterStart, checkLongWinterResolution, getLongWinterDay, isLongWinterForcedChoiceDay, isLongWinterRelationalDay, getChapterName, getNextChapterHint } from './systems/ProgressionManager';
+import { checkChapterAdvance, checkRatPlagueResolution, checkInquisitionResolution, checkLongWinterStart, checkLongWinterResolution, getLongWinterDay, isLongWinterForcedChoiceDay, isLongWinterRelationalDay, isRestDay, getChapterName, getNextChapterHint } from './systems/ProgressionManager';
 import { startBgm, toggleMute, isMuted, switchToPuzzleMusic, switchToFightMusic, switchToNormalMusic, switchToTrackset, pauseMusic, resumeMusic } from './systems/MusicManager';
 import { playSfx } from './systems/SfxManager';
 import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDayEnd, pauseDayTimer, resumeDayTimer, isPaused } from './systems/DayTimer';
@@ -509,6 +509,19 @@ function switchScene(target: string, data?: object): void {
   }
 }
 
+// Pause the day timer at session-load if the loaded save is sitting on
+// a Day of Rest. SessionFlow's game-loaded handler runs first and calls
+// startDayTimer; we then check the rest-day cadence and pause it. This
+// runs once per session (or whenever the player switches save slots).
+eventBus.on('game-loaded', (save: SaveData) => {
+  if (isRestDay(save)) {
+    pauseDayTimer();
+    setTimeout(() => {
+      showToast('A day of rest. The cats observe quiet hours \u2014 the day timer is paused.');
+    }, 1500);
+  }
+});
+
 // ──── Day Timer Callback ────
 setOnDayEnd(() => {
   if (!gameState) return;
@@ -844,6 +857,7 @@ eventBus.on('show-town-overlay', () => {
   const plagueActive = gameState.flags.ratPlagueStarted && !gameState.flags.ratPlagueResolved;
   const winterActive = !!gameState.flags.longWinterStarted && !gameState.flags.longWinterResolved;
   const winterDay = winterActive ? getLongWinterDay(gameState) : 0;
+  const restDayActive = isRestDay(gameState);
 
   // Calculate daily budget summary
   const catUpkeep = gameState.cats.reduce((sum, c) => sum + 2 + Math.max(0, c.level - 1), 0);
@@ -899,6 +913,11 @@ eventBus.on('show-town-overlay', () => {
       </div>
       <div style="font-size:10px;color:#7d96b3;margin-top:4px">Upkeep is doubled. Cats are tested. The guild has only itself.</div>
     </div>` : ''}
+    ${restDayActive ? `<div style="background:#2a2438;color:#bfa8d8;padding:10px 12px;margin:0 12px 8px;border-radius:4px;font-size:12px;text-align:center;font-family:Georgia,serif;border:1px solid #4a3f5f">
+      <strong>\u{1F54A} A DAY OF REST</strong><br>
+      <div style="margin:6px 0;font-size:11px">The cats observe quiet hours. The job board is closed today.</div>
+      <div style="font-size:10px;color:#9d8bb3;margin-top:4px;font-style:italic">Open the menu to visit the Day of Rest archive while the guild sleeps.</div>
+    </div>` : ''}
     <div class="town-section-divider"></div>
     <div class="town-section-title">Job Board</div>
     ${gameState.totalJobsCompleted < 3 ? '<div style="padding:0 12px 8px;font-size:11px;color:#6b5b3e;font-family:Georgia,serif">Accept a job and assign a cat from the guild to complete it. Solve puzzles to earn fish.</div>' : ''}
@@ -921,9 +940,14 @@ eventBus.on('show-town-overlay', () => {
       The job board is empty. The storm has the town in its grip.<br>
       Wait it out. End the day to advance the winter.
     </div>`;
+  } else if (restDayActive) {
+    html += `<div style="padding:24px 12px;text-align:center;font-family:Georgia,serif;color:#9d8bb3;font-style:italic">
+      The job board is empty. Even the millers and the dockhands are at home today.<br>
+      Rest. End the day when you are ready.
+    </div>`;
   }
 
-  if (!winterActive) dailyJobs.forEach((job) => {
+  if (!winterActive && !restDayActive) dailyJobs.forEach((job) => {
     const diffClass = `diff-${job.difficulty}`;
     const categoryIcons: Record<string, string> = {
       pest_control: '\u{1F400}', courier: '\u{1F4DC}', guard: '\u{1F6E1}', sacred: '\u{1F54A}', detection: '\u{1F50D}', shadow: '\u{1F5E1}',
@@ -1959,6 +1983,20 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
   // filesystem writes are async and we don't want to lag the per-tile
   // save loop. One snapshot per in-game day is plenty.
   writeAutoSnapshot(JSON.stringify(gameState)).catch(() => {});
+
+  // Day of Rest cadence — every 7 in-game days the cats observe a rest
+  // day. Pause the day timer so the player isn't pressured to End Day
+  // by the wall clock; the town overlay below will close the job board
+  // and surface a "the cats observe quiet hours" banner that points at
+  // the menu's Day of Rest entry. Stationed cats still earn (resting
+  // from active work, not from their post). Suppressed during plague /
+  // winter / inquisition (see isRestDay).
+  if (isRestDay(gameState)) {
+    pauseDayTimer();
+    setTimeout(() => {
+      showToast('A day of rest. The cats observe quiet hours \u2014 the day timer is paused.');
+    }, 1800);
+  }
 
   const events = stationedResults.filter((r) => r.event).map((r) => r.event!);
   return { foodCost, stationedEarned: stationedTotal, events, fishRemaining: gameState.fish };
