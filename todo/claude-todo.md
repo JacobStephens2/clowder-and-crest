@@ -1,0 +1,3 @@
+[] remove the they/them option from the pronouns options for the cat naming at the start
+[] add prompts for a feminine version of the main character wildcat to todo/art/dialogue-portrait-prompts.md
+[] ensure after the initial scene / new game / tutorial, that the guild / town / cats / menu bar moves to the bottom of the screen. On this play through it ended up at the top. I had to restart the app and reload the save to get it to show on the bottom.
