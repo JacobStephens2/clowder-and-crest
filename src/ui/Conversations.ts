@@ -25,6 +25,17 @@ import { pausePlaytimeSession, startPlaytimeSession } from '../systems/PlaytimeT
 type Expression = 'neutral' | 'happy' | 'serious' | 'sad' | 'angry' | 'surprised';
 
 function portraitSrc(breed: string, expression: Expression): string {
+  // The wildcat is always the player (the founder of the guild). When
+  // the player chose she/her at character creation, swap to the female
+  // wildcat portrait set so dialogue scenes match the chosen identity.
+  // Other breeds are gender-fixed by their visual design and don't have
+  // a variant.
+  if (breed === 'wildcat') {
+    const save = deps?.getGameState?.();
+    if (save?.playerCatGender === 'female') {
+      return `assets/sprites/portraits/wildcat_female_${expression}.png`;
+    }
+  }
   return `assets/sprites/portraits/${breed}_${expression}.png`;
 }
 
