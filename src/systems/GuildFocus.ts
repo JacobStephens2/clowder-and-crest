@@ -51,10 +51,26 @@ export function getGuildFocusLines(save: SaveData): FocusLine[] {
   }
 
   if (net < 0 && save.cats.length >= 2) {
-    lines.push({
-      color: '#cc6666',
-      text: `Guild balance is ${net}/day. Stationing one strong-fit cat would reduce upkeep pressure immediately.`,
-    });
+    // Per user feedback: "It wasn't totally clear to me if I should have
+    // gone into fish debt or something". Add a days-until-broke estimate
+    // and a soft/urgent split so the player can judge severity at a glance.
+    const daysUntilBroke = net !== 0 ? Math.floor(save.fish / -net) : 99;
+    if (daysUntilBroke <= 2) {
+      lines.push({
+        color: '#cc4444',
+        text: `Guild balance is ${net}/day and you have ${save.fish} fish — about ${daysUntilBroke} day${daysUntilBroke === 1 ? '' : 's'} of runway. Take a high-pay job or station a cat now.`,
+      });
+    } else if (daysUntilBroke <= 5) {
+      lines.push({
+        color: '#cc6666',
+        text: `Guild balance is ${net}/day. You have ${save.fish} fish — that's about ${daysUntilBroke} days of runway. Worth working a job soon.`,
+      });
+    } else {
+      lines.push({
+        color: '#cc6666',
+        text: `Guild balance is ${net}/day. ${save.fish} fish on hand is fine for now (${daysUntilBroke}+ days of runway), but the trend is downward — consider stationing a cat.`,
+      });
+    }
   } else if (net >= 0 && save.stationedCats.length > 0) {
     lines.push({
       color: '#4a8a4a',
