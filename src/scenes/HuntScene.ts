@@ -46,6 +46,66 @@ interface ActiveRat {
  *  is comfortably above any expected case. */
 const RAT_MAX_LIFETIME_MS = 4000;
 
+/** Per-location field style for the hunt scene. Each job in jobs.json has
+ *  a `puzzleSkin` ('mill', 'docks', 'cathedral', etc.) — this maps the
+ *  skin to a base color, accent color, accent count, and a label so the
+ *  same minigame feels different at different town locations. The user's
+ *  ask: "if the cat went to the dock to start a hunt, make the art of
+ *  the scene more like a ship or dock for example than its default
+ *  grassy field type look".
+ *
+ *  Intentionally lightweight (color tinting + label only — no new art
+ *  assets). Other minigame scenes can adopt the same pattern for their
+ *  own location flavor. */
+interface HuntFieldStyle {
+  baseColor: number;
+  accentColor: number;
+  accentCount: number;
+  label: string | null;
+}
+function getHuntFieldStyle(skin: string | undefined): HuntFieldStyle {
+  switch (skin) {
+    case 'docks':
+    case 'ship':
+      // Wet boards over dark water — fewer accents, cool blue glints
+      return { baseColor: 0x1f2a30, accentColor: 0x4a6680, accentCount: 12, label: 'The Docks' };
+    case 'cathedral':
+      // Stone tile floor — warm tan, sparse stone flecks
+      return { baseColor: 0x2a2620, accentColor: 0x6a5a40, accentCount: 18, label: 'The Cathedral' };
+    case 'monastery':
+    case 'tower':
+      // Cloister stone — slightly cooler than the cathedral
+      return { baseColor: 0x252420, accentColor: 0x6a6650, accentCount: 18, label: 'The Monastery' };
+    case 'castle':
+    case 'manor':
+      // Polished hall — dark stone, almost no accent
+      return { baseColor: 0x22201c, accentColor: 0x4a4036, accentCount: 8, label: 'The Castle' };
+    case 'tavern':
+      // Sawdust floor — warm brown, dense flecks
+      return { baseColor: 0x2c241a, accentColor: 0x6a4a2a, accentCount: 30, label: 'The Tavern' };
+    case 'market':
+      // Cobblestone square — neutral grey
+      return { baseColor: 0x282520, accentColor: 0x554840, accentCount: 22, label: 'The Market' };
+    case 'mill':
+    case 'granary':
+    case 'bakery':
+      // Wheat-strewn floor — gold accents over warm brown
+      return { baseColor: 0x2a2618, accentColor: 0x7a6028, accentCount: 35, label: 'The Granary' };
+    case 'garden':
+      // Garden plot — green over rich brown, dense grass
+      return { baseColor: 0x252820, accentColor: 0x3a4a2a, accentCount: 35, label: 'The Garden' };
+    case 'warehouse':
+      // Crate-stacked storage — cool grey-brown, sparse
+      return { baseColor: 0x252220, accentColor: 0x4a4030, accentCount: 12, label: 'The Warehouse' };
+    case 'night':
+      // Night patrol — darker base, sparse moonlit accents
+      return { baseColor: 0x18181a, accentColor: 0x3a4258, accentCount: 10, label: 'The Night Watch' };
+    default:
+      // Generic grass field — the original look
+      return { baseColor: 0x2a2820, accentColor: 0x3a4a2a, accentCount: 30, label: null };
+  }
+}
+
 export class HuntScene extends Phaser.Scene {
   private jobId = '';
   private catId = '';
@@ -196,17 +256,31 @@ export class HuntScene extends Phaser.Scene {
       fontFamily: 'Georgia, serif', fontSize: '12px', color: '#cc6666',
     }).setOrigin(1, 0.5);
 
-    // Draw field background
+    // Draw field background — tint and accent vary by job location so a
+    // hunt at the docks looks like the docks (blue-grey water, no grass),
+    // not the same generic grass field as a hunt at the granary. The
+    // location is read from the job's puzzleSkin metadata (already
+    // resolved as `job` above for the title text).
+    const style = getHuntFieldStyle(job?.puzzleSkin);
     const fieldGfx = this.add.graphics();
-    fieldGfx.fillStyle(0x2a2820, 1);
+    fieldGfx.fillStyle(style.baseColor, 1);
     fieldGfx.fillRoundedRect(FIELD_LEFT - 10, FIELD_TOP - 10, FIELD_RIGHT - FIELD_LEFT + 20, FIELD_BOTTOM - FIELD_TOP + 20, 8);
 
-    // Draw grass tufts
-    fieldGfx.fillStyle(0x3a4a2a, 0.5);
-    for (let i = 0; i < 30; i++) {
+    // Draw accent dots (grass tufts, stone flecks, water glints — depends on location)
+    fieldGfx.fillStyle(style.accentColor, 0.5);
+    for (let i = 0; i < style.accentCount; i++) {
       const gx = FIELD_LEFT + Math.random() * (FIELD_RIGHT - FIELD_LEFT);
       const gy = FIELD_TOP + Math.random() * (FIELD_BOTTOM - FIELD_TOP);
-      fieldGfx.fillCircle(gx, gy, 3 + Math.random() * 4);
+      fieldGfx.fillCircle(gx, gy, 2 + Math.random() * 4);
+    }
+
+    // Location label — small banner above the field so the player feels
+    // the place change with the job, not just a different name in the
+    // job board.
+    if (style.label) {
+      this.add.text(GAME_WIDTH / 2, FIELD_TOP - 24, `\u{1F4CD} ${style.label}`, {
+        fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8b7355',
+      }).setOrigin(0.5);
     }
 
     // Draw holes
