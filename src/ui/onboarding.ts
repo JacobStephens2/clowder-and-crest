@@ -33,9 +33,24 @@ export function showIntroStory(catName: string, onComplete: () => void, deps: In
   sceneImg.style.cssText = 'width:280px;max-height:160px;image-rendering:pixelated;margin-bottom:16px;border-radius:4px;opacity:0.4;object-fit:cover;';
   overlay.appendChild(sceneImg);
 
+  // Wildcat portrait — uses the illustrated Midjourney portrait shipped
+  // in v2.3.0, with a per-panel expression (sad during the storm/seeking-
+  // shelter beats, neutral once the wildcat settles into the lean-to).
+  // Falls back to the pixel sprite on 404 so old/incomplete asset trees
+  // still render something.
   const catImg = document.createElement('img');
-  catImg.src = 'assets/sprites/wildcat/south.png';
-  catImg.style.cssText = 'width:72px;height:72px;image-rendering:pixelated;margin-bottom:16px;display:none;';
+  catImg.alt = '';
+  catImg.style.cssText = 'height:180px;width:auto;max-width:80%;margin-bottom:16px;display:none;filter:drop-shadow(2px 4px 6px rgba(0,0,0,0.5));';
+  catImg.addEventListener('error', () => {
+    // Fall back to the pixel sprite if the portrait isn't on disk
+    if (!catImg.dataset.fallbackTried) {
+      catImg.dataset.fallbackTried = '1';
+      catImg.src = 'assets/sprites/wildcat/south.png';
+      catImg.style.height = '72px';
+      catImg.style.imageRendering = 'pixelated';
+      catImg.style.filter = '';
+    }
+  });
   overlay.appendChild(catImg);
 
   const textDiv = document.createElement('div');
@@ -92,6 +107,20 @@ export function showIntroStory(catName: string, onComplete: () => void, deps: In
     }, 500);
   }
 
+  // Per-panel wildcat expression. The intro starts somber (sad during the
+  // storm/seeking-shelter beats), softens to neutral once the lean-to is
+  // found and the notice promises tomorrow's work. Index matches `panels`
+  // above. The portrait is hidden on the bookend panels (0 and 5) where
+  // the scene art carries the moment alone.
+  const panelExpressions: Array<'sad' | 'neutral' | null> = [
+    null,       // 0: storm — scene-only
+    'sad',      // 1: stumbles through market
+    'sad',      // 2: finds the lean-to
+    'neutral',  // 3: sees the notice, ears perk up
+    'neutral',  // 4: curls up under the roof
+    null,       // 5: every guild starts somewhere — scene-only
+  ];
+
   function showPanel(): void {
     if (panelIndex >= panels.length) {
       finish();
@@ -99,7 +128,19 @@ export function showIntroStory(catName: string, onComplete: () => void, deps: In
     }
     const panel = panels[panelIndex];
     sceneImg.src = panel.scene === 'town' ? 'assets/sprites/scenes/town.png' : 'assets/sprites/scenes/guildhall.png';
-    catImg.style.display = panelIndex >= 1 && panelIndex <= 4 ? 'block' : 'none';
+    const expression = panelExpressions[panelIndex];
+    if (expression) {
+      catImg.style.display = 'block';
+      // Reset the fallback flag so each panel attempts the portrait fresh
+      // (a sad → neutral transition shouldn't be stuck in fallback mode).
+      delete catImg.dataset.fallbackTried;
+      catImg.style.height = '180px';
+      catImg.style.imageRendering = '';
+      catImg.style.filter = 'drop-shadow(2px 4px 6px rgba(0,0,0,0.5))';
+      catImg.src = `assets/sprites/portraits/wildcat_${expression}.png`;
+    } else {
+      catImg.style.display = 'none';
+    }
     const sfx = panelSounds[panelIndex];
     if (sfx) setTimeout(() => deps.playSfx(sfx, 0.35), 300);
     textDiv.style.opacity = '0';
