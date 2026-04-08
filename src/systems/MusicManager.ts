@@ -2,7 +2,8 @@
 //
 // 2026-04-08: rewritten from a 3-mode (normal/puzzle/fight) pool model
 // to a per-scene track set model after migrating to the shared-leitmotif
-// music set (68 new tracks, 2 variants per scene). Each scene/state has
+// music set (70 tracks total — 35 scenes × 2 variants each, including
+// the post-migration Brawl 1 + Brawl 2 replacements). Each scene/state has
 // its own dedicated track set; the manager picks a random variant each
 // time and crossfades between them.
 //

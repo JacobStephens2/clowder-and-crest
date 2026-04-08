@@ -65,7 +65,7 @@ Plus the **Dungeon Run** roguelike meta-loop (Ch.5+) that chains random minigame
 - **PixelLab** — AI pixel art (idle, walk, scratch, sit, eat, sleep animations × 6 breeds)
 - **Midjourney** — illustrated dialogue portraits (5 expressions × 6 breeds)
 - **ElevenLabs** — sound effects
-- **Suno** — 68-track shared-leitmotif soundtrack
+- **Suno** — 70-track shared-leitmotif soundtrack (35 scenes × 2 variants)
 - **Claude Code** with Claude Opus 4.6 — primary code authoring + design dialogue
 - **Codex CLI** with GPT-5.4 Codex — secondary code authoring lane (`todo/codex-todo.md`)
 - **Gemini CLI** with Gemini 3.1 Pro Preview — third coding lane (`todo/gemini-todo.md`)
