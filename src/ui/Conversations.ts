@@ -32,6 +32,31 @@ function fallbackSpriteSrc(breed: string): string {
   return `assets/sprites/${breed}/south.png`;
 }
 
+const EXPRESSION_LABELS: Record<Expression, string> = {
+  neutral: 'Steady',
+  happy: 'Warm',
+  serious: 'Focused',
+  sad: 'Somber',
+  angry: 'Angry',
+  surprised: 'Startled',
+};
+
+function expressionLabel(expression: Expression): string {
+  return EXPRESSION_LABELS[expression] ?? 'Steady';
+}
+
+function pulsePortrait(img: HTMLImageElement): void {
+  if (typeof img.animate !== 'function') return;
+  img.animate(
+    [
+      { transform: 'translateY(10px) scale(0.97)', filter: 'brightness(0.9)' },
+      { transform: 'translateY(0) scale(1.03)', filter: 'brightness(1.12)' },
+      { transform: 'translateY(0) scale(1)', filter: 'brightness(1)' },
+    ],
+    { duration: 220, easing: 'ease-out' },
+  );
+}
+
 /**
  * Configure an <img> element to show a portrait. Tries the high-res illustrated
  * portrait first; if that expression variant doesn't exist yet, falls back to
@@ -39,9 +64,12 @@ function fallbackSpriteSrc(breed: string): string {
  * to the pixel sprite fallback.
  */
 function setPortrait(img: HTMLImageElement, breed: string, expression: Expression): void {
+  const previousExpression = (img.dataset.portraitExpression as Expression | undefined) ?? null;
   // Reset state — portraits are smooth, sprites are pixelated.
   img.style.imageRendering = 'auto';
   delete img.dataset.portraitFallbackStage;
+  img.dataset.portraitBreed = breed;
+  img.dataset.portraitExpression = expression;
   img.onerror = () => {
     const stage = img.dataset.portraitFallbackStage ?? 'expression';
     if (stage === 'expression' && expression !== 'neutral') {
@@ -55,6 +83,9 @@ function setPortrait(img: HTMLImageElement, breed: string, expression: Expressio
     img.style.imageRendering = 'pixelated';
   };
   img.src = portraitSrc(breed, expression);
+  if (previousExpression && previousExpression !== expression) {
+    pulsePortrait(img);
+  }
 }
 
 export interface ConversationDeps {
@@ -167,7 +198,7 @@ export function checkAndShowConversation(): void {
 function showGroupConversation(key: string): void {
   const gameState = deps.getGameState();
   if (!gameState) return;
-  const convos = conversationsData as Record<string, Array<{ rank: string; title: string; lines: Array<{ speaker: string; text: string }> }>>;
+  const convos = conversationsData as Record<string, Array<{ rank: string; title: string; lines: Array<{ speaker: string; text: string; expression?: Expression }> }>>;
   const convoSet = convos[key];
   if (!convoSet || convoSet.length === 0) { deps.switchScene('TownMapScene'); return; }
   const convo = convoSet[0];
@@ -203,6 +234,7 @@ function showGroupConversation(key: string): void {
     <div class="conversation-textbox">
       <div style="color:#c4956a;font-size:12px;margin-bottom:4px">${convo.title}</div>
       <div class="conversation-speaker" id="conv-speaker"></div>
+      <div id="conv-expression" style="color:#8b7355;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;min-height:12px"></div>
       <div class="conversation-text" id="conv-text"></div>
       <div class="conversation-advance">Tap to continue</div>
       <button id="conv-skip" style="position:absolute;top:10px;right:16px;background:none;border:1px solid #3a3530;color:#6b5b3e;padding:4px 10px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer">Skip</button>
@@ -229,7 +261,18 @@ function showGroupConversation(key: string): void {
   });
 
   const speaker = document.getElementById('conv-speaker')!;
+  const expression = document.getElementById('conv-expression')!;
   const text = document.getElementById('conv-text')!;
+  const groupExpressions = new Map<string, Expression>();
+
+  gameState.cats.slice(0, 5).forEach((cat, i) => {
+    groupExpressions.set(cat.breed, 'neutral');
+    const img = document.getElementById(`group-portrait-${i}`) as HTMLImageElement | null;
+    if (!img) return;
+    setPortrait(img, cat.breed, 'neutral');
+    img.style.width = '56px';
+    img.style.height = '56px';
+  });
 
   function showLine(): void {
     if (lineIndex >= convo.lines.length) {
@@ -247,6 +290,16 @@ function showGroupConversation(key: string): void {
     const name = cat?.name ?? BREED_NAMES[line.speaker] ?? line.speaker;
     const breedName = BREED_NAMES[line.speaker] ?? line.speaker;
     speaker.innerHTML = `${esc(name)} <span class="speaker-breed">${breedName}</span>`;
+    if (line.expression) {
+      groupExpressions.set(line.speaker, line.expression);
+      const portraitIndex = gameState!.cats.findIndex((c) => c.breed === line.speaker);
+      if (portraitIndex >= 0) {
+        const portrait = document.getElementById(`group-portrait-${portraitIndex}`) as HTMLImageElement | null;
+        if (portrait) setPortrait(portrait, line.speaker, line.expression);
+      }
+    }
+    const currentExpression = groupExpressions.get(line.speaker) ?? 'neutral';
+    expression.textContent = `${expressionLabel(currentExpression)} expression`;
     text.textContent = line.text;
     lineIndex++;
   }
@@ -339,6 +392,7 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
     <!-- Text box at bottom — z-index:2 so it sits above the portraits. -->
     <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(10,9,8,0.95) 20%);padding:20px 20px 30px;min-height:130px;z-index:2">
       <div id="conv-speaker" style="color:#c4956a;font-family:Georgia,serif;font-size:15px;margin-bottom:6px;font-weight:bold"></div>
+      <div id="conv-expression" style="color:#8b7355;font-family:Georgia,serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;min-height:12px"></div>
       <div id="conv-text" style="color:#d4c5a9;font-family:Georgia,serif;font-size:14px;line-height:1.6"></div>
       <div style="color:#555;font-family:Georgia,serif;font-size:10px;margin-top:8px;text-align:right">Tap to continue</div>
     </div>
@@ -350,6 +404,7 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
   deps.overlayLayer.appendChild(overlay);
 
   const speaker = document.getElementById('conv-speaker')!;
+  const expression = document.getElementById('conv-expression')!;
   const text = document.getElementById('conv-text')!;
   const portraitLeft = document.getElementById('portrait-left')!;
   const portraitRight = document.getElementById('portrait-right')!;
@@ -390,7 +445,9 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
     const isA = line.speaker === breedA;
     const speakerName = isA ? nameA : nameB;
     const speakerBreed = isA ? breedNameA : breedNameB;
+    const currentExpression = isA ? exprA : exprB;
     speaker.innerHTML = `${esc(speakerName)} <span style="font-size:11px;color:#8b7355;font-weight:normal;margin-left:6px">${speakerBreed}</span>`;
+    expression.textContent = `${expressionLabel(currentExpression)} expression`;
     text.textContent = line.text;
 
     // If this line carries an explicit expression, update the speaker's
@@ -404,6 +461,7 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
         exprB = line.expression;
         setPortrait(portraitImgRight, breedB, exprB);
       }
+      expression.textContent = `${expressionLabel(line.expression)} expression`;
     }
 
     // Fire Emblem style: active speaker bright + scaled up, inactive dimmed.
