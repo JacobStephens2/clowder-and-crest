@@ -12,7 +12,11 @@ android/app/src/main/assets/capacitor.plugins.json
 screenshots/
 todo/music/
 todo/pixel_art/
+todo/art/portraits/
 sound_effects/
+todo/.stfolder/
+todo/*-capture.md
+todo/ideas/.DS_Store
 .env
 .env.local
 *.env
