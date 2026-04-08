@@ -6,6 +6,7 @@ import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
 import { haptic } from '../systems/NativeFeatures';
 import { showMinigameTutorial } from '../ui/sceneHelpers';
+import { isPracticeRun } from '../systems/PracticeMode';
 
 // Layout
 const GROUND_Y = 650;
@@ -671,8 +672,22 @@ export class PounceScene extends Phaser.Scene {
     const exitNow = () => {
       if (exited) return;
       exited = true;
+      // In practice mode (Day of Rest), the puzzle-quit handler in
+      // main.ts routes back to GuildhallScene + showDayOfRestPanel
+      // itself. Emitting 'navigate' to TownMapScene afterwards
+      // overrode that route, leaving the player stranded on the town
+      // map (or, if the redraw timing was off, on a blank screen).
+      // Reported as a bug 2026-04-08. Snapshot isPracticeRun BEFORE
+      // emitting puzzle-quit because the handler clears the practice
+      // flag inside endPracticeRun() — checking it after the emit
+      // would always report false. In normal job mode the navigate is
+      // still required because the puzzle-quit handler doesn't switch
+      // scenes for normal-mode quits.
+      const wasPractice = isPracticeRun();
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      eventBus.emit('navigate', 'TownMapScene');
+      if (!wasPractice) {
+        eventBus.emit('navigate', 'TownMapScene');
+      }
     };
     continueBtn.on('pointerdown', exitNow);
     // Tap anywhere on the screen also continues — silent escape hatch
