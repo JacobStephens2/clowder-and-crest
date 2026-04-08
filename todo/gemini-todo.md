@@ -1,0 +1,1 @@
+[x] Evaluate the story of Clowder & Crest according to todo/story/What Makes a Great Rags to Riches Story.md and write your evaluation to todo/story/story-audit-gemini.md
