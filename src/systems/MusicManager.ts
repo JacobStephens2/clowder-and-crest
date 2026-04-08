@@ -50,9 +50,7 @@ const TRACK_SETS: Record<string, string[]> = {
   heist: ['assets/audio/heist_1.mp3', 'assets/audio/heist_2.mp3'],
   courier_run: ['assets/audio/courier_run_1.mp3', 'assets/audio/courier_run_2.mp3'],
   slide_blocks: ['assets/audio/slide_blocks_1.mp3', 'assets/audio/slide_blocks_2.mp3'],
-  // Brawl has no dedicated track in the shared-leitmotif set yet — fall back
-  // to the legacy fight tracks. When new brawl tracks are generated, replace.
-  brawl: ['assets/audio/fight_1.mp3', 'assets/audio/fight_2.mp3'],
+  brawl: ['assets/audio/brawl_1.mp3', 'assets/audio/brawl_2.mp3'],
 
   // ── Overlay / event tracks ──
   bond_conversation: ['assets/audio/bond_conversation_1.mp3', 'assets/audio/bond_conversation_2.mp3'],
