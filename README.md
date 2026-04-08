@@ -42,7 +42,7 @@ Plus the **Dungeon Run** roguelike meta-loop (Ch.5+) that chains random minigame
 - **Reputation system** (Crest/Shadow) — Sacred + Guard work builds Crest, Detection builds Shadow; affects recruit costs, daily income, and bond growth
 - **Guildhall + 3 unlockable rooms** — 15 furniture items, drag-to-rearrange, walk-into-furniture stat boosts
 - **Town map** — explorable 8×10 grid with buildings, stray cats, walking NPCs
-- **Real-time day cycle** — 3-minute days, dawn-to-night phases, time-of-day town art
+- **Real-time day cycle** — 5-minute days, dawn-to-night phases, time-of-day town art
 - **Daily wishes**, **traveling merchant** (every 3rd day), **rotating festivals** (every 7 days)
 - **3 save slots** with forward migration (saves never destroyed on updates)
 - **Guild journal** — chapter beats, recruits, level-ups, bond rank-ups, dungeon runs

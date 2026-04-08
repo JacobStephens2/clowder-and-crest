@@ -1,4 +1,11 @@
-const DAY_DURATION = 3 * 60 * 1000; // 3 minutes per in-game day
+// Per user feedback (2026-04-08): "the days feel pretty fast, making it
+// feel I think a bit more rushed than it should be, as I spend some time
+// reading and processing things". Bumped from 3 to 5 minutes per in-game
+// day so the player has breathing room to read flavor text, plan, and
+// react to events without feeling rushed. The phase indicator (Dawn /
+// Morning / Midday / Afternoon / Dusk / Night) and pause behavior are
+// unchanged — only the wall-clock duration of a full cycle.
+const DAY_DURATION = 5 * 60 * 1000; // 5 minutes per in-game day
 const TIME_PHASES = ['Dawn', 'Morning', 'Midday', 'Afternoon', 'Dusk', 'Night'];
 
 let dayTimerStart = 0;
