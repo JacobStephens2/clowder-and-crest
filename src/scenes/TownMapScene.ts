@@ -111,6 +111,13 @@ export class TownMapScene extends Phaser.Scene {
   private buildingLabels: Map<string, Phaser.GameObjects.Text> = new Map();
   private promptText: Phaser.GameObjects.Text | null = null;
   private activeDoor: BuildingDef | null = null;
+  /** When set, walkPathThenEnter is in flight toward this building.
+   *  Used by checkDoorProximity to suppress the door-tile auto-enter
+   *  for OTHER buildings the player passes through on the way (e.g.
+   *  walking to the Guildhall from the spawn point passes through the
+   *  Jobs door tile, which used to hijack the walk and open the job
+   *  board overlay). */
+  private walkingToBuilding: BuildingDef | null = null;
   private strayCats: { breed: string; col: number; row: number; sprite: Phaser.GameObjects.Sprite; nameLabel: Phaser.GameObjects.Text }[] = [];
   private merchantTile: { col: number; row: number } | null = null;
 
@@ -955,8 +962,15 @@ export class TownMapScene extends Phaser.Scene {
     // (2026-04-08): walking onto the guildhall door is the physical
     // "go home" affordance the player wanted as an alternative to
     // the bottom-nav guildhall button.
+    //
+    // BUT: if the player is mid-walk toward a DIFFERENT building,
+    // suppress the auto-enter so the directed walk isn't hijacked
+    // by passing through an unrelated door tile. This was the bug
+    // where tapping the Guildhall (which routes through the Jobs
+    // door tile) silently triggered the job board overlay instead.
     if (this.activeDoor && (this.activeDoor.id === 'jobs' || this.activeDoor.id === 'guildhall') &&
-        this.playerPos.col === this.activeDoor.doorCol && this.playerPos.row === this.activeDoor.doorRow) {
+        this.playerPos.col === this.activeDoor.doorCol && this.playerPos.row === this.activeDoor.doorRow &&
+        (!this.walkingToBuilding || this.walkingToBuilding.id === this.activeDoor.id)) {
       this.enterBuilding(this.activeDoor);
     }
 
@@ -1030,6 +1044,9 @@ export class TownMapScene extends Phaser.Scene {
       // Door isn't reachable from here. Best we can do is bail gracefully.
       return;
     }
+    // Mark the directed walk so checkDoorProximity skips auto-entering
+    // OTHER buildings the player passes through on the way.
+    this.walkingToBuilding = b;
     this.walkPathThenEnter(path, b);
   }
 
@@ -1037,6 +1054,7 @@ export class TownMapScene extends Phaser.Scene {
    *  on arrival. Used by walkToThenEnter for building taps. */
   private walkPathThenEnter(path: Array<{ col: number; row: number }>, b: BuildingDef): void {
     if (path.length === 0) {
+      this.walkingToBuilding = null;
       this.enterBuilding(b);
       return;
     }
@@ -1051,6 +1069,7 @@ export class TownMapScene extends Phaser.Scene {
         // Off-route (joystick interrupted). Replan from current position.
         const replan = this.findPath(b.doorCol, b.doorRow);
         if (replan) this.walkPathThenEnter(replan, b);
+        else this.walkingToBuilding = null;
       }
     });
   }
