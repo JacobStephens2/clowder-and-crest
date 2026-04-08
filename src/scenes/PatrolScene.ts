@@ -83,8 +83,12 @@ export class PatrolScene extends Phaser.Scene {
     this.lanternsLost = 0;
     this.relightCooldownUntil = 0;
     this.nextProwlerAt = 0;
-    this.lives = this.difficulty === 'hard' ? 2 : this.difficulty === 'medium' ? 3 : 4;
-    this.timeLeft = this.difficulty === 'hard' ? 30 : this.difficulty === 'medium' ? 35 : 40;
+    // Per user feedback (2026-04-08): "make the easy patrol scene a
+    // bit easier." Bumped easy lives 4 → 5 and trimmed the easy
+    // watch by 8s so the threat ramp gets less time to compound. The
+    // dim-rate and threat-ramp easings below also relax for easy.
+    this.lives = this.difficulty === 'hard' ? 2 : this.difficulty === 'medium' ? 3 : 5;
+    this.timeLeft = this.difficulty === 'hard' ? 30 : this.difficulty === 'medium' ? 35 : 32;
 
     const state = getGameState();
     const cat = state?.cats.find((c) => c.id === this.catId);
@@ -95,14 +99,15 @@ export class PatrolScene extends Phaser.Scene {
   }
 
   /** Global threat multiplier — the doc's "predictable but uncontrollable
-      escalation" pillar. Linear ramp from 1.0 at the start of the watch to
-      ~1.8 at the end. The player KNOWS the threat is rising but can't
-      predict exactly when, which is the entire point. Public so the
-      playtest can sample the curve. */
+      escalation" pillar. Easy mode tops out at ~1.4x; medium and hard
+      keep the original 1.8x peak. The reduced ceiling on easy is per
+      user feedback (2026-04-08): "make the easy patrol scene a bit
+      easier." Public so the playtest can sample the curve. */
   getThreatLevel(): number {
     if (this.startingTimeLeft <= 0) return 1;
     const t = 1 - this.timeLeft / this.startingTimeLeft;
-    return 1 + 0.8 * Math.max(0, Math.min(1, t));
+    const peak = this.difficulty === 'easy' ? 0.4 : 0.8;
+    return 1 + peak * Math.max(0, Math.min(1, t));
   }
 
   create(): void {
@@ -182,10 +187,12 @@ export class PatrolScene extends Phaser.Scene {
       const lx = cx + Math.cos(angle) * ringRadius;
       const ly = cy + Math.sin(angle) * ringRadius;
       const isTrap = Math.random() < trapChance;
-      const baseDim = this.difficulty === 'hard' ? 0.025 : this.difficulty === 'medium' ? 0.018 : 0.012;
+      // Easy mode uses a slower per-lantern dim rate per user feedback
+      // (2026-04-08): "make the easy patrol scene a bit easier."
+      const baseDim = this.difficulty === 'hard' ? 0.025 : this.difficulty === 'medium' ? 0.018 : 0.008;
       // Each lantern gets a slightly different base rate so the player has
       // to decide which is dimming faster — variance creates triage decisions.
-      const baseDimRate = baseDim + Math.random() * 0.01;
+      const baseDimRate = baseDim + Math.random() * (this.difficulty === 'easy' ? 0.005 : 0.01);
 
       const glow = this.add.circle(lx, ly, LANTERN_RADIUS + 10, 0xdda055, 0.3);
       const flame = this.add.circle(lx, ly, LANTERN_RADIUS, isTrap ? 0xcc4444 : 0xdda055, 1);
