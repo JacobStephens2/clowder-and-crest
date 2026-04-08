@@ -882,6 +882,11 @@ export class RoomScene extends Phaser.Scene {
           if (playerCat) {
             addBondPoints(save, playerCat.breed, cat.breed, 1);
             saveGame(save);
+            // Possible rank-up — let main.ts check for newly-available
+            // conversations. The conversation overlay can render on top
+            // of the room scene the same way the puzzle-result overlay
+            // does, so no need to defer until scene exit.
+            eventBus.emit('check-conversation');
           }
         }
         const actionText = document.createElement('div');

@@ -385,6 +385,11 @@ function updateGuildWishBanner(): void {
         for (const other of gameState.cats) {
           if (other.id !== cat.id) addBondPoints(gameState, cat.breed, other.breed, 2);
         }
+        // Bond gain may have crossed a rank threshold — fire any newly-
+        // available conversation. Without this, wish rewards could push
+        // a pair to acquaintance silently and the C-rank dialogue would
+        // never trigger until the next job/end-day.
+        checkAndShowConversation();
       }
     }
     saveGame(gameState);
@@ -1709,6 +1714,12 @@ function suggestEndDay(): void {
 // Panels extracted to src/ui/Panels.ts
 
 // Chapter advance notifications
+// Some bond-point sources (room interactions, wish rewards) live outside
+// the puzzle-result flow that normally calls checkAndShowConversation via
+// onAfterResult. Those sites emit 'check-conversation' so newly-available
+// dialogues fire immediately instead of waiting for the next job/end-day.
+eventBus.on('check-conversation', () => checkAndShowConversation());
+
 eventBus.on('chapter-advance', (chapter: number) => {
   playSfx('chapter');
   const name = getChapterName(chapter);
