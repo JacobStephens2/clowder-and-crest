@@ -16,6 +16,7 @@ import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { App, type AppState } from '@capacitor/app';
 import { StatusBar, Style } from '@capacitor/status-bar';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 
 const RETURN_NOTIFICATION_ID = 1001;
 const HAPTICS_PREF_KEY = 'clowder_haptics_enabled';
@@ -196,6 +197,88 @@ export async function setupStatusBar(): Promise<void> {
     await StatusBar.setOverlaysWebView({ overlay: false });
   } catch {
     // No-op
+  }
+}
+
+// ──── Filesystem (save export + auto-snapshot) ────
+//
+// The user's stated concern: "I want to reinstall the game on Android to
+// get updates and still have haptics, but I'm worried about losing the
+// save." The standard <a download> export the menu uses doesn't actually
+// fire on Capacitor's WebView (download attribute is no-op without a
+// custom DownloadListener). This module wraps @capacitor/filesystem to
+// write save JSON to a Documents path that survives APK reinstall.
+//
+// Two flows:
+//   exportSaveToFilesystem(filename, json) — manual export, triggered by
+//     the Export Save menu button. Returns the absolute path on success.
+//   writeAutoSnapshot(json) — overwrites a single autosnapshot file each
+//     day-end. Cheap recovery if the player forgets to manually export.
+//   readAutoSnapshot() — checks for the autosnapshot file on first launch
+//     and returns its contents if present (used by the title-screen
+//     "found a save in your Documents — restore?" prompt).
+//
+// All three are no-ops on web. On web the existing <a download> code in
+// the menu still works fine because the browser handles downloads.
+
+const AUTO_SNAPSHOT_FILENAME = 'clowder-save-autosnapshot.json';
+
+/** Write a save JSON to the Android Documents folder under the given
+ *  filename. Returns the absolute file path on success, or null on
+ *  failure or web context. The Documents directory survives APK
+ *  uninstall on Android, so the file is recoverable after a reinstall. */
+export async function exportSaveToFilesystem(filename: string, jsonContent: string): Promise<string | null> {
+  if (!isNative()) return null;
+  try {
+    const result = await Filesystem.writeFile({
+      path: filename,
+      data: jsonContent,
+      directory: Directory.Documents,
+      encoding: Encoding.UTF8,
+      recursive: true,
+    });
+    return result.uri ?? `Documents/${filename}`;
+  } catch (e) {
+    console.error('exportSaveToFilesystem failed:', e);
+    return null;
+  }
+}
+
+/** Overwrite the auto-snapshot file with the latest save JSON. Called
+ *  on day-end (NOT on every saveGame, which would be too frequent and
+ *  laggy on Android). Silent on failure — the autosnapshot is a
+ *  belt-and-suspenders backup, not a critical write path. */
+export async function writeAutoSnapshot(jsonContent: string): Promise<void> {
+  if (!isNative()) return;
+  try {
+    await Filesystem.writeFile({
+      path: AUTO_SNAPSHOT_FILENAME,
+      data: jsonContent,
+      directory: Directory.Documents,
+      encoding: Encoding.UTF8,
+      recursive: true,
+    });
+  } catch {
+    // Silent — autosnapshot is best-effort
+  }
+}
+
+/** Read the auto-snapshot file from Documents if it exists. Returns the
+ *  raw JSON string, or null if missing/unreadable. Used at startup to
+ *  detect a recoverable save after an APK reinstall. */
+export async function readAutoSnapshot(): Promise<string | null> {
+  if (!isNative()) return null;
+  try {
+    const result = await Filesystem.readFile({
+      path: AUTO_SNAPSHOT_FILENAME,
+      directory: Directory.Documents,
+      encoding: Encoding.UTF8,
+    });
+    if (typeof result.data === 'string') return result.data;
+    return null;
+  } catch {
+    // File missing or unreadable — no snapshot to recover
+    return null;
   }
 }
 

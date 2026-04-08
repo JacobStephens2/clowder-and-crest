@@ -13,6 +13,7 @@ import { playSfx } from '../systems/SfxManager';
 import { eventBus } from '../utils/events';
 import { getTraitLabel } from '../systems/CatManager';
 import { pausePlaytimeSession, getCurrentSessionMs, formatPlaytime } from '../systems/PlaytimeTracker';
+import { isNative, exportSaveToFilesystem } from '../systems/NativeFeatures';
 
 const SPECIALIZATION_CATEGORIES: Record<string, { name: string; desc: string; icon: string }> = {
   pest_control: { name: 'Ratcatcher', desc: '+20% pest control, -5% others', icon: '\uD83D\uDC00' },
@@ -385,6 +386,25 @@ export function showMenuPanel(): void {
     const json = JSON.stringify(gameState);
     if (!json) { deps.showToast('No save to export'); return; }
     const filename = `clowder-save-day${gameState!.day}.json`;
+
+    // Capacitor path: write through @capacitor/filesystem to the Android
+    // Documents folder. The standard <a download> trick doesn't fire on
+    // the WebView (no DownloadListener), so on the APK the export was
+    // silently broken. Documents survives APK uninstall, so the player
+    // can recover the file after a reinstall by importing it back.
+    if (isNative()) {
+      exportSaveToFilesystem(filename, json).then((path) => {
+        if (path) {
+          deps.showToast(`Saved to Documents/${filename} (survives reinstall)`);
+        } else {
+          deps.showToast('Save export failed — check storage permissions');
+        }
+      });
+      return;
+    }
+
+    // Web path: standard <a download>. Works in every desktop browser
+    // and modern mobile web; not Capacitor.
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -392,11 +412,6 @@ export function showMenuPanel(): void {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
-    // Be explicit about where the file ended up. On Android the WebView
-    // dispatches the download to the system Downloads folder by default;
-    // on iOS Safari it goes to the Files app downloads. On desktop it
-    // depends on the browser's download dir. The toast names the file
-    // explicitly so the player can search for it.
     deps.showToast(`Save exported as ${filename} (check your Downloads folder)`);
   });
 
