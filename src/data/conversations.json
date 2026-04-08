@@ -1054,15 +1054,7 @@
       "lines": [
         {
           "speaker": "bengal",
-          "text": "You beat the Silver Paws. I didn't think anyone could."
-        },
-        {
-          "speaker": "wildcat",
-          "text": "You were one of them."
-        },
-        {
-          "speaker": "bengal",
-          "text": "I was. They promised glory. They delivered politics."
+          "text": "I came from another guild. One that promised glory and delivered politics."
         },
         {
           "speaker": "wildcat",
@@ -1071,6 +1063,14 @@
         {
           "speaker": "bengal",
           "text": "Because you fight for something real. I want to see what that looks like from the inside."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "You'll get tired of us eventually. Most guilds chew up their best."
+        },
+        {
+          "speaker": "bengal",
+          "text": "The ones that promise everything do. The ones that promise the next meal? Those are different."
         }
       ]
     },
