@@ -1550,6 +1550,26 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
   const stationedResults = collectStationedEarnings(gameState);
   const stationedTotal = stationedResults.reduce((sum, r) => sum + r.earned, 0);
 
+  // Stationed pest control work counts toward plague progress.
+  // Per user feedback: "stationing a cat in a job should cause that
+  // job type to be considered completed each day - so in the rat
+  // plague, if I station a cat in a pest control job, should it
+  // progress the goal of 5 rat catches?" Answer: yes — it makes the
+  // plague feel less grindy and gives stationed cats real meaning
+  // during the crisis. One pest control station = one plague point
+  // per day, capped by the existing 5-job goal.
+  if (gameState.flags.ratPlagueStarted && !gameState.flags.ratPlagueResolved) {
+    const stationedPestCount = gameState.stationedCats.filter((s) => {
+      const job = getJob(s.jobId);
+      return job?.category === 'pest_control';
+    }).length;
+    if (stationedPestCount > 0) {
+      gameState.flags.plaguePestDone = (Number(gameState.flags.plaguePestDone ?? 0)) + stationedPestCount;
+      checkRatPlagueResolution(gameState);
+      setTimeout(() => showToast(`Stationed pest crews cleared ${stationedPestCount} more nest${stationedPestCount > 1 ? 's' : ''}!`), 2000);
+    }
+  }
+
   // Build day summary
   const parts: string[] = [];
   if (repBonuses.dailyFish > 0) parts.push(`Reputation: +${repBonuses.dailyFish} fish`);
