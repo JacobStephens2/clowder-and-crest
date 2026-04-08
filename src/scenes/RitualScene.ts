@@ -23,6 +23,21 @@ const CANDLE_FREQUENCIES = [
   659.25, // E5
 ];
 
+// Per-candle SFX layered UNDER the synth tone. Per user feedback
+// (2026-04-08): "add a different sound effect for each candle tap and
+// light flash." The pentatonic tones were already distinct but the
+// user wasn't reading them as different sounds — adding a tactile mp3
+// per candle gives an unmistakable ear-cue that doesn't depend on
+// pitch perception.
+const CANDLE_SFX = [
+  'bell_chime',  // C4 — clear bell
+  'sparkle',     // E4 — bright sparkle
+  'lock_click',  // G4 — crisp click
+  'match_strike',// A4 — flame
+  'tap',         // C5 — UI tap
+  'crate_push',  // E5 — wooden thud
+];
+
 // Base flash duration at round 1, shrinking each round per Simon's "fixed
 // speed ramp" pillar. Ramps from BASE down toward MIN linearly across the
 // target rounds — late rounds genuinely run faster than early ones.
@@ -283,10 +298,13 @@ export class RitualScene extends Phaser.Scene {
     const gapMs = this.getCurrentGapMs();
 
     // Flash the candle — duration scales with the round (Simon's tempo
-    // ramp). Per-candle pentatonic tone is the dual-channel signal.
+    // ramp). Per-candle pentatonic tone is the dual-channel signal,
+    // layered with a distinct mp3 SFX so the ear-cue is unmistakable
+    // even on speakers that don't reproduce the synth pitch well.
     candle.glow.setAlpha(0.9);
     candle.glow.setScale(1.3);
-    this.playTone(this.getCandleFrequency(idx), flashMs / 1000 * 0.85);
+    this.playTone(this.getCandleFrequency(idx), flashMs / 1000 * 0.85, 0.28);
+    playSfx(CANDLE_SFX[idx % CANDLE_SFX.length], 0.18);
     this.time.delayedCall(flashMs, () => {
       candle.glow.setAlpha(0.15);
       candle.glow.setScale(1);
@@ -302,8 +320,11 @@ export class RitualScene extends Phaser.Scene {
     candle.glow.setAlpha(0.6);
     this.time.delayedCall(200, () => candle.glow.setAlpha(0.15));
 
-    // Same tone for tap as for show — symmetric audio reinforcement
-    this.playTone(this.getCandleFrequency(idx), 0.22);
+    // Same tone + same per-candle mp3 cue for tap as for show — keeps
+    // the audio symmetric so the player learns "this candle = this
+    // sound" reliably across both phases.
+    this.playTone(this.getCandleFrequency(idx), 0.22, 0.28);
+    playSfx(CANDLE_SFX[idx % CANDLE_SFX.length], 0.16);
     haptic.light();
 
     this.playerInput.push(idx);
