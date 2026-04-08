@@ -1,5 +1,6 @@
-[] The Courier Run game seems too short, and it's not totally clear to me how it is failed - by running into a red block?
-[] change the artwork of the job in the scene based on where it is started in the town - i.e. if the cat went to the dock to start a hunt, make the art of the scene more like a ship or dock for example than its default grassy field type look
-[] show the wishes on the town view as well
-[] I accidentally adjust the music volume in the menu when I scroll through it
-[] I encountered a dialogue sceen with five cats. Should portraits be used here? Perhaps one in four corners of the screen? - and one in center? One other note here - this scene triggered and included the Maine Coon before I had recruited the Maine Coon, which felt off, as the Coon spoke like it was part of the guild
+[] when I get to chapter 3, there's a lot of pressure to do rat clearing jobs, which thematically makes sense, but I want to have more incentive to do the jobs which allow doing game / puzzle types that just got unlocked in chapter 3. I want to try out the new stuff here.
+[] I wonder if stationing a cat in a job should cause that job type to be considered completed each day - so in the rat plague, if I station a cat in a job that is a rat catching job type, should it progress the goal of 5 rat catch jobs?
+[] In the daily summary at day's close, perhaps the wishes should be not only hinted at, but the specific of the wish listed, as sometimes I forget to go back to the guild to check
+[] generate art prompts for the chapter transition scenes where still needed, so for the close of chapter 3 where there is the procession, it could be good to have a pixel art image of a procession of people for example - just generally depicting what is happening.
+[] the chapter 3 close says the guild had earned its name - which confused me a bit - it's good name? does it have a specific name? I guess it's leading into the reputation system I'm now seeing in the tutorial to the reputation system? So maybe it fits.
+[] when a portrait in a dialogue goes into the background, the background art overlays the set in the background portrait, but the background art should be behind the background portrait
