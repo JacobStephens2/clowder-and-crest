@@ -1,3 +1,6 @@
+[x] - Implement weekly rest day mechanic — every 7th in-game day (suppressed during plague/winter/inquisition) the cats observe a day of rest: day timer pauses, town job board closes, menu emphasizes the Day of Rest entry. Stationed cats still earn from their post.
+[x] - Add hidden showcase entry (`?showcase=1` URL parameter on web + 5-tap crest gesture on web/APK) that loads a fully-unlocked demo save into slot 1 so portfolio reviewers can poke at every minigame without playing the campaign first.
+[x] - Add Day of Rest minigame archive — in-universe replay mode lived behind the menu, progressive unlocks tied to first-completion of each minigame in the campaign, sandbox runs that never touch fish/XP/mood/penalty state.
 [x] - Create new art for the player's cat / wildcat (all 5 breeds have PixelLab pixel art sprites)
 [x] - Consider room for improvement to the story per `todo/ideas/What Makes a Great Rags to Riches Story.md` and write concrete notes in `todo/ideas/story-improvement-notes.md` (focus: clearer hidden value, stronger false summit before collapse, more emotionally legible reversals, and a final triumph centered on belonging rather than only fish)
 [x] - Consider what files in the repo should be git ignored (`.gitignore` now covers `todo/.stfolder/`, `todo/*-capture.md`, and `todo/ideas/.DS_Store` so local sync markers and scratch capture files stop polluting status)
@@ -152,92 +155,7 @@
 [x] use the /var/www/clowder.stephens.page/music/fight tracks for the fight background music
 [x] ensure every part of the game has some pixel art unique to that part of the game
 [x] in the [cat] appears screen, present an option to deny entry to the cat
-[x] sometimes in trying to accept a job I get this in the console and can't accept it `clowder.stephens.page/:20  GET https://www.googletagmanager.com/gtag/js?id=G-81TZVKST2W net::ERR_BLOCKED_BY_CLIENT
-index-DYiVPUgx.js:2      Phaser v3.80.1 (WebGL | Web Audio)  https://phaser.io
-index-DYiVPUgx.js:6 Uncaught TypeError: Cannot read properties of undefined (reading 'sys')
-    at initialize.setTexture (index-DYiVPUgx.js:6:27380)
-    at initialize.callback (index-DYiVPUgx.js:119:21654)
-    at initialize.update (index-DYiVPUgx.js:64:13191)
-    at e.50792.s.emit (index-DYiVPUgx.js:2:3235)
-    at initialize.step (index-DYiVPUgx.js:62:6653)
-    at initialize.update (index-DYiVPUgx.js:61:22063)
-    at initialize.step (index-DYiVPUgx.js:2:77460)
-    at initialize.step (index-DYiVPUgx.js:2:81674)
-    at t (index-DYiVPUgx.js:4:3019)
-setTexture @ index-DYiVPUgx.js:6
-callback @ index-DYiVPUgx.js:119
-update @ index-DYiVPUgx.js:64
-e.50792.s.emit @ index-DYiVPUgx.js:2
-step @ index-DYiVPUgx.js:62
-update @ index-DYiVPUgx.js:61
-step @ index-DYiVPUgx.js:2
-step @ index-DYiVPUgx.js:2
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-requestAnimationFrame
-t @ index-DYiVPUgx.js:4
-`
+[x] sometimes in trying to accept a job I get this in the console and can't accept it `clowder.stephens.page/:20  GET https://www.googletagmanager.com/gtag/js?id=G-81TZVKST2W net::ERR_BLOCKED_BY_CLIENT index-DYiVPUgx.js:2      Phaser v3.80.1 (WebGL | Web Audio)  https://phaser.io index-DYiVPUgx.js:6 Uncaught TypeError: Cannot read properties of undefined (reading 'sys') at initialize.setTexture (index-DYiVPUgx.js:6:27380) at initialize.callback (index-DYiVPUgx.js:119:21654) at initialize.update (index-DYiVPUgx.js:64:13191) at e.50792.s.emit (index-DYiVPUgx.js:2:3235) at initialize.step (index-DYiVPUgx.js:62:6653) at initialize.update (index-DYiVPUgx.js:61:22063) at initialize.step (index-DYiVPUgx.js:2:77460) at initialize.step (index-DYiVPUgx.js:2:81674) at t (index-DYiVPUgx.js:4:3019) setTexture @ index-DYiVPUgx.js:6 callback @ index-DYiVPUgx.js:119 update @ index-DYiVPUgx.js:64 e.50792.s.emit @ index-DYiVPUgx.js:2 step @ index-DYiVPUgx.js:62 update @ index-DYiVPUgx.js:61 step @ index-DYiVPUgx.js:2 step @ index-DYiVPUgx.js:2 t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:4 requestAnimationFrame t @ index-DYiVPUgx.js:41
 [x] ensure there is a way to close the town job board when it opens
 [x] ensure the rat fight game can be paused
 [x] implement something or some things from /var/www/clowder.stephens.page/todo/procedural-and-llm-opportunities.md
@@ -325,7 +243,6 @@ recruit.mp3:1  GET https://clowder.stephens.page/assets/sfx/recruit.mp3 500 (Int
 ## distinct elements for this track
 Urgent, oppressive. Low cittern drone under staccato bodhrán alarm bursts. 100 BPM, minor. The sound of a siege — the town falling, the guild rallying. Tension without relief. The guild motif played defiantly on a lone fiddle above the drone, refusing to be swallowed. Think: the sound of something precious under threat, and the people who refuse to lose it.
 
-
 ## common elements for all the tracks in the game
 Medieval/Celtic acoustic only: lute, cittern, fiddle, bodhrán, tin whistle, harp, hand bells. No synths, no electric, no vocals. Key: D Dorian (or D Mixolydian if major). Include the 4-note guild motif D-C-A-G at least once — as melody, bass line, or bell chime. Warm, slightly reverberant — a small ensemble in a stone guild hall. Leave headroom for SFX; moderate peak volume. 30-45s, seamless loop — final bar thins to 1-2 instruments matching the opening texture.` for Suno AI music to generate, but I'm wondering if the common elements section is too constraining, or good for bringing a similar kind of theme to the sound of all the tracks and music in the game
 [x] update portfolio in /var/www/stephens.page with clowderandcrest.com URL for this app replacing older clowder.stephens.page domain.
@@ -354,5 +271,4 @@ Medieval/Celtic acoustic only: lute, cittern, fiddle, bodhrán, tin whistle, har
 | **O2** clean:test script | `3593b06` | `npm run clean:test` wipes `test/screenshots/` between runs. |
 
 [x] I added music per todo/music/music-prompts.md to todo/music/shared-leitmotif for the entire game. We may even want to replace all of our existing music with this new music to keep it all cohesive. Further, Suno does have a stems feature now, and I tested it with the tracks in todo/music/Chase 1 - Stone Alley Fur Stems for that song / track. Should we setup the mp3's through the game? Or experiment with the stems first? (discussed in the dynamic music section of todo/room-for-improvement.md) — DONE: 68 tracks copied to public/assets/audio with snake_case names, MusicManager rewritten with per-scene track sets (TRACK_SETS map), jobFlow.ts now calls switchToTrackset(gameType) so each minigame plays its dedicated track, TitleScene plays the title trackset on load. Stems experiment deferred — see todo/ideas/music-stems-experiment.md for the plan.
-
 [x] consider the three model story-audit files and write a final recommendation to todo/story/story-audit-council.md
