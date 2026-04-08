@@ -1,6 +1,4 @@
-[] when I get to chapter 3, there's a lot of pressure to do rat clearing jobs, which thematically makes sense, but I want to have more incentive to do the jobs which allow doing game / puzzle types that just got unlocked in chapter 3. I want to try out the new stuff here.
-[] I wonder if stationing a cat in a job should cause that job type to be considered completed each day - so in the rat plague, if I station a cat in a job that is a rat catching job type, should it progress the goal of 5 rat catch jobs?
-[] In the daily summary at day's close, perhaps the wishes should be not only hinted at, but the specific of the wish listed, as sometimes I forget to go back to the guild to check
-[] generate art prompts for the chapter transition scenes where still needed, so for the close of chapter 3 where there is the procession, it could be good to have a pixel art image of a procession of people for example - just generally depicting what is happening.
-[] the chapter 3 close says the guild had earned its name - which confused me a bit - it's good name? does it have a specific name? I guess it's leading into the reputation system I'm now seeing in the tutorial to the reputation system? So maybe it fits.
-[] when a portrait in a dialogue goes into the background, the background art overlays the set in the background portrait, but the background art should be behind the background portrait
+[] do you get all of the fish when you catch the rat in the chase scene? The way they animate all coming to the cat makes it look like it, which disincentivizes picking up the fish throughout the maze chase
+[] display the sprite of the assigned cats in the stationed cats section of the menu in the town job hall menu view
+[] I'm in chapter 4, and I feel like dialogue scenes are occurring even more than they need to
+[] Use the different emotional portraits of the cats in the dialogues
