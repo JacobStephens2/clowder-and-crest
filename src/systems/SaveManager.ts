@@ -338,7 +338,7 @@ export function createDefaultSave(playerCatName: string): SaveData {
     journal: [],
     dungeonHistory: { totalRuns: 0, totalClears: 0, bestFloor: 0, lastFailFloor: -1, lastFailCause: '' },
     totalPlaytimeMs: 0,
-    playerCatGender: 'they',
+    playerCatGender: 'female',
   };
 }
 
