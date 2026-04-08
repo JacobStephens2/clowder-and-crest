@@ -29,7 +29,13 @@ import { showMinigameTutorial, attachStandardCleanup } from '../ui/sceneHelpers'
 
 const WORLD_HEIGHT = GAME_HEIGHT * 4; // ~3,376px tall climb
 const PLAYER_W = 22;             // visual width
-const PLAYER_BODY_W = 14;        // narrower hitbox — see PLAYER_BODY_OFFSET_X
+// Hitbox bumped from 14 → 18 per todo/tech/Wall Jump Advice.md fix #3.
+// Tier-3 chimney stubs are 18px wide; with a 14px body the cat could
+// skim the visual edge of a stub but the center-of-body would just
+// pass the stub's face, missing blocked.left/right registration.
+// At 18px the body matches the narrowest stubs and wall contact fires
+// reliably. Visual is still 22px so there's 2px of leeway each side.
+const PLAYER_BODY_W = 18;
 const PLAYER_BODY_OFFSET_X = (PLAYER_W - PLAYER_BODY_W) / 2;
 const PLAYER_H = 32;
 /** Vertical tolerance for "corner correction." When the player is
@@ -44,6 +50,13 @@ const START_Y = WORLD_HEIGHT - 120;
 const TARGET_Y = 120;
 
 const COYOTE_MS = 120;
+// Wall coyote needs a slightly bigger window than ground coyote per
+// todo/tech/Wall Jump Advice.md fix #2. Body friction resolution and
+// touch event delivery on Android can land in different frames; 120ms
+// (≈7 frames at 60fps) is too tight for "I just left the wall" intent.
+// 180ms is still invisible to players as a "cheat" but meaningfully
+// closes the gap between cling and jump.
+const WALL_COYOTE_MS = 180;
 const JUMP_BUFFER_MS = 150;
 
 // Physics tuning, second pass (2026-04-08): the first version had drag=400
@@ -681,6 +694,18 @@ export class RoofScoutScene extends Phaser.Scene {
       // get a brief grace window to wall-jump."
       this.lastWallClingTime = time;
       this.lastWallSide = touchingLeft ? 'left' : 'right';
+
+      // Consume any buffered jump on first wall contact — the
+      // critical fix from todo/tech/Wall Jump Advice.md #1. The
+      // existing buffer-consume block only ran on `onGround`, so a
+      // tap that landed a half-frame before isWallClinging flipped
+      // true got buffered and then expired silently. On touch this
+      // timing gap is very easy to hit and was the main reason
+      // players felt "I'm on a wall but can't jump."
+      if (time - this.jumpBufferTime < JUMP_BUFFER_MS) {
+        this.doJump(this.jumpBufferDirection);
+        this.jumpBufferTime = -Infinity;
+      }
     }
     // Slow the fall only when actually descending — clinging while
     // ascending shouldn't drag the player to a stop.
@@ -751,10 +776,11 @@ export class RoofScoutScene extends Phaser.Scene {
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     const onGround = body.blocked.down || body.touching.down;
     const coyoteOk = (this.time.now - this.lastGroundedTime) < COYOTE_MS;
-    // Wall coyote — same grace window as ground coyote, but for the
-    // moment after separating from a wall. Lets the player wall-jump
-    // even if their input fired one frame too late.
-    const wallCoyoteOk = (this.time.now - this.lastWallClingTime) < COYOTE_MS;
+    // Wall coyote — own constant (180ms vs ground's 120ms) per the
+    // wall-jump advice doc. Touch event delivery + body friction
+    // resolution can land in different frames on Android, so the
+    // wall window needs to be a bit looser than ground.
+    const wallCoyoteOk = (this.time.now - this.lastWallClingTime) < WALL_COYOTE_MS;
     const canJump = onGround || coyoteOk || this.isWallClinging || wallCoyoteOk;
 
     if (canJump) {
@@ -779,7 +805,7 @@ export class RoofScoutScene extends Phaser.Scene {
     // when wall coyote is active (recently separated from a wall).
     // The wall-coyote case may have no current contact, so we use the
     // remembered lastWallSide to decide which direction to kick.
-    const wallCoyoteActive = (this.time.now - this.lastWallClingTime) < COYOTE_MS;
+    const wallCoyoteActive = (this.time.now - this.lastWallClingTime) < WALL_COYOTE_MS;
     if (!onGround && (this.isWallClinging || wallCoyoteActive)) {
       // Determine which side the wall is on. Prefer current contact;
       // fall back to lastWallSide for the wall-coyote case.
