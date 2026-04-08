@@ -336,11 +336,12 @@ function updateGuildWishBanner(): void {
   guildWishBanner.title = game.scene.isActive('TownMapScene') ? 'Open the guildhall to manage this wish' : '';
   const needsFurn = wish.requiresFurniture;
   const FURN_NAMES: Record<string, string> = { straw_bed: 'Straw Bed', fish_barrel: 'Fish Barrel', scratching_post: 'Scratching Post', potted_catnip: 'Potted Catnip' };
+  const wishCat = gameState.cats.find((c) => c.id === wish.catId);
+  const unlockedRooms = gameState.rooms.filter((r) => r.unlocked);
 
   // Check if the cat is in a room with the required furniture
   let roomMismatch = false;
   if (!needsFurn) {
-    const wishCat = gameState.cats.find((c) => c.id === wish.catId);
     const catRoom = wishCat?.assignedRoom ?? 'sleeping';
     const furnInRoom = gameState.furniture.filter((f) => f.room === catRoom).map((f) => f.furnitureId);
     // Check if the wish's furniture (from the wish type) is in the cat's room
@@ -357,10 +358,13 @@ function updateGuildWishBanner(): void {
   }
 
   let actionHtml: string;
-  if (needsFurn) {
+  if (wish.wish === 'wants to explore a room') {
+    actionHtml = unlockedRooms.length < 2
+      ? `<span style="font-size:9px;color:#8b5b3e;white-space:nowrap">Unlock another room first</span>`
+      : `<span style="font-size:9px;color:#8b5b3e;white-space:nowrap">Reassign ${esc(wishCat?.name ?? 'cat')} to a different room</span>`;
+  } else if (needsFurn) {
     actionHtml = `<span style="font-size:10px;color:#8b5b3e;white-space:nowrap">Needs: ${FURN_NAMES[needsFurn] ?? needsFurn}</span>`;
   } else if (roomMismatch) {
-    const wishCat = gameState.cats.find((c) => c.id === wish.catId);
     actionHtml = `<span style="font-size:9px;color:#8b5b3e;white-space:nowrap">Move ${esc(wishCat?.name ?? 'cat')} to the right room</span>`;
   } else {
     actionHtml = `<button id="guild-fulfill-wish" style="padding:4px 10px;background:#2a2520;border:1px solid #dda055;border-radius:4px;color:#dda055;font-size:11px;font-family:Georgia,serif;cursor:pointer;white-space:nowrap">5 fish</button>`;
