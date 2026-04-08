@@ -309,7 +309,13 @@ export class RoofScoutScene extends Phaser.Scene {
     // Physics world is the full vertical extent so platforms outside the
     // visible camera still collide and the player can't fall past the
     // bottom (a fall is recoverable, world-bounds death is not).
-    this.physics.world.setBounds(0, 0, GAME_WIDTH, WORLD_HEIGHT);
+    //
+    // Horizontally we extend the bounds well past the visible screen so
+    // the cat can leave the visible area on the left or right and the
+    // update loop wraps it back to the opposite side. This gives the
+    // platformer Pac-Man-style screen wrap, requested by the user — a
+    // jump off the right edge re-enters from the left, and vice versa.
+    this.physics.world.setBounds(-GAME_WIDTH, 0, GAME_WIDTH * 3, WORLD_HEIGHT);
 
     if (showMinigameTutorial(this, 'clowder_roof_scout_tutorial_v1', 'Roof Scout',
       `Climb to the rooftop watchpoint!<br><br>
@@ -399,17 +405,31 @@ export class RoofScoutScene extends Phaser.Scene {
     this.heightBar = this.add.rectangle(barX, barBottom, 4, 0, 0x4a8a4a)
       .setOrigin(0.5, 1).setScrollFactor(0).setDepth(100);
 
-    this.add.text(GAME_WIDTH - 30, GAME_HEIGHT - 20, 'Quit', {
-      fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8b7355',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(100)
-      .setInteractive({ useHandCursor: true })
-      .on('pointerdown', () => this.quitRun());
+    // Quit button — moved to top-right (was bottom-right). The bottom
+    // half is the right tap-zone for jumps, so a button down there got
+    // hit by every miss-tap and the player effectively had no way out.
+    // Now lives in the HUD strip alongside the title/height/fish so a
+    // tap on it can never be confused with a jump input.
+    const quitBg = this.add.rectangle(GAME_WIDTH - 32, 50, 56, 24, 0x2a2520, 0.9)
+      .setStrokeStyle(1, 0x6b5b3e)
+      .setScrollFactor(0).setDepth(100);
+    const quitText = this.add.text(GAME_WIDTH - 32, 50, 'Quit', {
+      fontFamily: 'Georgia, serif', fontSize: '13px', color: '#c4956a',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
+    quitBg.setInteractive({ useHandCursor: true });
+    quitBg.on('pointerdown', () => this.quitRun());
+    void quitText;
 
     // ── Two-zone touch input ──
     // Pointer x maps directly via screen halves. Track held state for
-    // variable jump height (release = velocity cut).
+    // variable jump height (release = velocity cut). Taps in the top
+    // HUD strip (y < HUD_BOTTOM) are excluded so the Quit button and
+    // height/fish counters can be tapped without firing a jump.
+    const HUD_BOTTOM = 80;
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       if (this.finished || this.tutorialShowing) return;
+      const screenY = p.y / DPR;
+      if (screenY < HUD_BOTTOM) return; // HUD zone — let GameObject handlers run
       const screenX = p.x / DPR;
       if (screenX < GAME_WIDTH / 2) {
         this.leftHeld = true;
@@ -539,6 +559,16 @@ export class RoofScoutScene extends Phaser.Scene {
     if (this.finished || this.tutorialShowing) return;
     if (!this.player.body) return;
     const body = this.player.body as Phaser.Physics.Arcade.Body;
+
+    // Screen wrap — Pac-Man style. When the cat's center crosses the
+    // visible edge, teleport to the opposite side. The world bounds
+    // are extended past the screen so the cat doesn't get stopped at
+    // the edge before we can wrap it.
+    if (this.player.x < -PLAYER_W / 2) {
+      this.player.setX(GAME_WIDTH + PLAYER_W / 2);
+    } else if (this.player.x > GAME_WIDTH + PLAYER_W / 2) {
+      this.player.setX(-PLAYER_W / 2);
+    }
 
     // Sync the colored visual to the physics body each frame.
     this.playerVisual.setPosition(this.player.x, this.player.y);
