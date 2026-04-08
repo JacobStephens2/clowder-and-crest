@@ -1,0 +1,1 @@
+- Would the project run better / be less buggy / need less tuning if we dropped the support to run in a browser and focused only on the Phaser / Capacitor / Android? Or not significantly different?
