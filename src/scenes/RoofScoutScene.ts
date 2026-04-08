@@ -485,6 +485,24 @@ export class RoofScoutScene extends Phaser.Scene {
     // player can't immediately fall off the world.
     this.makePlatform(GAME_WIDTH / 2, START_Y + 30, GAME_WIDTH, 12);
 
+    // Easy-mode side walls. Per user feedback (2026-04-08): "put walls
+    // completely up along the sides of the first course, making it
+    // easier for the player to have something to wall jump off of for
+    // the first level / easy level." Solid full-height pillars at the
+    // screen edges give beginners obvious wall-cling/wall-jump anchors
+    // and turn easy mode into a wall-jump tutorial. Medium/hard runs
+    // skip this and rely on the Pac-Man screen wrap for horizontal
+    // mobility — distinct mechanic per difficulty.
+    if (this.difficulty === 'easy') {
+      const wallW = 18;
+      const wallTop = TARGET_Y - 50;
+      const wallBottom = START_Y + 30;
+      const wallH = wallBottom - wallTop;
+      const wallY = (wallTop + wallBottom) / 2;
+      this.makePlatform(wallW / 2, wallY, wallW, wallH, 0x4a3a28);
+      this.makePlatform(GAME_WIDTH - wallW / 2, wallY, wallW, wallH, 0x4a3a28);
+    }
+
     let anchorY = START_Y - 60;
     let chunkIndex = 0;
     while (anchorY > TARGET_Y + CHUNK_HEIGHT) {
