@@ -206,7 +206,20 @@ export function checkAndShowConversation(): void {
   setTimeout(() => deps.suggestEndDay(), 500);
 }
 
-function showGroupConversation(key: string): void {
+/** Public entry point for replaying a viewed group conversation from
+ *  the Memories panel. Mirrors `replayConversation` for pair dialogues:
+ *  no save mutation, no rank-up toast, calls onClose() instead of
+ *  switchScene at both the natural-end and the skip path. */
+export function replayGroupConversation(key: string, onClose: () => void): void {
+  showGroupConversation(key, { replay: true, onClose });
+}
+
+interface GroupConversationOpts {
+  replay?: boolean;
+  onClose?: () => void;
+}
+
+function showGroupConversation(key: string, opts: GroupConversationOpts = {}): void {
   const gameState = deps.getGameState();
   if (!gameState) return;
   const convos = conversationsData as Record<string, Array<{ rank: string; title: string; lines: Array<{ speaker: string; text: string; expression?: Expression }> }>>;
@@ -292,6 +305,12 @@ function showGroupConversation(key: string): void {
         resumeDayTimer();
         startPlaytimeSession();
       }
+      // Replay mode: skip the toast + scene switch, hand control
+      // back to the journal via onClose.
+      if (opts.replay) {
+        opts.onClose?.();
+        return;
+      }
       deps.showToast('A guild moment to remember.');
       deps.switchScene('TownMapScene');
       return;
@@ -312,10 +331,6 @@ function showGroupConversation(key: string): void {
     // Per user feedback (2026-04-08): "in the dialogues, remove the
     // note about what kind of expression is showing. Let the player
     // see the expression and know by just looking at the portrait."
-    // The expression label is no longer written. void the lookup so
-    // ESLint/TS don't complain about unused locals.
-    const currentExpression = groupExpressions.get(line.speaker) ?? 'neutral';
-    void currentExpression;
     expression.textContent = '';
     text.textContent = line.text;
     lineIndex++;
@@ -332,6 +347,10 @@ function showGroupConversation(key: string): void {
     if (!dayTimerWasAlreadyPaused) {
       resumeDayTimer();
       startPlaytimeSession();
+    }
+    if (opts.replay) {
+      opts.onClose?.();
+      return;
     }
     deps.switchScene('TownMapScene');
   });
