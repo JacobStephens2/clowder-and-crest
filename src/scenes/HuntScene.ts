@@ -150,13 +150,18 @@ export class HuntScene extends Phaser.Scene {
     this.cameras.main.setZoom(DPR);
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
-    // Tutorial on first play. Bumped key to v2 because the rules expanded
-    // (poison rats, fake-outs, combo) and returning players need to see them.
-    if (showMinigameTutorial(this, 'clowder_hunt_tutorial_v2', 'Hunt the Rats!',
-      `Tap rats as they pop from holes — before they retreat.<br><br>
-      <strong style="color:#dda055">Gold rats = +2</strong> · <strong style="color:#cc6666">Red rats = poison, don't tap</strong><br><br>
-      Watch for <strong>peek</strong> rats that fake-out and retreat fast.<br><br>
-      Chain catches without misses to build a <strong>combo bonus</strong>. The hunt speeds up over time.`,
+    // Tutorial on first play.
+    //
+    // Deliberately minimal per todo/game/What Makes Games Fun.md (Koster):
+    // gold rats, fake-outs, combos, and speed escalation are all noticed
+    // through play. Only the red-rat warning needs surfacing because the
+    // punishment is invisible until you trigger it the hard way.
+    //
+    // Bumped to v3 when the tutorial was cut from 4 explained mechanics
+    // down to 1, so returning players see the new shorter version.
+    if (showMinigameTutorial(this, 'clowder_hunt_tutorial_v3', 'Hunt the Rats!',
+      `Tap the rats as they pop from their holes.<br><br>
+      Skip the <strong style="color:#cc6666">red ones</strong> — they bite back.`,
       () => { this.tutorialShowing = false; }
     )) {
       this.tutorialShowing = true;
