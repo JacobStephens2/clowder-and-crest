@@ -59,13 +59,34 @@ export function initSessionFlow(deps: SessionFlowDeps): SessionFlowApi {
       <h2>Name Your Cat</h2>
       <p>You are a wildcat stray, arriving at a crumbling settlement in a storm. What is your name?</p>
       <input type="text" class="cat-name-input" placeholder="Enter name..." maxlength="20" autocomplete="off" />
-      <button class="cat-name-submit">Begin</button>
+      <div style="margin-top:12px;color:#8b7355;font-size:11px;font-family:Georgia,serif">Pronouns</div>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <button class="gender-btn" data-gender="they" style="flex:1;background:#3a3530;border:1px solid #6b5b3e;color:#c4956a;padding:6px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer">they / them</button>
+        <button class="gender-btn" data-gender="female" style="flex:1;background:#2a2520;border:1px solid #3a3530;color:#8b7355;padding:6px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer">she / her</button>
+        <button class="gender-btn" data-gender="male" style="flex:1;background:#2a2520;border:1px solid #3a3530;color:#8b7355;padding:6px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer">he / him</button>
+      </div>
+      <button class="cat-name-submit" style="margin-top:12px">Begin</button>
     `;
     deps.overlayLayer.appendChild(prompt);
 
     const input = prompt.querySelector<HTMLInputElement>('.cat-name-input')!;
     const submit = prompt.querySelector<HTMLButtonElement>('.cat-name-submit')!;
     input.focus();
+
+    // Gender selection — defaults to 'they' (the previous behaviour)
+    let chosenGender: 'male' | 'female' | 'they' = 'they';
+    const genderBtns = prompt.querySelectorAll<HTMLButtonElement>('.gender-btn');
+    genderBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        chosenGender = (btn.dataset.gender as 'male' | 'female' | 'they') ?? 'they';
+        genderBtns.forEach((b) => {
+          const isSelected = b === btn;
+          b.style.background = isSelected ? '#3a3530' : '#2a2520';
+          b.style.borderColor = isSelected ? '#6b5b3e' : '#3a3530';
+          b.style.color = isSelected ? '#c4956a' : '#8b7355';
+        });
+      });
+    });
 
     let submitted = false;
     const doSubmit = () => {
@@ -74,6 +95,7 @@ export function initSessionFlow(deps: SessionFlowDeps): SessionFlowApi {
       const name = input.value.trim() || 'Stray';
       prompt.remove();
       const save = deps.createDefaultSave(name);
+      save.playerCatGender = chosenGender;
       deps.setGameState(save);
       saveGame(save);
       deps.playIntroStory(name, () => {

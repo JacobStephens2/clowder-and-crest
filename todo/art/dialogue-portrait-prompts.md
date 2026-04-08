@@ -43,7 +43,7 @@ Append one of these to the per-character prompt body:
 
 These are the 6 breeds the player can recruit today and that appear in `src/data/conversations.json`. All six have 15 unique pair conversations + group conversation lines.
 
-### 1. Wildcat (player — protagonist) `[ ]`
+### 1. Wildcat — Tomcat variant (player when "he/him" chosen) `[generated]`
 
 **Identity (lock these on every prompt — never vary):**
 brown tabby tomcat, dark stripes on warm umber base fur, fierce gold eyes, tufted lynx-like ears with one slightly notched at the tip from an old battle, muscular slightly broad build, simple worn leather collar with a single iron ring, rough green-grey wool cloak draped over one shoulder, no other accessories.
@@ -53,6 +53,25 @@ brown tabby tomcat, dark stripes on warm umber base fur, fierce gold eyes, tufte
 | Expression | Prompt |
 |---|---|
 | neutral `[ ]` | `medieval fantasy character portrait, anthropomorphic cat, waist-up framing, painterly cel-shading inspired by Fire Emblem Path of Radiance and Awakening, expressive face, warm lighting, detailed fabric textures, soft background, brown tabby tomcat with dark stripes on warm umber fur, muscular build, fierce gold eyes, tufted lynx-like ears with one notched tip, worn leather collar with iron ring, rough green-grey wool shoulder cloak, calm composed expression, gentle eyes, mouth closed, ears forward, stoic guardian --style raw --ar 3:4 --v 6` |
+| happy `[ ]` | (same identity) `... warm smile, soft laughing eyes, ears relaxed, rare moment of warmth ...` |
+| sad `[ ]` | (same identity) `... downcast gold eyes, slight frown, ears flat, weight of memory ...` |
+| angry `[ ]` | (same identity) `... furrowed brow, blazing gold eyes, ears back, clenched jaw, ready to fight ...` |
+| surprised `[ ]` | (same identity) `... wide gold eyes, raised brows, mouth slightly open, ears forward alert, caught off guard ...` |
+
+### 1b. Wildcat — Queen variant (player when "she/her" chosen) `[ ]`
+
+The player can choose she/her pronouns at character creation. This variant should sit alongside the tomcat version above and share the same essential identity (brown tabby, gold eyes, the founding stray) but read clearly as a different cat — slightly smaller frame, more graceful posture, the same notched ear and battle-worn cloak. Same five expressions as every other portrait.
+
+When generated, save these as `public/assets/sprites/portraits/wildcat_female_<expression>.png` and update `Conversations.ts` setPortrait to pick the variant based on `save.playerCatGender === 'female'`.
+
+**Identity (lock these on every prompt — never vary):**
+brown tabby queen, dark stripes on warm umber base fur, fierce gold eyes, tufted lynx-like ears with one slightly notched at the tip from an old battle, lean wiry build with a graceful but watchful posture, simple worn leather collar with a single iron ring, rough green-grey wool cloak draped over one shoulder, no other accessories.
+
+**Personality cue:** same as the tomcat — stoic founding stray, eyes do most of the talking. The variant is about silhouette and posture, not personality.
+
+| Expression | Prompt |
+|---|---|
+| neutral `[ ]` | `medieval fantasy character portrait, anthropomorphic female cat, waist-up framing, painterly cel-shading inspired by Fire Emblem Path of Radiance and Awakening, expressive face, warm lighting, detailed fabric textures, soft background, brown tabby queen with dark stripes on warm umber fur, lean wiry build, fierce gold eyes, tufted lynx-like ears with one notched tip, worn leather collar with iron ring, rough green-grey wool shoulder cloak, calm composed expression, gentle eyes, mouth closed, ears forward, stoic founding stray --style raw --ar 3:4 --v 6` |
 | happy `[ ]` | (same identity) `... warm smile, soft laughing eyes, ears relaxed, rare moment of warmth ...` |
 | sad `[ ]` | (same identity) `... downcast gold eyes, slight frown, ears flat, weight of memory ...` |
 | angry `[ ]` | (same identity) `... furrowed brow, blazing gold eyes, ears back, clenched jaw, ready to fight ...` |

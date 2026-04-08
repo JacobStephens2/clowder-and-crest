@@ -85,6 +85,10 @@ export interface SaveData {
    *  sessions. Updated by saveGame() via PlaytimeTracker.commitSessionToSave().
    *  Old saves backfill to 0 in migrateSaveData. */
   totalPlaytimeMs?: number;
+  /** Player's chosen gender for the wildcat. Defaults to 'they' (gender-
+   *  neutral) for old saves. Used by the pronouns helper to render
+   *  context-appropriate he/she/they in narrative copy. */
+  playerCatGender?: 'male' | 'female' | 'they';
 }
 
 const SAVE_KEY = 'clowder_and_crest_save';
@@ -284,6 +288,9 @@ function migrateSaveData(data: SaveData): SaveData {
   if (typeof data.totalPlaytimeMs !== 'number' || data.totalPlaytimeMs < 0) {
     data.totalPlaytimeMs = 0;
   }
+  if (data.playerCatGender !== 'male' && data.playerCatGender !== 'female') {
+    data.playerCatGender = 'they';
+  }
   for (const cat of data.cats) {
     cat.traits = (cat.traits ?? []).map(normalizeTraitId);
   }
@@ -331,7 +338,33 @@ export function createDefaultSave(playerCatName: string): SaveData {
     journal: [],
     dungeonHistory: { totalRuns: 0, totalClears: 0, bestFloor: 0, lastFailFloor: -1, lastFailCause: '' },
     totalPlaytimeMs: 0,
+    playerCatGender: 'they',
   };
+}
+
+/** Pronouns for the player wildcat, derived from playerCatGender.
+ *  Use these in narrative copy: `${pronouns.subj}` instead of "they",
+ *  `${pronouns.poss}` instead of "their", etc. The 'they' default
+ *  matches what older builds used everywhere. */
+export interface Pronouns {
+  /** subject: he / she / they */
+  subj: string;
+  /** object: him / her / them */
+  obj: string;
+  /** possessive determiner: his / her / their */
+  poss: string;
+  /** possessive pronoun: his / hers / theirs */
+  possPron: string;
+  /** reflexive: himself / herself / themself */
+  reflex: string;
+  /** verb agreement helper: 's' for he/she, '' for they ("he stands" vs "they stand") */
+  s: string;
+}
+export function getPlayerPronouns(save: SaveData | null | undefined): Pronouns {
+  const g = save?.playerCatGender ?? 'they';
+  if (g === 'male')   return { subj: 'he',   obj: 'him', poss: 'his',   possPron: 'his',    reflex: 'himself',  s: 's' };
+  if (g === 'female') return { subj: 'she',  obj: 'her', poss: 'her',   possPron: 'hers',   reflex: 'herself',  s: 's' };
+  return                     { subj: 'they', obj: 'them', poss: 'their', possPron: 'theirs', reflex: 'themself', s: ''  };
 }
 
 let saveFailCount = 0;
