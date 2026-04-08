@@ -8,8 +8,7 @@ Cat guild management game with 14 minigame types and Fire Emblem-style bond conv
 npm run dev          # Start Vite dev server on port 3200
 npm run build        # Type-check + production build to dist/
 npm run preview      # Preview production build locally
-npm run ota:publish  # Build + zip dist/ + write updates/manifest.json
-npm run release      # Alias for ota:publish
+npm run check        # Static check + logic regression tests
 ```
 
 Build output goes to `dist/`, which Apache serves directly.
