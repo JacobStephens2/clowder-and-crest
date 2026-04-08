@@ -52,7 +52,11 @@ export function showIntroStory(catName: string, onComplete: () => void, deps: In
   overlay.appendChild(skipBtn);
 
   const panelSounds: (string | null)[] = ['thunder', null, 'purr', 'job_accept', null, null];
-  const introMusic = new Audio('assets/audio/intro.mp3');
+  // Pick one of the two prologue variants from the shared-leitmotif music set.
+  // Both are "Tin-Rain DCA" — sparse tin whistle drone over distant bodhrán
+  // thunder rolls, the leitmotif born at the end on a soft harp phrase.
+  const prologueTracks = ['assets/audio/prologue_1.mp3', 'assets/audio/prologue_2.mp3'];
+  const introMusic = new Audio(prologueTracks[Math.floor(Math.random() * prologueTracks.length)]);
   introMusic.volume = 0.4;
   introMusic.loop = false;
   introMusic.play().catch(() => {});
