@@ -180,7 +180,12 @@ export class CourierRunScene extends Phaser.Scene {
     this.missionRewarded = false;
     this.lives = this.difficulty === 'hard' ? 2 : this.difficulty === 'medium' ? 2 : 3;
     this.baseScrollSpeed = this.difficulty === 'hard' ? 3.5 : this.difficulty === 'medium' ? 3.0 : 2.5;
-    this.targetDistance = this.difficulty === 'hard' ? 1200 : this.difficulty === 'medium' ? 1000 : 800;
+    // 2x the previous target distances. The old values (800-1200) gave a
+    // ~4 second run on average — too short to feel like a meaningful
+    // minigame. New values land closer to 15-25 seconds at avg speed,
+    // matching the pacing of Hunt/Chase. The obstacle phrase pool is
+    // already large enough to fill the longer runs without repeating.
+    this.targetDistance = this.difficulty === 'hard' ? 2400 : this.difficulty === 'medium' ? 2000 : 1600;
 
     const state = getGameState();
     const cat = state?.cats.find((c) => c.id === this.catId);
@@ -217,11 +222,14 @@ export class CourierRunScene extends Phaser.Scene {
     // Tutorial bumped to v2 — the new mechanics (mission, speed ramp,
     // structured phrases) deserve a fresh tutorial showing for returning
     // players.
-    if (showMinigameTutorial(this, 'clowder_courier_tutorial_v2', 'Courier Run',
+    // Tutorial bumped to v3 — names the failure condition explicitly
+    // (obstacles cost lives, run out of lives = package lost) since the
+    // previous version left the player guessing what the red blocks did.
+    if (showMinigameTutorial(this, 'clowder_courier_tutorial_v3', 'Courier Run',
       `Sprint through the alleys to deliver the package!<br><br>
       <strong>Swipe up/down</strong> or use buttons to change lanes.<br><br>
-      The road <strong>speeds up</strong> as you go — react faster the further you run.<br><br>
-      Each run picks a <strong style="color:#dda055">mission</strong> for bonus fish. Watch the HUD!`,
+      <strong style="color:#cc6666">Avoid the red obstacles</strong> — every hit costs a life.<br><br>
+      The road <strong>speeds up</strong> as you go — react faster the further you run.`,
       () => { this.tutorialShowing = false; }
     )) { this.tutorialShowing = true; }
 
@@ -416,6 +424,21 @@ export class CourierRunScene extends Phaser.Scene {
     haptic.warning();
     this.cameras.main.flash(100, 80, 30, 30);
     this.cameras.main.shake(120, 0.008); // subtle shake — juice pillar
+
+    // Explicit "OUCH! -1 life" callout. Without this the player only
+    // sees a brief screen flash and has to guess what just happened.
+    // Centered, large, and red so it reads as the failure feedback
+    // the screen flash was meant to indicate.
+    const ouch = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 40, 'OUCH! -1 life', {
+      fontFamily: 'Georgia, serif', fontSize: '20px', color: '#cc6666',
+    }).setOrigin(0.5);
+    this.tweens.add({
+      targets: ouch,
+      y: GAME_HEIGHT / 2 - 70,
+      alpha: 0,
+      duration: 800,
+      onComplete: () => ouch.destroy(),
+    });
   }
 
   /** Centralized fish-pickup handler — increments counters, plays SFX,
