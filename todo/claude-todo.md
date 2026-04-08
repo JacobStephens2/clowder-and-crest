@@ -1,1 +1,2 @@
-- Would the project run better / be less buggy / need less tuning if we dropped the support to run in a browser and focused only on the Phaser / Capacitor / Android? Or not significantly different?
+- put the games / scenes in the day of rest list in the order they are unlocked in the game
+- after the player clicks new game, make a way for them to go back to the main screen, such as a back button or something. Sometimes I accidentally click it and want to go back
