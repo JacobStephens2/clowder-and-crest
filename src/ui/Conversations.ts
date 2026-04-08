@@ -309,8 +309,14 @@ function showGroupConversation(key: string): void {
         if (portrait) setPortrait(portrait, line.speaker, line.expression);
       }
     }
+    // Per user feedback (2026-04-08): "in the dialogues, remove the
+    // note about what kind of expression is showing. Let the player
+    // see the expression and know by just looking at the portrait."
+    // The expression label is no longer written. void the lookup so
+    // ESLint/TS don't complain about unused locals.
     const currentExpression = groupExpressions.get(line.speaker) ?? 'neutral';
-    expression.textContent = `${expressionLabel(currentExpression)} expression`;
+    void currentExpression;
+    expression.textContent = '';
     text.textContent = line.text;
     lineIndex++;
   }
@@ -483,9 +489,10 @@ function showConversation(breedA: string, breedB: string, rank: string, opts: Co
     const isA = line.speaker === breedA;
     const speakerName = isA ? nameA : nameB;
     const speakerBreed = isA ? breedNameA : breedNameB;
-    const currentExpression = isA ? exprA : exprB;
     speaker.innerHTML = `${esc(speakerName)} <span style="font-size:11px;color:#8b7355;font-weight:normal;margin-left:6px">${speakerBreed}</span>`;
-    expression.textContent = `${expressionLabel(currentExpression)} expression`;
+    // Per user feedback (2026-04-08): expression label removed —
+    // the portrait alone communicates the expression now.
+    expression.textContent = '';
     text.textContent = line.text;
 
     // If this line carries an explicit expression, update the speaker's
@@ -499,7 +506,6 @@ function showConversation(breedA: string, breedB: string, rank: string, opts: Co
         exprB = line.expression;
         setPortrait(portraitImgRight, breedB, exprB);
       }
-      expression.textContent = `${expressionLabel(line.expression)} expression`;
     }
 
     // Fire Emblem style: active speaker bright + scaled up, inactive dimmed.
