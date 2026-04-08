@@ -44,7 +44,7 @@ import { startBgm, toggleMute, isMuted, switchToPuzzleMusic, switchToFightMusic,
 import { playSfx } from './systems/SfxManager';
 import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDayEnd, pauseDayTimer, resumeDayTimer, isPaused } from './systems/DayTimer';
 import { startPlaytimeSession, pausePlaytimeSession } from './systems/PlaytimeTracker';
-import { initNative, registerAppLifecycle, scheduleDailyReturnNotification, cancelReturnNotification, haptic } from './systems/NativeFeatures';
+import { initNative, registerAppLifecycle, scheduleDailyReturnNotification, cancelReturnNotification, haptic, writeAutoSnapshot, readAutoSnapshot, isNative } from './systems/NativeFeatures';
 import { applyReputationShift, getReputationLabel, getReputationRecruitModifier, getReputationBonuses } from './systems/ReputationSystem';
 import { getComboMultiplier, updateCombo, getDailyWish, getCurrentFestival, trackEvent } from './systems/GameSystems';
 import { calculateDailyUpkeep, calculateOfflineStationedEarnings, calculateStationedDailyIncome } from './systems/GuildMetrics';
@@ -1789,6 +1789,14 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
   // Schedule (or replace) the "your cats are waiting" reminder for ~16h.
   // No-op on web; on Android it will fire even if the app is closed.
   scheduleDailyReturnNotification(gameState.playerCatName).catch(() => {});
+
+  // Auto-snapshot the save to the Documents folder on Capacitor (no-op
+  // on web). Survives APK uninstall, so the player can recover after a
+  // reinstall via the title screen's first-launch restore prompt. We
+  // do this on day-end specifically (not every saveGame) because
+  // filesystem writes are async and we don't want to lag the per-tile
+  // save loop. One snapshot per in-game day is plenty.
+  writeAutoSnapshot(JSON.stringify(gameState)).catch(() => {});
 
   const events = stationedResults.filter((r) => r.event).map((r) => r.event!);
   return { foodCost, stationedEarned: stationedTotal, events, fishRemaining: gameState.fish };

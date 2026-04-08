@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
-import { hasSave, loadGame, saveGame, getSlotSummary, loadFromSlot, saveToSlot, deleteSlot, pruneExpiredBackups, getRecentBackup, restoreBackup } from '../systems/SaveManager';
+import { hasSave, loadGame, saveGame, getSlotSummary, loadFromSlot, saveToSlot, deleteSlot, pruneExpiredBackups, getRecentBackup, restoreBackup, validateAndSanitizeSave } from '../systems/SaveManager';
 import { switchToTrackset } from '../systems/MusicManager';
 import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { esc } from '../utils/helpers';
+import { isNative, readAutoSnapshot } from '../systems/NativeFeatures';
 
 export class TitleScene extends Phaser.Scene {
   private rainGfx: Phaser.GameObjects.Graphics | null = null;
@@ -175,6 +176,33 @@ export class TitleScene extends Phaser.Scene {
       this.createButton(cx, btnY, 'New Game', () => {
         eventBus.emit('show-name-prompt', { slot: 1 });
       });
+
+      // Post-reinstall recovery: if no localStorage saves exist but a
+      // Capacitor Filesystem auto-snapshot is sitting in Documents, offer
+      // to restore it. Async — the check resolves a few hundred ms after
+      // the title finishes painting and a "Restore from Backup" button
+      // appears above New Game when the snapshot is found.
+      if (isNative()) {
+        readAutoSnapshot().then((snapshot) => {
+          if (!snapshot) return;
+          let parsed: ReturnType<typeof validateAndSanitizeSave>;
+          try {
+            parsed = validateAndSanitizeSave(JSON.parse(snapshot));
+          } catch {
+            return;
+          }
+          if (!parsed) return;
+          // Render a green "restore" button above the New Game button.
+          // Phaser createButton handles the styling.
+          this.createButton(cx, btnY - 60, `\u21BA Restore Save (Day ${parsed.day}, Ch.${parsed.chapter})`, () => {
+            saveToSlot(1, parsed!);
+            saveGame(parsed!);
+            eventBus.emit('game-loaded', parsed);
+            eventBus.emit('active-slot', 1);
+            eventBus.emit('navigate', 'GuildhallScene');
+          });
+        });
+      }
     }
 
     // Credits
