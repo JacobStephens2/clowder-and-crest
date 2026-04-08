@@ -384,14 +384,20 @@ export function showMenuPanel(): void {
     deps.saveGame(gameState!);
     const json = JSON.stringify(gameState);
     if (!json) { deps.showToast('No save to export'); return; }
+    const filename = `clowder-save-day${gameState!.day}.json`;
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `clowder-save-day${gameState!.day}.json`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
-    deps.showToast('Save exported!');
+    // Be explicit about where the file ended up. On Android the WebView
+    // dispatches the download to the system Downloads folder by default;
+    // on iOS Safari it goes to the Files app downloads. On desktop it
+    // depends on the browser's download dir. The toast names the file
+    // explicitly so the player can search for it.
+    deps.showToast(`Save exported as ${filename} (check your Downloads folder)`);
   });
 
   document.getElementById('menu-import')!.addEventListener('click', () => {
