@@ -32,6 +32,7 @@ import {
   deleteSlot,
   addJournalEntry,
   saveToSlot,
+  getPlayerPronouns,
 } from './systems/SaveManager';
 import { createCat, getBreed, addXp, hasTrait } from './systems/CatManager';
 import { earnFish, spendFish, calculateReward, collectStationedEarnings, isCatStationed } from './systems/Economy';
@@ -2234,7 +2235,7 @@ eventBus.on('long-winter-resolved', () => {
       'On the sixth morning, the wind dropped.',
       'A pale sun rose over the cobblestones. The cathedral bells rang twice — and then a third time, like a town remembering how.',
       'The market reopened by noon. The merchant\'s caravan picked its way through the slush. The job board was nailed back to the wall.',
-      `${catName} stepped outside and felt the cold sun on their face.`,
+      `${catName} stepped outside and felt the cold sun on ${getPlayerPronouns(gameState).poss} face.`,
       closingLine,
       'What was almost lost was now held with both paws.',
     ],
