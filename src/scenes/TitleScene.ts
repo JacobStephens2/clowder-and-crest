@@ -5,6 +5,8 @@ import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { esc } from '../utils/helpers';
 import { isNative, readAutoSnapshot } from '../systems/NativeFeatures';
+import { enterShowcase, isShowcaseUrlRequested } from '../systems/Showcase';
+import { showToast as renderToast } from '../ui/feedback';
 
 export class TitleScene extends Phaser.Scene {
   private rainGfx: Phaser.GameObjects.Graphics | null = null;
@@ -30,6 +32,18 @@ export class TitleScene extends Phaser.Scene {
 
   create(): void {
     const cx = GAME_WIDTH / 2;
+
+    // Showcase entry via `?showcase=1` URL parameter — used by portfolio
+    // reviewers visiting the web build. Bypass the title screen entirely
+    // and drop the user straight into the demo save. Native APK launches
+    // can't easily pass URL params so the equivalent there is the 5-tap
+    // crest gesture wired up below.
+    if (isShowcaseUrlRequested()) {
+      const overlayLayer = document.getElementById('overlay-layer');
+      const toast = (msg: string) => { if (overlayLayer) renderToast(overlayLayer, msg); };
+      enterShowcase(toast);
+      return;
+    }
 
     this.cameras.main.setBackgroundColor('#1c1b19');
     this.cameras.main.setZoom(DPR);
@@ -66,6 +80,30 @@ export class TitleScene extends Phaser.Scene {
       crest.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
       crest.setAlpha(0);
       this.tweens.add({ targets: crest, alpha: 0.9, duration: 1500, ease: 'Sine.easeIn' });
+
+      // Hidden showcase gesture: five quick taps on the crest loads the
+      // bundled demo save. Mirrors the URL parameter path above for the
+      // native APK, which has no convenient way to pass URL parameters.
+      // Reset the counter if the player pauses for more than 1.2s
+      // between taps so accidental brushing of the logo never trips it.
+      let crestTapCount = 0;
+      let crestTapResetTimer: Phaser.Time.TimerEvent | null = null;
+      crest.setInteractive({ useHandCursor: false });
+      crest.on('pointerdown', () => {
+        crestTapCount++;
+        crestTapResetTimer?.remove();
+        crestTapResetTimer = this.time.delayedCall(1200, () => {
+          crestTapCount = 0;
+        });
+        if (crestTapCount >= 5) {
+          crestTapCount = 0;
+          crestTapResetTimer?.remove();
+          crestTapResetTimer = null;
+          const overlayLayer = document.getElementById('overlay-layer');
+          const toast = (msg: string) => { if (overlayLayer) renderToast(overlayLayer, msg); };
+          enterShowcase(toast);
+        }
+      });
     }
 
     // Title
