@@ -1,5 +1,3 @@
-[] ensure the roof scout minigame appears in the day of rest menu for the everything unlocked save
-[] When opening a scene from The day of rest menu, the player should be able to choose to redisplay the tutorial.
 [] for the patrol game, I when I click on the intruders / purple circles, nothing happens, so I can never succeed at the game
 [] when all other claude todo is done, build a new apk and put it in todo
 [] hide wishes in the day of rest view

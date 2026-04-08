@@ -144,7 +144,10 @@
     "heist_hard": 3,
     "courier_run_easy": 3,
     "courier_run_medium": 3,
-    "courier_run_hard": 3
+    "courier_run_hard": 3,
+    "roof_scout_easy": 3,
+    "roof_scout_medium": 3,
+    "roof_scout_hard": 3
   },
   "flags": {
     "demoSave": true,

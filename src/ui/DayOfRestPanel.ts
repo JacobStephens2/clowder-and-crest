@@ -163,7 +163,46 @@ const MINIGAMES: MinigameDef[] = [
     unlockedBy: { prefix: 'heist_' },
     difficulties: ['easy', 'medium', 'hard'],
   },
+  {
+    title: 'Roof Scout',
+    tagline: 'Climb to the watchpoint. Don\u2019t look down.',
+    sceneKey: 'RoofScoutScene',
+    unlockedBy: { prefix: 'roof_scout_' },
+    difficulties: ['easy', 'medium', 'hard'],
+    needsBreed: true,
+  },
 ];
+
+/** Mapping from a minigame's scene key to the localStorage key prefix
+ *  used by its first-time tutorial. Clearing keys starting with this
+ *  prefix forces the tutorial to show again on the next launch — used
+ *  by the Day of Rest "replay tutorial" toggle. */
+const SCENE_TUTORIAL_PREFIX: Record<string, string> = {
+  ChaseScene: 'clowder_chase_tutorial',
+  HuntScene: 'clowder_hunt_tutorial',
+  CourierRunScene: 'clowder_courier_tutorial',
+  RitualScene: 'clowder_ritual_tutorial',
+  PatrolScene: 'clowder_patrol_tutorial',
+  BrawlScene: 'clowder_brawl_tutorial',
+  NonogramScene: 'clowder_nonogram_tutorial',
+  RoofScoutScene: 'clowder_roof_scout_tutorial',
+  ScentTrailScene: 'clowder_scent_tutorial',
+  StealthScene: 'clowder_stealth_tutorial',
+  HeistScene: 'clowder_heist_tutorial',
+  PounceScene: 'clowder_pounce_tutorial',
+};
+
+/** Force the tutorial for the given scene to show on its next launch
+ *  by clearing every localStorage key that starts with the scene's
+ *  tutorial prefix (covers v1/v2/v3 versioned keys). */
+function clearTutorialFor(sceneKey: string): void {
+  const prefix = SCENE_TUTORIAL_PREFIX[sceneKey];
+  if (!prefix) return;
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith(prefix)) localStorage.removeItem(k);
+  }
+}
 
 interface DayOfRestDeps {
   getGameState: () => SaveData | null;
@@ -318,6 +357,14 @@ function showDifficultyPicker(mg: MinigameDef): void {
     return `<button class="menu-btn dor-diff-btn" data-diff="${d}">${label}</button>`;
   }).join('');
 
+  // Tutorial replay toggle — only offer it if this scene has a tutorial
+  // we know how to clear. The button toggles a checked state on click;
+  // launchPracticeRun reads `replayTutorial` from the panel.dataset.
+  const hasTutorial = SCENE_TUTORIAL_PREFIX[mg.sceneKey] !== undefined;
+  const tutorialToggleHtml = hasTutorial
+    ? `<button class="dor-tutorial-toggle" id="dor-tutorial-toggle" style="display:block;margin:14px auto 0;padding:8px 14px;background:#2a2520;border:1px solid #3a3530;color:#8b7355;border-radius:4px;font-family:Georgia,serif;font-size:11px;cursor:pointer">\u25A1 Replay tutorial</button>`
+    : '';
+
   panel.innerHTML = `
     <button class="panel-close" id="dor-diff-close">&times;</button>
     <h2>${esc(mg.title)}</h2>
@@ -326,11 +373,24 @@ function showDifficultyPicker(mg: MinigameDef): void {
     </div>
     <div style="margin-bottom:10px;color:#6b5b3e;font-size:11px;text-align:center">Choose a difficulty</div>
     ${buttons}
+    ${tutorialToggleHtml}
     <div style="margin-top:10px;color:#555;font-size:10px;text-align:center;font-style:italic">
       No fish, no XP, no penalties \u2014 just the game.
     </div>
   `;
   deps.overlayLayer.appendChild(panel);
+
+  // Tutorial toggle state — flipped on click, read on difficulty pick
+  let replayTutorial = false;
+  const toggleBtn = document.getElementById('dor-tutorial-toggle');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      replayTutorial = !replayTutorial;
+      toggleBtn.textContent = replayTutorial ? '\u2611 Replay tutorial' : '\u25A1 Replay tutorial';
+      toggleBtn.style.color = replayTutorial ? '#c4956a' : '#8b7355';
+      toggleBtn.style.borderColor = replayTutorial ? '#6b5b3e' : '#3a3530';
+    });
+  }
 
   document.getElementById('dor-diff-close')!.addEventListener('click', () => {
     panel.remove();
@@ -343,6 +403,7 @@ function showDifficultyPicker(mg: MinigameDef): void {
     btn.addEventListener('click', () => {
       const difficulty = btn.getAttribute('data-diff') as 'easy' | 'medium' | 'hard';
       panel.remove();
+      if (replayTutorial) clearTutorialFor(mg.sceneKey);
       launchPracticeRun(mg, difficulty);
     });
   });
