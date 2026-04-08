@@ -906,9 +906,15 @@ eventBus.on('show-town-overlay', () => {
       const daysWorked = gameState.day - stationed.dayStarted;
       const color = BREED_COLORS[cat.breed] ?? '#8b7355';
 
+      // Show the actual cat sprite (south-facing idle) instead of a
+      // plain color blob — per user request: "display the sprite of
+      // the assigned cats in the stationed cats section of the menu
+      // in the town job hall menu view".
       html += `
         <div class="town-stationed-card">
-          <div class="town-stationed-avatar" style="background:${color}"></div>
+          <div class="town-stationed-avatar" style="background:${color};display:flex;align-items:center;justify-content:center">
+            <img src="assets/sprites/${cat.breed}/south.png" alt="" style="width:32px;height:32px;image-rendering:pixelated" />
+          </div>
           <div class="town-stationed-info">
             <div class="town-stationed-name">${esc(cat.name)} — ${job.name}</div>
             <div class="town-stationed-detail">~${dailyEarn} fish/day | ${daysWorked} day${daysWorked !== 1 ? 's' : ''} worked</div>
