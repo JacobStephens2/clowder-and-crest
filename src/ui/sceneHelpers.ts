@@ -101,16 +101,17 @@ export function createDpad(scene: Phaser.Scene, config: DpadConfig): void {
 
 // ── Tutorial Overlay ──
 
-export function showMinigameTutorial(
+/** Show the tutorial overlay unconditionally — used both by the
+ *  first-play `showMinigameTutorial` flow (after the storage check
+ *  passes) and by re-view flows like the in-scene "?" help button.
+ *  Pure presentation, no localStorage interaction. */
+export function showTutorialOverlay(
   scene: Phaser.Scene,
-  storageKey: string,
   title: string,
   body: string,
   onDismiss?: () => void,
   options?: { pauseScene?: boolean },
-): boolean {
-  if (localStorage.getItem(storageKey)) return false;
-  localStorage.setItem(storageKey, '1');
+): void {
   if (options?.pauseScene) scene.scene.pause();
 
   const t = document.createElement('div');
@@ -126,6 +127,19 @@ export function showMinigameTutorial(
     onDismiss?.();
   });
   document.body.appendChild(t);
+}
+
+export function showMinigameTutorial(
+  scene: Phaser.Scene,
+  storageKey: string,
+  title: string,
+  body: string,
+  onDismiss?: () => void,
+  options?: { pauseScene?: boolean },
+): boolean {
+  if (localStorage.getItem(storageKey)) return false;
+  localStorage.setItem(storageKey, '1');
+  showTutorialOverlay(scene, title, body, onDismiss, options);
   return true;
 }
 
