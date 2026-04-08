@@ -53,14 +53,25 @@ export function generateDailyJobs(save: SaveData): JobDef[] {
     available = available.filter((j) => j.id !== 'crest_pilgrimage');
   }
 
-  // Chapter 3 rat plague: add extra pest control jobs
-  if (save.chapter === 3 && !save.flags.ratPlagueResolved) {
-    const pestJobs = available.filter((j) => j.category === 'pest_control');
-    available = [...pestJobs, ...pestJobs, ...available.filter((j) => j.category !== 'pest_control')];
-  }
-
   const count = Math.min(3 + Math.floor(save.chapter / 2), available.length);
-  const jobs = shuffled(available).slice(0, count).map((job) => ({ ...job, contested: false }));
+
+  // Chapter 3 rat plague: guarantee at least one pest control job each
+  // day so the plague is always advanceable, but the remaining slots
+  // draw from the full pool — including the new chapter-3 categories
+  // (sacred, detection) the user wants to try out. Previously this
+  // duplicated pest control 2x in the shuffle pool, which biased the
+  // entire board toward rats and crowded out the new minigame types.
+  let jobs: JobDef[];
+  if (save.chapter === 3 && !save.flags.ratPlagueResolved) {
+    const pestPool = available.filter((j) => j.category === 'pest_control');
+    const otherPool = available.filter((j) => j.category !== 'pest_control');
+    const guaranteedPest = pestPool.length > 0 ? [shuffled(pestPool)[0]] : [];
+    const fillCount = Math.max(0, count - guaranteedPest.length);
+    jobs = [...guaranteedPest, ...shuffled(otherPool).slice(0, fillCount)]
+      .map((job) => ({ ...job, contested: false }));
+  } else {
+    jobs = shuffled(available).slice(0, count).map((job) => ({ ...job, contested: false }));
+  }
 
   // Chapter 6+: Mark 1-2 jobs as contested by the Silver Paws rival guild
   if (save.chapter >= 6) {
