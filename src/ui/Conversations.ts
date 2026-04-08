@@ -282,21 +282,27 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
   // taller-than-wide illustrated portraits fit the screen reasonably.
   // height is fixed; width auto to honor the source aspect ratio.
   overlay.innerHTML = `
-    <!-- Full-screen scene background -->
-    <img src="assets/sprites/dialogues/${sceneArt}.png" style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:100%;height:100%;object-fit:cover;image-rendering:pixelated;opacity:0.3;pointer-events:none" />
+    <!-- Full-screen scene background — z-index:0 explicit so it's always
+         behind the portraits. Without an explicit z-index, the background
+         and the portrait divs both create stacking contexts (via transform)
+         and the DOM-order fallback isn't reliable across browsers, which
+         is what the user reported as "the background art overlays the
+         portrait that's in the background". -->
+    <img src="assets/sprites/dialogues/${sceneArt}.png" style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:100%;height:100%;object-fit:cover;image-rendering:pixelated;opacity:0.3;pointer-events:none;z-index:0" />
 
     <!-- Large character portraits — left and right.
          Image src is set imperatively below so the high-res portrait fallback
-         can be applied per-line as expressions change. -->
-    <div id="portrait-left" style="position:absolute;bottom:140px;left:10px;transition:opacity 0.2s,transform 0.2s;transform-origin:bottom left">
+         can be applied per-line as expressions change. z-index:1 keeps them
+         above the background regardless of stacking-context details. -->
+    <div id="portrait-left" style="position:absolute;bottom:140px;left:10px;transition:opacity 0.2s,transform 0.2s;transform-origin:bottom left;z-index:1">
       <img id="portrait-img-left" alt="" style="height:240px;width:auto;max-width:55vw;filter:drop-shadow(2px 4px 6px rgba(0,0,0,0.5))" />
     </div>
-    <div id="portrait-right" style="position:absolute;bottom:140px;right:10px;transition:opacity 0.2s,transform 0.2s;transform-origin:bottom right">
+    <div id="portrait-right" style="position:absolute;bottom:140px;right:10px;transition:opacity 0.2s,transform 0.2s;transform-origin:bottom right;z-index:1">
       <img id="portrait-img-right" alt="" style="height:240px;width:auto;max-width:55vw;filter:drop-shadow(2px 4px 6px rgba(0,0,0,0.5))" />
     </div>
 
-    <!-- Text box at bottom -->
-    <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(10,9,8,0.95) 20%);padding:20px 20px 30px;min-height:130px">
+    <!-- Text box at bottom — z-index:2 so it sits above the portraits. -->
+    <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(10,9,8,0.95) 20%);padding:20px 20px 30px;min-height:130px;z-index:2">
       <div id="conv-speaker" style="color:#c4956a;font-family:Georgia,serif;font-size:15px;margin-bottom:6px;font-weight:bold"></div>
       <div id="conv-text" style="color:#d4c5a9;font-family:Georgia,serif;font-size:14px;line-height:1.6"></div>
       <div style="color:#555;font-family:Georgia,serif;font-size:10px;margin-top:8px;text-align:right">Tap to continue</div>
@@ -365,10 +371,13 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
       }
     }
 
-    // Fire Emblem style: active speaker bright + scaled up, inactive dimmed
-    portraitLeft.style.opacity = isA ? '1' : '0.4';
+    // Fire Emblem style: active speaker bright + scaled up, inactive dimmed.
+    // Inactive opacity bumped from 0.4 → 0.6 so the listener reads clearly
+    // above the 0.3-opacity background scene art. Per user feedback, the
+    // listener used to "blend into" the bg.
+    portraitLeft.style.opacity = isA ? '1' : '0.6';
     portraitLeft.style.transform = isA ? 'scale(1.05)' : 'scale(0.9)';
-    portraitRight.style.opacity = isA ? '0.4' : '1';
+    portraitRight.style.opacity = isA ? '0.6' : '1';
     portraitRight.style.transform = isA ? 'scale(0.9)' : 'scale(1.05)';
 
     lineIndex++;
