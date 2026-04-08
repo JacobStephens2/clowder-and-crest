@@ -82,4 +82,5 @@ export const SCENES = {
   HEIST: 'HeistScene',
   COURIER_RUN: 'CourierRunScene',
   DUNGEON: 'DungeonRunScene',
+  ROOF_SCOUT: 'RoofScoutScene',
 } as const;

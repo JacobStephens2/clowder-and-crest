@@ -50,6 +50,9 @@ const TRACK_SETS: Record<string, string[]> = {
   scent_trail: ['assets/audio/scent_trail_1.mp3', 'assets/audio/scent_trail_2.mp3'],
   heist: ['assets/audio/heist_1.mp3', 'assets/audio/heist_2.mp3'],
   courier_run: ['assets/audio/courier_run_1.mp3', 'assets/audio/courier_run_2.mp3'],
+  // Roof Scout reuses the courier-run track set until a dedicated climb
+  // theme is composed — both are delivery-job music, same tonal register.
+  roof_scout: ['assets/audio/courier_run_1.mp3', 'assets/audio/courier_run_2.mp3'],
   slide_blocks: ['assets/audio/slide_blocks_1.mp3', 'assets/audio/slide_blocks_2.mp3'],
   brawl: ['assets/audio/brawl_1.mp3', 'assets/audio/brawl_2.mp3'],
 
