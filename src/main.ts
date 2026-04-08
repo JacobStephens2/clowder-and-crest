@@ -331,7 +331,11 @@ document.body.appendChild(guildWishBanner);
 function updateGuildWishBanner(): void {
   if (!gameState) { guildWishBanner.style.display = 'none'; return; }
   const wish = getDailyWish(gameState.day, gameState.cats, gameState.furniture.map(f => f.furnitureId));
-  if (!wish || gameState.flags[`wish_day_${gameState.day}`]) {
+  // Per-day dismiss flag — separate from `wish_day_${day}` (the
+  // fulfillment flag). When the player dismisses the floating banner,
+  // we just hide it globally for the day. The inline wish display in
+  // GuildhallScene still shows under the rooms so the wish isn't lost.
+  if (!wish || gameState.flags[`wish_day_${gameState.day}`] || gameState.flags[`wish_dismissed_${gameState.day}`]) {
     guildWishBanner.style.display = 'none';
     return;
   }
@@ -393,7 +397,8 @@ function updateGuildWishBanner(): void {
     : '';
 
   guildWishBanner.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center">
+    <button id="guild-wish-dismiss" style="position:absolute;top:4px;right:6px;background:none;border:none;color:#6b5b3e;font-size:16px;line-height:1;padding:2px 6px;cursor:pointer;font-family:Georgia,serif" title="Hide for today">&times;</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding-right:14px">
       <div>
         <div style="color:#dda055;font-size:12px">\u{1F4AD} ${esc(wish.catName)}'s Wish</div>
         <div style="color:#8b7355;font-size:10px;margin-top:2px">"${wish.wish}"</div>
@@ -402,6 +407,14 @@ function updateGuildWishBanner(): void {
       ${actionHtml}
     </div>
   `;
+  document.getElementById('guild-wish-dismiss')?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    if (!gameState) return;
+    gameState.flags[`wish_dismissed_${gameState.day}`] = true;
+    saveGame(gameState);
+    guildWishBanner.style.display = 'none';
+    showToast('Wish hidden — still visible in the guildhall');
+  });
   document.getElementById('guild-fulfill-wish')?.addEventListener('click', () => {
     if (!gameState || gameState.fish < 5) { showToast('Not enough fish!'); return; }
     gameState.flags[`wish_day_${gameState.day}`] = true;

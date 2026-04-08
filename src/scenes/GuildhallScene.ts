@@ -3,7 +3,7 @@ import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, BREED_COLORS } from '../utils/constants';
 import { getGameState } from '../main';
 import type { SaveData } from '../systems/SaveManager';
-import { getCurrentFestival } from '../systems/GameSystems';
+import { getCurrentFestival, getDailyWish } from '../systems/GameSystems';
 import { getChapterName, getNextChapterHint } from '../systems/ProgressionManager';
 
 import { ALL_BREED_IDS } from '../utils/constants';
@@ -151,6 +151,24 @@ export class GuildhallScene extends Phaser.Scene {
     });
 
     this.drawRooms(save);
+
+    // Inline wish display — sits below the rooms so the wish stays
+    // visible even after the player dismisses the floating top banner.
+    // Per user feedback (2026-04-08): "add a way to dismiss wishes
+    // from the top of the screen, but always display them above or
+    // below the rooms in the guild view / scene."
+    const wish = getDailyWish(save.day, save.cats, save.furniture.map((f) => f.furnitureId));
+    if (wish && !save.flags[`wish_day_${save.day}`]) {
+      const wishY = ROOM_START_Y + 3 * (ROOM_HEIGHT + ROOM_GAP) - 10;
+      this.add.rectangle(GAME_WIDTH / 2, wishY, ROOM_WIDTH, 38, 0x2a2520, 0.85)
+        .setStrokeStyle(1, 0x6b5b3e);
+      this.add.text(GAME_WIDTH / 2, wishY - 8, `\u{1F4AD} ${wish.catName}\u2019s wish`, {
+        fontFamily: 'Georgia, serif', fontSize: '11px', color: '#dda055',
+      }).setOrigin(0.5);
+      this.add.text(GAME_WIDTH / 2, wishY + 7, `"${wish.wish}"`, {
+        fontFamily: 'Georgia, serif', fontSize: '10px', color: '#8b7355',
+      }).setOrigin(0.5);
+    }
 
     // Cellar entrance (Chapter 5+)
     if (save.chapter >= 5) {
