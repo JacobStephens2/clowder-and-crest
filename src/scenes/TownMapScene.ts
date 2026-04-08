@@ -930,6 +930,18 @@ export class TownMapScene extends Phaser.Scene {
     this.playerPos = { col: nc, row: nr };
     const dest = toWorld(nc, nr);
 
+    // Safety reset: if the tween's onComplete doesn't fire within
+    // 350ms (e.g., the sprite was destroyed mid-flight, the scene
+    // was paused, or any other edge case), force isMoving back to
+    // false so the next move can fire. This is a belt-and-suspenders
+    // backstop for the "I clicked the guildhall and the town scene
+    // got stuck, I can't move anymore" bug — the underlying race is
+    // hard to pin down precisely, but a short safety timer cuts the
+    // worst case from "force-quit the app" to "wait 0.35s."
+    this.time.delayedCall(350, () => {
+      if (this.isMoving) this.isMoving = false;
+    });
+
     // Close any open town overlay when the player moves
     eventBus.emit('close-town-overlay');
 
