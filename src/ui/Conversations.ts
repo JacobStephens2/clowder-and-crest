@@ -6,6 +6,8 @@ import { esc } from '../utils/helpers';
 import { getBondPairs, getAvailableConversation, markConversationViewed } from '../systems/BondSystem';
 import conversationsData from '../data/conversations.json';
 import type { SaveData } from '../systems/SaveManager';
+import { pauseDayTimer, resumeDayTimer, isPaused } from '../systems/DayTimer';
+import { pausePlaytimeSession, startPlaytimeSession } from '../systems/PlaytimeTracker';
 
 // ──── Dialogue Portrait System ────
 //
@@ -116,6 +118,14 @@ function showGroupConversation(key: string): void {
   if (!convoSet || convoSet.length === 0) { deps.switchScene('TownMapScene'); return; }
   const convo = convoSet[0];
 
+  // Same day-timer/playtime pause as showConversation — group dialogues
+  // can't be interrupted by a day-end either.
+  const dayTimerWasAlreadyPaused = isPaused();
+  if (!dayTimerWasAlreadyPaused) {
+    pauseDayTimer();
+    pausePlaytimeSession();
+  }
+
   let lineIndex = 0;
   const overlay = document.createElement('div');
   overlay.className = 'conversation-overlay';
@@ -147,6 +157,10 @@ function showGroupConversation(key: string): void {
   function showLine(): void {
     if (lineIndex >= convo.lines.length) {
       overlay.remove();
+      if (!dayTimerWasAlreadyPaused) {
+        resumeDayTimer();
+        startPlaytimeSession();
+      }
       deps.showToast('A guild moment to remember.');
       deps.switchScene('TownMapScene');
       return;
@@ -168,6 +182,10 @@ function showGroupConversation(key: string): void {
   document.getElementById('conv-skip')!.addEventListener('click', (e) => {
     e.stopPropagation();
     overlay.remove();
+    if (!dayTimerWasAlreadyPaused) {
+      resumeDayTimer();
+      startPlaytimeSession();
+    }
     deps.switchScene('TownMapScene');
   });
 }
@@ -183,6 +201,19 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
   const convoMatch = convoSet.find((c) => c.rank === rank);
   if (!convoMatch) { deps.switchScene('GuildhallScene'); return; }
   const convo = convoMatch;
+
+  // Pause the day timer + playtime session for the duration of the
+  // conversation so the in-game day can't tick over (and end-of-day
+  // can't fire) mid-dialogue. Without this, a conversation that runs
+  // close to the day boundary gets clobbered by the day-end overlay
+  // and the player loses the rest of the dialogue. Track whether we
+  // were the ones who paused — if the day timer was already paused
+  // by the player, we shouldn't unpause it on conversation end.
+  const dayTimerWasAlreadyPaused = isPaused();
+  if (!dayTimerWasAlreadyPaused) {
+    pauseDayTimer();
+    pausePlaytimeSession();
+  }
 
   let lineIndex = 0;
   // Track each speaker's most recent expression so the listener keeps showing
@@ -252,6 +283,13 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
       overlay.remove();
       markConversationViewed(gameState!, breedA, breedB, rank);
       deps.saveGame(gameState!);
+      // Resume the day timer + playtime now that the dialogue has finished
+      // (only if we were the ones who paused them — see the pause comment
+      // above showConversation for the rationale).
+      if (!dayTimerWasAlreadyPaused) {
+        resumeDayTimer();
+        startPlaytimeSession();
+      }
 
       if (rank === 'C') {
         deps.showToast(`${nameA} & ${nameB} are getting to know each other... (keep building their bond)`);
@@ -306,6 +344,11 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
     overlay.remove();
     markConversationViewed(gameState!, breedA, breedB, rank);
     deps.saveGame(gameState!);
+    // Resume day timer/playtime same as the natural end-of-dialogue path.
+    if (!dayTimerWasAlreadyPaused) {
+      resumeDayTimer();
+      startPlaytimeSession();
+    }
     deps.showToast(`Bond deepened: ${nameA} & ${nameB}`);
     deps.switchScene('TownMapScene');
   });
