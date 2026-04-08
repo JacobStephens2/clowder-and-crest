@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand background color used by the in-game canvas + every
+         system bar (status bar at the top, navigation bar at the
+         bottom, window background behind the WebView). Per user
+         feedback (2026-04-08): "there's a white bar at the top of
+         the screen and the bottom of the screen where the system
+         navigation buttons are, make the color of those match the
+         background of the page." -->
+    <color name="clowderBackground">#1c1b19</color>
+</resources>

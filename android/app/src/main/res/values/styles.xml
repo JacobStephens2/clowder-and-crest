@@ -13,6 +13,22 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- Brand background under and around the WebView. Without
+             these, Android falls back to white system bars on light
+             themes, leaving white strips at the top of the status bar
+             and behind the bottom navigation buttons. The Capacitor
+             status-bar plugin sets the top color at runtime too, but
+             it can flash white during launch before the JS runs —
+             baking the color into the theme avoids that flicker. -->
+        <item name="android:windowBackground">@color/clowderBackground</item>
+        <item name="android:statusBarColor">@color/clowderBackground</item>
+        <item name="android:navigationBarColor">@color/clowderBackground</item>
+        <!-- Use light icons on the dark background. False = white
+             status-bar icons (on Android 6+); the analogous flag for
+             the nav bar (windowLightNavigationBar) is set false too
+             so the bottom nav buttons render in white. -->
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
     </style>
 
 
