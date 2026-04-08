@@ -364,11 +364,30 @@ function updateGuildWishBanner(): void {
     actionHtml = `<button id="guild-fulfill-wish" style="padding:4px 10px;background:#2a2520;border:1px solid #dda055;border-radius:4px;color:#dda055;font-size:11px;font-family:Georgia,serif;cursor:pointer;white-space:nowrap">5 fish</button>`;
   }
 
+  // Per user feedback: "if a wish requires furniture and the player
+  // has it, indicate that they already fulfill that requirement".
+  // wishFurnMap (defined above for the room-mismatch check) maps the
+  // wish text to a furniture id; if the player owns that furniture,
+  // show a small "✓ Furniture Name" line so they understand WHY this
+  // wish is fulfillable rather than wondering what unlocked the button.
+  const relatedFurnMap: Record<string, string> = {
+    'wants a fish treat': 'fish_barrel',
+    'wants to scratch something': 'scratching_post',
+    'wants to nap in a warm spot': 'straw_bed',
+    'wants to play with a friend': 'potted_catnip',
+  };
+  const relatedFurn = relatedFurnMap[wish.wish];
+  const ownsRelatedFurn = relatedFurn && gameState.furniture.some((f) => f.furnitureId === relatedFurn);
+  const fulfilledByFurnHtml = (!needsFurn && ownsRelatedFurn)
+    ? `<div style="color:#88bb55;font-size:9px;margin-top:2px">\u2713 ${FURN_NAMES[relatedFurn] ?? relatedFurn} unlocks this wish</div>`
+    : '';
+
   guildWishBanner.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div>
         <div style="color:#dda055;font-size:12px">\u{1F4AD} ${esc(wish.catName)}'s Wish</div>
         <div style="color:#8b7355;font-size:10px;margin-top:2px">"${wish.wish}"</div>
+        ${fulfilledByFurnHtml}
       </div>
       ${actionHtml}
     </div>
