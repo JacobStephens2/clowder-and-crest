@@ -597,8 +597,14 @@ bottomBar.addEventListener('click', (e) => {
   panelOverlay.classList.add('hidden');
   panelOverlay.innerHTML = '';
 
-  // Remove any custom overlays
-  overlayLayer.querySelectorAll('.assign-overlay, .conversation-overlay, .result-overlay, .menu-overlay, .town-overlay').forEach((el) => el.remove());
+  // Remove any custom overlays. The `.panel:not(#panel-overlay)`
+  // sweep catches the cat panel (which uses className='panel' and is
+  // appended directly to overlayLayer rather than to #panel-overlay)
+  // — without it, tapping Guild or Town with the cat menu open left
+  // the cat list visible on top of the new scene. The :not() guard
+  // spares the persistent #panel-overlay container in index.html
+  // which also has class="panel".
+  overlayLayer.querySelectorAll('.assign-overlay, .conversation-overlay, .result-overlay, .menu-overlay, .town-overlay, .panel:not(#panel-overlay)').forEach((el) => el.remove());
 
   switch (scene) {
     case 'guildhall':
