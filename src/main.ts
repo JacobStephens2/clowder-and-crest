@@ -138,6 +138,27 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
+// ──── Global UI haptic delegate ────
+// One delegated click listener that fires haptic.tap() on any button-like
+// element across the whole HTML overlay layer. This means every existing
+// and future button automatically gets a tap haptic on Android without
+// per-handler edits. The native haptic system no-ops on web.
+//
+// Capture phase + a button-like selector match means it fires before the
+// element's own handler so the player feels the tap as soon as the touch
+// registers, not after the action completes. Excludes the Phaser canvas
+// itself (Phaser scenes manage their own haptics for game beats).
+document.addEventListener('click', (e) => {
+  const t = e.target as HTMLElement | null;
+  if (!t) return;
+  // Match anything button-like in the HTML overlay layer
+  const btn = t.closest('button, .nav-btn, .menu-btn, .panel-close, .slot-btn, .rename-btn, .recall-btn, .shop-item, .job-card, .cat-card, .room-pick-btn, .exile-btn, [role="button"]');
+  if (!btn) return;
+  // Don't double-fire if the click is inside a Phaser canvas
+  if (t.closest('#game-container canvas')) return;
+  haptic.tap();
+}, true);
+
 // ──── Auto-save ────
 window.addEventListener('beforeunload', () => {
   if (gameState) saveGame(gameState);
@@ -169,6 +190,7 @@ let pauseOverlay: HTMLDivElement | null = null;
 
 if (pauseBtn) {
   pauseBtn.addEventListener('click', () => {
+    haptic.tap();
     if (isPaused()) {
       resumeDayTimer();
       resumeMusic();
@@ -202,6 +224,7 @@ guildEndDayBtn.style.cssText = 'display:none;position:fixed;bottom:70px;left:50%
 guildEndDayBtn.addEventListener('click', () => {
   if (!gameState) return;
   playSfx('day_bell', 0.4);
+  haptic.medium(); // day-end is a meaningful beat — heavier than a UI tap
   const result = advanceDay();
   showDayTransitionOverlay(gameState.day, () => {}, gameState, result);
   saveGame(gameState);
@@ -390,6 +413,7 @@ bottomBar.addEventListener('click', (e) => {
   const btn = (e.target as HTMLElement).closest('.nav-btn') as HTMLElement;
   if (!btn || !gameState) return;
   playSfx('tap', 0.3);
+  haptic.tap();
 
   const scene = btn.dataset.scene;
   // Close any open panels
