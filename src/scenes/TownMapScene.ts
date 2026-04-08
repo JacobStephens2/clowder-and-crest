@@ -345,17 +345,16 @@ export class TownMapScene extends Phaser.Scene {
       }).setOrigin(0.5);
       this.buildingLabels.set(b.id, label);
 
-      // Make building interactive
+      // Make building interactive — only for the hand cursor on desktop.
+      // The actual click routing happens in the global pointerdown handler
+      // (setupControls) so that there's a single source of truth and the
+      // tap-to-move handler doesn't compete with a per-building handler
+      // for the same tap. Without this unification, every tap on a
+      // building fired BOTH walkToThenEnter (from the hit zone) AND a
+      // single-step movePlayer (from the global handler), and the
+      // isMoving guard made the resulting walk unreliable.
       const hitZone = this.add.zone(x + w / 2, y + h / 2, w, h);
       hitZone.setInteractive({ useHandCursor: true });
-      hitZone.on('pointerdown', () => {
-        const dist = Math.abs(this.playerPos.col - b.doorCol) + Math.abs(this.playerPos.row - b.doorRow);
-        if (dist <= 2) {
-          this.enterBuilding(b);
-        } else {
-          this.walkToThenEnter(b);
-        }
-      });
     }
   }
 
@@ -707,7 +706,26 @@ export class TownMapScene extends Phaser.Scene {
       const row = Math.floor((wy - GRID_TOP) / TILE);
       if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return;
 
-      // Single-step toward the tapped position
+      // Tap on a building tile? Find which building and walk to its door.
+      // This is the single source of truth for building taps — the per-
+      // building hit zones no longer have click handlers (they only set
+      // the hand cursor). Without this unified routing, taps on the job
+      // board fired BOTH walkToThenEnter (from the hit zone) AND a
+      // single-step movePlayer toward the tap, and the isMoving collision
+      // made the cat fail to reach the door reliably.
+      for (const b of BUILDINGS) {
+        if (col >= b.col && col < b.col + b.w && row >= b.row && row < b.row + b.h) {
+          const dist = Math.abs(this.playerPos.col - b.doorCol) + Math.abs(this.playerPos.row - b.doorRow);
+          if (dist === 0) {
+            this.enterBuilding(b);
+          } else {
+            this.walkToThenEnter(b);
+          }
+          return;
+        }
+      }
+
+      // Single-step toward the tapped position (non-building tile)
       const dc = col - this.playerPos.col;
       const dr = row - this.playerPos.row;
       if (Math.abs(dc) > Math.abs(dr)) {
