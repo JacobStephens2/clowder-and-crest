@@ -6,3 +6,7 @@
 [] I got to out of shots on the slingshot scene, and then I was not redirected or had no option to get out of it other thank clicking menu or something at the bottom, unlike usual when a failed or complete screen appears that you can click through
 [] I want courier run to be a bit longer. I was just about to get another fish, but then time ran out, which was disappointing
 [] add more victory sound effects. The one at the end of mini games gets a little repetitive
+[] ensure the roof scout minigame appears in the day of rest menu for the everything unlocked save
+[] When opening a scene from The day of rest menu, the player should be able to choose to redisplay the tutorial.
+[] for the patrol game, I when I click on the intruders / purple circles, nothing happens, so I can never succeed at the game
+[] when all other claude todo is done, build a new apk and put it in todo
