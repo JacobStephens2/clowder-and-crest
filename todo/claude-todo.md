@@ -1,3 +1,0 @@
-- make the easy patrol scene a bit easier.
-- revise wall jumping in roof scout according to todo/tech/Wall Jump Implementation Guide — RoofScoutScene.ts.md
-- add a way to replay previously played dialogues
