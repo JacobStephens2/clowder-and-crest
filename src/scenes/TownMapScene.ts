@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, ALL_BREED_IDS } from '../utils/constants';
+import { TouchJoystick } from '../ui/touchJoystick';
 import { getGameState, getAcceptedJob } from '../main';
 import { getCurrentPhase } from '../systems/DayTimer';
 
@@ -149,78 +150,18 @@ export class TownMapScene extends Phaser.Scene {
     // Controls
     this.setupControls();
 
-    // Virtual joystick for town movement — *floating* style (same as
-    // ChaseScene). Touch anywhere BELOW the town grid and the joystick
-    // center snaps to your thumb. The fixed-center version made pushing
-    // up awkward because the thumb occluded the town view; floating
-    // means the thumb rests wherever feels natural.
-    this.input.addPointer(1);
-    const JOY_HOME_X = GAME_WIDTH / 2;
-    const JOY_HOME_Y = GAME_HEIGHT - 120;
-    const joyRadius = 36;
-    let joyX = JOY_HOME_X;
-    let joyY = JOY_HOME_Y;
-    const joyBase = this.add.circle(joyX, joyY, joyRadius, 0x2a2520, 0.6).setStrokeStyle(1, 0x6b5b3e);
-    const joyKnob = this.add.circle(joyX, joyY, 14, 0x6b5b3e, 0.8);
-
-    let joyPointerId = -1;
-    let joyMoveTimer: Phaser.Time.TimerEvent | null = null;
-
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      const wx = pointer.worldX;
-      const wy = pointer.worldY;
-      // Floating joystick: touches BELOW the grid relocate the joystick
-      // center to the touch point. Touches inside or above the grid go
-      // to the tap-to-walk handler in setupControls().
-      if (wy > GRID_TOP + GRID_H) {
-        joyX = wx;
-        joyY = wy;
-        joyBase.setPosition(joyX, joyY);
-        joyKnob.setPosition(joyX, joyY);
-        joyPointerId = pointer.id;
-      }
-    });
-
-    this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
-      if (pointer.id === joyPointerId) {
-        joyPointerId = -1;
-        joyX = JOY_HOME_X;
-        joyY = JOY_HOME_Y;
-        joyBase.setPosition(JOY_HOME_X, JOY_HOME_Y);
-        joyKnob.setPosition(JOY_HOME_X, JOY_HOME_Y);
-        joyMoveTimer?.destroy();
-        joyMoveTimer = null;
-      }
-    });
-
-    // Poll joystick in a timer for grid-based movement
-    this.time.addEvent({
-      delay: 16,
-      loop: true,
-      callback: () => {
-        if (joyPointerId < 0) return;
-        const pointers = [this.input.pointer1, this.input.pointer2];
-        for (const p of pointers) {
-          if (p && p.id === joyPointerId && p.isDown) {
-            const dx = p.worldX - joyX;
-            const dy = p.worldY - joyY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            const clampDist = Math.min(dist, joyRadius);
-            if (dist > 8) {
-              joyKnob.setPosition(joyX + (dx / dist) * clampDist, joyY + (dy / dist) * clampDist);
-              // Trigger grid movement if not already moving
-              if (!this.isMoving && !joyMoveTimer) {
-                const mdx = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : -1) : 0;
-                const mdy = Math.abs(dy) >= Math.abs(dx) ? (dy > 0 ? 1 : -1) : 0;
-                this.movePlayer(mdx, mdy);
-                joyMoveTimer = this.time.delayedCall(200, () => { joyMoveTimer = null; });
-              }
-            } else {
-              joyKnob.setPosition(joyX, joyY);
-            }
-            break;
-          }
-        }
+    // Virtual joystick — uses the shared TouchJoystick helper. Hidden
+    // at rest, floating, scaled radial dead zone, brighter active state.
+    // Activates on any touch BELOW the town grid; touches inside the
+    // grid still go to the tap-to-walk handler in setupControls().
+    new TouchJoystick(this, {
+      homeX: GAME_WIDTH / 2,
+      homeY: GAME_HEIGHT - 120,
+      activationMinY: GRID_TOP + GRID_H,
+      cooldownMs: 200,
+      onMoveTick: (mdy, mdx) => {
+        if (this.isMoving) return;
+        this.movePlayer(mdx, mdy);
       },
     });
 

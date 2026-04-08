@@ -6,6 +6,7 @@ import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
 import { haptic } from '../systems/NativeFeatures';
 import { showMinigameTutorial, showSceneOutcomeBanner } from '../ui/sceneHelpers';
+import { TouchJoystick } from '../ui/touchJoystick';
 
 // ── Maze constants ──
 const COLS = 13;
@@ -417,62 +418,33 @@ export class ChaseScene extends Phaser.Scene {
       }
     });
 
-    // Virtual joystick for mobile — *floating* style. Touch anywhere in the
-    // control region (below the maze) and the joystick center snaps to your
-    // thumb. This fixes the "up is hard" complaint: with a fixed-center
-    // bottom-mounted joystick, pushing up requires extending the thumb over
-    // the maze (occluding what you're trying to see) and the 54px touch
-    // capture zone forces the thumb to a specific spot. Floating means the
-    // thumb rests wherever feels natural and the joystick comes to it.
-    this.input.addPointer(1);
-    const JOY_HOME_X = GAME_WIDTH / 2;
-    const JOY_HOME_Y = MAZE_Y + MAZE_H + 70;
-    const joyRadius = 36;
-    let joyX = JOY_HOME_X;
-    let joyY = JOY_HOME_Y;
-    const joyBase = this.add.circle(joyX, joyY, joyRadius, 0x2a2520, 0.6).setStrokeStyle(1, 0x6b5b3e);
-    const joyKnob = this.add.circle(joyX, joyY, 14, 0x6b5b3e, 0.8);
+    // Virtual joystick — uses the shared TouchJoystick helper from
+    // src/ui/touchJoystick.ts (built per todo/tech/Building a Great
+    // Phaser.js Mobile Joystick.md). Floating, hidden-at-rest, with a
+    // scaled radial dead zone and brighter active state. Activates on
+    // any touch BELOW the maze.
+    new TouchJoystick(this, {
+      homeX: GAME_WIDTH / 2,
+      homeY: MAZE_Y + MAZE_H + 70,
+      activationMinY: MAZE_Y + MAZE_H,
+      cooldownMs: 150,
+      onMoveTick: (dr, dc) => {
+        if (this.caught) return;
+        this.moveCat(dr, dc);
+      },
+    });
 
-    // Unified pointer handling — single pointerdown/pointerup pair covers both
-    // the floating joystick and the in-maze swipe gestures. Previously split
-    // into two pairs which is an anti-pattern per phaserjs/examples.
-    let joyPointerId = -1;
-    let joyMoveTimer: Phaser.Time.TimerEvent | null = null;
+    // In-maze swipe gestures — separate from the joystick. Only fires
+    // for touchdowns INSIDE the maze (the joystick handles below-maze).
     let swipeStart: { x: number; y: number } | null = null;
-
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       const wx = pointer.worldX;
       const wy = pointer.worldY;
-      // Floating joystick: any touch BELOW the maze relocates the joystick
-      // center to the touch point and captures the pointer.
-      if (wy > MAZE_Y + MAZE_H) {
-        joyX = wx;
-        joyY = wy;
-        joyBase.setPosition(joyX, joyY);
-        joyKnob.setPosition(joyX, joyY);
-        joyPointerId = pointer.id;
-        return;
-      }
-      // Otherwise, record swipe start if inside the maze
       if (wy >= MAZE_Y && wy <= MAZE_Y + MAZE_H) {
         swipeStart = { x: wx, y: wy };
       }
     });
     this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
-      // Joystick release — snap base and knob back to the resting home position
-      // so the player has a visual hint of where the joystick "lives" between
-      // touches.
-      if (pointer.id === joyPointerId) {
-        joyPointerId = -1;
-        joyX = JOY_HOME_X;
-        joyY = JOY_HOME_Y;
-        joyBase.setPosition(JOY_HOME_X, JOY_HOME_Y);
-        joyKnob.setPosition(JOY_HOME_X, JOY_HOME_Y);
-        joyMoveTimer?.destroy();
-        joyMoveTimer = null;
-        return;
-      }
-      // Swipe release
       if (this.caught || !swipeStart) return;
       const dx = pointer.worldX - swipeStart.x;
       const dy = pointer.worldY - swipeStart.y;
@@ -484,35 +456,6 @@ export class ChaseScene extends Phaser.Scene {
       } else {
         this.moveCat(dy > 0 ? 1 : -1, 0);
       }
-    });
-
-    // Poll joystick for grid-based movement (early-returns when idle)
-    this.time.addEvent({
-      delay: 16, loop: true,
-      callback: () => {
-        if (joyPointerId < 0 || this.caught) return;
-        const pointers = [this.input.pointer1, this.input.pointer2];
-        for (const p of pointers) {
-          if (p && p.id === joyPointerId && p.isDown) {
-            const dx = p.worldX - joyX;
-            const dy = p.worldY - joyY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            const clampDist = Math.min(dist, joyRadius);
-            if (dist > 8) {
-              joyKnob.setPosition(joyX + (dx / dist) * clampDist, joyY + (dy / dist) * clampDist);
-              if (!joyMoveTimer) {
-                const dr = Math.abs(dy) >= Math.abs(dx) ? (dy > 0 ? 1 : -1) : 0;
-                const dc = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : -1) : 0;
-                this.moveCat(dr, dc);
-                joyMoveTimer = this.time.delayedCall(150, () => { joyMoveTimer = null; });
-              }
-            } else {
-              joyKnob.setPosition(joyX, joyY);
-            }
-            break;
-          }
-        }
-      },
     });
 
     // Rat movement timer
