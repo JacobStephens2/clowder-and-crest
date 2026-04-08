@@ -239,6 +239,18 @@ export class RoofScoutScene extends Phaser.Scene {
 
   // Game-feel state
   private lastGroundedTime = -Infinity;
+  /** Most recent timestamp the player was confirmed clinging to a wall.
+   *  Mirrors `lastGroundedTime` for ground coyote — gives the player a
+   *  brief grace window to wall-jump after separating from the wall.
+   *  Per todo/tech/Wall Jump Implementation Guide section 3: "if the
+   *  player clung a moment ago and just separated from the wall, they
+   *  still get a brief grace window to wall-jump." */
+  private lastWallClingTime = -Infinity;
+  /** Which side the player was last clinging to ('left' = wall on the
+   *  cat's left, push them right; 'right' = wall on the right, push
+   *  left). Used so a wall-coyote jump knows which direction to kick
+   *  even though the contact is no longer touching. */
+  private lastWallSide: 'left' | 'right' | null = null;
   private jumpBufferTime = -Infinity;
   private jumpBufferDirection: 'left' | 'right' = 'left';
   private isWallClinging = false;
@@ -661,11 +673,26 @@ export class RoofScoutScene extends Phaser.Scene {
     const touchingLeft = body.blocked.left || body.touching.left;
     const touchingRight = body.blocked.right || body.touching.right;
     this.isWallClinging = (touchingLeft || touchingRight) && !onGround;
+    if (this.isWallClinging) {
+      // Record the cling moment so wall-coyote can fire a wall-jump
+      // for a few frames after the player separates from the wall.
+      // Per the wall-jump implementation guide: "if the player clung
+      // a moment ago and just separated from the wall, they still
+      // get a brief grace window to wall-jump."
+      this.lastWallClingTime = time;
+      this.lastWallSide = touchingLeft ? 'left' : 'right';
+    }
     // Slow the fall only when actually descending — clinging while
     // ascending shouldn't drag the player to a stop.
     if (this.isWallClinging && body.velocity.y > this.wallFallCap) {
       this.player.setVelocityY(this.wallFallCap);
     }
+
+    // Visual cling indicator — flip the player rectangle to a brighter
+    // shade when clinging so the player can see "I'm latched on, I can
+    // jump again." The guide's section 6 calls this out as a future
+    // improvement; doing the simple version now (no sprite atlas yet).
+    this.playerVisual.setFillStyle(this.isWallClinging ? 0xddc878 : 0xc4956a);
 
     // Variable jump height — if the player released the tap while still
     // ascending, cut the upward velocity to ~40% so a quick tap = small
@@ -724,12 +751,17 @@ export class RoofScoutScene extends Phaser.Scene {
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     const onGround = body.blocked.down || body.touching.down;
     const coyoteOk = (this.time.now - this.lastGroundedTime) < COYOTE_MS;
-    const canJump = onGround || coyoteOk || this.isWallClinging;
+    // Wall coyote — same grace window as ground coyote, but for the
+    // moment after separating from a wall. Lets the player wall-jump
+    // even if their input fired one frame too late.
+    const wallCoyoteOk = (this.time.now - this.lastWallClingTime) < COYOTE_MS;
+    const canJump = onGround || coyoteOk || this.isWallClinging || wallCoyoteOk;
 
     if (canJump) {
       this.doJump(direction);
-      // Consume coyote so a single jump can't fire twice off one ledge
+      // Consume both coyote windows so a single jump can't fire twice
       this.lastGroundedTime = -Infinity;
+      this.lastWallClingTime = -Infinity;
     } else {
       // Buffer the input — fires automatically on the next ground touch
       this.jumpBufferTime = this.time.now;
@@ -743,13 +775,22 @@ export class RoofScoutScene extends Phaser.Scene {
     const wallRight = body.blocked.right || body.touching.right;
     const onGround = body.blocked.down || body.touching.down;
 
-    if (!onGround && this.isWallClinging) {
-      // Wall jump — kick away from the wall regardless of tap side so
-      // the player doesn't have to tap "the right side" while reaching.
-      const pushDir = wallRight ? -1 : wallLeft ? 1 : (direction === 'left' ? -1 : 1);
+    // Wall-jump branch fires when the player is currently clinging OR
+    // when wall coyote is active (recently separated from a wall).
+    // The wall-coyote case may have no current contact, so we use the
+    // remembered lastWallSide to decide which direction to kick.
+    const wallCoyoteActive = (this.time.now - this.lastWallClingTime) < COYOTE_MS;
+    if (!onGround && (this.isWallClinging || wallCoyoteActive)) {
+      // Determine which side the wall is on. Prefer current contact;
+      // fall back to lastWallSide for the wall-coyote case.
+      const wallOnRight = wallRight || this.lastWallSide === 'right';
+      const wallOnLeft = wallLeft || this.lastWallSide === 'left';
+      const pushDir = wallOnRight ? -1 : wallOnLeft ? 1 : (direction === 'left' ? -1 : 1);
       this.player.setVelocityY(this.jumpVelocity);
       this.player.setVelocityX(pushDir * WALL_KICK_X);
       this.isWallClinging = false;
+      this.lastWallClingTime = -Infinity;
+      this.lastWallSide = null;
       // Wall-jump is a relatively rare moment so it gets a soft tactile
       // sound. Volume dropped from 0.25 → 0.08 per user feedback.
       playSfx('block_slide', 0.08);
