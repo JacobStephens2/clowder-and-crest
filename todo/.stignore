@@ -16,6 +16,8 @@
 // Allow the curated subdirectories that actually belong here
 !/archive
 !/archive/**
+!/game
+!/game/**
 !/ideas
 !/ideas/**
 !/dialogue-full-screen-style-inspiration
