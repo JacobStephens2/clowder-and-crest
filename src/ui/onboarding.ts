@@ -204,10 +204,20 @@ export function showTutorial(): void {
     if (step.highlight) {
       const el = document.getElementById(step.highlight) ?? document.querySelector(step.highlight);
       if (el) {
+        // Snapshot the inline position/zIndex BEFORE we touch them so
+        // we can restore exactly what was there. The previous version
+        // forced `position: relative` (so the z-index would take effect)
+        // but only restored `zIndex` afterwards, leaving `#bottom-bar`
+        // permanently `position: relative` instead of `fixed`. After the
+        // tutorial finished, the nav bar fell into document flow at the
+        // top of the overlay layer and required a reload to recover.
+        const prevPosition = (el as HTMLElement).style.position;
+        const prevZIndex = (el as HTMLElement).style.zIndex;
         (el as HTMLElement).style.position = 'relative';
         (el as HTMLElement).style.zIndex = '9998';
         setTimeout(() => {
-          (el as HTMLElement).style.zIndex = '';
+          (el as HTMLElement).style.position = prevPosition;
+          (el as HTMLElement).style.zIndex = prevZIndex;
         }, 5000);
       }
     }
