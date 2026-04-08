@@ -57,14 +57,31 @@ interface MinigameDef {
   needsBreed?: boolean;
 }
 
-/** All 14 minigames, ordered roughly by chapter introduction so the panel
- *  reads as a chronological "memory shelf". */
+/** All 15 minigames, ordered by the chapter that first unlocks them in
+ *  the campaign (ties broken by the order they appear in the job choice
+ *  picker). The Day of Rest panel renders this list top-to-bottom so
+ *  the player's "memory shelf" reads as a chronological campaign
+ *  history — earliest jobs first, late-game minigames last.
+ *
+ *  Per user feedback (2026-04-08): "put the games / scenes in the day
+ *  of rest list in the order they are unlocked in the game."
+ *
+ *  Unlock chapters (cross-reference src/ui/jobFlow.ts):
+ *    Ch.1 — chase, hunt
+ *    Ch.2 — courier_run, sokoban
+ *    Ch.3 — roof_scout, patrol, brawl
+ *    Ch.4 — ritual, nonogram, scent_trail
+ *    Ch.5 — fishing, puzzle (Rush Hour)
+ *    Ch.6 — pounce, heist
+ *    Ch.7 — stealth
+ */
 const MINIGAMES: MinigameDef[] = [
+  // ── Chapter 1 ──
   {
-    title: 'Rush Hour',
-    tagline: 'Slide blocks. Find the only way out.',
-    sceneKey: 'PuzzleScene',
-    unlockedBy: { test: (ks) => ks.some((k) => /^(easy|medium|hard)_\d+$/.test(k)) },
+    title: 'The Chase',
+    tagline: 'Eat all the dots before the dogs find you.',
+    sceneKey: 'ChaseScene',
+    unlockedBy: { prefix: 'chase_' },
     difficulties: ['easy', 'medium', 'hard'],
   },
   {
@@ -75,20 +92,7 @@ const MINIGAMES: MinigameDef[] = [
     difficulties: ['easy', 'medium', 'hard'],
     needsBreed: true,
   },
-  {
-    title: 'The Chase',
-    tagline: 'Eat all the dots before the dogs find you.',
-    sceneKey: 'ChaseScene',
-    unlockedBy: { prefix: 'chase_' },
-    difficulties: ['easy', 'medium', 'hard'],
-  },
-  {
-    title: 'Fishing',
-    tagline: 'Approach. Wait for the bite. Reel.',
-    sceneKey: 'FishingScene',
-    unlockedBy: { prefix: 'fishing_' },
-    difficulties: ['easy', 'medium', 'hard'],
-  },
+  // ── Chapter 2 ──
   {
     title: 'Courier Run',
     tagline: 'Three lanes. Don\u2019t drop the parcel.',
@@ -104,34 +108,12 @@ const MINIGAMES: MinigameDef[] = [
     unlockedBy: { prefix: 'sokoban_' },
     difficulties: ['easy', 'medium', 'hard'],
   },
+  // ── Chapter 3 ──
   {
-    title: 'Picross',
-    tagline: 'Read the runes. Mark the cells.',
-    sceneKey: 'NonogramScene',
-    unlockedBy: { prefix: 'nonogram_' },
-    difficulties: ['easy', 'medium', 'hard'],
-  },
-  {
-    title: 'Stealth',
-    tagline: 'Stay low. Stay in the grass. Stay unseen.',
-    sceneKey: 'StealthScene',
-    unlockedBy: { prefix: 'stealth_' },
-    difficulties: ['easy', 'medium', 'hard'],
-    needsBreed: true,
-  },
-  {
-    title: 'Pounce',
-    tagline: 'Slingshot. Wood, stone, glass.',
-    sceneKey: 'PounceScene',
-    unlockedBy: { prefix: 'pounce_' },
-    difficulties: ['easy', 'medium', 'hard'],
-    needsBreed: true,
-  },
-  {
-    title: 'Brawl',
-    tagline: 'Read the windup. Strike the gap.',
-    sceneKey: 'BrawlScene',
-    unlockedBy: { prefix: 'brawl_' },
+    title: 'Roof Scout',
+    tagline: 'Climb to the watchpoint. Don\u2019t look down.',
+    sceneKey: 'RoofScoutScene',
+    unlockedBy: { prefix: 'roof_scout_' },
     difficulties: ['easy', 'medium', 'hard'],
     needsBreed: true,
   },
@@ -143,10 +125,26 @@ const MINIGAMES: MinigameDef[] = [
     difficulties: ['easy', 'medium', 'hard'],
   },
   {
+    title: 'Brawl',
+    tagline: 'Read the windup. Strike the gap.',
+    sceneKey: 'BrawlScene',
+    unlockedBy: { prefix: 'brawl_' },
+    difficulties: ['easy', 'medium', 'hard'],
+    needsBreed: true,
+  },
+  // ── Chapter 4 ──
+  {
     title: 'Sacred Rite',
     tagline: 'Light the candles in the right order.',
     sceneKey: 'RitualScene',
     unlockedBy: { prefix: 'ritual_' },
+    difficulties: ['easy', 'medium', 'hard'],
+  },
+  {
+    title: 'Picross',
+    tagline: 'Read the runes. Mark the cells.',
+    sceneKey: 'NonogramScene',
+    unlockedBy: { prefix: 'nonogram_' },
     difficulties: ['easy', 'medium', 'hard'],
   },
   {
@@ -156,6 +154,30 @@ const MINIGAMES: MinigameDef[] = [
     unlockedBy: { prefix: 'scent_' },
     difficulties: ['easy', 'medium', 'hard'],
   },
+  // ── Chapter 5 ──
+  {
+    title: 'Fishing',
+    tagline: 'Approach. Wait for the bite. Reel.',
+    sceneKey: 'FishingScene',
+    unlockedBy: { prefix: 'fishing_' },
+    difficulties: ['easy', 'medium', 'hard'],
+  },
+  {
+    title: 'Rush Hour',
+    tagline: 'Slide blocks. Find the only way out.',
+    sceneKey: 'PuzzleScene',
+    unlockedBy: { test: (ks) => ks.some((k) => /^(easy|medium|hard)_\d+$/.test(k)) },
+    difficulties: ['easy', 'medium', 'hard'],
+  },
+  // ── Chapter 6 ──
+  {
+    title: 'Pounce',
+    tagline: 'Slingshot. Wood, stone, glass.',
+    sceneKey: 'PounceScene',
+    unlockedBy: { prefix: 'pounce_' },
+    difficulties: ['easy', 'medium', 'hard'],
+    needsBreed: true,
+  },
   {
     title: 'Heist',
     tagline: 'Feel each ring set into place.',
@@ -163,11 +185,12 @@ const MINIGAMES: MinigameDef[] = [
     unlockedBy: { prefix: 'heist_' },
     difficulties: ['easy', 'medium', 'hard'],
   },
+  // ── Chapter 7 ──
   {
-    title: 'Roof Scout',
-    tagline: 'Climb to the watchpoint. Don\u2019t look down.',
-    sceneKey: 'RoofScoutScene',
-    unlockedBy: { prefix: 'roof_scout_' },
+    title: 'Stealth',
+    tagline: 'Stay low. Stay in the grass. Stay unseen.',
+    sceneKey: 'StealthScene',
+    unlockedBy: { prefix: 'stealth_' },
     difficulties: ['easy', 'medium', 'hard'],
     needsBreed: true,
   },
