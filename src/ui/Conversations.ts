@@ -85,6 +85,7 @@ export function checkAndShowConversation(): void {
   if (gameState.cats.length >= 3) {
     const convos = conversationsData as Record<string, any[]>;
     const groupKeys = Object.keys(convos).filter((k) => k.startsWith('group_'));
+    const ownedBreeds = new Set(gameState.cats.map((c) => c.breed));
     for (const key of groupKeys) {
       const viewedKey = `viewed_${key}`;
       if (!gameState.flags[viewedKey]) {
@@ -97,6 +98,24 @@ export function checkAndShowConversation(): void {
           (key === 'group_rival_defeated' && gameState.flags.rivalDefeated) ||
           (key === 'group_inquisition_verdict' && gameState.flags.inquisitionResolved);
         if (shouldTrigger) {
+          // Don't fire a group conversation whose dialogue includes a
+          // speaker the player hasn't recruited yet — the user reported
+          // the Maine Coon appearing in a group scene before they had
+          // a Maine Coon in the guild, which felt off ("the Coon spoke
+          // like it was part of the guild"). Derive required speakers
+          // from the conversation lines and skip if any are missing.
+          // The conversation will retry on a future check once all
+          // participants have been recruited.
+          const convoSet = convos[key];
+          const firstConvo = convoSet?.[0];
+          const requiredSpeakers = new Set<string>(
+            ((firstConvo?.lines ?? []) as Array<{ speaker: string }>)
+              .map((l) => l.speaker)
+              .filter((b) => !!b && b !== 'narrator'),
+          );
+          const allSpeakersPresent = Array.from(requiredSpeakers).every((b) => ownedBreeds.has(b));
+          if (!allSpeakersPresent) continue;
+
           gameState.flags[viewedKey] = true;
           deps.saveGame(gameState);
           showGroupConversation(key);
@@ -130,10 +149,15 @@ function showGroupConversation(key: string): void {
   const overlay = document.createElement('div');
   overlay.className = 'conversation-overlay';
 
-  const portraitsHtml = gameState.cats.slice(0, 5).map((cat) => {
+  // Use the illustrated portrait at thumbnail size (with pixel-sprite
+  // fallback per the same setPortrait pattern as pair dialogues) so
+  // group scenes feel consistent with the rest of the dialogue system
+  // shipped in v2.3.0. The portraits are loaded with onerror fallback
+  // imperatively below so each img can swap independently.
+  const portraitsHtml = gameState.cats.slice(0, 5).map((cat, i) => {
     const color = BREED_COLORS[cat.breed] ?? '#8b7355';
     return `<div class="conversation-portrait" style="background:${color};width:60px;height:60px">
-      <img src="assets/sprites/${cat.breed}/south.png" style="width:48px;height:48px;image-rendering:pixelated" />
+      <img id="group-portrait-${i}" data-breed="${cat.breed}" src="assets/sprites/portraits/${cat.breed}_neutral.png" style="width:56px;height:56px;object-fit:cover;border-radius:4px" alt="" />
       <div style="font-size:8px;margin-top:2px">${esc(cat.name)}</div>
     </div>`;
   }).join('');
@@ -150,6 +174,24 @@ function showGroupConversation(key: string): void {
     </div>
   `;
   deps.overlayLayer.appendChild(overlay);
+
+  // Wire up the per-portrait fallback: if the illustrated portrait
+  // doesn't exist on disk, fall back to the pixel sprite at the same
+  // size with pixelated rendering. Mirrors the per-line setPortrait
+  // fallback in showConversation for pair dialogues.
+  gameState.cats.slice(0, 5).forEach((cat, i) => {
+    const img = document.getElementById(`group-portrait-${i}`) as HTMLImageElement | null;
+    if (!img) return;
+    img.addEventListener('error', () => {
+      if (img.dataset.fallbackTried) return;
+      img.dataset.fallbackTried = '1';
+      img.src = `assets/sprites/${cat.breed}/south.png`;
+      img.style.imageRendering = 'pixelated';
+      img.style.objectFit = 'contain';
+      img.style.width = '48px';
+      img.style.height = '48px';
+    });
+  });
 
   const speaker = document.getElementById('conv-speaker')!;
   const text = document.getElementById('conv-text')!;
