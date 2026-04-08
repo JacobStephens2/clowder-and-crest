@@ -40,6 +40,10 @@ interface JobFlowDeps {
   switchToFightMusic: () => void;
   switchToPuzzleMusic: () => void;
   switchToNormalMusic: () => void;
+  /** Switch to a per-scene track set (e.g. 'chase', 'hunt', 'sokoban').
+   *  See MusicManager.TRACK_SETS for valid names. New code should use
+   *  this instead of the legacy 3-mode functions. */
+  switchToTrackset: (setName: string) => void;
   playSfx: (key: string, volume?: number) => void;
   trackEvent: (event: string, detail?: Record<string, unknown>) => void;
   addJournalEntry: (save: SaveData, text: string, type: 'chapter' | 'recruit' | 'level' | 'bond' | 'event' | 'specialization' | 'reputation') => void;
@@ -235,8 +239,10 @@ export function showChoiceOverlay(job: JobDef, catIndex: number): void {
   const startMinigame = (gameType: string) => {
     overlay.remove();
     deps.overlayLayer.querySelectorAll('.town-overlay, .assign-overlay').forEach((el) => el.remove());
-    if (gameType === 'brawl') deps.switchToFightMusic();
-    else deps.switchToPuzzleMusic();
+    // Each minigame has its own dedicated track in the shared-leitmotif
+    // music set. The gameType string ('chase', 'hunt', 'sokoban', etc.)
+    // matches the track-set name in MusicManager directly.
+    deps.switchToTrackset(gameType);
     deps.pauseDayTimer();
 
     switch (gameType) {

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { hasSave, loadGame, saveGame, getSlotSummary, loadFromSlot, saveToSlot, deleteSlot, pruneExpiredBackups, getRecentBackup, restoreBackup } from '../systems/SaveManager';
+import { switchToTrackset } from '../systems/MusicManager';
 import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { esc } from '../utils/helpers';
@@ -32,6 +33,11 @@ export class TitleScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#1c1b19');
     this.cameras.main.setZoom(DPR);
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
+
+    // Switch to the title screen's dedicated trackset (Title Screen 1/2 —
+    // "Guild Motif"). The shared-leitmotif music identifies the title
+    // screen as a distinct moment from the gameplay ambient pool.
+    switchToTrackset('title');
 
     // Rain particles (subtle lines falling). Animated in update() — using
     // events.on('update') leaks listeners past scene shutdown.
