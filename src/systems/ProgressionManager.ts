@@ -15,6 +15,8 @@ export function checkChapterAdvance(save: SaveData): boolean {
   if (catCount >= next.cats && jobCount >= next.jobs && fishTotal >= next.fish) {
     // Chapter 4 requires surviving the plague
     if (next.chapter === 4 && !save.flags.ratPlagueResolved) return false;
+    // Chapter 5 requires surviving the Long Winter (the structural fall — see story-audit-council.md)
+    if (next.chapter === 5 && !save.flags.longWinterResolved) return false;
     // Chapter 7 requires rival defeated
     if (next.chapter === 7 && !save.flags.rivalDefeated) return false;
 
@@ -25,6 +27,10 @@ export function checkChapterAdvance(save: SaveData): boolean {
     if (save.chapter === 3) {
       save.flags.ratPlagueStarted = true;
       eventBus.emit('rat-plague-start');
+    }
+    if (save.chapter === 4) {
+      // Stamp the start day so checkLongWinterStart knows when to fire.
+      save.flags.chapter4StartDay = save.day;
     }
     if (save.chapter === 7) {
       save.flags.inquisitionStarted = true;
@@ -38,6 +44,73 @@ export function checkChapterAdvance(save: SaveData): boolean {
     return true;
   }
   return false;
+}
+
+// ──── Long Winter ────
+//
+// The structural fall stage that the rags-to-riches arc was missing
+// (see todo/story/story-audit-council.md). Fires automatically once the
+// guild has been settled in chapter 4 for ~5 days, runs for 5 winter days,
+// and must resolve before the player can advance to chapter 5.
+//
+// The winter is non-conditional — every player encounters it regardless of
+// reputation path. The point is that "Established" (chapter 5) is earned by
+// surviving a forced loss-and-recovery, not by accumulating jobs.
+
+const LONG_WINTER_TRIGGER_DAYS = 5; // Days after chapter 4 starts before winter hits
+const LONG_WINTER_DURATION = 5;     // Days the winter lasts
+const LONG_WINTER_FORCED_CHOICE_DAY = 3; // Winter day on which the granary choice fires
+const LONG_WINTER_RELATIONAL_DAY = 4;    // Winter day on which a cat almost leaves
+
+export function checkLongWinterStart(save: SaveData): boolean {
+  if (save.chapter !== 4) return false;
+  if (save.flags.longWinterStarted) return false;
+  if (save.flags.longWinterResolved) return false;
+
+  // Need a chapter-4-start day to count from. The chapter-advance handler
+  // sets this; if missing on an old save, set it now and bail.
+  const chapter4Start = Number(save.flags.chapter4StartDay ?? 0);
+  if (!chapter4Start) {
+    save.flags.chapter4StartDay = save.day;
+    return false;
+  }
+
+  if (save.day - chapter4Start >= LONG_WINTER_TRIGGER_DAYS) {
+    save.flags.longWinterStarted = true;
+    save.flags.longWinterDayStarted = save.day;
+    eventBus.emit('long-winter-start');
+    return true;
+  }
+  return false;
+}
+
+export function checkLongWinterResolution(save: SaveData): boolean {
+  if (!save.flags.longWinterStarted || save.flags.longWinterResolved) return false;
+
+  const winterStart = Number(save.flags.longWinterDayStarted ?? save.day);
+  const winterDays = save.day - winterStart;
+
+  if (winterDays >= LONG_WINTER_DURATION) {
+    save.flags.longWinterResolved = true;
+    eventBus.emit('long-winter-resolved');
+    return true;
+  }
+  return false;
+}
+
+/** Returns 0 if no winter active, otherwise the current winter day (1-indexed). */
+export function getLongWinterDay(save: SaveData): number {
+  if (!save.flags.longWinterStarted || save.flags.longWinterResolved) return 0;
+  const winterStart = Number(save.flags.longWinterDayStarted ?? save.day);
+  return Math.max(1, save.day - winterStart + 1);
+}
+
+export function isLongWinterForcedChoiceDay(save: SaveData): boolean {
+  return getLongWinterDay(save) === LONG_WINTER_FORCED_CHOICE_DAY && !save.flags.longWinterChoiceMade;
+}
+
+export function isLongWinterRelationalDay(save: SaveData): boolean {
+  return getLongWinterDay(save) === LONG_WINTER_RELATIONAL_DAY && !save.flags.longWinterRelationalDone;
 }
 
 export function checkRatPlagueResolution(save: SaveData): boolean {
@@ -78,6 +151,7 @@ export function getNextChapterHint(save: SaveData): string | null {
   if (save.totalJobsCompleted < next.jobs) needs.push(`${next.jobs} jobs done (have ${save.totalJobsCompleted})`);
   if (save.totalFishEarned < next.fish) needs.push(`${next.fish} total fish earned (have ${save.totalFishEarned})`);
   if (next.chapter === 4 && !save.flags.ratPlagueResolved) needs.push('resolve the Rat Plague');
+  if (next.chapter === 5 && !save.flags.longWinterResolved) needs.push('survive the Long Winter');
   if (next.chapter === 7 && !save.flags.rivalDefeated) needs.push('defeat the Silver Paws');
 
   if (needs.length === 0) return 'Chapter advancing soon...';
@@ -90,7 +164,7 @@ export function getChapterDescription(chapter: number): string {
     case 2: return 'The guild grows. New cats join, new jobs appear.';
     case 3: return 'A great plague of rats descends on the town. The guild must prove its worth.';
     case 4: return 'The town recognizes the guild. A naming ceremony awaits.';
-    case 5: return 'The guild is established, renowned, and home.';
+    case 5: return 'The guild has weathered its first winter and stands renowned. Home, at last.';
     case 6: return 'A rival guild, the Silver Paws, challenges your dominance.';
     case 7: return 'The Bishop sends an Inquisitor. Are these cats holy servants — or something darker?';
     default: return '';

@@ -28,7 +28,7 @@ const progressionModule = await import('../src/systems/ProgressionManager.ts');
 
 const { createDefaultSave, loadFromSlot, loadGame, validateAndSanitizeSave, deleteSlot, getRecentBackup, restoreBackup, pruneExpiredBackups, saveToSlot } = saveModule;
 const { generateDailyJobs, getAllJobs, getStatMatchScore } = jobBoardModule;
-const { checkChapterAdvance } = progressionModule;
+const { checkChapterAdvance, checkLongWinterStart, checkLongWinterResolution, getLongWinterDay } = progressionModule;
 
 function testSaveMigrationNormalizesTraits() {
   localStorageMock.clear();
@@ -202,6 +202,89 @@ function testPruneExpiredBackupsRemovesOldOnes() {
   assert.ok(localStorage.getItem(`clowder_save_slot_1.bak.${recentTs}`), 'recent backup should remain');
 }
 
+// ──── Long Winter regression tests ────
+//
+// The Long Winter is the structural fall added per story-audit-council.md.
+// These tests pin the trigger window, the chapter 5 gate, and the resolution
+// timing so future refactors don't accidentally break the rags-to-riches arc.
+
+function makeChapter4Save() {
+  const save = createDefaultSave('Winter-Test');
+  save.chapter = 4;
+  save.totalJobsCompleted = 30;
+  save.cats.push({ ...save.cats[0], id: 'cat_2', isPlayer: false, breed: 'tuxedo', name: 'Tux' });
+  save.cats.push({ ...save.cats[0], id: 'cat_3', isPlayer: false, breed: 'maine_coon', name: 'Maine' });
+  save.cats.push({ ...save.cats[0], id: 'cat_4', isPlayer: false, breed: 'siamese', name: 'Sia' });
+  save.cats.push({ ...save.cats[0], id: 'cat_5', isPlayer: false, breed: 'bengal', name: 'Ben' });
+  return save;
+}
+
+function testLongWinterFiresAfterChapter4Settles() {
+  const save = makeChapter4Save();
+  save.day = 20;
+  // First check stamps the start day; winter shouldn't fire immediately.
+  let started = checkLongWinterStart(save);
+  assert.equal(started, false, 'first check should only stamp chapter4StartDay');
+  assert.equal(save.flags.chapter4StartDay, 20);
+  assert.equal(save.flags.longWinterStarted, undefined);
+  // Same day repeat: still doesn't fire.
+  started = checkLongWinterStart(save);
+  assert.equal(started, false);
+  // Advance 4 days — still below the 5-day threshold.
+  save.day = 24;
+  assert.equal(checkLongWinterStart(save), false, 'winter should not fire on day 24 (4 days after chapter 4)');
+  // Day 25 = 5 days after chapter 4 start — winter triggers.
+  save.day = 25;
+  assert.equal(checkLongWinterStart(save), true, 'winter should fire on day 25 (5 days after chapter 4)');
+  assert.equal(save.flags.longWinterStarted, true);
+  assert.equal(save.flags.longWinterDayStarted, 25);
+}
+
+function testLongWinterBlocksChapter5Advance() {
+  const save = makeChapter4Save();
+  // Meet all chapter 5 numerics.
+  save.totalJobsCompleted = 30;
+  save.totalFishEarned = 500;
+  save.cats.push({ ...save.cats[0], id: 'cat_6', isPlayer: false, breed: 'russian_blue', name: 'Blue' });
+  save.flags.ratPlagueResolved = true;
+  // Without the winter being resolved, advance must fail.
+  save.flags.longWinterResolved = false;
+  assert.equal(checkChapterAdvance(save), false, 'chapter 5 should be locked until the Long Winter resolves');
+  // Once resolved, advance succeeds.
+  save.flags.longWinterResolved = true;
+  assert.equal(checkChapterAdvance(save), true, 'chapter 5 should unlock once the Long Winter resolves');
+  assert.equal(save.chapter, 5);
+}
+
+function testLongWinterResolvesAfterFiveDays() {
+  const save = makeChapter4Save();
+  save.flags.longWinterStarted = true;
+  save.flags.longWinterDayStarted = 30;
+  // Day 4 of winter — too early to resolve.
+  save.day = 34;
+  assert.equal(checkLongWinterResolution(save), false, 'winter should not resolve before day 5');
+  assert.equal(save.flags.longWinterResolved, undefined);
+  // Day 5 of winter — resolves.
+  save.day = 35;
+  assert.equal(checkLongWinterResolution(save), true, 'winter should resolve on day 5');
+  assert.equal(save.flags.longWinterResolved, true);
+}
+
+function testGetLongWinterDayReturnsZeroWhenNotActive() {
+  const save = createDefaultSave('Winter-Test');
+  // Not started — day 0.
+  assert.equal(getLongWinterDay(save), 0);
+  // Started but already resolved — day 0.
+  save.flags.longWinterStarted = true;
+  save.flags.longWinterResolved = true;
+  assert.equal(getLongWinterDay(save), 0);
+  // Active and counting.
+  save.flags.longWinterResolved = false;
+  save.flags.longWinterDayStarted = 30;
+  save.day = 32;
+  assert.equal(getLongWinterDay(save), 3, 'day 32 - day 30 + 1 = winter day 3');
+}
+
 function testMigrationStampsCurrentVersion() {
   const v1Save = { ...createDefaultSave('Version-Test'), version: 1 };
   delete (v1Save as any).dungeonHistory; // simulate v1 schema (no dungeonHistory)
@@ -229,5 +312,9 @@ testSaveBackupOnDelete();
 testSaveBackupRestore();
 testPruneExpiredBackupsRemovesOldOnes();
 testMigrationStampsCurrentVersion();
+testLongWinterFiresAfterChapter4Settles();
+testLongWinterBlocksChapter5Advance();
+testLongWinterResolvesAfterFiveDays();
+testGetLongWinterDayReturnsZeroWhenNotActive();
 
 console.log('Logic regression tests passed.');
