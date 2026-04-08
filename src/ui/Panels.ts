@@ -78,9 +78,14 @@ export function showCatPanel(): void {
     const stationedJob = stationed ? getJob(stationed.jobId) : undefined;
 
     const spriteExists = (ALL_BREED_IDS as readonly string[]).includes(cat.breed);
-    const avatarHtml = spriteExists
-      ? `<img src="assets/sprites/${cat.breed}/south.png" style="width:40px;height:40px;image-rendering:pixelated;border-radius:50%;background:${color}" />`
+    // Wrap the avatar in a tappable button so the player can pull up
+    // the high-res neutral portrait. Per user feedback (2026-04-08):
+    // "in the cat menu, if a player clicks a cat, show the neutral
+    // portrait of that cat."
+    const avatarInner = spriteExists
+      ? `<img src="assets/sprites/${cat.breed}/south.png" style="width:40px;height:40px;image-rendering:pixelated;border-radius:50%;background:${color};display:block" />`
       : `<div class="cat-avatar" style="background:${color}"></div>`;
+    const avatarHtml = `<button class="cat-portrait-btn" data-cat-id="${cat.id}" title="View portrait" style="background:none;border:none;padding:0;cursor:pointer">${avatarInner}</button>`;
 
     html += `<div class="cat-card">
       <div class="cat-card-header">
@@ -161,6 +166,16 @@ export function showCatPanel(): void {
     });
   });
 
+  panel.querySelectorAll('.cat-portrait-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const catId = btn.getAttribute('data-cat-id')!;
+      const cat = gameState!.cats.find((c) => c.id === catId);
+      if (!cat) return;
+      showCatPortraitPopup(cat);
+    });
+  });
+
   panel.querySelectorAll('.recall-btn').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -206,6 +221,46 @@ export function showCatPanel(): void {
         deps.showToast(toastMessage);
       }
     });
+  });
+}
+
+// ──── Cat Portrait Popup ────
+//
+// Per user feedback (2026-04-08): "in the cat menu, if a player
+// clicks a cat, show the neutral portrait of that cat." Tapping a
+// cat's avatar in the cats panel pops up the high-res illustrated
+// portrait (the same asset used by the dialogue scenes) over a dim
+// backdrop. The wildcat picks the female variant when the player
+// chose she/her at character creation, mirroring the dispatch logic
+// in Conversations.portraitSrc.
+
+function showCatPortraitPopup(cat: SaveData['cats'][number]): void {
+  const gameState = deps.getGameState();
+  // Pick the gendered wildcat portrait when applicable
+  let portraitFile = `${cat.breed}_neutral.png`;
+  if (cat.breed === 'wildcat' && gameState?.playerCatGender === 'female') {
+    portraitFile = 'wildcat_female_neutral.png';
+  }
+  const breedName = BREED_NAMES[cat.breed] ?? cat.breed;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'cat-portrait-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,9,8,0.85);z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:20px';
+
+  overlay.innerHTML = `
+    <div style="position:relative;max-width:320px;background:#1a1612;border:2px solid #6b5b3e;border-radius:8px;padding:14px;display:flex;flex-direction:column;align-items:center">
+      <button id="cat-portrait-close" style="position:absolute;top:6px;right:8px;background:none;border:none;color:#8b7355;font-size:20px;line-height:1;cursor:pointer;font-family:Georgia,serif">&times;</button>
+      <img src="assets/sprites/portraits/${portraitFile}" alt="" style="width:100%;max-width:280px;height:auto;border-radius:4px;display:block" onerror="this.onerror=null;this.src='assets/sprites/${cat.breed}/south.png';this.style.imageRendering='pixelated';this.style.width='160px';this.style.height='160px'" />
+      <div style="margin-top:10px;color:#c4956a;font-family:Georgia,serif;font-size:18px;text-align:center">${esc(cat.name)}</div>
+      <div style="color:#8b7355;font-family:Georgia,serif;font-size:12px;text-align:center">${esc(breedName)} \u2022 Lv.${cat.level} \u2022 ${esc(cat.mood)}</div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  overlay.addEventListener('click', close);
+  document.getElementById('cat-portrait-close')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    close();
   });
 }
 
