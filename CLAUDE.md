@@ -56,7 +56,7 @@ src/
 │   ├── BondSystem.ts        # All 15 breed pair bonds, rank tracking, conversation triggers
 │   ├── ProgressionManager.ts # 7-chapter gates, progression hints, rat plague, inquisition
 │   ├── MusicManager.ts      # 14 tracks (10 ambient + 2 puzzle + 2 fight), 3 modes, fade transitions
-│   ├── DayTimer.ts          # 3-minute days, phase display, pause support
+│   ├── DayTimer.ts          # 5-minute days, phase display, pause support
 │   ├── SfxManager.ts        # 22 sound effects with audio pooling for concurrent playback
 │   ├── ReputationSystem.ts  # Crest/Shadow scoring, recruit cost modifiers, tier bonuses
 │   ├── GameSystems.ts       # Combos, daily wishes, festivals, analytics
