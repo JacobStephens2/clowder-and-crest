@@ -106,6 +106,32 @@ const game = new Phaser.Game(config);
 
 // ──── OTA Updates (Capacitor only, silent) ────
 
+// ──── Service Worker (web only) ────
+// Register the offline cache SW so the web build works offline after
+// the first visit (matching the Capacitor APK's offline capability)
+// and gives players an "Add to Home Screen" PWA install prompt.
+//
+// The SW lives at /sw.js (public/sw.js, copied to dist by Vite). It
+// pre-caches the app shell on install and uses a network-first strategy
+// for HTML + cache-first for static assets so updates land immediately
+// while still working offline.
+//
+// Skipped on Capacitor (the APK already bundles all assets) and skipped
+// in Vite dev (where the source files change constantly and a SW would
+// serve stale code). Detect dev by the dev server's port; production
+// builds at clowderandcrest.com don't have an explicit port in the URL.
+{
+  const isCapacitor = !!(window as any).Capacitor?.isNativePlatform?.();
+  const isViteDev = window.location.port === '3200';
+  if ('serviceWorker' in navigator && !isCapacitor && !isViteDev) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch((err) => {
+        console.warn('Service worker registration failed:', err);
+      });
+    });
+  }
+}
+
 // ──── Native (Capacitor) ────
 // Status bar styling, notification permission warm-up, and lifecycle hooks
 // that pause the day timer + music when Android backgrounds the app.

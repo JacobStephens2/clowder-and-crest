@@ -873,3 +873,202 @@ html, body {
 .btn-station:active {
   background: #3a4a3a;
 }
+
+/* ────────────────────────────────────────────────────────────────────
+   UI juice — transitions, hover/press feedback, panel entry animations
+   ────────────────────────────────────────────────────────────────────
+   The Phaser canvas has tight game-feel (haptics, hit-stops, particle
+   bursts, screen flash). The HTML overlays were static by comparison.
+   This section unifies the feel by adding subtle transforms and fades
+   to every interactive element.
+
+   Design principles:
+   - All transitions are 120-180ms (perceptible but not sluggish)
+   - Hover scale is 1.02 (felt, not seen)
+   - Active scale is 0.97 (the press read)
+   - Panel entry is fade + 8px slide-up (lighter than a full bounce)
+   - Respects prefers-reduced-motion for accessibility
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Universal interactive transitions for the buttons + cards we already have */
+.nav-btn,
+.menu-btn,
+.panel-close,
+.slot-btn,
+.shop-item,
+.cat-card,
+.rename-btn,
+.recall-btn,
+.btn-puzzle,
+.btn-auto,
+.btn-station,
+.assign-overlay button,
+.name-prompt-overlay button {
+  transition:
+    transform 0.12s ease-out,
+    background 0.15s ease-out,
+    color 0.15s ease-out,
+    border-color 0.15s ease-out,
+    box-shadow 0.15s ease-out;
+  transform-origin: center;
+  will-change: transform;
+}
+
+/* Hover lift on devices that actually have hover (skips touch devices
+   so we don't trap a stuck-hover state on tap) */
+@media (hover: hover) {
+  .nav-btn:hover,
+  .menu-btn:hover,
+  .slot-btn:hover,
+  .shop-item:hover,
+  .cat-card:hover,
+  .rename-btn:hover,
+  .recall-btn:hover,
+  .btn-puzzle:hover,
+  .btn-auto:hover,
+  .btn-station:hover,
+  .assign-overlay button:hover,
+  .name-prompt-overlay button:hover {
+    transform: scale(1.02);
+  }
+
+  .menu-btn:hover,
+  .slot-btn:hover {
+    box-shadow: 0 2px 8px rgba(196, 149, 106, 0.15);
+  }
+}
+
+/* Press feedback — applies on touch and click. The :active state
+   covers both. The 0.97 scale + slight darken reads as a real button
+   press without being so dramatic it interrupts the flow. */
+.nav-btn:active,
+.menu-btn:active,
+.panel-close:active,
+.slot-btn:active,
+.shop-item:active,
+.cat-card:active,
+.rename-btn:active,
+.recall-btn:active,
+.btn-puzzle:active,
+.btn-auto:active,
+.btn-station:active,
+.assign-overlay button:active,
+.name-prompt-overlay button:active {
+  transform: scale(0.97);
+  transition-duration: 0.06s;
+}
+
+/* Disabled state — no transform, no hover, dim everything */
+.shop-item.disabled,
+.menu-btn:disabled,
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Panel entry — fade + slide-up. Applied to every overlay class so
+   newly-appended panels feel like they enter the screen instead of
+   just appearing. */
+@keyframes panel-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes overlay-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.panel:not(.hidden),
+.menu-overlay,
+.assign-overlay,
+.name-prompt-overlay,
+.conversation-overlay,
+.day-transition-overlay {
+  animation: panel-fade-in 0.18s ease-out;
+}
+
+/* Toasts get a slide-up entry from below */
+@keyframes toast-slide-up {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.toast {
+  animation: toast-slide-up 0.22s ease-out;
+}
+
+/* Status bar value gold flash on increase. Applied via JS by toggling
+   the .status-fish-flash class — but main.ts already animates the
+   transform directly, so this rule is here as a hook for future use. */
+@keyframes status-flash {
+  0%   { color: #4a8a4a; transform: scale(1.3); }
+  60%  { color: #4a8a4a; transform: scale(1); }
+  100% { color: inherit; transform: scale(1); }
+}
+
+.status-fish-flash {
+  animation: status-flash 0.5s ease-out;
+}
+
+/* Job card and shop item subtle border pulse on hover (hover devices only) */
+@media (hover: hover) {
+  .shop-item:hover:not(.disabled) {
+    border-color: #c4956a;
+  }
+}
+
+/* Respect users who've opted out of motion */
+@media (prefers-reduced-motion: reduce) {
+  .nav-btn,
+  .menu-btn,
+  .panel-close,
+  .slot-btn,
+  .shop-item,
+  .cat-card,
+  .rename-btn,
+  .recall-btn,
+  .btn-puzzle,
+  .btn-auto,
+  .btn-station,
+  .assign-overlay button,
+  .name-prompt-overlay button {
+    transition: none;
+  }
+
+  .panel:not(.hidden),
+  .menu-overlay,
+  .assign-overlay,
+  .name-prompt-overlay,
+  .conversation-overlay,
+  .day-transition-overlay,
+  .toast {
+    animation: none;
+  }
+
+  .nav-btn:hover,
+  .menu-btn:hover,
+  .slot-btn:hover,
+  .shop-item:hover,
+  .cat-card:hover,
+  .rename-btn:hover,
+  .recall-btn:hover,
+  .btn-puzzle:hover,
+  .btn-auto:hover,
+  .btn-station:hover {
+    transform: none;
+  }
+}

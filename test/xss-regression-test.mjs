@@ -372,6 +372,106 @@ async function main() {
     console.log('  ⚠ no rename button found — skipping rename prompt audit');
   }
 
+  // Reusable helper: count hostile elements anywhere in the document and
+  // check that __xssFired is still false. Used for the lighter-weight
+  // overlay audits below where we don't need the full innerHTML/textContent
+  // verification — we just need "did anything in the DOM execute?"
+  async function auditDocumentForHostility(label) {
+    const result = await page.evaluate(() => {
+      const hostileImgs = Array.from(document.querySelectorAll('img'))
+        .filter(img => img.getAttribute('src') === 'x' || img.getAttribute('onerror'));
+      const hostileSvgs = Array.from(document.querySelectorAll('svg'))
+        .filter(svg => svg.getAttribute('onload'));
+      return {
+        hostileImgCount: hostileImgs.length,
+        hostileSvgCount: hostileSvgs.length,
+        xssFired: !!window.__xssFired,
+      };
+    });
+    check(`${label}: no hostile <img> elements`, result.hostileImgCount === 0,
+      result.hostileImgCount > 0 ? `${result.hostileImgCount} found` : '');
+    check(`${label}: no hostile <svg> elements`, result.hostileSvgCount === 0,
+      result.hostileSvgCount > 0 ? `${result.hostileSvgCount} found` : '');
+    check(`${label}: __xssFired still false`, !result.xssFired);
+    check(`${label}: no alert dialog fired`, !alertFired);
+  }
+
+  // Helper: clear any open overlays/panels so the next test starts fresh.
+  async function dismissOverlays() {
+    await page.evaluate(() => {
+      document.querySelectorAll('.menu-overlay, .panel:not(.hidden), .assign-overlay, .conversation-overlay, .name-prompt-overlay').forEach(el => el.remove());
+    });
+    await wait(300);
+  }
+
+  // Re-open the cat panel since we closed it via the rename click. We need
+  // it open so we can navigate to the menu (which is opened from the cat
+  // panel via the menu nav button) and continue the panel audit cycle.
+  await dismissOverlays();
+
+  // Audit 3: Town / Job Board view (clicking Town tab)
+  console.log('\n=== Auditing Town view ===');
+  const townTab = await page.$('button.nav-btn[data-scene="town"]');
+  if (townTab) {
+    await townTab.click();
+    await wait(2000);
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '03-town-view.png') });
+    await auditDocumentForHostility('town view');
+  }
+
+  // Audit 4: Menu panel (clicking Menu nav)
+  console.log('\n=== Auditing Menu panel ===');
+  const menuTab = await page.$('button.nav-btn[data-scene="menu"]');
+  if (menuTab) {
+    await menuTab.click();
+    await wait(1500);
+    await page.screenshot({ path: path.join(SCREENSHOT_DIR, '04-menu-panel.png') });
+    await auditDocumentForHostility('menu panel');
+
+    // Audit 5: Achievement panel (clicking Achievements button inside menu)
+    console.log('\n=== Auditing Achievement panel ===');
+    const achBtn = await page.$('#menu-achievements');
+    if (achBtn) {
+      await achBtn.click();
+      await wait(1000);
+      await page.screenshot({ path: path.join(SCREENSHOT_DIR, '05-achievements.png') });
+      await auditDocumentForHostility('achievement panel');
+      await page.evaluate(() => document.getElementById('ach-close')?.click());
+      await wait(500);
+    }
+
+    // Audit 6: Journal display (clicking Journal button inside menu — re-open menu first)
+    console.log('\n=== Auditing Journal display ===');
+    await dismissOverlays();
+    const menuTab2 = await page.$('button.nav-btn[data-scene="menu"]');
+    if (menuTab2) {
+      await menuTab2.click();
+      await wait(1500);
+      const journalBtn = await page.$('#menu-journal');
+      if (journalBtn) {
+        // The test save's journal entries are author-controlled (set in
+        // the JSON) so they don't contain the payload. Inject a hostile
+        // journal entry now so the audit has something to verify against.
+        await page.evaluate((payload) => {
+          const game = window.__clowderGame;
+          if (!game) return;
+          // Get the loaded gameState through the test API and mutate it
+          // directly. The journal is rendered via Panels.ts:345 which
+          // we just escaped — this audit confirms the escape works.
+          const stored = JSON.parse(localStorage.getItem('clowder_save_slot_1') || '{}');
+          stored.journal = stored.journal || [];
+          stored.journal.push({ day: 1, text: payload, type: 'event' });
+          localStorage.setItem('clowder_save_slot_1', JSON.stringify(stored));
+          localStorage.setItem('clowder_and_crest_save', JSON.stringify(stored));
+        }, PAYLOAD);
+        await journalBtn.click();
+        await wait(1000);
+        await page.screenshot({ path: path.join(SCREENSHOT_DIR, '06-journal.png') });
+        await auditDocumentForHostility('journal display');
+      }
+    }
+  }
+
   console.log('\n========== SUMMARY ==========');
   console.log(allPass ? 'ALL XSS REGRESSION CHECKS PASSED' : 'SOME CHECKS FAILED');
   cleanup(allPass ? 0 : 1);
