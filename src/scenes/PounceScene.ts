@@ -641,13 +641,48 @@ export class PounceScene extends Phaser.Scene {
     playSfx('fail');
     haptic.error();
 
-    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 40, 'Out of shots!', {
+    // Out-of-shots banner with an explicit, always-visible "Continue"
+    // affordance. Previously the scene only showed a text label and
+    // relied on a 1500ms delayed call to navigate back — if anything
+    // delayed or cancelled the call (paused scene, dropped event, slow
+    // device) the player got stuck staring at "Out of shots!" with no
+    // way out. Now any tap on the screen returns to the job flow, and
+    // a visible Continue button gives the player a clear target.
+    const banner = this.add.rectangle(
+      GAME_WIDTH / 2,
+      GAME_HEIGHT / 2 - 20,
+      GAME_WIDTH - 40,
+      150,
+      0x1a1612,
+      0.92,
+    ).setStrokeStyle(2, 0x6b5b3e).setDepth(30);
+    const title = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 60, 'Out of shots!', {
       fontFamily: 'Georgia, serif', fontSize: '22px', color: '#cc6666',
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setDepth(31);
+    const sub = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 30, `${this.ratsKnocked}/${this.totalRats} rats knocked`, {
+      fontFamily: 'Georgia, serif', fontSize: '13px', color: '#8b7355',
+    }).setOrigin(0.5).setDepth(31);
+    const continueBtn = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 10, 'Continue', {
+      fontFamily: 'Georgia, serif', fontSize: '16px', color: '#c4956a',
+      backgroundColor: '#2a2520', padding: { x: 18, y: 8 },
+    }).setOrigin(0.5).setDepth(31).setInteractive({ useHandCursor: true });
 
-    this.time.delayedCall(1500, () => {
+    let exited = false;
+    const exitNow = () => {
+      if (exited) return;
+      exited = true;
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
       eventBus.emit('navigate', 'TownMapScene');
-    });
+    };
+    continueBtn.on('pointerdown', exitNow);
+    // Tap anywhere on the screen also continues — silent escape hatch
+    // in case the button itself is hidden behind something the player
+    // can't see.
+    this.input.once('pointerdown', exitNow);
+
+    // Keep the auto-timer as a backstop in case the player walks away.
+    this.time.delayedCall(3000, exitNow);
+
+    void banner; void title; void sub;
   }
 }
