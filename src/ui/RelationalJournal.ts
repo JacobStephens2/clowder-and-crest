@@ -104,7 +104,7 @@ export function showRelationalJournalPanel(): void {
 
   let html = `
     <button class="panel-close" id="rj-close">&times;</button>
-    <h2>Relational Journal</h2>
+    <h2>Memories</h2>
     <div style="margin-bottom:8px;color:#8b7355;font-size:12px;font-style:italic;text-align:center;line-height:1.5">
       The conversations your guild has shared so far.<br>Tap one to revisit it.
     </div>
