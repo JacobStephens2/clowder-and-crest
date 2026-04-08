@@ -1105,6 +1105,98 @@ eventBus.on('show-town-overlay', () => {
   });
 });
 
+// Focused merchant-only overlay. Per user request: "when a player talks
+// to the merchant, open up only the merchant's wares". The town overlay
+// already has a merchant section but it's mixed in with the job board,
+// stationed cats, and the end-day button — too noisy when the player
+// specifically tapped the merchant on the town map.
+//
+// Mirrors the merchant section in show-town-overlay (lines 987-1012)
+// and the buy handlers (lines 1062-1097). Same merchant items, same
+// item effects, same SFX/toast feedback.
+eventBus.on('show-merchant-overlay', () => {
+  if (!gameState) return;
+  if (gameState.chapter < 2 || gameState.day % 3 !== 0) {
+    showToast('No merchant in town today.');
+    return;
+  }
+
+  // Same item pool as the town overlay merchant section. The shuffle
+  // is reseeded per open so the player gets a fresh pair if they tap
+  // the merchant multiple times in one day — that's intentional, the
+  // player still has to spend fish for each purchase.
+  const merchantItems = [
+    { name: 'Catnip Elixir', cost: 25, effect: 'All cats mood +1 tier', id: 'elixir' },
+    { name: 'Lucky Fishbone', cost: 15, effect: '+20% reward on next job', id: 'fishbone' },
+    { name: 'Training Scroll', cost: 30, effect: '+1 to a random stat for one cat', id: 'scroll' },
+    { name: 'Saint\'s Blessing', cost: 40, effect: 'Prevents next mood drop', id: 'blessing' },
+  ];
+  const shuffledItems = [...merchantItems].sort(() => Math.random() - 0.5).slice(0, 2);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'assign-overlay';
+  let html = `
+    <div class="panel" style="max-width:380px">
+      <button class="panel-close" id="merchant-close">&times;</button>
+      <h2>\u{1F9D9} Traveling Merchant</h2>
+      <p style="font-size:11px;color:#8b7355;margin-bottom:12px">A wandering merchant has set up his cart at the edge of the market.</p>
+  `;
+  for (const item of shuffledItems) {
+    const canBuy = gameState!.fish >= item.cost;
+    html += `<div class="town-job-card" style="padding:8px 12px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="color:#c4956a;font-size:13px">${item.name}</div>
+          <div style="color:#6b5b3e;font-size:11px">${item.effect}</div>
+        </div>
+        <button class="town-job-accept merchant-buy ${canBuy ? '' : 'disabled'}" data-merchant-id="${item.id}" ${canBuy ? '' : 'disabled'}>${item.cost} Fish</button>
+      </div>
+    </div>`;
+  }
+  html += `<div style="font-size:10px;color:#6b5b3e;text-align:center;margin-top:6px">Fish on hand: ${gameState.fish}</div></div>`;
+
+  overlay.innerHTML = html;
+  overlayLayer.appendChild(overlay);
+  playSfx('merchant', 0.3);
+
+  document.getElementById('merchant-close')!.addEventListener('click', () => overlay.remove());
+
+  overlay.querySelectorAll('.merchant-buy:not(.disabled)').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const itemId = btn.getAttribute('data-merchant-id')!;
+      const costs: Record<string, number> = { elixir: 25, fishbone: 15, scroll: 30, blessing: 40 };
+      const cost = costs[itemId] ?? 20;
+      if (!spendFish(gameState!, cost)) return;
+      playSfx('fish_earn');
+
+      if (itemId === 'elixir') {
+        for (const cat of gameState!.cats) {
+          if (cat.mood === 'unhappy') cat.mood = 'tired';
+          else if (cat.mood === 'tired') cat.mood = 'content';
+          else if (cat.mood === 'content') cat.mood = 'happy';
+        }
+        showToast('All cats feel refreshed!');
+      } else if (itemId === 'fishbone') {
+        gameState!.flags.luckyFishbone = true;
+        showToast('Lucky Fishbone acquired! Next job pays +20%.');
+      } else if (itemId === 'scroll') {
+        const cat = gameState!.cats[Math.floor(Math.random() * gameState!.cats.length)];
+        const stats = ['hunting', 'stealth', 'intelligence', 'endurance', 'charm', 'senses'] as const;
+        const stat = stats[Math.floor(Math.random() * stats.length)];
+        cat.stats[stat] = Math.min(10, cat.stats[stat] + 1);
+        showToast(`${esc(cat.name)}'s ${stat} increased to ${cat.stats[stat]}!`);
+      } else if (itemId === 'blessing') {
+        gameState!.flags.saintBlessing = true;
+        showToast('Saint\'s Blessing protects the guild from the next mood drop.');
+      }
+
+      saveGame(gameState!);
+      updateStatusBar();
+      overlay.remove();
+    });
+  });
+});
+
 // Job accept — show cat assignment overlay
 let acceptedJob: JobDef | null = null;
 export function getAcceptedJob(): JobDef | null { return acceptedJob; }

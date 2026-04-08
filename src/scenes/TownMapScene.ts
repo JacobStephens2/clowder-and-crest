@@ -729,7 +729,7 @@ export class TownMapScene extends Phaser.Scene {
     sprite.on('pointerdown', () => {
       const dist = Math.abs(this.playerPos.col - merchantCol) + Math.abs(this.playerPos.row - merchantRow);
       if (dist <= 1) {
-        eventBus.emit('show-town-overlay');
+        eventBus.emit('show-merchant-overlay');
       } else {
         // Walk-then-open mirrors the building tap pattern
         const path = this.findPath(merchantCol, merchantRow);
@@ -749,7 +749,7 @@ export class TownMapScene extends Phaser.Scene {
     _coin: Phaser.GameObjects.Text,
   ): void {
     if (path.length === 0) {
-      eventBus.emit('show-town-overlay');
+      eventBus.emit('show-merchant-overlay');
       return;
     }
     const next = path[0];
