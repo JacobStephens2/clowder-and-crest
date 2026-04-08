@@ -88,8 +88,8 @@ export class BootScene extends Phaser.Scene {
 
     // Load sound effects — only wildcat has recorded vocalizations
     // Other breeds use pitch-shifted wildcat sounds (handled in RoomScene)
-    this.load.audio('wildcat_meow', 'assets/audio/wildcat_meow.mp3');
-    this.load.audio('wildcat_chirp', 'assets/audio/wildcat_chirp.mp3');
+    this.load.audio('wildcat_meow', 'assets/sfx/wildcat_meow.mp3');
+    this.load.audio('wildcat_chirp', 'assets/sfx/wildcat_chirp.mp3');
     this.load.audio('sfx_fish_earn', 'assets/sfx/fish_earn.mp3');
     this.load.audio('sfx_block_slide', 'assets/sfx/block_slide.mp3');
     this.load.audio('sfx_purr', 'assets/sfx/purr.mp3');
