@@ -147,14 +147,18 @@ export class TownMapScene extends Phaser.Scene {
     // Controls
     this.setupControls();
 
-    // Virtual joystick for town movement.
-    // Positioned near the bottom of the canvas (just above the HTML bottom nav)
-    // for thumb access on mobile, instead of floating in dead space below the grid.
+    // Virtual joystick for town movement — *floating* style (same as
+    // ChaseScene). Touch anywhere BELOW the town grid and the joystick
+    // center snaps to your thumb. The fixed-center version made pushing
+    // up awkward because the thumb occluded the town view; floating
+    // means the thumb rests wherever feels natural.
     this.input.addPointer(1);
-    const joyX = GAME_WIDTH / 2;
-    const joyY = GAME_HEIGHT - 120;
+    const JOY_HOME_X = GAME_WIDTH / 2;
+    const JOY_HOME_Y = GAME_HEIGHT - 120;
     const joyRadius = 36;
-    this.add.circle(joyX, joyY, joyRadius, 0x2a2520, 0.6).setStrokeStyle(1, 0x6b5b3e);
+    let joyX = JOY_HOME_X;
+    let joyY = JOY_HOME_Y;
+    const joyBase = this.add.circle(joyX, joyY, joyRadius, 0x2a2520, 0.6).setStrokeStyle(1, 0x6b5b3e);
     const joyKnob = this.add.circle(joyX, joyY, 14, 0x6b5b3e, 0.8);
 
     let joyPointerId = -1;
@@ -163,7 +167,14 @@ export class TownMapScene extends Phaser.Scene {
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       const wx = pointer.worldX;
       const wy = pointer.worldY;
-      if (Math.sqrt((wx - joyX) ** 2 + (wy - joyY) ** 2) < joyRadius * 1.5) {
+      // Floating joystick: touches BELOW the grid relocate the joystick
+      // center to the touch point. Touches inside or above the grid go
+      // to the tap-to-walk handler in setupControls().
+      if (wy > GRID_TOP + GRID_H) {
+        joyX = wx;
+        joyY = wy;
+        joyBase.setPosition(joyX, joyY);
+        joyKnob.setPosition(joyX, joyY);
         joyPointerId = pointer.id;
       }
     });
@@ -171,7 +182,10 @@ export class TownMapScene extends Phaser.Scene {
     this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
       if (pointer.id === joyPointerId) {
         joyPointerId = -1;
-        joyKnob.setPosition(joyX, joyY);
+        joyX = JOY_HOME_X;
+        joyY = JOY_HOME_Y;
+        joyBase.setPosition(JOY_HOME_X, JOY_HOME_Y);
+        joyKnob.setPosition(JOY_HOME_X, JOY_HOME_Y);
         joyMoveTimer?.destroy();
         joyMoveTimer = null;
       }
@@ -725,13 +739,61 @@ export class TownMapScene extends Phaser.Scene {
         }
       }
 
-      // Single-step toward the tapped position (non-building tile)
-      const dc = col - this.playerPos.col;
-      const dr = row - this.playerPos.row;
-      if (Math.abs(dc) > Math.abs(dr)) {
-        this.movePlayer(dc > 0 ? 1 : -1, 0);
-      } else if (dr !== 0) {
-        this.movePlayer(0, dr > 0 ? 1 : -1);
+      // Walk continuously toward the tapped tile (non-building destination).
+      // The previous behaviour was single-step-toward-tap which forced the
+      // player to tap repeatedly to traverse the town and made movement
+      // feel unresponsive. walkToward chains delayedCalls until reached
+      // (or blocked by a building wall), the same pattern walkToThenEnter
+      // uses for buildings.
+      this.walkToward(col, row);
+    });
+  }
+
+  private walkToward(targetCol: number, targetRow: number): void {
+    const dc = targetCol - this.playerPos.col;
+    const dr = targetRow - this.playerPos.row;
+    if (dc === 0 && dr === 0) return;
+
+    // Pick a single-axis step toward the target. Horizontal-dominant first
+    // because the town is wider than it is tall and a horizontal-first
+    // gait reads more naturally for a top-down view.
+    let stepDc = 0;
+    let stepDr = 0;
+    if (Math.abs(dc) > Math.abs(dr)) {
+      stepDc = dc > 0 ? 1 : -1;
+    } else {
+      stepDr = dr > 0 ? 1 : -1;
+    }
+
+    // If the chosen direction is blocked by a building wall, try the
+    // other axis instead so the cat doesn't just freeze on the spot.
+    const tryNc = this.playerPos.col + stepDc;
+    const tryNr = this.playerPos.row + stepDr;
+    const blocked = tryNc < 0 || tryNc >= COLS || tryNr < 0 || tryNr >= ROWS || this.grid[tryNr][tryNc] === BUILDING;
+    if (blocked) {
+      stepDc = 0;
+      stepDr = 0;
+      if (dr !== 0 && Math.abs(dc) > Math.abs(dr)) {
+        // Was trying horizontal — switch to vertical
+        stepDr = dr > 0 ? 1 : -1;
+      } else if (dc !== 0) {
+        stepDc = dc > 0 ? 1 : -1;
+      }
+      const altNc = this.playerPos.col + stepDc;
+      const altNr = this.playerPos.row + stepDr;
+      const altBlocked = altNc < 0 || altNc >= COLS || altNr < 0 || altNr >= ROWS || this.grid[altNr][altNc] === BUILDING;
+      if (altBlocked) return; // Both axes blocked — give up gracefully
+    }
+
+    this.movePlayer(stepDc, stepDr);
+    // Continue walking after this step. The 220ms delay matches the
+    // walk tween (160ms) plus a small breathing pause; the same cadence
+    // walkToThenEnter uses for buildings.
+    this.time.delayedCall(220, () => {
+      // If the player has been moved off-axis (e.g. via joystick) since
+      // we started, recompute toward the original target.
+      if (this.playerPos.col !== targetCol || this.playerPos.row !== targetRow) {
+        this.walkToward(targetCol, targetRow);
       }
     });
   }
