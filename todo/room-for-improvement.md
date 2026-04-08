@@ -140,6 +140,114 @@ If you ever migrate away from Suno to a stems-capable generator, revisit.
 
 ---
 
+## Claude's additional candidates (2026-04-08)
+
+After verifying Gemini's review and fixing the XSS, I noticed several additional things worth considering. These come from working *inside* this codebase across the full session — different vantage point than a one-shot external review. Gemini didn't catch these because they're either operational, only visible after spending time in the code, or surfaced by the XSS regression test I just wrote.
+
+### Architecture / correctness
+
+**A1. `main.ts` is still the central god-file (1849 lines).** Down from ~2640 in the recent splitting pass — so you've already started — but it still does scene routing, save management, day-loop logic, journal entry construction, achievement detection, chapter progression hooks, panel orchestration, and ~15 different innerHTML overlay builders. The 5+ overlay builders (`suggestEndDay`, `showCrisisDialog`, the Inquisition exile picker, the wish banner, `showJobBoard`'s town view) could each move into `src/ui/overlays/<name>.ts` modules with a 30-minute extraction. Day loop logic (`advanceDay`, food cost, mood drops, plague escalation, stationed earnings) could move into `src/systems/DayLoop.ts`. The result would be a `main.ts` that's mostly wiring + event subscriptions, ~400 lines.
+
+Why this matters more than the typical "split a big file" advice: every XSS site I just fixed was inside an overlay builder buried in `main.ts`. Splitting them out makes audits like the one I just did dramatically faster — instead of grepping the whole god-file, you grep one focused module per overlay.
+
+**A2. Save export / import path needs the same XSS audit Panels.ts just got.** The menu has Export Save and Import Save buttons. The XSS regression test I wrote (`test/xss-regression-test.mjs`) plants payloads into a save and verifies the cat panel + rename prompt escape correctly — but it doesn't cover the *import* flow. If a player imports a JSON file from somewhere they shouldn't, the imported `gameState` flows into every overlay that renders cat names. Most are now safe after this commit, but a focused audit + a regression test that uses the actual Import Save button would prove it.
+
+The simplest defense-in-depth: **sanitize untrusted save fields at import time** rather than trusting every render site to escape. A `validateAndSanitizeSave()` helper that strips/escapes known string fields (`cats[].name`, `playerCatName`, journal entries) on import would mean future overlay builders don't have to remember.
+
+**A3. Save format versioning has `version: 2` but no visible migration code path.** `CLAUDE.md` documents "missing fields backfilled, saves never destroyed on updates" — that's true for *additive* schema changes (a new field defaulted to a sensible value). It's NOT true for renames or type changes. If you ever rename `playerCatName` to `playerName`, change `mood` from string to enum, or restructure `bonds[]`, the loaders need explicit migrations and the version number needs to bump. Worth a one-time audit: write `migrateSave(save: any): SaveData` with explicit `if (save.version === 1) {...}` blocks, and have it called from `loadGame` and `loadFromSlot`. Currently both call sites trust the schema.
+
+**A4. Phaser chunk is still 1.18 MB ungzipped (314 KB gzipped) even after the recent code splitting.** That's the dominant chunk in the build. Phaser supports tree-shaking via its granular subpath imports (`phaser/src/scenes/Scene` instead of `phaser`), but you'd need to import only what you actually use. The current `import Phaser from 'phaser'` brings in particles, tilemaps, networking, video, audio decoders, etc. — most of which the game doesn't touch.
+
+This is a meaningful effort (you'd refactor every scene's import statements), but it could plausibly cut the chunk by 30-50%. **Defer until you actually have a load-time problem** — currently the game's first paint is fast on the test phones I've seen.
+
+### Tests / quality
+
+**T1. Zero targeted unit tests for the gameplay-critical pure functions in `main.ts` and `systems/`.** The 14 minigame playtests are valuable but they're end-to-end — they exercise scene mechanics, not the day-loop math. Functions like `advanceDay`, `processDailyBonds`, `applyReputationShift`, `checkChapterAdvance`, `getDailyWish`, `getJobFlavor`, and the bond rank threshold logic are pure-ish and edge-case-prone. A `test/unit/` folder with focused tests for these (~200 lines total) would catch regressions faster than the slow end-to-end playtests.
+
+Examples of edge cases that should be unit-tested:
+- Broke 2 days in a row → cat leaves
+- Plague active for 8 days → escalation cap behavior
+- Bond hits exactly 25 (companion threshold) → rank-up reward applied once
+- Reputation crosses 0 → tier flip
+- Specialization choice locks in after N consecutive same-category jobs
+
+These take seconds to run vs. ~30s per minigame playtest.
+
+**T2. The XSS regression test should grow.** The version I just committed covers the cat panel and rename prompt. The same payload-planted save would also exercise:
+- The achievement panel (already escaped, but no test verifies it)
+- The shop panel (item names — already escaped, no test verifies it)
+- The journal display (already escaped, no test verifies it)
+- The conversation overlay (already escaped, no test verifies it)
+- The town/job board view (cat name in stationed badges, already escaped, no test verifies it)
+
+Each is a ~10-line addition to `xss-regression-test.mjs`. The hooks I installed (`__xssFired` setter trace + `Element.prototype.innerHTML` writer trace) make new assertions cheap. **Worth doing as a single follow-up batch** so the regression test is comprehensive rather than just covering the two flows we happened to look at.
+
+**T3. The XSS regression test took 4 cycles to localize the bug because of stale state issues** (slot picker XSS fired during *guildhall load*, before the test ever opened the cat panel). The lesson: future security tests should add **localized assertions at every state transition** (post-title, post-load, post-tab-switch, etc.) rather than only at the end. The current test does this for the XSS flag but not for other invariants. Worth generalizing into a small helper.
+
+### Polish / UX
+
+**P1. Service Worker / PWA for the web build.** The Capacitor APK is fully offline-capable. The web version at `clowderandcrest.com` is not. Adding `vite-plugin-pwa` would give web players the same offline experience plus an "Add to Home Screen" install prompt. ~1 hour of work, would also improve return-visit load time via cache.
+
+This is the closest thing to "making the web version match the native build" — and the native build is a real differentiator on the portfolio.
+
+**P2. Haptic feedback on UI navigation.** The native haptic system fires on game beats (kills, perfects, fails, lock clicks). It does NOT fire on:
+- Bottom nav button taps (Guild / Town / Cats / Menu)
+- Panel opens
+- Job card taps
+- Shop item selections
+- Cat selection
+- Slot picker buttons
+
+That's a one-line `haptic.tap()` per click handler. ~30 minutes for the whole UI layer. On a haptic-capable phone, this is the difference between "feels like a webview" and "feels like a native app."
+
+**P3. "Save backup before overwrite" pattern.** When the player picks New Game on an occupied slot, the existing save is deleted via `deleteSlot()` after a single browser `confirm()` dialog. One slip and a hundreds-of-days save is gone. Safer pattern: on delete, rename the slot's localStorage key to `<key>.bak.<timestamp>`, keep it for 24-48 hours, surface a "Recover deleted save?" prompt on title screen if a recent .bak exists. ~30 minutes of code, prevents real player heartbreak.
+
+**P4. The `/var/www/.cache` EACCES warning fires on every gemini-cli run AND every game playtest.** It's noise that pollutes test output and makes real warnings harder to spot. Two-minute fix:
+
+```bash
+sudo chown jacob:jacob /var/www/.cache
+```
+
+Or `cd ~ && gemini` if you want to keep that dir root-owned. Worth doing once just to clean up the test output.
+
+### Operational
+
+**O1. Capacitor plugin update cadence.** The 4 native plugins (`@capacitor/haptics`, `/local-notifications`, `/app`, `/status-bar`) are at 8.x. Capacitor releases monthly. Worth a quarterly check + `npm update @capacitor/*` + APK rebuild + native lifecycle smoke test.
+
+**O2. Test screenshot folder cleanup.** `test/screenshots/` accumulates output from every playtest run (smoke, bond, brawl, hunt, courier, dungeon, fishing, heist, hunt, nonogram, patrol, pounce, puzzle, ritual, scent, sokoban, stealth, conversation, xss, portfolio = ~20 subfolders, each with multiple PNGs per run). Currently gitignored but grows unbounded locally. A `npm run clean:test` script that wipes `test/screenshots/*` would help, OR a `--clean` flag on the runner.
+
+### Skipped (real but lower priority)
+
+I considered and rejected these because the cost-benefit doesn't favor doing them now:
+
+| Item | Why skip |
+|---|---|
+| TypeScript strict mode pass | The codebase is already mostly type-safe; the remaining `as any` and `!` assertions aren't bug sources. Real refactoring effort for marginal gain. |
+| Accessibility audit (ARIA, keyboard nav, focus management) | Matters when shipping to a non-niche audience. Currently the audience is portfolio visitors who'll click around for 30 seconds. Revisit if the game gets a real player base. |
+| i18n / localization readiness | Premature. Strings are scattered across TS + JSON; refactoring to a string table is meaningful work for zero current value. |
+| Music volume normalization | Suno-side problem, not a code problem. The right fix is in the music generation prompts in `todo/ideas/music/music-prompts.md` (which the user is already iterating on). |
+| Per-cat decoration rooms | This is Gemini's #2b which I already flagged as "Do later" — same item, no need to duplicate. |
+| Replace innerHTML with Preact / Svelte (Gemini's #1a "fix") | Gemini suggested this as the proper fix for XSS. I rejected it because the actual fix (escape at interpolation sites) is 2 hours of work and 0 dependencies, vs. introducing a reactive framework which would be a multi-week port + a real bundle size cost. The XSS bug is now fixed without it. |
+
+### Suggested new priority order
+
+After Gemini's items + my additions, the do-now order I'd recommend:
+
+1. ✅ **Fix XSS** (done, committed)
+2. **A2. Save import sanitization** (closes the remaining XSS surface — same regression test pattern)
+3. **3a. Dialogue portraits** (already in flight, biggest visual win, generate the 18 priority portraits via Midjourney)
+4. **3b. CSS overlay juice** (~2 hours, big perceived polish gain)
+5. **P2. UI haptic feedback** (~30 minutes, native app feel)
+6. **T1. Unit tests for day-loop math** (~3 hours, catches future regressions cheaply)
+7. **P1. Web PWA / Service Worker** (~1 hour, makes the web build match native offline capability)
+8. **A1. Extract overlay builders from main.ts** (~3 hours of focused refactoring, makes future audits faster)
+9. **2c. Big Cats** (already on roadmap, ~6-8 hours)
+10. **2b. Individual Cat Rooms** (already on roadmap, ~10-15 hours)
+
+The first 5 items (XSS done + items 2-5) are all high-ROI and total ~6-8 hours. Doing all of them as one focused pass would produce a noticeably more polished game without any large refactors.
+
+---
+
 ## Original review (preserved verbatim)
 
 The text below is Gemini 3.1 Pro Preview's original review as written, before the verification pass above. Kept for reference and attribution.
