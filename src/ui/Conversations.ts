@@ -34,14 +34,23 @@ function fallbackSpriteSrc(breed: string): string {
 
 /**
  * Configure an <img> element to show a portrait. Tries the high-res illustrated
- * portrait first; on 404 swaps to the pixel sprite fallback and toggles
- * `image-rendering:pixelated` so the upscale stays sharp.
+ * portrait first; if that expression variant doesn't exist yet, falls back to
+ * the breed's neutral portrait; only if no portrait exists at all does it swap
+ * to the pixel sprite fallback.
  */
 function setPortrait(img: HTMLImageElement, breed: string, expression: Expression): void {
-  // Reset state — portraits are smooth, sprites are pixelated
+  // Reset state — portraits are smooth, sprites are pixelated.
   img.style.imageRendering = 'auto';
+  delete img.dataset.portraitFallbackStage;
   img.onerror = () => {
-    img.onerror = null; // guard against infinite loops if the fallback also 404s
+    const stage = img.dataset.portraitFallbackStage ?? 'expression';
+    if (stage === 'expression' && expression !== 'neutral') {
+      img.dataset.portraitFallbackStage = 'neutral';
+      img.src = portraitSrc(breed, 'neutral');
+      return;
+    }
+    img.onerror = null; // guard against infinite loops if the sprite also 404s
+    img.dataset.portraitFallbackStage = 'sprite';
     img.src = fallbackSpriteSrc(breed);
     img.style.imageRendering = 'pixelated';
   };
