@@ -1,6 +1,51 @@
-# Clowder & Crest — Room for Improvement
+# Clowder & Crest — Room for Improvement - Claude Opus 4.6
 
 Originally a senior-level review by **Gemini 3.1 Pro Preview** (2026-04-07) covering Architecture, Gameplay, and Polish/UX. Verified by Claude against the actual codebase the same day. The original Gemini analysis is preserved at the bottom; the verified verdict + corrected priorities are at the top.
+
+## Status as of 2026-04-08
+
+**Most of the do-now batch shipped on 2026-04-08.** What's done, what's left, and what's intentionally deferred:
+
+### ✅ Done
+
+| Item | Commit(s) | Notes |
+|---|---|---|
+| **1a** XSS fix in Panels.ts + 7 other sites | `9ea01a9` | Found and fixed XSS in Panels.ts, Conversations.ts, onboarding.ts (`showGuildReport`), TitleScene.ts (slot picker), and main.ts (wish banner action hint, crisis dialog). Promoted `esc()` to `src/utils/helpers.ts`. New `test/xss-regression-test.mjs` covers cat panel + rename prompt with payload-injected save (33 assertions, all passing). |
+| **3b** CSS overlay juice | `5f09733` | ~150 lines added to `src/ui/overlay.css`. Universal transitions (120-180ms), hover scale 1.02, press scale 0.97, panel-fade-in keyframes, toast slide-up, prefers-reduced-motion escape hatch. |
+| **3c** Music migration (static, not stems) | `26f331e`, `f3182ee` | 68-track shared-leitmotif set replaces the legacy 14-track 3-mode music. Every minigame, room, chapter event, and overlay has a dedicated D-C-A-G-leitmotif track. Brawl track added in follow-up commit. MusicManager rewritten with `TRACK_SETS` map + `switchToTrackset(name)` API. Legacy 3-mode functions kept as backward-compat wrappers. **Stems experiment deferred** — see `todo/ideas/music-stems-experiment.md`. |
+| **A1** Extract overlay builders (PARTIAL) | `5dc291c` | 2 of ~6 extracted: `EndDaySuggestion` and `ExileChoice` are now in `src/ui/overlays/`. `advanceDay` (353 lines) is deferred until it has unit-test coverage. Pattern is established for future extractions. |
+| **A2** Save import sanitization | `bc9af99` | New `validateAndSanitizeSave()` in SaveManager. Clamps name lengths to 32, journal text to 200, flag values to 200, cat array to 20. Strips control characters. Rejects malformed input. Threaded into the Import Save handler in Panels.ts. |
+| **A3** Save migration ladder | `bc9af99` | Rewrote `migrateSaveData()` with explicit two-phase ladder (version-aware migrations + lazy backfill). v1→v2 is documented as a no-op (additive bump); future renames or type changes have a clear pattern. |
+| **P1** Service Worker / PWA | `5f09733` | Hand-written `public/sw.js` (vite-plugin-pwa doesn't support vite v8). Network-first for HTML, cache-first for static assets. Versioned cache name. Registered from main.ts only when not running in Capacitor and not on Vite dev. Updated `manifest.json` for Add to Home Screen. |
+| **P2** UI haptic feedback | `3593b06` | Global delegated click listener in main.ts fires `haptic.tap()` on every button-like element across the overlay layer. End Day button gets `haptic.medium()`. One handler covers every existing AND future button. |
+| **P3** Save backup before overwrite | `bc9af99` | `deleteSlot()` now creates `.bak.<ts>` entries with 48h retention. Title screen surfaces green "Recover '<name>' — Day N, Ch.N (Xh ago)" buttons for empty slots with recent backups. New helpers: `pruneExpiredBackups`, `getRecentBackup`, `restoreBackup`. |
+| **P4** chown /var/www/.cache | `3593b06` | EACCES warnings gone from playtests + gemini-cli. Two-minute fix that I should have done weeks ago. |
+| **T1** Unit tests for new helpers | `e7ca9ab` | `test/logic-regressions.ts` grew from 4 to 14 tests. New: 6 sanitizer tests (length clamp, control-char strip, HTML pass-through, structure rejection, numeric clamps, cat-array cap), 3 backup/restore/prune tests, 1 migration test. Extended `MemoryStorage` mock with `length` + `key(i)` so iterators work. |
+| **T2** Expand XSS regression test | `5f09733` | Test grew from 17 to 33 assertions. Added focused audits for town view, menu panel, achievement panel, and journal display (with payload injection). Reusable `auditDocumentForHostility(label)` helper. |
+| **O2** clean:test script | `3593b06` | `npm run clean:test` wipes `test/screenshots/` between runs. |
+
+### ⏳ Open
+
+| Item | Why still open |
+|---|---|
+| **3a** Dialogue portraits via Midjourney | Needs the user to actually generate the 18 priority portraits in Midjourney (the prompts file at `todo/art/dialogue-portrait-prompts.md` is ready). The Conversations.ts scaffold with `setPortrait()` + pixel-sprite fallback was committed in `164644c` — drop the PNGs in and they appear automatically. |
+| **2c** Big Cats (Lynx/Lion/Leopard) | Needs PixelLab generation + breed JSON entries + conversation scripts + chapter unlock gates. ~6-8 hours of focused work. Art prompts in `todo/art/art-prompts.md`. |
+| **2b** Individual Cat Rooms | Bigger feature (~10-15 hours). New per-cat room data model in save schema, decoration UI, mood/stat tying logic, save migration. Worth doing after dialogue portraits land. |
+
+### ⏸ Intentionally deferred
+
+| Item | Trigger to revisit |
+|---|---|
+| **2a** Cloud Save Sync | When real multi-device players exist or a server backend is being added for another reason. Use Capacitor's native iCloud / Google Drive APIs, not a custom Firebase/Supabase backend. |
+| **A4** Phaser tree-shaking | When the 1.18 MB chunk is causing actual load-time problems on real devices. Currently fine. |
+| **O1** Capacitor plugin update cadence | Quarterly. Operational, not engineering. |
+| **3c-stems** Suno stems experiment | The static music migration just landed — let it sit. Revisit when a real player says the chase/brawl/hunt music feels static, OR when stems support has matured further in Suno. Plan documented at `todo/ideas/music-stems-experiment.md`. |
+
+### Skipped per the doc's own analysis
+
+`1b` Phaser scaling (Gemini misdiagnosed), `1c` JSON tuning (trade-off doesn't favor it for solo TS dev), Gemini's "Replace innerHTML with Preact/Svelte" (the targeted `esc()` fix is 0 deps and 2 hours; a reactive framework port is multi-week + bundle cost), TypeScript strict mode pass, accessibility audit, i18n readiness, music volume normalization. Reasoning preserved in the original Claude's-additions section below.
+
+---
 
 ## Verified verdict (2026-04-07)
 
@@ -20,7 +65,7 @@ Of Gemini's 9 suggestions:
 | 2c | Big Cats (Lynx, Lion, Leopard) | ✅ Already on roadmap, art prompts ready | Do later |
 | 3a | Dialogue Portraits via Midjourney | ✅ Already in flight, biggest visual win | **Do now** |
 | 3b | CSS transitions / "juice" on HTML overlays | ✅ Cheap, high perceived-polish ROI | **Do now** |
-| 3c | Dynamic music layering per minigame intensity | ⚠️ Higher cost than implied; Suno pipeline doesn't expose stems | Skip |
+| 3c | Dynamic music layering per minigame intensity | ⚠️ Suno now exposes stems (12-stem extraction, June 2025) — viable, with caveats | Try one track |
 
 ## Do now (high ROI)
 
@@ -128,15 +173,37 @@ For a solo author who's comfortable in TypeScript and not iterating live in prod
 
 ### 3c — Dynamic music layering per minigame intensity
 
-The idea is real (Stardew Valley does this well). But the implementation path is harder than Gemini implies:
-- **Suno doesn't natively expose stems** for layering
-- You'd need either a different generator (Stable Audio, Mubert) OR manually composed layered tracks in a DAW
-- `MusicManager` would need new APIs for crossfade, layer add/remove, beat sync
-- Each minigame would need 2-3 layered variants of its track
+**Updated 2026-04-08:** The previous note here said *"Suno doesn't natively expose stems"* — that was outdated. Suno added stem extraction in mid-2024 and shipped 12-stem extraction in June 2025. This meaningfully changes the picture.
 
-For a solo author with a Suno-based pipeline, this is a multi-week project, not a polish pass. The simpler alternative — composing tracks with built-in dynamic intensity (sparse opening → busier mid-track) — is what you're already doing per `todo/ideas/music/music-prompts.md`.
+**What Suno's stem extraction actually does:**
+- Up to **12 separated stems** from any generated track (vocals, backing vocals, drums, bass, guitar, keys, strings, brass, woodwinds, percussion, synth, FX)
+- Download individual stems, mute/solo during playback, or download all at once
+- Pricing: full 12-stem extraction = 50 credits; simpler Vocals + Instrumental split = 10 credits
+- See `help.suno.com/en/articles/6141441` for details
 
-If you ever migrate away from Suno to a stems-capable generator, revisit.
+**What this enables for Clowder & Crest:**
+- Extract stems from e.g. Chase 1 - Stone Alley Fur and get isolated fiddle, bodhrán, and harp tracks as separate MP3/WAV files
+- Use them in `MusicManager` as **independently controllable audio layers** — start with just bodhrán at low intensity, fade in fiddle at mid intensity, bring in the full ensemble at peak intensity
+- Stardew Valley-style dynamic layering without needing a different generator or a DAW
+
+**The catch — stem quality is imperfect:**
+- Suno generates a single mixed audio file, then uses post-processing AI to split it afterward. It doesn't have access to the original "unmixed" layers
+- Users report **bleed between stems** (instruments leaking into each other's tracks), comb filtering, and missing frequency information. The separation is AI estimation, not a true unmix
+- For acoustic Celtic instruments (lute, fiddle, bodhrán) that overlap heavily in the mid-frequency range, bleed could be more pronounced than it would be for a pop track with distinct drums vs. vocals
+
+**The workflow it unlocks:**
+1. Generate a track → Extract 12 stems (50 credits)
+2. Download the stems that matter (e.g., percussion-only, strings-only, full instrumental)
+3. Load 2-3 of those stems into the game as layered audio sources
+4. Crossfade or add/remove layers in `MusicManager` based on minigame intensity
+
+**Revised assessment:** This is no longer a multi-week migration to a different generator — it's a **legitimate path** for the existing Suno-based pipeline. The implementation is still post-processing (not true native stems), so quality will vary, especially for the mid-heavy Celtic instrumentation, but it's worth a one-track experiment before committing.
+
+The real remaining work is on the `MusicManager` side — adding crossfade and layer APIs — but you'd have actual stem files to work with from your existing tracks. That's no longer hypothetical.
+
+**Suggested next step if you want to try it:** pick one minigame (Courier Run is the obvious candidate — it has explicit speed escalation), extract stems from its current Suno track for 50 credits, listen to the bleed quality on Celtic stems, and decide whether to invest in the `MusicManager` layer API. Total cost to validate: ~$1 of Suno credits + 30 minutes of listening.
+
+**Update 2026-04-08:** the user *did* extract stems for the Chase track (`todo/music/Chase 1 - Stone Alley Fur Stems/`, 6 layers: drums, bass, guitar, percussion, synth, other). The stems experiment is now documented in detail at `todo/ideas/music-stems-experiment.md` with the Web Audio API approach, the StemMixer class sketch, the iOS compatibility risks, and a "when to revisit" trigger list. **Deferred** for now because the static 68-track migration just shipped (`26f331e`, `f3182ee`) — let it sit in production before stacking another music change on top.
 
 ---
 
@@ -231,20 +298,30 @@ I considered and rejected these because the cost-benefit doesn't favor doing the
 
 ### Suggested new priority order
 
-After Gemini's items + my additions, the do-now order I'd recommend:
+**Original list (2026-04-07).** Items 1-7 from the original "do now" batch are all now committed. Updated remaining priority below.
 
-1. ✅ **Fix XSS** (done, committed)
-2. **A2. Save import sanitization** (closes the remaining XSS surface — same regression test pattern)
-3. **3a. Dialogue portraits** (already in flight, biggest visual win, generate the 18 priority portraits via Midjourney)
-4. **3b. CSS overlay juice** (~2 hours, big perceived polish gain)
-5. **P2. UI haptic feedback** (~30 minutes, native app feel)
-6. **T1. Unit tests for day-loop math** (~3 hours, catches future regressions cheaply)
-7. **P1. Web PWA / Service Worker** (~1 hour, makes the web build match native offline capability)
-8. **A1. Extract overlay builders from main.ts** (~3 hours of focused refactoring, makes future audits faster)
-9. **2c. Big Cats** (already on roadmap, ~6-8 hours)
-10. **2b. Individual Cat Rooms** (already on roadmap, ~10-15 hours)
+1. ✅ **Fix XSS** (`9ea01a9` — also caught 7 sites Gemini didn't flag)
+2. ✅ **A2. Save import sanitization** (`bc9af99`)
+3. ⏳ **3a. Dialogue portraits** — needs Midjourney generations from the user
+4. ✅ **3b. CSS overlay juice** (`5f09733`)
+5. ✅ **P2. UI haptic feedback** (`3593b06`)
+6. ✅ **T1. Unit tests for day-loop math** (`e7ca9ab` — partial: 10 new tests cover sanitizer + backup helpers, NOT yet the advanceDay edge cases)
+7. ✅ **P1. Web PWA / Service Worker** (`5f09733`)
+8. ✅ **A1. Extract overlay builders from main.ts** (`5dc291c` — partial: 2 of ~6 done, advanceDay extraction still pending)
+9. ⏳ **2c. Big Cats** — still needs PixelLab + code work
+10. ⏳ **2b. Individual Cat Rooms** — still ~10-15 hours of focused work
 
-The first 5 items (XSS done + items 2-5) are all high-ROI and total ~6-8 hours. Doing all of them as one focused pass would produce a noticeably more polished game without any large refactors.
+### Updated priority order (2026-04-08)
+
+The do-now batch is essentially shipped except for the items that need user-generated assets (portraits, big-cat sprites). The honest next priorities:
+
+1. **3a. Dialogue portraits** — user generates 18 portraits in Midjourney from `todo/art/dialogue-portrait-prompts.md`, drops them in `public/assets/sprites/portraits/`, the existing `setPortrait()` in Conversations.ts picks them up automatically. Biggest visual win on the table.
+2. **2c. Big Cats** — user generates pixel sprites in PixelLab from prompts in `todo/art/art-prompts.md`, then ~4 hours of code (breeds.json, BootScene preload, conversation scripts for the new pair bonds, chapter unlock gates).
+3. **A1-rest. Extract advanceDay → systems/DayLoop.ts** — but FIRST add unit-test coverage for advanceDay's edge cases (broke 2 days in a row, plague escalation cap, mood drop chain, starvation game over, chapter advance at exact threshold). Without that coverage the extraction is too risky to do quickly.
+4. **2b. Individual Cat Rooms** — biggest remaining feature. Worth doing after dialogue portraits land.
+5. **T1-rest. advanceDay edge-case unit tests** — listed as a sub-item of #3 above but worth doing standalone even without the extraction.
+
+The "5-item batch ~6-8 hours" framing from yesterday is no longer the right shape — almost all of those items are done. The remaining work splits cleanly into "user-asset bottleneck" (3a, 2c) vs "needs more test coverage before refactor" (advanceDay).
 
 ---
 
@@ -254,7 +331,7 @@ The text below is Gemini 3.1 Pro Preview's original review as written, before th
 
 ---
 
-# Clowder & Crest - Room for Improvement
+# Clowder & Crest - Room for Improvement - Gemini 3.1 Pro
 
 Based on a review of the `README.md`, TODO files, architecture notes, and the codebase (specifically `HuntScene.ts`, `CatManager.ts`, and `Panels.ts`), here is a senior-level assessment of the areas with the most room for improvement for **Clowder & Crest**. 
 
