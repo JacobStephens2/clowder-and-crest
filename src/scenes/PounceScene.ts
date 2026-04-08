@@ -444,6 +444,15 @@ export class PounceScene extends Phaser.Scene {
     }
   }
 
+  // Live launch-state indicators — set on first spawn, retained for the
+  // whole round so the slingshot UI can switch between "ready" and
+  // "reloading" without rebuilding the scene. Per user feedback
+  // (2026-04-08): "make it more clear to the user when the slingshot
+  // is reloaded and ready to fire again."
+  private launchIndicator!: Phaser.GameObjects.Arc;
+  private launchHaloTween: Phaser.Tweens.Tween | null = null;
+  private reloadingText!: Phaser.GameObjects.Text;
+
   private spawnProjectile(): void {
     // Visual cat at launch position
     const idleKey = `${this.catBreed}_idle_east`;
@@ -453,12 +462,61 @@ export class PounceScene extends Phaser.Scene {
       catVis.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
     }
 
-    // Launch indicator
-    this.add.circle(LAUNCH_X, LAUNCH_Y, 6, 0xdda055, 0.4);
+    // Launch indicator — pulses when ready, dims to a flat grey when
+    // reloading. The pulse tween is killed/restarted by setLaunchReady.
+    this.launchIndicator = this.add.circle(LAUNCH_X, LAUNCH_Y, 8, 0xdda055, 0.6)
+      .setStrokeStyle(2, 0xc4956a);
+    this.reloadingText = this.add.text(LAUNCH_X, LAUNCH_Y + 22, '', {
+      fontFamily: 'Georgia, serif', fontSize: '10px', color: '#8b7355',
+    }).setOrigin(0.5);
+    this.setLaunchReady(true);
+  }
+
+  /** Single source of truth for the launch UI state. Toggles the pulse
+   *  on the launch circle, sets the reloading label, and updates the
+   *  canLaunch flag — kept together so future state changes can't
+   *  desync the visual from the gating logic. */
+  private setLaunchReady(ready: boolean): void {
+    this.canLaunch = ready;
+    if (!this.launchIndicator) return;
+    if (ready) {
+      this.launchIndicator.setFillStyle(0xdda055, 0.6);
+      this.launchIndicator.setStrokeStyle(2, 0xc4956a);
+      this.reloadingText?.setText('');
+      this.launchHaloTween?.stop();
+      this.launchIndicator.setScale(1);
+      // Brief "ready!" pulse so the player gets a positive cue when
+      // the slingshot re-arms — prevents the "I can't tell when it's
+      // ready" frustration the user reported.
+      this.tweens.add({
+        targets: this.launchIndicator,
+        scale: 1.4,
+        duration: 180,
+        yoyo: true,
+        ease: 'Sine.easeOut',
+      });
+      // Then start the slow idle pulse so a stationary slingshot
+      // still reads as "live."
+      this.launchHaloTween = this.tweens.add({
+        targets: this.launchIndicator,
+        scale: 1.15,
+        duration: 700,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    } else {
+      this.launchHaloTween?.stop();
+      this.launchHaloTween = null;
+      this.launchIndicator.setScale(1);
+      this.launchIndicator.setFillStyle(0x3a3530, 0.5);
+      this.launchIndicator.setStrokeStyle(2, 0x6b5b3e);
+      this.reloadingText?.setText('Reloading...');
+    }
   }
 
   launchProjectile(vx: number, vy: number): void {
-    this.canLaunch = false;
+    this.setLaunchReady(false);
     this.launches++;
     this.launchText.setText(`Shots: ${this.launches}/${this.maxLaunches}`);
 
@@ -492,7 +550,7 @@ export class PounceScene extends Phaser.Scene {
       } else if (this.launches >= this.maxLaunches) {
         this.loseGame();
       } else {
-        this.canLaunch = true;
+        this.setLaunchReady(true);
       }
     });
   }
