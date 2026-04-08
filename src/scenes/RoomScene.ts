@@ -41,6 +41,15 @@ const INTERACTIVE_FURNITURE: Record<string, { action: string; duration: number; 
   straw_bed: { action: 'sleeping', duration: 4000, breedAnim: 'sleep', stat: 'endurance', boostLabel: '+1 Endurance' },
   woolen_blanket: { action: 'napping', duration: 3500, breedAnim: 'sleep', stat: 'charm', boostLabel: '+1 Charm' },
   bookshelf: { action: 'investigating', duration: 1500, stat: 'intelligence', boostLabel: '+1 Intelligence' },
+  fish_barrel: { action: 'raiding the fish barrel', duration: 1800, anim: 'eat', stat: 'hunting', boostLabel: '+1 Hunting' },
+  herb_rack: { action: 'sniffing herbs', duration: 1500, stat: 'senses', boostLabel: '+1 Senses' },
+  stone_hearth: { action: 'warming by the hearth', duration: 2500, breedAnim: 'sit', stat: 'endurance', boostLabel: '+1 Endurance' },
+  notice_board: { action: 'studying the notices', duration: 1500, stat: 'intelligence', boostLabel: '+1 Intelligence' },
+  lantern: { action: 'watching the lantern glow', duration: 1200, stat: 'senses', boostLabel: '+1 Senses' },
+  candle_stand: { action: 'keeping a small vigil', duration: 1200, stat: 'senses', boostLabel: '+1 Senses' },
+  rug_wool: { action: 'loafing on the rug', duration: 3000, breedAnim: 'sleep', stat: 'charm', boostLabel: '+1 Charm' },
+  saints_icon: { action: 'sitting in quiet contemplation', duration: 1800, breedAnim: 'sit', stat: 'charm', boostLabel: '+1 Charm' },
+  fish_bone_mobile: { action: 'batting at the mobile', duration: 1800, anim: 'scratch', stat: 'hunting', boostLabel: '+1 Hunting' },
 };
 
 export class RoomScene extends Phaser.Scene {

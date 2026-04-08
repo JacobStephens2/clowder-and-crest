@@ -14,6 +14,8 @@ import { eventBus } from '../utils/events';
 import { getTraitLabel } from '../systems/CatManager';
 import { pausePlaytimeSession, getCurrentSessionMs, formatPlaytime } from '../systems/PlaytimeTracker';
 import { isNative, exportSaveToFilesystem } from '../systems/NativeFeatures';
+import { addBondPoints } from '../systems/BondSystem';
+import { getDailyWish } from '../systems/GameSystems';
 
 const SPECIALIZATION_CATEGORIES: Record<string, { name: string; desc: string; icon: string }> = {
   pest_control: { name: 'Ratcatcher', desc: '+20% pest control, -5% others', icon: '\uD83D\uDC00' },
@@ -167,9 +169,31 @@ export function showCatPanel(): void {
       const catId = sel.getAttribute('data-cat-id')!;
       const cat = gameState!.cats.find((c) => c.id === catId);
       if (cat) {
-        cat.assignedRoom = (sel as HTMLSelectElement).value;
+        const oldRoom = cat.assignedRoom ?? 'sleeping';
+        const newRoom = (sel as HTMLSelectElement).value;
+        cat.assignedRoom = newRoom;
+        let toastMessage = `${cat.name} moved to ${newRoom === 'sleeping' ? 'Sleeping Quarters' : newRoom === 'kitchen' ? 'Kitchen' : 'Operations'}`;
+
+        const wish = getDailyWish(gameState!.day, gameState!.cats, gameState!.furniture.map((f) => f.furnitureId));
+        if (
+          wish &&
+          !gameState!.flags[`wish_day_${gameState!.day}`] &&
+          wish.wish === 'wants to explore a room' &&
+          wish.catId === cat.id &&
+          newRoom !== oldRoom
+        ) {
+          gameState!.flags[`wish_day_${gameState!.day}`] = true;
+          if (wish.reward.includes('mood')) cat.mood = 'happy';
+          if (wish.reward.includes('bond')) {
+            for (const other of gameState!.cats) {
+              if (other.id !== cat.id) addBondPoints(gameState!, cat.breed, other.breed, 2);
+            }
+          }
+          toastMessage = `${cat.name} explored a new room! ${wish.reward}`;
+        }
+
         deps.saveGame(gameState!);
-        deps.showToast(`${cat.name} moved to ${(sel as HTMLSelectElement).value === 'sleeping' ? 'Sleeping Quarters' : (sel as HTMLSelectElement).value === 'kitchen' ? 'Kitchen' : 'Operations'}`);
+        deps.showToast(toastMessage);
       }
     });
   });
