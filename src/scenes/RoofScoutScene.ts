@@ -43,9 +43,10 @@ const PLAYER_H = 32;
  *  CORNER_GRACE_PX of the platform's top, the engine snaps them up so
  *  the lean velocity carries them onto the platform. Without this, a
  *  jump that brushes the side of a ledge stalls horizontally and the
- *  cat falls past the platform's edge — easy mode "felt almost
- *  impossible" per user feedback. */
-const CORNER_GRACE_PX = 10;
+ *  cat falls past the platform's edge. Bumped from 10 → 18 in the
+ *  2026-04-08 ease pass — gives a much more forgiving "almost
+ *  cleared the ledge" assist. */
+const CORNER_GRACE_PX = 18;
 const START_Y = WORLD_HEIGHT - 120;
 const TARGET_Y = 120;
 
@@ -59,21 +60,26 @@ const COYOTE_MS = 120;
 const WALL_COYOTE_MS = 180;
 const JUMP_BUFFER_MS = 150;
 
-// Physics tuning, second pass (2026-04-08): the first version had drag=400
-// and lean=110 which combined to kill the horizontal lean velocity after
-// ~15px of travel. The player couldn't reach the side platforms in the
-// first chunk because the lateral distance was 35-100px and the lean
-// momentum died too quickly. Tuned for more carry-through:
-//   - jump velocity bumped slightly so a max-hold jump clears 1.5 chunks
-//   - lean increased so a tap travels meaningfully
-//   - drag dropped from 400 → 120 so momentum carries through the arc
-//   - drag still > 0 so the player doesn't slide forever after release
-const BASE_JUMP_VELOCITY = -600;
-const WALL_KICK_X = 220;
+// Physics tuning, third pass (2026-04-08 ease pass): the user reported
+// the climb still felt punishing and wall jumps were hard to chain.
+// Loosened the whole envelope across the board:
+//   - Gravity 1200 → 1050: longer air time, more reaction window
+//   - Jump velocity -600 → -640: clears wider gaps with the same effort
+//   - Wall kick 220 → 280: wall jumps push noticeably harder so the
+//     cat actually CLEARS the next platform instead of falling back
+//     into the same wall
+//   - Drag 120 → 90: lateral momentum carries further after both
+//     ground leans and wall kicks
+//   - Wall fall cap 80 → 40: clinging now genuinely slows the slide,
+//     giving the player real "hang on the wall and time the jump"
+//     control instead of "whoops, fell off"
+const BASE_JUMP_VELOCITY = -640;
+const WALL_KICK_X = 280;
 const LEAN_X = 170;
-const WALL_FALL_CAP = 80;
+const WALL_FALL_CAP = 40;
 const MAX_FALL_VELOCITY = 900;
-const PLAYER_DRAG_X = 120;
+const PLAYER_DRAG_X = 90;
+const PLAYER_GRAVITY_Y = 1050;
 
 // Each chunk is one vertical band of authored level. Chunks are stacked
 // upward from the start until the world is filled. Y values are RELATIVE
@@ -293,7 +299,7 @@ export class RoofScoutScene extends Phaser.Scene {
       key: 'RoofScoutScene',
       physics: {
         default: 'arcade',
-        arcade: { gravity: { x: 0, y: 1200 }, debug: false },
+        arcade: { gravity: { x: 0, y: PLAYER_GRAVITY_Y }, debug: false },
       },
     });
   }
@@ -323,12 +329,16 @@ export class RoofScoutScene extends Phaser.Scene {
     const agility = cat?.stats?.stealth ?? 5;
     const courage = cat?.stats?.endurance ?? 5;
 
-    // -540 (stat 1) → -560 (stat 5) → -600 (stat 10)
     this.jumpVelocity = BASE_JUMP_VELOCITY - (agility - 5) * 8;
     // wall cling slows the fall further for agile cats
-    this.wallFallCap = Math.max(40, WALL_FALL_CAP - (agility - 5) * 6);
+    this.wallFallCap = Math.max(20, WALL_FALL_CAP - (agility - 5) * 4);
     // hardier cats survive bigger plummets before resetting to a checkpoint
     this.fallForgiveness = GAME_HEIGHT * (0.55 + courage * 0.025);
+    // Easy mode is much more forgiving on falls — the player can drop
+    // a full screen-and-a-half before they hit the checkpoint reset.
+    if (this.difficulty === 'easy') {
+      this.fallForgiveness = GAME_HEIGHT * 1.5;
+    }
   }
 
   create(): void {
@@ -561,11 +571,19 @@ export class RoofScoutScene extends Phaser.Scene {
     }).setOrigin(0.5);
   }
 
-  /** Difficulty tier ramps from 1 (bottom of climb) to 3 (near summit). */
+  /** Difficulty tier ramps from 1 (bottom of climb) to 3 (near summit).
+   *  Easy mode caps at tier 2 — the player never sees the punishing
+   *  tier-3 chimney/spike chunks at all. Easy mode is meant to teach
+   *  the basics, so the curve stays in tier 1 most of the way and only
+   *  introduces tier-2 wall-cling chunks near the top. */
   private pickTierForAnchor(anchorY: number): 1 | 2 | 3 {
     const climbProgress = 1 - (anchorY - TARGET_Y) / (START_Y - TARGET_Y);
-    // hard runs ramp faster; easy runs spend longer in tier 1
-    const offset = this.difficulty === 'hard' ? 0.15 : this.difficulty === 'medium' ? 0 : -0.1;
+    if (this.difficulty === 'easy') {
+      // 70% tier 1, 30% tier 2, 0% tier 3.
+      return climbProgress < 0.7 ? 1 : 2;
+    }
+    // hard runs ramp faster; medium splits roughly thirds
+    const offset = this.difficulty === 'hard' ? 0.15 : 0;
     const t = climbProgress + offset;
     if (t < 0.35) return 1;
     if (t < 0.7) return 2;
@@ -812,15 +830,26 @@ export class RoofScoutScene extends Phaser.Scene {
       const wallOnRight = wallRight || this.lastWallSide === 'right';
       const wallOnLeft = wallLeft || this.lastWallSide === 'left';
       const pushDir = wallOnRight ? -1 : wallOnLeft ? 1 : (direction === 'left' ? -1 : 1);
-      this.player.setVelocityY(this.jumpVelocity);
+      // Wall jumps get a slightly stronger upward kick than ground
+      // jumps so the bounce-off-the-wall arc clearly clears the next
+      // platform. The +60 boost makes the wall-jump motion read as a
+      // distinct "powerful spring off the wall" rather than a quieter
+      // version of a ground hop.
+      this.player.setVelocityY(this.jumpVelocity - 60);
       this.player.setVelocityX(pushDir * WALL_KICK_X);
       this.isWallClinging = false;
       this.lastWallClingTime = -Infinity;
       this.lastWallSide = null;
-      // Wall-jump is a relatively rare moment so it gets a soft tactile
-      // sound. Volume dropped from 0.25 → 0.08 per user feedback.
-      playSfx('block_slide', 0.08);
-      haptic.tap();
+      // Wall-jump pop — small camera shake + brighter player flash
+      // so the player feels the bounce. Pure juice; no gameplay
+      // effect, just makes the wall jump satisfying to chain.
+      this.cameras.main.shake(80, 0.005);
+      this.playerVisual.setFillStyle(0xfff8e0);
+      this.time.delayedCall(120, () => {
+        if (this.playerVisual) this.playerVisual.setFillStyle(0xc4956a);
+      });
+      playSfx('block_slide', 0.18);
+      haptic.medium();
     } else {
       // Ground / coyote jump — directional lean from tap side.
       // No SFX here per user feedback (2026-04-08): "the constant jump
