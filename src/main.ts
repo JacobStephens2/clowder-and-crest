@@ -1839,10 +1839,15 @@ eventBus.on('chapter-advance', (chapter: number) => {
   const catBreed = gameState?.cats.find(c => c.isPlayer)?.breed ?? 'wildcat';
   const repLabel = getReputationLabel(gameState?.reputationScore ?? 0);
 
+  // Per user feedback: "When a scene starts to play, it should be clear
+  // if it is starting a new chapter". Every chapter narrative now opens
+  // with an unambiguous "CHAPTER N — TITLE" header beat before the prose
+  // begins, so the player always knows what arc they just entered.
   const chapterScenes: Record<number, Parameters<typeof showNarrativeOverlay>[0]> = {
     2: {
       // The Crew — warm, hopeful. A partner arrives.
       scenes: [
+        'CHAPTER 2 — THE CREW',
         'Word had spread.',
         `A stray who catches rats and earns fish — that was worth talking about.`,
         `A second cat appeared at the lean-to one morning. Not a friend. Not yet.`,
@@ -1852,11 +1857,13 @@ eventBus.on('chapter-advance', (chapter: number) => {
       image: 'assets/sprites/scenes/guildhall.png',
       catSprite: catBreed,
       tone: 'warm',
-      onScene: (i) => { if (i === 1) playSfx('recruit', 0.4); },
+      // SFX index shifted +1 to account for the chapter header beat.
+      onScene: (i) => { if (i === 0) playSfx('chapter', 0.5); if (i === 2) playSfx('recruit', 0.4); },
     },
     3: {
       // The Rat Plague — dark, urgent. The town is under siege.
       scenes: [
+        'CHAPTER 3 — THE RAT PLAGUE',
         'The granary fell first.',
         'Rats poured from the walls like dark water, overrunning the flour stores in a single night.',
         'By morning, the cathedral cellar was lost. The monks fled. The market was abandoned.',
@@ -1868,13 +1875,15 @@ eventBus.on('chapter-advance', (chapter: number) => {
       catSprite: catBreed,
       tone: 'urgent',
       onScene: (i) => {
-        if (i === 0) playSfx('thunder');
-        if (i === 3) playSfx('hiss', 0.3);
+        if (i === 0) playSfx('chapter', 0.5);
+        if (i === 1) playSfx('thunder');
+        if (i === 4) playSfx('hiss', 0.3);
       },
     },
     4: {
       // The Name — neutral, dignified. Recognition.
       scenes: [
+        'CHAPTER 4 — THE NAME',
         'The guild had a reputation now.',
         `Not strays. Not odd-jobbers. An institution.`,
         `The town council sent a messenger. They wanted to give ${catName}'s guild a name.`,
@@ -1884,11 +1893,12 @@ eventBus.on('chapter-advance', (chapter: number) => {
       image: 'assets/sprites/scenes/town_day.png',
       catSprite: catBreed,
       tone: 'neutral',
-      onScene: (i) => { if (i === 3) playSfx('chapter', 0.4); },
+      onScene: (i) => { if (i === 0) playSfx('chapter', 0.5); if (i === 4) playSfx('chapter', 0.4); },
     },
     5: {
       // Established — warm, reflective. Home.
       scenes: [
+        'CHAPTER 5 — ESTABLISHED',
         'The lean-to is gone.',
         'In its place — a guildhall. Warm. Furnished. Full of life.',
         `${catName} looks around. Each cat with their own story. Their own strength.`,
@@ -1903,12 +1913,14 @@ eventBus.on('chapter-advance', (chapter: number) => {
       image: 'assets/sprites/crest.png',
       catSprite: catBreed,
       tone: 'warm',
-      // Index shifted by +1 from the prologue-callback panel insert.
-      onScene: (i) => { if (i === 7) playSfx('chapter'); if (i === 3) playSfx('purr', 0.3); },
+      // Indices shifted +1 for the chapter header (and were already +1
+      // for the prologue-callback panel insert).
+      onScene: (i) => { if (i === 0) playSfx('chapter', 0.5); if (i === 8) playSfx('chapter'); if (i === 4) playSfx('purr', 0.3); },
     },
     6: {
       // The Rival — neutral turning tense. Competition.
       scenes: [
+        'CHAPTER 6 — THE RIVAL',
         // False-summit warmth (story-audit-council.md item 4).
         'The merchant had slipped an extra fish into the basket that morning, no charge. "For the founder," he said, not meeting eyes.',
         'Three days of soft sun. The kind of week the guild had stopped expecting.',
@@ -1924,11 +1936,12 @@ eventBus.on('chapter-advance', (chapter: number) => {
       image: 'assets/sprites/scenes/town_day.png',
       catSprite: catBreed,
       tone: 'neutral',
-      onScene: (i) => { if (i === 4) playSfx('alarm', 0.3); },
+      onScene: (i) => { if (i === 0) playSfx('chapter', 0.5); if (i === 5) playSfx('alarm', 0.3); },
     },
     7: {
       // The Inquisition — solemn, foreboding. Judgment.
       scenes: [
+        'CHAPTER 7 — THE INQUISITION',
         'A letter arrived.',
         'It bore the Bishop\'s seal.',
         `"We have heard of your guild. Cats that serve the saints — or so you claim."`,
@@ -1941,8 +1954,9 @@ eventBus.on('chapter-advance', (chapter: number) => {
       catSprite: catBreed,
       tone: 'solemn',
       onScene: (i) => {
-        if (i === 0) playSfx('thunder');
-        if (i === 4) playSfx('day_bell', 0.3);
+        if (i === 0) playSfx('chapter', 0.5);
+        if (i === 1) playSfx('thunder');
+        if (i === 5) playSfx('day_bell', 0.3);
       },
     },
   };
