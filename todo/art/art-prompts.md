@@ -160,8 +160,23 @@ The game uses 6 scene backgrounds today. Several chapters and events still use a
 ### Chapter 3 — Rat Plague Town
 The town in crisis — same cobblestone square as `town.png`, but rats visible scurrying in the gutters, shop windows shuttered, a thin haze of smoke from a distant fire, lanterns lit at dusk despite the time. Same color palette as `town.png` but darker and more saturated reds. **Spec:** 320×180, side view.
 
+### Chapter 3 close — Procession of Bones (Rosalia)
+The narrative scene that fires when the rat plague resolves explicitly references "Like Rosalia's bones through the streets of Palermo" — a procession through every quarter the rats had touched. The art should show: a line of monks in dark robes walking down a cobblestone street holding tall white candles, two cats walking at the front of the procession (one is the wildcat, the other a recruited cat), townspeople watching from doorways with hands clasped, the cathedral spire visible in the background, late afternoon golden light. Solemn and earned, not celebratory. **Spec:** 320×180, side view, used as the `image:` for the `rat-plague-resolved` narrative scene in `main.ts`. Currently uses `town_day.png` as a placeholder.
+
 ### Chapter 4 — The Naming Ceremony
 A small outdoor square with a wooden dais, banners hung between buildings, a crowd of NPC silhouettes gathered. The guildhall visible at the back. Bright but not gaudy — late afternoon golden hour. **Spec:** 320×180, side view, can include soft particle hint of falling leaves or petals.
+
+### The Long Winter — Storm-shut Town
+Used by the `long-winter-start` narrative scene (added in v2.3.0). The same cobblestone square as `town.png`, but: heavy snow drifts piled against doorways and shutters, the market stalls all collapsed or empty, all windows shuttered, no lanterns lit, a single cat silhouette at a guildhall window watching the snow swallow the cobblestones. The storm should feel like it has settled in for days, not minutes. **Spec:** 320×180, side view, deeply muted palette — the warm ambers of `town.png` are completely absent. Currently uses `town.png` as a placeholder.
+
+### The Long Winter — First Sun (resolution)
+Used by the `long-winter-resolved` narrative scene. The morning the storm breaks: pale watery sun rising over the cobblestones, snow still piled but starting to soften, shutters being unbolted, the cathedral bells ringing with one or two figures emerging from doorways. The merchant's caravan picking its way through the slush in the distance. Small wisps of breath visible. Hopeful but earned — survivors blinking at the light. **Spec:** 320×180, side view, slightly warmer palette than the storm scene above but still cool overall. Currently uses `town_day.png` as a placeholder.
+
+### Chapter 5 — Established (Home)
+The chapter 5 narrative explicitly evokes "the lean-to is gone... in its place — a guildhall. Warm. Furnished. Full of life." Art should show: the FULL guildhall as it appears at this point in the game — exterior view of the building (the lean-to is implicitly behind it, no longer visible), warm lantern light spilling from every window, a door slightly open with a cat silhouette in the entrance, smoke from the chimney, prayer flags or a small banner on the wall. Late afternoon, golden but settled. The visual contrast vs. `town.png` (which shows the same square but earlier in the chapter arc) should make the player feel "this place has changed because of you." **Spec:** 320×180, side view, used as the `image:` for the chapter 5 narrative scene (currently uses `assets/sprites/crest.png`).
+
+### Chapter 6 — The Standoff (Silver Paws confrontation)
+Distinct from the Silver Paws Guildhall scene below — this is the cobblestone square at dawn where the player's wildcat watches the Silver Paws cats arrive across the square. Two groups of cats facing each other across the cobblestones with about 10 paces between them, fog or low mist on the ground, the player's guildhall visible to one side and the suggestion of the Silver Paws' arrival from the opposite alley. The framing should feel like a Western standoff in cat form. **Spec:** 320×180, side view, dawn lighting, low contrast.
 
 ### Chapter 6 — Silver Paws Guildhall
 A rival cat guildhall — sharper, cleaner stone than the player's, ornate iron gates, a silver-painted crest above the door, two banners flanking the entrance. Slightly intimidating. Same medieval idiom but a colder color shift (more blue-grey, less amber). **Spec:** 320×180, side view.
