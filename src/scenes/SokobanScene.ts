@@ -483,6 +483,47 @@ const THEMED_LEVELS: Record<string, SokobanLevel[]> = {
       targets: [{ r: 5, c: 2 }, { r: 5, c: 3 }],
       minMoves: 0,
     },
+    {
+      // Per user feedback: the original 3 easy puzzles are obstacle-free
+      // 5x5 floors that read as "trivially easy". This level adds one
+      // wall corner that the player has to push the crate around — still
+      // beatable in a few moves but no longer "push everything in a
+      // straight line".
+      name: 'Corner Cut',
+      concept: 'Push the crate around the corner to its mark.',
+      grid: [
+        [1,1,1,1,1,1,1],
+        [1,2,2,2,2,2,1],
+        [1,2,2,2,2,2,1],
+        [1,2,2,1,1,2,1],
+        [1,2,2,2,2,2,1],
+        [1,2,2,2,2,2,1],
+        [1,1,1,1,1,1,1],
+      ],
+      playerStart: { r: 1, c: 1 },
+      crates: [{ r: 2, c: 2 }],
+      targets: [{ r: 5, c: 5 }],
+      minMoves: 0,
+    },
+    {
+      // Same intent — varies the easy pool with a second non-trivial layout.
+      // Two crates plus a wall mean the player has to think about order.
+      name: 'Twin Push',
+      concept: 'Two crates, one obstacle — pick your order.',
+      grid: [
+        [1,1,1,1,1,1,1],
+        [1,2,2,2,2,2,1],
+        [1,2,2,2,2,2,1],
+        [1,2,1,2,1,2,1],
+        [1,2,2,2,2,2,1],
+        [1,2,2,2,2,2,1],
+        [1,1,1,1,1,1,1],
+      ],
+      playerStart: { r: 1, c: 3 },
+      crates: [{ r: 2, c: 2 }, { r: 2, c: 4 }],
+      targets: [{ r: 5, c: 2 }, { r: 5, c: 4 }],
+      minMoves: 0,
+    },
   ],
 
   medium: [
