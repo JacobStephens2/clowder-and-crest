@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "check": "npm run check:static && npm run test:logic",
     "check:static": "node scripts/static-check.mjs",
+    "clean:test": "rm -rf test/screenshots && mkdir -p test/screenshots",
     "test:logic": "tsx test/logic-regressions.ts",
     "test:smoke": "node test/smoke.mjs",
     "test:explore": "node test/explore.mjs"
