@@ -53,6 +53,7 @@ import { getGuildFocusLines } from './systems/GuildFocus';
 import { showNarrativeOverlay } from './ui/narrativeOverlay';
 import { initPanels, showCatPanel, showMenuPanel, showFurnitureShop } from './ui/Panels';
 import { initConversations, checkAndShowConversation } from './ui/Conversations';
+import { initRelationalJournal } from './ui/RelationalJournal';
 import { showEndDaySuggestion } from './ui/overlays/EndDaySuggestion';
 import { showExileChoice as showExileChoiceOverlay } from './ui/overlays/ExileChoice';
 import { showDayTransitionOverlay, showToast as renderToast } from './ui/feedback';
@@ -657,6 +658,10 @@ initConversations({
   showToast,
   switchScene,
   suggestEndDay,
+});
+initRelationalJournal({
+  getGameState: () => gameState,
+  overlayLayer,
 });
 initJobFlow({
   overlayLayer,

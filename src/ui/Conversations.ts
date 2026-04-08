@@ -331,7 +331,24 @@ function showGroupConversation(key: string): void {
   });
 }
 
-function showConversation(breedA: string, breedB: string, rank: string): void {
+interface ConversationOpts {
+  /** Replay an already-viewed conversation. Skips markConversationViewed,
+   *  the saveGame call, and the rank-up toast. The onClose callback fires
+   *  instead of the default switchScene('TownMapScene'), used by the
+   *  Relational Journal panel to reopen itself after the replay ends. */
+  replay?: boolean;
+  onClose?: () => void;
+}
+
+/** Public entry point for replaying a viewed conversation from the
+ *  Relational Journal. Routes through showConversation in replay mode
+ *  with no save mutation, no rank-up toast, and an onClose callback
+ *  instead of a scene switch. */
+export function replayConversation(breedA: string, breedB: string, rank: string, onClose: () => void): void {
+  showConversation(breedA, breedB, rank, { replay: true, onClose });
+}
+
+function showConversation(breedA: string, breedB: string, rank: string, opts: ConversationOpts = {}): void {
   const gameState = deps.getGameState();
   const convos = conversationsData as Record<string, Array<{ rank: string; title: string; lines: Array<{ speaker: string; text: string; expression?: Expression }> }>>;
   const key1 = `${breedA}_${breedB}`;
@@ -430,6 +447,16 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
   function showLine(): void {
     if (lineIndex >= convo.lines.length) {
       overlay.remove();
+      // Replay mode: no save mutation, no rank-up toast, callback
+      // instead of scene switch. Used by the Relational Journal.
+      if (opts.replay) {
+        if (!dayTimerWasAlreadyPaused) {
+          resumeDayTimer();
+          startPlaytimeSession();
+        }
+        opts.onClose?.();
+        return;
+      }
       markConversationViewed(gameState!, breedA, breedB, rank);
       deps.saveGame(gameState!);
       // Resume the day timer + playtime now that the dialogue has finished
@@ -497,6 +524,15 @@ function showConversation(breedA: string, breedB: string, rank: string): void {
   document.getElementById('conv-skip')!.addEventListener('click', (e) => {
     e.stopPropagation();
     overlay.remove();
+    if (opts.replay) {
+      // Replay skip: no save mutation, no toast, return to journal.
+      if (!dayTimerWasAlreadyPaused) {
+        resumeDayTimer();
+        startPlaytimeSession();
+      }
+      opts.onClose?.();
+      return;
+    }
     markConversationViewed(gameState!, breedA, breedB, rank);
     deps.saveGame(gameState!);
     // Resume day timer/playtime same as the natural end-of-dialogue path.
