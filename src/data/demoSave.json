@@ -98,7 +98,23 @@
     { "furnitureId": "saints_icon", "room": "operations", "gridX": 4, "gridY": 4 }
   ],
   "completedJobs": [],
-  "bonds": [],
+  "bonds": [
+    { "catA": "wildcat", "catB": "russian_blue", "points": 50, "conversationsViewed": ["C", "B", "A"] },
+    { "catA": "wildcat", "catB": "tuxedo", "points": 50, "conversationsViewed": ["C", "B", "A"] },
+    { "catA": "wildcat", "catB": "maine_coon", "points": 50, "conversationsViewed": ["C", "B", "A"] },
+    { "catA": "wildcat", "catB": "siamese", "points": 50, "conversationsViewed": ["C", "B", "A"] },
+    { "catA": "wildcat", "catB": "bengal", "points": 50, "conversationsViewed": ["C", "B", "A"] },
+    { "catA": "russian_blue", "catB": "tuxedo", "points": 50, "conversationsViewed": ["C", "B", "A"] },
+    { "catA": "russian_blue", "catB": "maine_coon", "points": 50, "conversationsViewed": ["C", "B", "A"] },
+    { "catA": "russian_blue", "catB": "siamese", "points": 50, "conversationsViewed": ["C", "B", "A"] },
+    { "catA": "russian_blue", "catB": "bengal", "points": 50, "conversationsViewed": ["C", "B", "A"] },
+    { "catA": "tuxedo", "catB": "maine_coon", "points": 50, "conversationsViewed": ["C", "B", "A"] },
+    { "catA": "tuxedo", "catB": "siamese", "points": 50, "conversationsViewed": ["C", "B", "A"] },
+    { "catA": "tuxedo", "catB": "bengal", "points": 50, "conversationsViewed": ["C", "B", "A"] },
+    { "catA": "maine_coon", "catB": "siamese", "points": 50, "conversationsViewed": ["C", "B", "A"] },
+    { "catA": "maine_coon", "catB": "bengal", "points": 50, "conversationsViewed": ["C", "B", "A"] },
+    { "catA": "siamese", "catB": "bengal", "points": 50, "conversationsViewed": ["C", "B", "A"] }
+  ],
   "puzzlesCompleted": {
     "easy_1": 3,
     "easy_2": 3,
