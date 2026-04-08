@@ -12,6 +12,7 @@ import { spendFish } from '../systems/Economy';
 import { playSfx } from '../systems/SfxManager';
 import { eventBus } from '../utils/events';
 import { getTraitLabel } from '../systems/CatManager';
+import { pausePlaytimeSession, getCurrentSessionMs, formatPlaytime } from '../systems/PlaytimeTracker';
 
 const SPECIALIZATION_CATEGORIES: Record<string, { name: string; desc: string; icon: string }> = {
   pest_control: { name: 'Ratcatcher', desc: '+20% pest control, -5% others', icon: '\uD83D\uDC00' },
@@ -255,6 +256,7 @@ export function showMenuPanel(): void {
     </div>
     <div style="margin-bottom:16px;padding:8px 12px;background:rgba(42,37,32,0.4);border-radius:4px;font-size:11px;color:#6b5b3e">
       <div style="margin-bottom:4px;color:#8b7355">Guild Statistics:</div>
+      <div>Playtime: ${formatPlaytime((gameState.totalPlaytimeMs ?? 0) + getCurrentSessionMs())}</div>
       <div>Days survived: ${gameState.day}</div>
       <div>Total fish earned: ${gameState.totalFishEarned}</div>
       <div>Jobs completed: ${gameState.totalJobsCompleted}</div>
@@ -432,7 +434,8 @@ export function showMenuPanel(): void {
 
   document.getElementById('menu-quit-title')!.addEventListener('click', () => {
     const gs = deps.getGameState();
-    if (gs) deps.saveGame(gs);
+    if (gs) deps.saveGame(gs); // commits in-flight playtime delta
+    pausePlaytimeSession();    // clear in-memory session before leaving the world
     deps.stopDayTimer();
     deps.setGameState(null);
     deps.overlayLayer.querySelectorAll('.menu-overlay, .town-overlay, .assign-overlay').forEach((el) => el.remove());
@@ -444,6 +447,7 @@ export function showMenuPanel(): void {
   document.getElementById('menu-restart')!.addEventListener('click', () => {
     if (confirm('Restart the game? Your current save will be deleted and you will start fresh.')) {
       deps.clearCurrentSave();
+      pausePlaytimeSession();
       deps.setGameState(null);
       deps.stopDayTimer();
       deps.overlayLayer.querySelectorAll('.menu-overlay, .town-overlay, .assign-overlay').forEach((el) => el.remove());
@@ -454,6 +458,7 @@ export function showMenuPanel(): void {
   document.getElementById('menu-delete')!.addEventListener('click', () => {
     if (confirm('Delete your save? This cannot be undone.')) {
       deps.clearCurrentSave();
+      pausePlaytimeSession();
       deps.setGameState(null);
       deps.overlayLayer.querySelectorAll('.menu-overlay').forEach((el) => el.remove());
       deps.switchScene('TitleScene');

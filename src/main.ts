@@ -42,6 +42,7 @@ import { checkChapterAdvance, checkRatPlagueResolution, checkInquisitionResoluti
 import { startBgm, toggleMute, isMuted, switchToPuzzleMusic, switchToFightMusic, switchToNormalMusic, switchToTrackset, pauseMusic, resumeMusic } from './systems/MusicManager';
 import { playSfx } from './systems/SfxManager';
 import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDayEnd, pauseDayTimer, resumeDayTimer, isPaused } from './systems/DayTimer';
+import { startPlaytimeSession, pausePlaytimeSession } from './systems/PlaytimeTracker';
 import { initNative, registerAppLifecycle, scheduleDailyReturnNotification, cancelReturnNotification, haptic } from './systems/NativeFeatures';
 import { applyReputationShift, getReputationLabel, getReputationRecruitModifier, getReputationBonuses } from './systems/ReputationSystem';
 import { getComboMultiplier, updateCombo, getDailyWish, getCurrentFestival, trackEvent } from './systems/GameSystems';
@@ -189,11 +190,15 @@ cancelReturnNotification().catch(() => {}); // user is back — clear pending re
 let pausedByLifecycle = false;
 registerAppLifecycle({
   onPause: () => {
+    // saveGame() commits in-flight playtime via PlaytimeTracker, so this
+    // call BOTH persists the save AND folds the current session's elapsed
+    // time onto totalPlaytimeMs before we pause.
     if (gameState) saveGame(gameState);
     if (!isPaused()) {
       pausedByLifecycle = true;
       pauseDayTimer();
       pauseMusic();
+      pausePlaytimeSession();
     }
   },
   onResume: () => {
@@ -201,6 +206,7 @@ registerAppLifecycle({
       pausedByLifecycle = false;
       resumeDayTimer();
       resumeMusic();
+      startPlaytimeSession();
     }
   },
 });
@@ -268,12 +274,17 @@ if (pauseBtn) {
     if (isPaused()) {
       resumeDayTimer();
       resumeMusic();
+      startPlaytimeSession();
       pauseBtn.textContent = '||';
       pauseBtn.style.color = '#8b7355';
       if (pauseOverlay) { pauseOverlay.remove(); pauseOverlay = null; }
     } else {
+      // Save while the playtime session is still running so the in-flight
+      // delta gets committed before we pause the counter.
+      if (gameState) saveGame(gameState);
       pauseDayTimer();
       pauseMusic();
+      pausePlaytimeSession();
       pauseBtn.textContent = '\u25B6';
       pauseBtn.style.color = '#c4956a';
       // Block all input with a full-screen overlay
@@ -1344,7 +1355,11 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
       ],
       image: 'assets/sprites/scenes/town.png',
       onComplete: () => {
-        // Return to title — game over (don't null gameState to avoid race with pending callbacks)
+        // Return to title — game over (don't null gameState to avoid race with pending callbacks).
+        // Save once more to commit the playtime that ran during the game-over scenes,
+        // then close the in-memory session so the next game load starts fresh.
+        if (gameState) saveGame(gameState);
+        pausePlaytimeSession();
         stopDayTimer();
         switchScene('TitleScene');
       },
