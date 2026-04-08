@@ -5,7 +5,7 @@ import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
 import { haptic } from '../systems/NativeFeatures';
-import { showMinigameTutorial } from '../ui/sceneHelpers';
+import { showMinigameTutorial, showTutorialOverlay } from '../ui/sceneHelpers';
 
 const LANTERN_RADIUS = 18;
 
@@ -110,16 +110,34 @@ export class PatrolScene extends Phaser.Scene {
     this.cameras.main.setZoom(DPR);
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
-    // Tutorial bumped to v2 — prowlers + relight cooldown are new mechanics
-    // returning players need to learn.
-    if (showMinigameTutorial(this, 'clowder_patrol_tutorial_v2', 'Night Patrol',
-      `Keep the lanterns lit until dawn!<br><br>
+    // Tutorial body — extracted to a const so the in-scene "?" help
+    // button can re-show the same content. Bumped to v2 when prowlers
+    // and the relight cooldown were added; returning players see the
+    // new rules on next launch.
+    const TUTORIAL_TITLE = 'Night Patrol';
+    const TUTORIAL_BODY = `Keep the lanterns lit until dawn!<br><br>
       <strong>Tap a lantern</strong> to relight it before it goes dark.<br><br>
       <strong style="color:#cc6666">Red-flickering</strong> lanterns are traps — don't tap them!<br><br>
       <strong style="color:#aa44aa">Prowlers</strong> creep in from the edges. Tap them before they reach a lantern!<br><br>
-      The night gets <strong>steadily worse</strong> — triage carefully.`,
+      The night gets <strong>steadily worse</strong> — triage carefully.`;
+    if (showMinigameTutorial(this, 'clowder_patrol_tutorial_v2', TUTORIAL_TITLE, TUTORIAL_BODY,
       () => { this.tutorialShowing = false; }
     )) { this.tutorialShowing = true; }
+
+    // Help button — re-shows the tutorial unconditionally. Per user
+    // report: "I didn't catch how to play the patrol game, and after
+    // losing it again I still don't understand." First scene to adopt
+    // the pattern; other scenes can copy this 5-line block.
+    const helpBtn = this.add.text(GAME_WIDTH - 24, 30, '?', {
+      fontFamily: 'Georgia, serif', fontSize: '18px', color: '#dda055',
+      backgroundColor: '#2a2520', padding: { x: 8, y: 2 },
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    helpBtn.on('pointerdown', () => {
+      this.tutorialShowing = true;
+      showTutorialOverlay(this, TUTORIAL_TITLE, TUTORIAL_BODY,
+        () => { this.tutorialShowing = false; },
+        { pauseScene: true });
+    });
 
     const job = getJob(this.jobId);
     this.add.text(GAME_WIDTH / 2, 30, `${job?.name ?? 'Patrol'} (${this.difficulty})`, {
