@@ -25,10 +25,12 @@ Object.assign(globalThis, {
 const saveModule = await import('../src/systems/SaveManager.ts');
 const jobBoardModule = await import('../src/systems/JobBoard.ts');
 const progressionModule = await import('../src/systems/ProgressionManager.ts');
+const playtimeModule = await import('../src/systems/PlaytimeTracker.ts');
 
 const { createDefaultSave, loadFromSlot, loadGame, validateAndSanitizeSave, deleteSlot, getRecentBackup, restoreBackup, pruneExpiredBackups, saveToSlot } = saveModule;
 const { generateDailyJobs, getAllJobs, getStatMatchScore } = jobBoardModule;
 const { checkChapterAdvance, checkLongWinterStart, checkLongWinterResolution, getLongWinterDay } = progressionModule;
+const { startPlaytimeSession, pausePlaytimeSession, getCurrentSessionMs, isPlaytimeRunning, commitSessionToSave, formatPlaytime } = playtimeModule;
 
 function testSaveMigrationNormalizesTraits() {
   localStorageMock.clear();
@@ -285,6 +287,111 @@ function testGetLongWinterDayReturnsZeroWhenNotActive() {
   assert.equal(getLongWinterDay(save), 3, 'day 32 - day 30 + 1 = winter day 3');
 }
 
+// ──── Playtime tracker regression tests ────
+//
+// The tracker holds module-level state, so each test pauses the session
+// at the end to leave the module in a clean state for the next test.
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function testFormatPlaytime() {
+  assert.equal(formatPlaytime(0), '0m');
+  assert.equal(formatPlaytime(45_000), '0m', 'sub-minute rounds down to 0m');
+  assert.equal(formatPlaytime(60_000), '1m');
+  assert.equal(formatPlaytime(120_000), '2m');
+  assert.equal(formatPlaytime(59 * 60_000), '59m');
+  assert.equal(formatPlaytime(60 * 60_000), '1h 0m');
+  assert.equal(formatPlaytime(60 * 60_000 + 30 * 60_000), '1h 30m');
+  assert.equal(formatPlaytime(2 * 60 * 60_000 + 10 * 60_000), '2h 10m');
+  assert.equal(formatPlaytime(-1), '0m', 'negative input clamps to 0m');
+  assert.equal(formatPlaytime(NaN), '0m', 'NaN clamps to 0m');
+}
+
+async function testPlaytimeStartAndPauseRoundtrip() {
+  pausePlaytimeSession(); // ensure clean state
+  assert.equal(isPlaytimeRunning(), false);
+  startPlaytimeSession();
+  assert.equal(isPlaytimeRunning(), true);
+  await sleep(20);
+  const elapsed = pausePlaytimeSession();
+  assert.equal(isPlaytimeRunning(), false);
+  assert.ok(elapsed >= 15, `paused session should report ~20ms elapsed, got ${elapsed}`);
+  assert.ok(elapsed < 200, `paused session shouldn't report wildly more than 20ms, got ${elapsed}`);
+}
+
+async function testStartIsIdempotent() {
+  pausePlaytimeSession();
+  startPlaytimeSession();
+  await sleep(10);
+  startPlaytimeSession(); // should be a no-op, NOT reset the session start
+  await sleep(10);
+  const elapsed = pausePlaytimeSession();
+  assert.ok(elapsed >= 18, `idempotent start should preserve original timer (~20ms), got ${elapsed}`);
+}
+
+async function testCommitSessionFoldsIntoSave() {
+  pausePlaytimeSession();
+  const save: { totalPlaytimeMs?: number } = { totalPlaytimeMs: 5_000 };
+  startPlaytimeSession();
+  await sleep(20);
+  commitSessionToSave(save);
+  assert.ok(
+    save.totalPlaytimeMs! >= 5_015 && save.totalPlaytimeMs! < 5_500,
+    `commit should add ~20ms to existing 5000ms total, got ${save.totalPlaytimeMs}`,
+  );
+  // After commit, session should still be running (restarted with delta=0)
+  assert.equal(isPlaytimeRunning(), true);
+  // A second immediate commit should add roughly 0 more
+  const before = save.totalPlaytimeMs!;
+  commitSessionToSave(save);
+  const added = save.totalPlaytimeMs! - before;
+  assert.ok(added >= 0 && added < 50, `second immediate commit should add ~0ms, got ${added}`);
+  pausePlaytimeSession();
+}
+
+function testCommitOnPausedTrackerIsNoop() {
+  pausePlaytimeSession();
+  const save: { totalPlaytimeMs?: number } = { totalPlaytimeMs: 1_000 };
+  commitSessionToSave(save);
+  assert.equal(save.totalPlaytimeMs, 1_000, 'commit on paused tracker should not change the total');
+}
+
+function testCommitInitializesUndefinedTotal() {
+  pausePlaytimeSession();
+  const save: { totalPlaytimeMs?: number } = {};
+  startPlaytimeSession();
+  commitSessionToSave(save);
+  assert.equal(typeof save.totalPlaytimeMs, 'number', 'commit should initialize undefined total to a number');
+  assert.ok(save.totalPlaytimeMs! >= 0);
+  pausePlaytimeSession();
+}
+
+async function testSaveGameCommitsPlaytimeViaIntegration() {
+  // End-to-end: confirm saveGame in SaveManager folds the playtime via
+  // the commit hook. This is the contract the menu panel relies on.
+  localStorageMock.clear();
+  pausePlaytimeSession();
+  const save = createDefaultSave('Playtime-Integration');
+  assert.equal(save.totalPlaytimeMs, 0, 'fresh save should start at 0 playtime');
+  startPlaytimeSession();
+  await sleep(20);
+  saveToSlot(1, save);
+  assert.ok(save.totalPlaytimeMs! >= 15, `saveToSlot should commit playtime, got ${save.totalPlaytimeMs}`);
+  pausePlaytimeSession();
+}
+
+function testMigrationBackfillsTotalPlaytimeMs() {
+  localStorageMock.clear();
+  const v1Save = { ...createDefaultSave('Backfill-Test') };
+  delete (v1Save as any).totalPlaytimeMs;
+  saveToSlot(2, v1Save as any);
+  const loaded = loadFromSlot(2);
+  assert.ok(loaded);
+  assert.equal(loaded!.totalPlaytimeMs, 0, 'missing totalPlaytimeMs should backfill to 0');
+}
+
 function testMigrationStampsCurrentVersion() {
   const v1Save = { ...createDefaultSave('Version-Test'), version: 1 };
   delete (v1Save as any).dungeonHistory; // simulate v1 schema (no dungeonHistory)
@@ -316,5 +423,13 @@ testLongWinterFiresAfterChapter4Settles();
 testLongWinterBlocksChapter5Advance();
 testLongWinterResolvesAfterFiveDays();
 testGetLongWinterDayReturnsZeroWhenNotActive();
+testFormatPlaytime();
+await testPlaytimeStartAndPauseRoundtrip();
+await testStartIsIdempotent();
+await testCommitSessionFoldsIntoSave();
+testCommitOnPausedTrackerIsNoop();
+testCommitInitializesUndefinedTotal();
+await testSaveGameCommitsPlaytimeViaIntegration();
+testMigrationBackfillsTotalPlaytimeMs();
 
 console.log('Logic regression tests passed.');

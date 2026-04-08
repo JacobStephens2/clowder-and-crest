@@ -1,5 +1,6 @@
 import type { StatName } from '../utils/constants';
 import { normalizeTraitId } from './CatManager';
+import { commitSessionToSave } from './PlaytimeTracker';
 
 export interface CatSaveData {
   id: string;
@@ -80,6 +81,10 @@ export interface SaveData {
   journal: JournalEntry[];
   dungeonHistory?: DungeonHistory;
   lastPlayedTimestamp?: number;
+  /** Total wall-clock playtime in milliseconds, accumulated across all
+   *  sessions. Updated by saveGame() via PlaytimeTracker.commitSessionToSave().
+   *  Old saves backfill to 0 in migrateSaveData. */
+  totalPlaytimeMs?: number;
 }
 
 const SAVE_KEY = 'clowder_and_crest_save';
@@ -276,6 +281,9 @@ function migrateSaveData(data: SaveData): SaveData {
   if (!data.dungeonHistory) {
     data.dungeonHistory = { totalRuns: 0, totalClears: 0, bestFloor: 0, lastFailFloor: -1, lastFailCause: '' };
   }
+  if (typeof data.totalPlaytimeMs !== 'number' || data.totalPlaytimeMs < 0) {
+    data.totalPlaytimeMs = 0;
+  }
   for (const cat of data.cats) {
     cat.traits = (cat.traits ?? []).map(normalizeTraitId);
   }
@@ -322,6 +330,7 @@ export function createDefaultSave(playerCatName: string): SaveData {
     stationedCats: [],
     journal: [],
     dungeonHistory: { totalRuns: 0, totalClears: 0, bestFloor: 0, lastFailFloor: -1, lastFailCause: '' },
+    totalPlaytimeMs: 0,
   };
 }
 
@@ -329,6 +338,11 @@ let saveFailCount = 0;
 
 export function saveGame(data: SaveData): void {
   try {
+    // Roll the current playtime session's elapsed time into the running
+    // total before serializing. PlaytimeTracker is the source of truth
+    // for in-flight session time; saveGame is the chokepoint where it
+    // gets persisted. See src/systems/PlaytimeTracker.ts for the rationale.
+    commitSessionToSave(data);
     data.lastPlayedTimestamp = Date.now();
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     saveFailCount = 0;
@@ -370,6 +384,10 @@ const SLOT_PREFIX = 'clowder_save_slot_';
 
 export function saveToSlot(slot: number, data: SaveData): void {
   try {
+    // Same playtime commit hook as saveGame — both functions are
+    // "persist the game state to storage" entry points and either
+    // can land mid-session.
+    commitSessionToSave(data);
     data.lastPlayedTimestamp = Date.now();
     localStorage.setItem(`${SLOT_PREFIX}${slot}`, JSON.stringify(data));
   } catch (e) {

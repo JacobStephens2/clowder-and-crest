@@ -1,6 +1,7 @@
 import type { SaveData } from './SaveManager';
 import type { JobDef } from './JobBoard';
 import { eventBus } from '../utils/events';
+import { startPlaytimeSession } from './PlaytimeTracker';
 
 export interface SessionFlowDeps {
   overlayLayer: HTMLElement;
@@ -94,6 +95,9 @@ export function initSessionFlow(deps: SessionFlowDeps): SessionFlowApi {
     deps.updateStatusBar();
     deps.startBgm();
     deps.startDayTimer();
+    // Start the playtime session alongside the day timer. Subsequent
+    // saves will commit elapsed time onto save.totalPlaytimeMs.
+    startPlaytimeSession();
 
     const { earnings, daysAway } = deps.getOfflineStationedEarnings(save);
     if (earnings > 0) {
