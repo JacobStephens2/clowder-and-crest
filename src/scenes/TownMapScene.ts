@@ -1,12 +1,13 @@
 import Phaser from 'phaser';
 import { eventBus } from '../utils/events';
-import { DPR, GAME_WIDTH, GAME_HEIGHT, ALL_BREED_IDS } from '../utils/constants';
+import { DPR, GAME_WIDTH, GAME_HEIGHT, ALL_BREED_IDS, BREED_NAMES } from '../utils/constants';
 import { TouchJoystick } from '../ui/touchJoystick';
 import { getGameState, getAcceptedJob } from '../main';
 import { getCurrentPhase } from '../systems/DayTimer';
 
 import { playSfx } from '../systems/SfxManager';
 import { getAvailableRecruits } from '../systems/CatManager';
+import type { SaveData } from '../systems/SaveManager';
 
 // ── Grid layout ──
 const COLS = 8;
@@ -119,6 +120,12 @@ export class TownMapScene extends Phaser.Scene {
    *  board overlay). */
   private walkingToBuilding: BuildingDef | null = null;
   private strayCats: { breed: string; col: number; row: number; sprite: Phaser.GameObjects.Sprite; nameLabel: Phaser.GameObjects.Text }[] = [];
+  /** Recruited cats wandering the town. Tracked per-instance so the
+   *  player can tap them and trigger an interaction. Per user
+   *  feedback (2026-04-08): "in the town scene, the player should be
+   *  able to click cats that have already joined the guild to have
+   *  their cat interact with that cat." */
+  private npcCats: { cat: SaveData['cats'][number]; sprite: Phaser.GameObjects.Sprite }[] = [];
   private merchantTile: { col: number; row: number } | null = null;
 
   constructor() {
@@ -495,10 +502,13 @@ export class TownMapScene extends Phaser.Scene {
   private spawnNPCCats(): void {
     const save = getGameState();
     if (!save || save.cats.length < 2) return;
+    this.npcCats = [];
 
-    const breeds = (ALL_BREED_IDS as readonly string[]).filter(
-      (b) => save.cats.some((c) => c.breed === b && !c.isPlayer)
-    );
+    // Pick guild cats (excluding the player) to wander the town. Each
+    // sprite is associated with its actual cat object so the click
+    // handler can show that specific cat's name and trigger an
+    // interaction beat.
+    const guildCats = save.cats.filter((c) => !c.isPlayer);
     const pathTiles: { col: number; row: number }[] = [];
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
@@ -508,9 +518,10 @@ export class TownMapScene extends Phaser.Scene {
       }
     }
 
-    const count = Math.min(2, breeds.length, pathTiles.length);
+    const count = Math.min(2, guildCats.length, pathTiles.length);
     for (let i = 0; i < count; i++) {
-      const breed = breeds[i % breeds.length];
+      const cat = guildCats[i];
+      const breed = cat.breed;
       const tile = pathTiles[Math.floor(Math.random() * pathTiles.length)];
       pathTiles.splice(pathTiles.indexOf(tile), 1);
 
@@ -522,6 +533,14 @@ export class TownMapScene extends Phaser.Scene {
         npc.setScale(0.7);
         npc.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
         npc.setAlpha(0.8);
+        // Tappable — opens a small interaction popup naming this
+        // specific guild cat.
+        npc.setInteractive({ useHandCursor: true });
+        npc.on('pointerdown', (_p: Phaser.Input.Pointer, _lx: number, _ly: number, event: Phaser.Types.Input.EventData) => {
+          event.stopPropagation();
+          this.showCatInteraction(cat);
+        });
+        this.npcCats.push({ cat, sprite: npc });
 
         // Gentle wander — stay on walkable tiles
         let npcCol = tile.col;
@@ -1091,6 +1110,67 @@ export class TownMapScene extends Phaser.Scene {
         else this.walkingToBuilding = null;
       }
     });
+  }
+
+  /** Pop up a small in-scene interaction with a guild cat the player
+   *  tapped while wandering the town. v1: shows their name, breed,
+   *  mood, and a flavor line that varies by mood. Future iterations
+   *  could trigger a 1-line bond conversation or grant a small bond
+   *  bump per day, but for now this is the lightweight greeting beat
+   *  the user asked for. */
+  private showCatInteraction(cat: SaveData['cats'][number]): void {
+    const breedName = BREED_NAMES[cat.breed] ?? cat.breed;
+    const moodLines: Record<string, string[]> = {
+      happy: [
+        'purrs and bumps your shin',
+        'rolls onto its back, exposing a fluffy belly',
+        'chirps a small happy trill at you',
+      ],
+      content: [
+        'blinks slowly — the cat-equivalent of a smile',
+        'bumps your shoulder with its head',
+        'twitches its tail in greeting',
+      ],
+      tired: [
+        'half-opens an eye, then closes it again',
+        'leans against your leg without speaking',
+        'yawns wide, ears flattening',
+      ],
+      unhappy: [
+        'looks away when you approach',
+        'twitches its tail in irritation',
+        'mews quietly, asking for something you can\u2019t name',
+      ],
+    };
+    const lines = moodLines[cat.mood] ?? moodLines.content;
+    const flavor = lines[Math.floor(Math.random() * lines.length)];
+
+    // Reuse the overlay layer used by the rest of the UI so the
+    // popup sits above the canvas without competing for Phaser input.
+    const layer = document.getElementById('overlay-layer');
+    if (!layer) return;
+    // Don't stack — close any existing interaction popup first.
+    layer.querySelectorAll('.cat-interaction-overlay').forEach((el) => el.remove());
+
+    const overlay = document.createElement('div');
+    overlay.className = 'cat-interaction-overlay';
+    overlay.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#1a1612;border:2px solid #6b5b3e;border-radius:8px;padding:18px 22px;max-width:300px;z-index:9000;font-family:Georgia,serif;color:#c4956a;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,0.6)';
+    const escName = cat.name.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+    const escBreed = breedName.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+    const escFlavor = flavor.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+    overlay.innerHTML = `
+      <div style="font-size:16px;color:#dda055;margin-bottom:4px">${escName}</div>
+      <div style="font-size:11px;color:#8b7355;margin-bottom:10px">${escBreed} \u2022 ${cat.mood}</div>
+      <div style="font-size:13px;color:#c4956a;font-style:italic;line-height:1.5">${escFlavor}</div>
+      <button id="cat-interact-close" style="margin-top:14px;padding:6px 16px;background:#2a2520;border:1px solid #6b5b3e;border-radius:4px;color:#c4956a;font-family:Georgia,serif;font-size:12px;cursor:pointer">Close</button>
+    `;
+    layer.appendChild(overlay);
+    const close = () => overlay.remove();
+    document.getElementById('cat-interact-close')?.addEventListener('click', close);
+    overlay.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).id !== 'cat-interact-close') return;
+    });
+    playSfx('purr', 0.25);
   }
 
   private enterBuilding(b: BuildingDef): void {
