@@ -1,4 +1,5 @@
 - git commit as you go in atomic commit style
+- when explicitly asked to keep working through todos, make atomic commits as you go and push when the requested pass is done
 - update source_documents/Clowder-and-Crest-Design-Document.md as needed to reflect updates to the game
 - use the pixellab mcp to generate pixel art. Here's an overview of the available tools: https://api.pixellab.ai/mcp/docs
-- always continue working if there is more to do in the todo/todo.md file
+- always continue working if there is more to do in your todo.md file
