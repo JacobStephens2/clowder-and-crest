@@ -760,53 +760,76 @@ export class TownMapScene extends Phaser.Scene {
     });
   }
 
-  private walkToward(targetCol: number, targetRow: number): void {
-    const dc = targetCol - this.playerPos.col;
-    const dr = targetRow - this.playerPos.row;
-    if (dc === 0 && dr === 0) return;
+  /** BFS over walkable tiles. Returns the sequence of (col,row) tiles
+   *  the player should walk to reach (toCol,toRow), or null if unreachable.
+   *  The starting tile is NOT included; the destination IS. The previous
+   *  greedy single-axis-step pathing couldn't handle U-shaped obstacles
+   *  (e.g. clicking the castle from inside the market door — the path
+   *  has to go AROUND the market footprint). BFS handles any layout. */
+  private findPath(toCol: number, toRow: number): Array<{ col: number; row: number }> | null {
+    if (toCol < 0 || toCol >= COLS || toRow < 0 || toRow >= ROWS) return null;
+    if (this.grid[toRow][toCol] === BUILDING) return null;
+    if (this.playerPos.col === toCol && this.playerPos.row === toRow) return [];
 
-    // Pick a single-axis step toward the target. Horizontal-dominant first
-    // because the town is wider than it is tall and a horizontal-first
-    // gait reads more naturally for a top-down view.
-    let stepDc = 0;
-    let stepDr = 0;
-    if (Math.abs(dc) > Math.abs(dr)) {
-      stepDc = dc > 0 ? 1 : -1;
-    } else {
-      stepDr = dr > 0 ? 1 : -1;
-    }
+    const startKey = `${this.playerPos.col},${this.playerPos.row}`;
+    const visited = new Set<string>([startKey]);
+    const parents = new Map<string, { col: number; row: number }>();
+    const queue: Array<{ col: number; row: number }> = [{ col: this.playerPos.col, row: this.playerPos.row }];
+    const DIRS = [{ dc: 1, dr: 0 }, { dc: -1, dr: 0 }, { dc: 0, dr: 1 }, { dc: 0, dr: -1 }];
 
-    // If the chosen direction is blocked by a building wall, try the
-    // other axis instead so the cat doesn't just freeze on the spot.
-    const tryNc = this.playerPos.col + stepDc;
-    const tryNr = this.playerPos.row + stepDr;
-    const blocked = tryNc < 0 || tryNc >= COLS || tryNr < 0 || tryNr >= ROWS || this.grid[tryNr][tryNc] === BUILDING;
-    if (blocked) {
-      stepDc = 0;
-      stepDr = 0;
-      if (dr !== 0 && Math.abs(dc) > Math.abs(dr)) {
-        // Was trying horizontal — switch to vertical
-        stepDr = dr > 0 ? 1 : -1;
-      } else if (dc !== 0) {
-        stepDc = dc > 0 ? 1 : -1;
+    while (queue.length > 0) {
+      const cur = queue.shift()!;
+      if (cur.col === toCol && cur.row === toRow) {
+        // Reconstruct path back to start
+        const path: Array<{ col: number; row: number }> = [];
+        let node: { col: number; row: number } | undefined = cur;
+        while (node) {
+          path.unshift(node);
+          const key = `${node.col},${node.row}`;
+          node = parents.get(key);
+        }
+        // Drop the starting tile (the player is already on it)
+        return path.slice(1);
       }
-      const altNc = this.playerPos.col + stepDc;
-      const altNr = this.playerPos.row + stepDr;
-      const altBlocked = altNc < 0 || altNc >= COLS || altNr < 0 || altNr >= ROWS || this.grid[altNr][altNc] === BUILDING;
-      if (altBlocked) return; // Both axes blocked — give up gracefully
+      for (const { dc, dr } of DIRS) {
+        const nc = cur.col + dc;
+        const nr = cur.row + dr;
+        if (nc < 0 || nc >= COLS || nr < 0 || nr >= ROWS) continue;
+        if (this.grid[nr][nc] === BUILDING) continue;
+        const key = `${nc},${nr}`;
+        if (visited.has(key)) continue;
+        visited.add(key);
+        parents.set(key, cur);
+        queue.push({ col: nc, row: nr });
+      }
     }
+    return null; // unreachable
+  }
 
+  /** Walk the player along a precomputed BFS path, one tile per delayedCall. */
+  private walkPath(path: Array<{ col: number; row: number }>): void {
+    if (path.length === 0) return;
+    const next = path[0];
+    const stepDc = next.col - this.playerPos.col;
+    const stepDr = next.row - this.playerPos.row;
     this.movePlayer(stepDc, stepDr);
-    // Continue walking after this step. The 220ms delay matches the
-    // walk tween (160ms) plus a small breathing pause; the same cadence
-    // walkToThenEnter uses for buildings.
     this.time.delayedCall(220, () => {
-      // If the player has been moved off-axis (e.g. via joystick) since
-      // we started, recompute toward the original target.
-      if (this.playerPos.col !== targetCol || this.playerPos.row !== targetRow) {
-        this.walkToward(targetCol, targetRow);
+      // If the player landed where we expected, advance the path.
+      // If they're off-route (joystick interrupted), recompute.
+      if (this.playerPos.col === next.col && this.playerPos.row === next.row) {
+        this.walkPath(path.slice(1));
+      } else if (path.length > 0) {
+        const final = path[path.length - 1];
+        const replan = this.findPath(final.col, final.row);
+        if (replan) this.walkPath(replan);
       }
     });
+  }
+
+  private walkToward(targetCol: number, targetRow: number): void {
+    const path = this.findPath(targetCol, targetRow);
+    if (!path || path.length === 0) return;
+    this.walkPath(path);
   }
 
   private movePlayer(dx: number, dy: number): void {
@@ -947,28 +970,40 @@ export class TownMapScene extends Phaser.Scene {
   }
 
   private walkToThenEnter(b: BuildingDef): void {
-    // Simple path: step toward the door one step at a time
-    const dc = b.doorCol - this.playerPos.col;
-    const dr = b.doorRow - this.playerPos.row;
-
-    if (dc === 0 && dr === 0) {
+    // BFS to the door tile, then enter on arrival. The previous greedy
+    // single-step pathing failed for cases like "click the castle from
+    // inside the market door" where the path has to go AROUND the
+    // market footprint — that's the user's reported regression.
+    if (this.playerPos.col === b.doorCol && this.playerPos.row === b.doorRow) {
       this.enterBuilding(b);
       return;
     }
-
-    // Move one step toward door
-    if (Math.abs(dc) > Math.abs(dr)) {
-      this.movePlayer(dc > 0 ? 1 : -1, 0);
-    } else {
-      this.movePlayer(0, dr > 0 ? 1 : -1);
+    const path = this.findPath(b.doorCol, b.doorRow);
+    if (!path || path.length === 0) {
+      // Door isn't reachable from here. Best we can do is bail gracefully.
+      return;
     }
+    this.walkPathThenEnter(path, b);
+  }
 
-    // Continue walking after this step
+  /** Walk a precomputed path one tile per delayedCall, then enterBuilding
+   *  on arrival. Used by walkToThenEnter for building taps. */
+  private walkPathThenEnter(path: Array<{ col: number; row: number }>, b: BuildingDef): void {
+    if (path.length === 0) {
+      this.enterBuilding(b);
+      return;
+    }
+    const next = path[0];
+    const stepDc = next.col - this.playerPos.col;
+    const stepDr = next.row - this.playerPos.row;
+    this.movePlayer(stepDc, stepDr);
     this.time.delayedCall(220, () => {
-      if (this.playerPos.col === b.doorCol && this.playerPos.row === b.doorRow) {
-        this.enterBuilding(b);
+      if (this.playerPos.col === next.col && this.playerPos.row === next.row) {
+        this.walkPathThenEnter(path.slice(1), b);
       } else {
-        this.walkToThenEnter(b);
+        // Off-route (joystick interrupted). Replan from current position.
+        const replan = this.findPath(b.doorCol, b.doorRow);
+        if (replan) this.walkPathThenEnter(replan, b);
       }
     });
   }
