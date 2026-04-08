@@ -954,7 +954,15 @@ export class TownMapScene extends Phaser.Scene {
       this.playerSprite.play(walkKey);
     }
 
-    // Move sprite — smooth easing
+    // Move sprite — smooth easing. If playerSprite is null (the
+    // breed texture failed to load), the tween branch is skipped
+    // entirely, so we have to advance state manually or isMoving
+    // gets stuck. Per the Map Traversal doc's recommendation #2.
+    if (!this.playerSprite) {
+      this.isMoving = false;
+      this.checkDoorProximity();
+      return;
+    }
     if (this.playerSprite) {
       this.tweens.add({
         targets: this.playerSprite,
@@ -1192,9 +1200,17 @@ export class TownMapScene extends Phaser.Scene {
     } else if (b.id === 'jobs') {
       eventBus.emit('show-town-overlay');
     } else if (b.id === 'guildhall') {
-      // Walking-back-to-home affordance: route to the GuildhallScene
-      // the same way the bottom-nav button does.
-      eventBus.emit('navigate', 'GuildhallScene');
+      // Walking-back-to-home affordance: route to GuildhallScene
+      // through a 200ms camera fade so the cut feels intentional
+      // rather than abrupt. Per the Map Traversal doc: "On
+      // Capacitor/Android, fadeOut → once('camerafadeoutcomplete')
+      // → scene.start() is the standard pattern. The key detail:
+      // listen with .once() so the callback doesn't fire repeatedly
+      // on the next scene load."
+      this.cameras.main.fadeOut(200, 10, 9, 8);
+      this.cameras.main.once('camerafadeoutcomplete', () => {
+        eventBus.emit('navigate', 'GuildhallScene');
+      });
     } else {
       // Other buildings (cathedral, castle, tavern, market, docks, mill).
       // Route through 'enter-building' which main.ts handles: if there's
