@@ -250,8 +250,12 @@ export class GuildhallScene extends Phaser.Scene {
         border.on('pointerover', () => border.setStrokeStyle(2, 0xc4956a));
         border.on('pointerout', () => border.setStrokeStyle(2, 0x6b5b3e));
         border.on('pointerdown', () => {
-          eventBus.emit('navigate', 'RoomScene');
-          this.scene.start('RoomScene', { roomId: room.id });
+          // Single emit with data — navigate now forwards data to
+          // switchScene. The previous version called navigate AND
+          // this.scene.start back-to-back, which was a double-start
+          // race that left GuildhallScene blank when the player came
+          // back from RoomScene via the back button.
+          eventBus.emit('navigate', 'RoomScene', { roomId: room.id });
         });
 
         // Room name with subtle decoration

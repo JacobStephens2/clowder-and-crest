@@ -553,10 +553,10 @@ setOnDayEnd(() => {
 // ──── Event Handlers ────
 
 // Hide/show UI
-eventBus.on('navigate', (target: string) => {
+eventBus.on('navigate', (target: string, data?: object) => {
   // Clean up any stale overlays before navigating
   overlayLayer.querySelectorAll('.assign-overlay, .result-overlay, .conversation-overlay').forEach((el) => el.remove());
-  switchScene(target);
+  switchScene(target, data);
 });
 
 eventBus.on('hide-ui', () => {
