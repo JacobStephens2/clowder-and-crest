@@ -413,17 +413,25 @@ export class ChaseScene extends Phaser.Scene {
       }
     });
 
-    // Virtual joystick for mobile (below maze)
+    // Virtual joystick for mobile — *floating* style. Touch anywhere in the
+    // control region (below the maze) and the joystick center snaps to your
+    // thumb. This fixes the "up is hard" complaint: with a fixed-center
+    // bottom-mounted joystick, pushing up requires extending the thumb over
+    // the maze (occluding what you're trying to see) and the 54px touch
+    // capture zone forces the thumb to a specific spot. Floating means the
+    // thumb rests wherever feels natural and the joystick comes to it.
     this.input.addPointer(1);
-    const joyX = GAME_WIDTH / 2;
-    const joyY = MAZE_Y + MAZE_H + 70;
+    const JOY_HOME_X = GAME_WIDTH / 2;
+    const JOY_HOME_Y = MAZE_Y + MAZE_H + 70;
     const joyRadius = 36;
-    this.add.circle(joyX, joyY, joyRadius, 0x2a2520, 0.6).setStrokeStyle(1, 0x6b5b3e);
+    let joyX = JOY_HOME_X;
+    let joyY = JOY_HOME_Y;
+    const joyBase = this.add.circle(joyX, joyY, joyRadius, 0x2a2520, 0.6).setStrokeStyle(1, 0x6b5b3e);
     const joyKnob = this.add.circle(joyX, joyY, 14, 0x6b5b3e, 0.8);
 
     // Unified pointer handling — single pointerdown/pointerup pair covers both
-    // the joystick base and maze swipe gestures. Previously split into two pairs
-    // which is an anti-pattern per phaserjs/examples.
+    // the floating joystick and the in-maze swipe gestures. Previously split
+    // into two pairs which is an anti-pattern per phaserjs/examples.
     let joyPointerId = -1;
     let joyMoveTimer: Phaser.Time.TimerEvent | null = null;
     let swipeStart: { x: number; y: number } | null = null;
@@ -431,8 +439,13 @@ export class ChaseScene extends Phaser.Scene {
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       const wx = pointer.worldX;
       const wy = pointer.worldY;
-      // Joystick area takes priority
-      if (Math.sqrt((wx - joyX) ** 2 + (wy - joyY) ** 2) < joyRadius * 1.5) {
+      // Floating joystick: any touch BELOW the maze relocates the joystick
+      // center to the touch point and captures the pointer.
+      if (wy > MAZE_Y + MAZE_H) {
+        joyX = wx;
+        joyY = wy;
+        joyBase.setPosition(joyX, joyY);
+        joyKnob.setPosition(joyX, joyY);
         joyPointerId = pointer.id;
         return;
       }
@@ -442,10 +455,15 @@ export class ChaseScene extends Phaser.Scene {
       }
     });
     this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
-      // Joystick release
+      // Joystick release — snap base and knob back to the resting home position
+      // so the player has a visual hint of where the joystick "lives" between
+      // touches.
       if (pointer.id === joyPointerId) {
         joyPointerId = -1;
-        joyKnob.setPosition(joyX, joyY);
+        joyX = JOY_HOME_X;
+        joyY = JOY_HOME_Y;
+        joyBase.setPosition(JOY_HOME_X, JOY_HOME_Y);
+        joyKnob.setPosition(JOY_HOME_X, JOY_HOME_Y);
         joyMoveTimer?.destroy();
         joyMoveTimer = null;
         return;
