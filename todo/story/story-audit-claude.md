@@ -1,6 +1,8 @@
 # Story Audit — Rags to Riches Principles
 
-Audit of the existing Clowder & Crest narrative against the principles in `What Makes a Great Rags to Riches Story.md`. Sources audited: `todo/source_documents/Design/Story.md` (the master design doc), `src/data/conversations.json` (45 pair + 7 group conversations), `src/main.ts` (chapter event narrative scenes + plague + inquisition + game over), `src/ui/onboarding.ts` (the prologue 6-panel intro story).
+Audit of the existing Clowder & Crest narrative against the principles in `What Makes a Great Rags to Riches Story.md`. Sources audited: `todo/story/Story.md` (the master design doc), `src/data/conversations.json` (45 pair + 7 group conversations), `src/main.ts` (chapter event narrative scenes + plague + inquisition + game over), `src/ui/onboarding.ts` (the prologue 6-panel intro story).
+
+**The main story opportunity in Clowder & Crest is not "more lore" — it is sharpening the underdog arc so the guild's rise feels earned, interrupted, and then re-earned.** Everything below is in service of that single sentence.
 
 ## Verdict in one paragraph
 
@@ -42,6 +44,7 @@ Audit of the existing Clowder & Crest narrative against the principles in `What 
 - After the prologue, before the first job board opens, add a single-panel narrative beat: the wildcat reads the notice a second time, hesitates, then tears it from the wall. "Tomorrow." That's the call moment — internal commitment.
 - Add a journal entry on day 1: "I tore the notice from the wall. Whatever happens next, I chose this."
 - Have an NPC (the miller, perhaps) react in chapter 1 to the wildcat's first job: "I didn't think a stray would actually come. Most don't." This frames the call as crossing a threshold most cats fail.
+- **First-day tutorial / intro lines should frame the player as observant, stubborn, or instinctively protective — not just unlucky.** The current prologue establishes circumstance ("thin, soaked, hungry"); add one beat that establishes interior quality. The player should know what they ARE, not just what's been done to them.
 
 ### 3. Initial Success — **B**
 
@@ -63,6 +66,8 @@ Two paths here, and you should pick one consciously rather than leaving it ambig
 **Path B — Restructure to hit the false-summit pattern.** Move the rat plague to *after* the chapter 4 recognition, so the order becomes: recruit → recognize → CRISIS → real fall → real triumph. This is more work but more structurally faithful to the design doc's stated Booker reference.
 
 I'd recommend **Path A** because moving the plague would invalidate a lot of existing Chapter 3 content. The cleaner fix is to add a *separate* fall moment between Chapter 4 and Chapter 5 (see Stage 4 below).
+
+**Regardless of which path you pick, the "false summit" wants weight.** Add one or two warm, low-conflict beats right before any major reversal — let the town's approval feel *tangible* immediately before it is threatened. A baker's wife waving in the market. A monk nodding from the cathedral steps. The merchant slipping the wildcat an extra fish "on the house." Small grace notes that the player won't yet read as foreshadowing — until they realize, after the fall, that the warmth was the thing about to be taken.
 
 ### 4. The Crisis (Loss of Everything) — **D — the structural gap**
 
@@ -111,6 +116,8 @@ I'd suggest **Option 1** because it's additive (new content) rather than retroac
 
 **Option 3 (lighter) — Make the starvation game over recoverable.** Instead of permadeath, when the player hits broke + last cat unhappy, trigger a "rock bottom" event: the wildcat is offered a humbling shadow job by the underground contact (-15 reputation, +20 fish, the player must accept or actually game over). Recovery is possible, but at moral cost. This honors the rags-to-riches "fall and rise" structure even without adding a new chapter.
 
+**Whichever option you pick, frame the loss in human terms — not system terms.** The current chapter narratives talk about *what's happening* (rats overrunning the granary, the Bishop sending an Inquisitor) but rarely about *what's at risk emotionally*. The crisis stage's narrative overlays should explicitly name what's threatened: safety, belonging, legitimacy, the cats' shared home. "The plague will take our food" reads as a system event. "The plague will take what we built together" reads as a fall. Same gameplay state, different stakes.
+
 ### 5. Final Triumph — **B+**
 
 **What's there:**
@@ -141,6 +148,7 @@ I'd suggest **Option 1** because it's additive (new content) rather than retroac
 **Small improvements:**
 - The hidden-value frame would be more powerful if NPCs *occasionally* glimpsed it before the institution does. Add a few rare interactions where a townsperson says something like: *"You're not just a cat, are you. There's something old in your eyes."* These should fire 2-3 times in chapters 1-3, building the audience contract that the world is gradually catching up.
 - The Inquisition vindication scene gestures at this with "*serves the saints with devotion and courage*" but it's the institution speaking. Need more *individual* recognitions earlier.
+- **Have at least one early bond moment where a cat joins the guild because they sense character — not because the player paid fish.** The current recruitment system is purely transactional (offer fish → cat joins). One scripted exception, where a cat shows up and explicitly says "*I came because I heard about what you did at the granary*" or "*I watched you work for a week before I knocked*," makes the wildcat's hidden value visible *to the audience* via another character's eyes. This is the highest-leverage hidden-value addition for the lowest cost.
 
 ### Genuine Struggle — **B**
 
@@ -170,6 +178,8 @@ I'd suggest **Option 1** because it's additive (new content) rather than retroac
 **Concrete fix:** give the wildcat a specific founding flaw that the bond conversations gradually wear down. Possible: *the wildcat doesn't believe in being protected.* Always tries to do everything alone. Refuses help. The bond conversations are then organized around different cats teaching the wildcat how to *receive* protection, not just give it. The wildcat & russian_blue conversations already gesture at this ("*you don't have to build it alone*") — make it the explicit arc.
 
 This is the deepest improvement in the audit — and the cheapest, because it's just a thematic spine to apply when writing future bond dialogue, not a code change.
+
+**Related: late conversations (rank A and the late group conversations) should reflect how the cats have changed *because of the guild*, not just what jobs they completed.** The current rank-A conversations are good but most of them are "we have shared experiences now," not "I am a different cat than I was at rank C." Editing pass on the rank-A scripts: each one should name a specific way the speaker has been *changed* by the guild.
 
 ### Authenticity — **A**
 
@@ -231,6 +241,16 @@ These elements are working at the highest level the principles describe and shou
 - **The current story isn't bad.** Most rags-to-riches games don't achieve half this much narrative depth. The bond conversations are the kind of writing players quote. The Catholic mythlore is rare and specific. The reputation system has real moral teeth.
 - **Booker's arc isn't the only valid shape.** The principles doc presents it as one well-studied template, but plenty of great stories work in other shapes (the hero's journey, the redemption arc, the cyclical "round trip"). The audit grades against Booker because that's what the design doc explicitly references.
 - **Adding the crisis stage isn't urgent.** It's the highest-value narrative addition, but the game already ships and works. This is a polish-pass priority, not a fix-or-game-broken priority.
+
+---
+
+## What to avoid
+
+When acting on any of the above, watch for these anti-patterns. They are easy to slip into when improving a story that's already mostly working:
+
+- **Wish-fulfillment by external rescue.** Don't let success come from a fairy godmother — a wealthy patron, a magical artifact, a town council that simply *decides* the guild deserves better. The wildcat must earn the rise through visible effort and visible cost. If a new chapter event resolves because something *happens to* the player rather than something the player *did*, rewrite it.
+- **Escalation that's purely systemic.** Don't add new chapter pressure in mechanics-only terms ("upkeep doubles," "a new enemy type spawns"). Every escalation needs a relational or emotional cost the player can name in human terms. The Long Winter (Stage 4 fix) works because the moral choice on day 3 forces the player to *feel* the cost; a "tax day" event without that emotional layer is just a number.
+- **Equating "riches" too literally with fish totals.** The game's riches are belonging, legitimacy, and shared purpose — not the number in the Fish counter. When writing chapter resolutions, late bond conversations, or the eventual ending, the language should foreground what the guild *means* to its members and to the town, not how much fish the player has accumulated. Booker's principle: *"the protagonist is not just richer — they are wiser."*
 
 ---
 
