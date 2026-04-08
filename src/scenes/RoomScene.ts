@@ -9,6 +9,7 @@ import { addBondPoints } from '../systems/BondSystem';
 import { getDailyWish } from '../systems/GameSystems';
 
 import { ALL_BREED_IDS } from '../utils/constants';
+import { TouchJoystick } from '../ui/touchJoystick';
 const BREEDS_WITH_SPRITES = new Set(ALL_BREED_IDS as readonly string[]);
 
 // Top-down grid
@@ -737,80 +738,28 @@ export class RoomScene extends Phaser.Scene {
     // Expose movement for furniture interactions
     this.playerMoveTo = moveToTile;
 
-    // Floating joystick — same pattern as ChaseScene/TownMapScene.
-    // Touches BELOW the room grid relocate the joystick center to the
-    // touch point and start polling movement. Touches inside the grid
-    // still go to the tap-to-move handler below.
+    // Virtual joystick — uses the shared TouchJoystick helper. Hidden
+    // at rest, floating, scaled radial dead zone. Activates on touches
+    // BELOW the grid; touches inside the grid go to tap-to-move below.
     const GRID_BOTTOM_Y = GRID_TOP + GRID_ROWS * TILE_SIZE;
-    const JOY_HOME_X = GAME_WIDTH / 2;
-    const JOY_HOME_Y = GRID_BOTTOM_Y + 50;
-    const joyRadius = 36;
-    let joyX = JOY_HOME_X;
-    let joyY = JOY_HOME_Y;
-    const joyBase = this.add.circle(joyX, joyY, joyRadius, 0x2a2520, 0.5).setStrokeStyle(1, 0x6b5b3e);
-    const joyKnob = this.add.circle(joyX, joyY, 14, 0x6b5b3e, 0.7);
-    let joyPointerId = -1;
-    let joyMoveTimer: Phaser.Time.TimerEvent | null = null;
+    new TouchJoystick(this, {
+      homeX: GAME_WIDTH / 2,
+      homeY: GRID_BOTTOM_Y + 50,
+      activationMinY: GRID_BOTTOM_Y,
+      cooldownMs: 280,
+      onMoveTick: (dr, dc) => {
+        moveToTile(currentTile.col + dc, currentTile.row + dr);
+      },
+    });
 
+    // Tap-to-move on the room grid. Separate from the joystick, only
+    // fires for touches inside the grid bounds.
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       const wx = pointer.worldX;
       const wy = pointer.worldY;
-      // Floating joystick: any touch below the grid relocates and captures
-      if (wy > GRID_BOTTOM_Y) {
-        joyX = wx;
-        joyY = wy;
-        joyBase.setPosition(joyX, joyY);
-        joyKnob.setPosition(joyX, joyY);
-        joyPointerId = pointer.id;
-        return;
-      }
-      // Otherwise: tap-to-move (existing behavior)
+      if (wy > GRID_BOTTOM_Y) return; // Joystick zone, handled by TouchJoystick
       const grid = worldToGrid(wx, wy);
       moveToTile(grid.col, grid.row);
-    });
-
-    this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
-      if (pointer.id === joyPointerId) {
-        joyPointerId = -1;
-        joyX = JOY_HOME_X;
-        joyY = JOY_HOME_Y;
-        joyBase.setPosition(JOY_HOME_X, JOY_HOME_Y);
-        joyKnob.setPosition(JOY_HOME_X, JOY_HOME_Y);
-        joyMoveTimer?.destroy();
-        joyMoveTimer = null;
-      }
-    });
-
-    // Poll the joystick every frame and convert to a discrete grid step.
-    // 280ms cooldown matches the WASD repeat cadence so joystick + keyboard
-    // feel the same.
-    this.input.addPointer(1);
-    this.time.addEvent({
-      delay: 16, loop: true,
-      callback: () => {
-        if (joyPointerId < 0) return;
-        const pointers = [this.input.pointer1, this.input.pointer2];
-        for (const p of pointers) {
-          if (p && p.id === joyPointerId && p.isDown) {
-            const dx = p.worldX - joyX;
-            const dy = p.worldY - joyY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            const clampDist = Math.min(dist, joyRadius);
-            if (dist > 8) {
-              joyKnob.setPosition(joyX + (dx / dist) * clampDist, joyY + (dy / dist) * clampDist);
-              if (!joyMoveTimer) {
-                const dr = Math.abs(dy) >= Math.abs(dx) ? (dy > 0 ? 1 : -1) : 0;
-                const dc = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : -1) : 0;
-                moveToTile(currentTile.col + dc, currentTile.row + dr);
-                joyMoveTimer = this.time.delayedCall(280, () => { joyMoveTimer = null; });
-              }
-            } else {
-              joyKnob.setPosition(joyX, joyY);
-            }
-            break;
-          }
-        }
-      },
     });
 
     // WASD / Arrow key movement (supports diagonal + continuous hold).
