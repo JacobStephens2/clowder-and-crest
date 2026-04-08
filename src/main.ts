@@ -50,6 +50,8 @@ import { getGuildFocusLines } from './systems/GuildFocus';
 import { showNarrativeOverlay } from './ui/narrativeOverlay';
 import { initPanels, showCatPanel, showMenuPanel, showFurnitureShop } from './ui/Panels';
 import { initConversations, checkAndShowConversation } from './ui/Conversations';
+import { showEndDaySuggestion } from './ui/overlays/EndDaySuggestion';
+import { showExileChoice as showExileChoiceOverlay } from './ui/overlays/ExileChoice';
 import { showDayTransitionOverlay, showToast as renderToast } from './ui/feedback';
 import { showGuildReport, showIntroStory, showTutorial } from './ui/onboarding';
 import { initJobFlow, showAssignOverlay, showResultOverlay, type ResultInfo, SPECIALIZATION_CATEGORIES } from './ui/jobFlow';
@@ -1565,38 +1567,18 @@ function allCatsBusy(): boolean {
   return gameState.cats.every((cat) => isCatStationed(gameState!, cat.id) || catsWorkedToday.has(cat.id));
 }
 
+// Thin wrapper around the extracted overlay module. The overlay's HTML
+// and click handlers live in src/ui/overlays/EndDaySuggestion.ts; this
+// wrapper just bridges main.ts's local state into the deps shape.
 function suggestEndDay(): void {
-  if (!allCatsBusy() || !gameState) return;
-
-  const overlay = document.createElement('div');
-  overlay.className = 'assign-overlay';
-  overlay.innerHTML = `
-    <h2>All Cats Busy</h2>
-    <div style="color:#8b7355;font-size:14px;margin-bottom:16px;text-align:center">
-      Every cat has worked or is stationed today.<br>End the day to start fresh?
-    </div>
-    <div style="display:flex;gap:12px;justify-content:center">
-      <button class="btn-puzzle" id="end-day-yes">End Day</button>
-      <button class="btn-auto" id="end-day-no" style="background:#2a2520;border:1px solid #3a3530">Keep Waiting</button>
-    </div>
-  `;
-  overlayLayer.appendChild(overlay);
-
-  document.getElementById('end-day-yes')!.addEventListener('click', () => {
-    overlay.remove();
-    const recap = advanceDay();
-    showDayTransitionOverlay(gameState!.day, () => playSfx('day_bell', 0.4), gameState, recap);
-    playSfx('day_bell', 0.4);
-    // Refresh town if open
-    const townOverlay = overlayLayer.querySelector('.town-overlay');
-    if (townOverlay) {
-      townOverlay.remove();
-      eventBus.emit('show-town-overlay');
-    }
-  });
-
-  document.getElementById('end-day-no')!.addEventListener('click', () => {
-    overlay.remove();
+  showEndDaySuggestion({
+    overlayLayer,
+    getGameState: () => gameState,
+    allCatsBusy,
+    advanceDay,
+    showDayTransitionOverlay,
+    playSfx,
+    emitShowTownOverlay: () => eventBus.emit('show-town-overlay'),
   });
 }
 
@@ -1856,44 +1838,13 @@ eventBus.on('inquisition-verdict', (verdict: string) => {
   });
 });
 
+// Thin wrapper around the extracted overlay module.
 function showExileChoice(): void {
-  if (!gameState) return;
-  const overlay = document.createElement('div');
-  overlay.className = 'assign-overlay';
-
-  const exilable = gameState.cats.filter((c) => c.id !== 'player_wildcat');
-  const buttons = exilable.map((cat) => {
-    const breedName = BREED_NAMES[cat.breed] ?? cat.breed;
-    return `<button class="exile-btn" data-cat-id="${cat.id}" style="display:flex;align-items:center;gap:8px;padding:10px 16px;margin:4px 0;width:100%;background:rgba(80,30,30,0.4);border:1px solid #8b4444;border-radius:6px;color:#cc8888;font-size:13px;cursor:pointer;font-family:Georgia,serif">
-      ${esc(cat.name)} the ${breedName} (Lv.${cat.level})
-    </button>`;
-  }).join('');
-
-  overlay.innerHTML = `
-    <h2 style="color:#cc6666">Choose Who Must Leave</h2>
-    <div style="color:#8b7355;font-size:12px;margin-bottom:12px;text-align:center">
-      The Inquisitor demands one cat be exiled. This cannot be undone.
-    </div>
-    <div style="display:flex;flex-direction:column;gap:4px">
-      ${buttons}
-    </div>
-  `;
-
-  overlayLayer.appendChild(overlay);
-
-  overlay.querySelectorAll('.exile-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const catId = (btn as HTMLElement).dataset.catId!;
-      const cat = gameState!.cats.find((c) => c.id === catId);
-      if (cat) {
-        addJournalEntry(gameState!, `${esc(cat.name)} was exiled by the Inquisitor's decree.`, 'event');
-        gameState!.cats = gameState!.cats.filter((c) => c.id !== catId);
-        gameState!.stationedCats = gameState!.stationedCats.filter((s) => s.catId !== catId);
-        saveGame(gameState!);
-        playSfx('cat_sad');
-        showToast(`${esc(cat.name)} has been exiled from the guild.`);
-      }
-      overlay.remove();
-    });
+  showExileChoiceOverlay({
+    overlayLayer,
+    getGameState: () => gameState,
+    saveGame,
+    playSfx,
+    showToast,
   });
 }
