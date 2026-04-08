@@ -683,15 +683,71 @@ function showRecruitNamePrompt(breedId: string, breedName: string, cost: number)
     playSfx('recruit');
     trackEvent('cat_recruited', { breed: breedId, totalCats: gameState!.cats.length });
     addJournalEntry(gameState!, `${name} the ${breedName} joined the guild.`, 'recruit');
-    showToast(`${name} the ${breedName} joined the guild!`);
     checkChapterAdvance(gameState!);
     saveGame(gameState!);
-    switchScene('TownMapScene');
+
+    // Brief arrival narrative — gives every new recruit a moment of
+    // recognition rather than just a toast disappearing into the corner.
+    // The chapter-3 admiration recruit gets its own bigger 8-panel scene
+    // (eventBus 'admiration-arrival') and skips this one because that
+    // path doesn't go through the recruit-cat handler at all.
+    showCatArrivalScene(name, breedName, breedId, () => {
+      switchScene('TownMapScene');
+    });
   };
 
   submit.addEventListener('click', doSubmit);
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') doSubmit();
+  });
+}
+
+/** Brief 3-panel narrative when a new cat joins the guild via the
+ *  standard recruitment flow. Per chapter, the framing changes slightly
+ *  so the scene doesn't feel boilerplate after multiple recruits:
+ *  - Chapter 1-2: humble welcome, "another set of paws"
+ *  - Chapter 3+: practiced welcome, "the guild has room"
+ *  - Chapter 5+: established welcome, "the guildhall is your home now"
+ *  Falls through to onComplete on tap-through or on missing scene.
+ */
+function showCatArrivalScene(name: string, breedName: string, breedId: string, onComplete: () => void): void {
+  if (!gameState) { onComplete(); return; }
+  const escName = esc(name);
+  const escBreed = esc(breedName);
+  const playerName = esc(gameState.playerCatName);
+  const chapter = gameState.chapter;
+
+  let scenes: string[];
+  if (chapter <= 2) {
+    scenes = [
+      `${escName} the ${escBreed} stepped through the lean-to's tarp at dusk.`,
+      `${playerName} set down a small fish bone — half a meal, but offered with both paws.`,
+      `Another set of paws. The beginning of something larger than one cat.`,
+    ];
+  } else if (chapter <= 4) {
+    scenes = [
+      `${escName} the ${escBreed} arrived at the guildhall door, eyes catching the lantern light.`,
+      `${playerName} nodded. "There's room. There's always room for one more."`,
+      `${escName} stepped inside. The clowder grew by one.`,
+    ];
+  } else {
+    scenes = [
+      `Word had reached ${escName} the ${escBreed} from a town three days' walk away.`,
+      `They came because they had heard the guild was a place worth coming to.`,
+      `${playerName} welcomed them home. The guildhall had always had room — and now had reason.`,
+    ];
+  }
+
+  showNarrativeOverlay({
+    scenes,
+    image: 'assets/sprites/scenes/guildhall.png',
+    catSprite: breedId,
+    tone: 'warm',
+    onScene: (i) => {
+      if (i === 0) playSfx('tap', 0.4);
+      if (i === scenes.length - 1) playSfx('purr', 0.4);
+    },
+    onComplete,
   });
 }
 
