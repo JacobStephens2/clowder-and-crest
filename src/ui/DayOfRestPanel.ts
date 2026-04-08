@@ -210,11 +210,17 @@ export function showDayOfRestPanel(): void {
   deps.overlayLayer.querySelectorAll('.menu-overlay, .day-of-rest-overlay').forEach((el) => el.remove());
 
   const completedKeys = Object.keys(gameState.puzzlesCompleted ?? {});
-  const unlockedCount = MINIGAMES.filter((mg) => isUnlocked(mg, completedKeys)).length;
+  const unlockedGames = MINIGAMES.filter((mg) => isUnlocked(mg, completedKeys));
 
   const panel = document.createElement('div');
   panel.className = 'menu-overlay day-of-rest-overlay';
 
+  // Per user feedback (2026-04-08): hide locked games entirely instead
+  // of showing them greyed out. The surprise of a new card appearing
+  // after a campaign first-clear is more pleasant than a grid full of
+  // grey "coming soon" placeholders that spoil the catalogue. Total
+  // count is also hidden so the player doesn't know how many more are
+  // coming.
   let html = `
     <button class="panel-close" id="dor-close">&times;</button>
     <h2>Day of Rest</h2>
@@ -222,23 +228,16 @@ export function showDayOfRestPanel(): void {
       Even guilds rest. Sit a while and revisit a memory \u2014<br>these games carry no stakes today.
     </div>
     <div style="margin-bottom:14px;color:#6b5b3e;font-size:11px;text-align:center">
-      ${unlockedCount} / ${MINIGAMES.length} memories unlocked
+      ${unlockedGames.length} ${unlockedGames.length === 1 ? 'memory' : 'memories'} unlocked
     </div>
     <div class="dor-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
   `;
 
-  for (const mg of MINIGAMES) {
-    const unlocked = isUnlocked(mg, completedKeys);
-    const baseStyle = unlocked
-      ? 'background:rgba(42,37,32,0.85);border:1px solid #6b5b3e;cursor:pointer'
-      : 'background:rgba(20,18,16,0.65);border:1px dashed #3a3530;cursor:default;filter:grayscale(1);opacity:0.55';
-    const titleColor = unlocked ? '#c4956a' : '#555';
-    const taglineColor = unlocked ? '#8b7355' : '#444';
-    const taglineText = unlocked ? mg.tagline : 'Locked \u2014 finish this minigame in a job at least once.';
+  for (const mg of unlockedGames) {
     html += `
-      <div class="dor-card" data-scene="${mg.sceneKey}" data-unlocked="${unlocked ? '1' : '0'}" style="${baseStyle};border-radius:6px;padding:10px 8px">
-        <div style="color:${titleColor};font-family:Georgia,serif;font-size:13px;margin-bottom:4px">${esc(mg.title)}</div>
-        <div style="color:${taglineColor};font-size:10px;line-height:1.3;min-height:26px">${esc(taglineText)}</div>
+      <div class="dor-card" data-scene="${mg.sceneKey}" style="background:rgba(42,37,32,0.85);border:1px solid #6b5b3e;cursor:pointer;border-radius:6px;padding:10px 8px">
+        <div style="color:#c4956a;font-family:Georgia,serif;font-size:13px;margin-bottom:4px">${esc(mg.title)}</div>
+        <div style="color:#8b7355;font-size:10px;line-height:1.3;min-height:26px">${esc(mg.tagline)}</div>
       </div>
     `;
   }
@@ -251,7 +250,6 @@ export function showDayOfRestPanel(): void {
 
   panel.querySelectorAll('.dor-card').forEach((card) => {
     card.addEventListener('click', () => {
-      if (card.getAttribute('data-unlocked') !== '1') return;
       const sceneKey = card.getAttribute('data-scene')!;
       const mg = MINIGAMES.find((m) => m.sceneKey === sceneKey);
       if (!mg) return;
