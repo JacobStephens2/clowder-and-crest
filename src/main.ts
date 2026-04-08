@@ -332,6 +332,8 @@ function updateGuildWishBanner(): void {
     return;
   }
   guildWishBanner.style.display = 'block';
+  guildWishBanner.style.cursor = game.scene.isActive('TownMapScene') ? 'pointer' : 'default';
+  guildWishBanner.title = game.scene.isActive('TownMapScene') ? 'Open the guildhall to manage this wish' : '';
   const needsFurn = wish.requiresFurniture;
   const FURN_NAMES: Record<string, string> = { straw_bed: 'Straw Bed', fish_barrel: 'Fish Barrel', scratching_post: 'Scratching Post', potted_catnip: 'Potted Catnip' };
 
@@ -418,6 +420,13 @@ function updateGuildWishBanner(): void {
     guildWishBanner.style.display = 'none';
   });
 }
+
+guildWishBanner.addEventListener('click', (event) => {
+  if (!game.scene.isActive('TownMapScene')) return;
+  const target = event.target as HTMLElement | null;
+  if (target?.closest('button')) return;
+  switchScene('GuildhallScene');
+});
 
 // ──── UI Helpers ────
 let lastFishCount = -1;
@@ -1135,11 +1144,15 @@ eventBus.on('show-merchant-overlay', () => {
 
   const overlay = document.createElement('div');
   overlay.className = 'assign-overlay';
+  // The merchant only sticks around for one day, then he packs up.
+  // Per user question: "does he get to a point where he is always in
+  // town?" — no, every 3rd day only. The hint here makes that explicit.
   let html = `
     <div class="panel" style="max-width:380px">
       <button class="panel-close" id="merchant-close">&times;</button>
       <h2>\u{1F9D9} Traveling Merchant</h2>
-      <p style="font-size:11px;color:#8b7355;margin-bottom:12px">A wandering merchant has set up his cart at the edge of the market.</p>
+      <p style="font-size:11px;color:#8b7355;margin-bottom:4px">A wandering merchant has set up his cart at the edge of the market.</p>
+      <p style="font-size:10px;color:#6b5b3e;margin-bottom:12px;font-style:italic">He's leaving tomorrow. Next visit in 3 days.</p>
   `;
   for (const item of shuffledItems) {
     const canBuy = gameState!.fish >= item.cost;
