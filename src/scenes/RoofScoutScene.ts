@@ -28,8 +28,18 @@ import { showMinigameTutorial, attachStandardCleanup } from '../ui/sceneHelpers'
 // ──────────────────────────────────────────────────────────────────────
 
 const WORLD_HEIGHT = GAME_HEIGHT * 4; // ~3,376px tall climb
-const PLAYER_W = 22;
+const PLAYER_W = 22;             // visual width
+const PLAYER_BODY_W = 14;        // narrower hitbox — see PLAYER_BODY_OFFSET_X
+const PLAYER_BODY_OFFSET_X = (PLAYER_W - PLAYER_BODY_W) / 2;
 const PLAYER_H = 32;
+/** Vertical tolerance for "corner correction." When the player is
+ *  pressing into the side of a platform but their head is within
+ *  CORNER_GRACE_PX of the platform's top, the engine snaps them up so
+ *  the lean velocity carries them onto the platform. Without this, a
+ *  jump that brushes the side of a ledge stalls horizontally and the
+ *  cat falls past the platform's edge — easy mode "felt almost
+ *  impossible" per user feedback. */
+const CORNER_GRACE_PX = 10;
 const START_Y = WORLD_HEIGHT - 120;
 const TARGET_Y = 120;
 
@@ -356,8 +366,12 @@ export class RoofScoutScene extends Phaser.Scene {
     this.player = this.physics.add.sprite(GAME_WIDTH / 2, START_Y, '__missing');
     this.player.setVisible(false); // hide the missing-texture marker
     const playerBody = this.player.body as Phaser.Physics.Arcade.Body;
-    playerBody.setSize(PLAYER_W, PLAYER_H);
-    playerBody.setOffset(0, 0);
+    // Body is narrower than the visual so the cat's "shoulders" don't
+    // catch on platform edges — gives the player ~4px of slip-past
+    // tolerance on each side so brushing a ledge doesn't kill the
+    // jump.
+    playerBody.setSize(PLAYER_BODY_W, PLAYER_H);
+    playerBody.setOffset(PLAYER_BODY_OFFSET_X, 0);
     this.player.setCollideWorldBounds(true);
     this.player.setMaxVelocity(260, MAX_FALL_VELOCITY);
     this.player.setDragX(PLAYER_DRAG_X);
@@ -586,6 +600,37 @@ export class RoofScoutScene extends Phaser.Scene {
       this.player.setX(GAME_WIDTH + PLAYER_W / 2);
     } else if (this.player.x > GAME_WIDTH + PLAYER_W / 2) {
       this.player.setX(-PLAYER_W / 2);
+    }
+
+    // Corner correction. Per user feedback (2026-04-08): "if I'm still
+    // moving up across the edge of a platform, once I clear the
+    // vertical height of the platform, I feel like I should move onto
+    // it." When the player is brushing the side of a platform while
+    // moving upward AND their head is just barely below the platform
+    // top, snap them up so the lean velocity carries them onto it.
+    // Without this, jumps that almost-but-not-quite clear a ledge
+    // stall horizontally and the cat falls back down past the edge.
+    const wallTouchLeft = body.blocked.left || body.touching.left;
+    const wallTouchRight = body.blocked.right || body.touching.right;
+    if ((wallTouchLeft || wallTouchRight) && body.velocity.y < 0) {
+      const playerTop = this.player.y - PLAYER_H / 2;
+      const platforms = this.platforms.getChildren();
+      for (const p of platforms) {
+        const plat = p as Phaser.GameObjects.Rectangle;
+        const platBody = plat.body as Phaser.Physics.Arcade.StaticBody | null;
+        if (!platBody) continue;
+        const platTop = platBody.y;
+        const horizClose = Math.abs(this.player.x - plat.x) < (PLAYER_W + plat.width) / 2 + 4;
+        const verticalGap = platTop - playerTop; // positive when player head is below the platform top
+        if (horizClose && verticalGap > 0 && verticalGap < CORNER_GRACE_PX) {
+          // Snap the player to sit on top of this platform; preserve
+          // horizontal velocity so the lean naturally carries them
+          // onto the surface.
+          this.player.setY(platTop - PLAYER_H / 2);
+          this.player.setVelocityY(0);
+          break;
+        }
+      }
     }
 
     // Sync the colored visual to the physics body each frame.
