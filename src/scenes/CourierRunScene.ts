@@ -184,12 +184,17 @@ export class CourierRunScene extends Phaser.Scene {
     this.missionRewarded = false;
     this.lives = this.difficulty === 'hard' ? 2 : this.difficulty === 'medium' ? 2 : 3;
     this.baseScrollSpeed = this.difficulty === 'hard' ? 3.5 : this.difficulty === 'medium' ? 3.0 : 2.5;
-    // 2x the previous target distances. The old values (800-1200) gave a
-    // ~4 second run on average — too short to feel like a meaningful
-    // minigame. New values land closer to 15-25 seconds at avg speed,
-    // matching the pacing of Hunt/Chase. The obstacle phrase pool is
-    // already large enough to fill the longer runs without repeating.
-    this.targetDistance = this.difficulty === 'hard' ? 2600 : this.difficulty === 'medium' ? 2200 : 1800;
+    // Per user feedback (2026-04-08): the previous targets felt too short —
+    // the player was about to grab another fish when time ran out. Bumped
+    // ~40% so an average run lands closer to 22-35 seconds with the
+    // speed ramp. The obstacle phrase pool is large enough to fill the
+    // longer runs without repeating obvious patterns.
+    //
+    // History:
+    //   first pass:  800 / 1000 / 1200  (~4s, too short)
+    //   second pass: 1800 / 2200 / 2600 (~15-25s, still cut off)
+    //   current:     2500 / 3100 / 3700 (~22-35s)
+    this.targetDistance = this.difficulty === 'hard' ? 3700 : this.difficulty === 'medium' ? 3100 : 2500;
 
     const state = getGameState();
     const cat = state?.cats.find((c) => c.id === this.catId);
