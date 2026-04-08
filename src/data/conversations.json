@@ -78,15 +78,19 @@
         },
         {
           "speaker": "russian_blue",
-          "text": "You built this from nothing. You had the most to lose."
+          "text": "You built this from nothing. You had the most to lose. And you wouldn't let anyone stand in front of you."
         },
         {
           "speaker": "wildcat",
-          "text": "I had the most to fight for. That's different."
+          "text": "I don't know how to be stood in front of. I never have."
         },
         {
           "speaker": "russian_blue",
-          "text": "Then I'll fight beside you. For as long as the guild stands."
+          "text": "Then we'll learn it the same way you taught me to fight. Slowly. Badly at first."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "...All right. Slowly."
         }
       ]
     }
@@ -262,7 +266,15 @@
         },
         {
           "speaker": "wildcat",
-          "text": "...Deal."
+          "text": "I learned to. When you're a stray, the only paws you can count on are your own."
+        },
+        {
+          "speaker": "maine_coon",
+          "text": "You're not a stray anymore. Try unlearning it."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "...I'll try."
         }
       ]
     }
@@ -698,11 +710,19 @@
         },
         {
           "speaker": "wildcat",
-          "text": "Stay. The guild needs your kind of strength too."
+          "text": "It was hard, you know. Letting you take the ledger. I kept wanting to look over your shoulder."
         },
         {
           "speaker": "tuxedo",
-          "text": "I'm not going anywhere. Someone has to keep the ledger."
+          "text": "I noticed. You stopped after the third week."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "Stay. The guild needs your kind of strength too. I can't be every kind."
+        },
+        {
+          "speaker": "tuxedo",
+          "text": "I'm not going anywhere. Someone has to keep the ledger. And remind the founder it's allowed to put things down."
         }
       ]
     }
@@ -790,11 +810,19 @@
         },
         {
           "speaker": "wildcat",
-          "text": "...Coincidence."
+          "text": "...Coincidence. I've never been chosen by anything. I don't know how to be."
         },
         {
           "speaker": "siamese",
-          "text": "Of course. But a beautiful one."
+          "text": "Maybe 'chosen' is the wrong word. Maybe it just means we chose to follow. The saints don't have to do all the work."
+        },
+        {
+          "speaker": "wildcat",
+          "text": "...That, I can almost believe."
+        },
+        {
+          "speaker": "siamese",
+          "text": "A beautiful coincidence either way."
         }
       ]
     }
@@ -1066,15 +1094,15 @@
         },
         {
           "speaker": "wildcat",
-          "text": "And here?"
+          "text": "I never had anyone to tell me what to do either. I'm not sure I'd know how to take an order if you gave me one."
         },
         {
           "speaker": "bengal",
-          "text": "Here I have to decide for myself. It's terrifying."
+          "text": "Funny. We're broken in opposite directions."
         },
         {
           "speaker": "wildcat",
-          "text": "That's what freedom costs."
+          "text": "Maybe that's why this works. You're learning to choose. I'm learning to let someone else."
         },
         {
           "speaker": "bengal",

@@ -73,6 +73,54 @@ function numFlag(key: string): number {
   return Number(gameState?.flags[key] ?? 0);
 }
 
+// ──── NPC hidden-value glimpses (story-audit-council.md item 2) ────
+//
+// Five short narrative beats that fire as journal entries + toasts when
+// the player crosses chapter-1-to-3 milestones. Each one frames the
+// wildcat through someone else's eyes — a townsperson recognizing
+// something special about the founder before the institution does.
+//
+// Gated by a per-glimpse flag so each fires exactly once across the run.
+// Called from the post-job-completion handler and from chapter advance.
+function triggerHiddenValueGlimpses(save: SaveData, lastJob?: { category?: string }): void {
+  if (save.chapter > 3) return;
+
+  // Beat 1: First job ever completed — the miller, in chapter 1.
+  if (!save.flags.glimpse_miller && save.totalJobsCompleted === 1) {
+    save.flags.glimpse_miller = true;
+    addJournalEntry(save, '"I didn\'t think a stray would actually come. Most don\'t." — the miller, after the first job', 'event');
+    setTimeout(() => showToast('The miller looked at you twice on the way out.'), 800);
+  }
+
+  // Beat 2: 5 jobs done — a monk on the cathedral steps.
+  if (!save.flags.glimpse_monk && save.totalJobsCompleted >= 5 && save.chapter <= 2) {
+    save.flags.glimpse_monk = true;
+    addJournalEntry(save, '"You\'re not just a cat, are you. There\'s something old in your eyes." — a monk on the cathedral steps', 'event');
+    setTimeout(() => showToast('A monk caught your eye and held it longer than expected.'), 800);
+  }
+
+  // Beat 3: First job in chapter 2 — the merchant.
+  if (!save.flags.glimpse_merchant && save.chapter === 2 && save.totalJobsCompleted >= 6) {
+    save.flags.glimpse_merchant = true;
+    addJournalEntry(save, '"Take this. For the one who\'s building something." — the merchant, slipping an extra fish into the basket', 'event');
+    setTimeout(() => showToast('The merchant pressed an extra fish into your paws.'), 800);
+  }
+
+  // Beat 4: First pest control during plague — a mother in the market.
+  if (!save.flags.glimpse_mother && save.flags.ratPlagueStarted && !save.flags.ratPlagueResolved && lastJob?.category === 'pest_control') {
+    save.flags.glimpse_mother = true;
+    addJournalEntry(save, '"I was scared of strays. But you came when no one else did. I\'ll tell my son how you saved us." — a mother in the market', 'event');
+    setTimeout(() => showToast('A woman caught your tail as you passed and would not let go for a moment.'), 800);
+  }
+
+  // Beat 5: Reputation score reaches 10 in chapter 3 — an old woman.
+  if (!save.flags.glimpse_old_woman && save.chapter >= 3 && save.reputationScore >= 10) {
+    save.flags.glimpse_old_woman = true;
+    addJournalEntry(save, '"I knew a guild like yours, once. I was a girl then. They had the same eyes." — an old woman at the market well', 'event');
+    setTimeout(() => showToast('An old woman watched you cross the square as if she remembered something.'), 800);
+  }
+}
+
 // HTML escaping helper now lives in src/utils/helpers.ts so other modules
 // (Panels.ts in particular) can import it without circular deps. Re-imported
 // here so the existing call sites in this file keep working unchanged.
@@ -1162,6 +1210,12 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
     checkRatPlagueResolution(gameState);
   }
 
+  // NPC hidden-value glimpses (story-audit-council.md item 2) — let
+  // townspeople recognize the wildcat's worth before the institution does.
+  // Each beat fires exactly once, gated by a flag, and lands as a journal
+  // entry + toast so the audience sees the wildcat through other eyes.
+  triggerHiddenValueGlimpses(gameState, job);
+
   saveGame(gameState);
 
   showResultOverlay({
@@ -1744,7 +1798,11 @@ eventBus.on('chapter-advance', (chapter: number) => {
     6: {
       // The Rival — neutral turning tense. Competition.
       scenes: [
-        'Word arrived at dawn.',
+        // False-summit warmth (story-audit-council.md item 4).
+        'The merchant had slipped an extra fish into the basket that morning, no charge. "For the founder," he said, not meeting eyes.',
+        'Three days of soft sun. The kind of week the guild had stopped expecting.',
+        // Reversal begins.
+        'Then word arrived at dawn.',
         'A second guild had entered the town.',
         'The Silver Paws.',
         'Sleek. Well-funded. Hungry for work.',
@@ -1755,7 +1813,7 @@ eventBus.on('chapter-advance', (chapter: number) => {
       image: 'assets/sprites/scenes/town_day.png',
       catSprite: catBreed,
       tone: 'neutral',
-      onScene: (i) => { if (i === 2) playSfx('alarm', 0.3); },
+      onScene: (i) => { if (i === 4) playSfx('alarm', 0.3); },
     },
     7: {
       // The Inquisition — solemn, foreboding. Judgment.
@@ -1795,6 +1853,11 @@ eventBus.on('rat-plague-start', () => {
 
   showNarrativeOverlay({
     scenes: [
+      // False-summit warmth (story-audit-council.md item 4) — let the player
+      // feel what's about to be threatened before it lands.
+      'The morning before had been quiet. The baker waved as the guild passed. A child had reached up to touch a tail, and the mother had laughed instead of pulling her back.',
+      'It had felt — for the first time — like belonging.',
+      // Reversal begins.
       'The granary fell first. Rats poured from the walls like dark water, overrunning the flour stores in a single night.',
       'By morning, the cathedral cellar was lost. The monks fled to the upper floors. The market stalls were abandoned.',
       'The townsfolk whispered of St. Rosalia — how her bones once drove plague from Palermo. But there were no saints\' bones here. Only cats.',
@@ -1802,7 +1865,7 @@ eventBus.on('rat-plague-start', () => {
       'Complete 5 pest control jobs to drive the rats from the town. The guild will be tested. Not every day will be easy.',
     ],
     image: 'assets/sprites/scenes/town_plague.png',
-    onScene: (i) => { if (i === 0) playSfx('thunder'); },
+    onScene: (i) => { if (i === 2) playSfx('thunder'); },
   });
 });
 
@@ -1819,7 +1882,70 @@ eventBus.on('rat-plague-resolved', () => {
     ],
     image: 'assets/sprites/scenes/town_day.png',
     onScene: (i) => { if (i === 4) playSfx('chapter'); },
+    onComplete: () => {
+      // Story-audit-council.md item 3: schedule the admiration arrival
+      // shortly after the procession scene closes. The transactional
+      // recruitment system gets one scripted exception — a cat who
+      // joins because of what they witnessed, not because they were paid.
+      setTimeout(() => eventBus.emit('admiration-arrival'), 1500);
+    },
   });
+});
+
+// ──── Admiration arrival (story-audit-council.md item 3) ────
+//
+// One scripted recruit who joins for character, not fish. Fires once
+// after the rat plague resolves. The cat arrives at the guildhall door
+// unbidden, names what they saw, and joins free. This breaks the
+// transactional recruitment loop exactly once — and makes the wildcat's
+// hidden value visible to the audience through another character's eyes.
+eventBus.on('admiration-arrival', () => {
+  if (!gameState) return;
+  if (gameState.flags.admirationRecruitDone) return;
+  if (gameState.cats.length >= 6) return; // Roster already full
+
+  // Pick a breed the guild doesn't have yet. Prefer the breeds with the
+  // strongest "I watched from the shadows" archetype.
+  const owned = new Set(gameState.cats.map((c) => c.breed));
+  const preferenceOrder = ['maine_coon', 'siamese', 'bengal', 'tuxedo', 'russian_blue'];
+  const pickedBreed = preferenceOrder.find((b) => !owned.has(b));
+  if (!pickedBreed) return; // Nothing to add
+
+  const breed = getBreed(pickedBreed);
+  if (!breed) return;
+
+  // Generate a default name. The player can rename via the cat panel.
+  const defaultName = breed.name;
+  const cat = createCat(pickedBreed, defaultName);
+  gameState.cats.push(cat);
+  gameState.flags.admirationRecruitDone = true;
+  saveGame(gameState);
+
+  const catName = esc(gameState.playerCatName);
+  const newCatBreedName = breed.name;
+
+  showNarrativeOverlay({
+    scenes: [
+      'There was a knock at the guildhall door at dusk.',
+      `A ${newCatBreedName} stood in the cold, no bag, no story written on them. Just eyes that had clearly been watching for some time.`,
+      `"I came because of the granary."`,
+      `"I watched you for a week before tonight. I saw who held the door at the cathedral. I saw who walked at the front of the procession."`,
+      `"I have nothing to offer but myself. I won't ask for fish. I just want to belong to whatever this is."`,
+      `${catName} looked at the ${newCatBreedName} in the doorway and felt the shape of the guild change in a way that had nothing to do with arithmetic.`,
+      `"Then come in. The fire is already going."`,
+      `(${defaultName} the ${newCatBreedName} joined the guild — no cost. You can rename them in the cat panel.)`,
+    ],
+    image: 'assets/sprites/scenes/guildhall.png',
+    catSprite: pickedBreed,
+    tone: 'warm',
+    onScene: (i) => {
+      if (i === 0) playSfx('tap', 0.5);
+      if (i === 6) playSfx('purr', 0.4);
+      if (i === 7) playSfx('recruit', 0.4);
+    },
+  });
+
+  addJournalEntry(gameState, `${defaultName} the ${newCatBreedName} arrived unbidden at the guildhall door. They came because of what they had seen.`, 'recruit');
 });
 
 // ──── Long Winter ────
@@ -2005,14 +2131,18 @@ eventBus.on('inquisition-start', () => {
 
   showNarrativeOverlay({
     scenes: [
-      'A black-robed figure appeared at the guildhall gate at dawn. Behind him, two monks with ledgers.',
+      // False-summit warmth (story-audit-council.md item 4).
+      'A monk had nodded to the guild from the cathedral steps the day before. A real nod, not a measured one.',
+      `${catName} had carried that nod home like a coin in a closed paw, turning it over all evening.`,
+      // Reversal begins.
+      'The next morning a black-robed figure appeared at the guildhall gate at dawn. Behind him, two monks with ledgers.',
       `"I am Brother Aldric, sent by His Excellency the Bishop. I am here to determine... what you are."`,
       `He looked at ${catName} with ${lens} eyes. "Are you servants of the saints? Or something... else?"`,
       `"For five days, I will observe. I will question your cats. I will watch what work you do."`,
       `"Choose your jobs wisely. Sacred work speaks well of you. Shadow work... does not."`,
     ],
     image: 'assets/sprites/scenes/guildhall.png',
-    onScene: (i) => { if (i === 0) playSfx('thunder'); },
+    onScene: (i) => { if (i === 2) playSfx('thunder'); },
   });
 });
 
