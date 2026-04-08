@@ -411,17 +411,20 @@ export function showMenuPanel(): void {
     if (!json) { deps.showToast('No save to export'); return; }
     const filename = `clowder-save-day${gameState!.day}.json`;
 
-    // Capacitor path: write through @capacitor/filesystem to the Android
-    // Documents folder. The standard <a download> trick doesn't fire on
-    // the WebView (no DownloadListener), so on the APK the export was
-    // silently broken. Documents survives APK uninstall, so the player
-    // can recover the file after a reinstall by importing it back.
+    // Capacitor path: open the Android system share sheet so the user
+    // picks where the file goes (Drive, email, Files via SAF, etc.).
+    // The previous version of this flow wrote silently to scoped
+    // storage (Documents/) which the user couldn't browse to with
+    // the system Files app — reported as "I can't find the export
+    // save file on my phone". The Share API sidesteps scoped storage
+    // entirely: write to cache, hand the URI to the system intent,
+    // let the user pick the destination.
     if (isNative()) {
-      exportSaveToFilesystem(filename, json).then((path) => {
-        if (path) {
-          deps.showToast(`Saved to Documents/${filename} (survives reinstall)`);
+      exportSaveToFilesystem(filename, json).then((shared) => {
+        if (shared) {
+          deps.showToast('Save exported via share sheet');
         } else {
-          deps.showToast('Save export failed — check storage permissions');
+          deps.showToast('Save export cancelled');
         }
       });
       return;

@@ -17,6 +17,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { App, type AppState } from '@capacitor/app';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 const RETURN_NOTIFICATION_ID = 1001;
 const HAPTICS_PREF_KEY = 'clowder_haptics_enabled';
@@ -204,57 +205,105 @@ export async function setupStatusBar(): Promise<void> {
 //
 // The user's stated concern: "I want to reinstall the game on Android to
 // get updates and still have haptics, but I'm worried about losing the
-// save." The standard <a download> export the menu uses doesn't actually
-// fire on Capacitor's WebView (download attribute is no-op without a
-// custom DownloadListener). This module wraps @capacitor/filesystem to
-// write save JSON to a Documents path that survives APK reinstall.
+// save." Two parallel flows:
 //
-// Two flows:
-//   exportSaveToFilesystem(filename, json) — manual export, triggered by
-//     the Export Save menu button. Returns the absolute path on success.
-//   writeAutoSnapshot(json) — overwrites a single autosnapshot file each
-//     day-end. Cheap recovery if the player forgets to manually export.
-//   readAutoSnapshot() — checks for the autosnapshot file on first launch
-//     and returns its contents if present (used by the title-screen
-//     "found a save in your Documents — restore?" prompt).
+//   1. **Auto-snapshot** (writeAutoSnapshot / readAutoSnapshot) — writes
+//      a single overwriting file to the app's data directory on every
+//      day-end. Used by the title screen's restore prompt on first
+//      launch after a reinstall. The Filesystem.Directory.Data location
+//      doesn't survive APK uninstall, so this only helps for in-place
+//      APK UPDATES, not full uninstall + reinstall flows.
 //
-// All three are no-ops on web. On web the existing <a download> code in
+//   2. **Manual export via Share sheet** (exportSaveToFilesystem) — for
+//      the user-initiated "save this somewhere I can find" case, we
+//      write the file to a temporary spot in app cache and immediately
+//      open the system share sheet (Drive, Email, Files via SAF, etc.).
+//      This bypasses Android 10+'s scoped storage entirely: the user
+//      gets to pick where the file goes via the system picker.
+//
+// Why the share sheet vs. writing to a fixed Documents path: on Android
+// 10+, @capacitor/filesystem's Directory.Documents maps to an app-private
+// scoped-storage location, NOT the user-visible /storage/emulated/0/
+// Documents folder. The save file gets written, but the user can't
+// browse to it with the system Files app — it only exists inside the
+// app's private sandbox. The Share API sidesteps this by handing the
+// file to the user via a system intent the moment it's written; the
+// user picks the destination, the OS handles the permission, and the
+// file lands somewhere they can actually find.
+//
+// Reported as: "I can't find the export save file on my phone. Perhaps
+// the cloud save feature is worth it"
+//
+// All flows are no-ops on web. On web the existing <a download> code in
 // the menu still works fine because the browser handles downloads.
 
 const AUTO_SNAPSHOT_FILENAME = 'clowder-save-autosnapshot.json';
 
-/** Write a save JSON to the Android Documents folder under the given
- *  filename. Returns the absolute file path on success, or null on
- *  failure or web context. The Documents directory survives APK
- *  uninstall on Android, so the file is recoverable after a reinstall. */
-export async function exportSaveToFilesystem(filename: string, jsonContent: string): Promise<string | null> {
-  if (!isNative()) return null;
+/** Manual save export via the Android system share sheet. Writes the
+ *  save JSON to app cache, gets a content:// URI back, then opens the
+ *  share intent so the user can pick where to send it (Drive, email,
+ *  Files via SAF, etc.). This sidesteps Android 10+'s scoped storage
+ *  hide-the-file problem entirely.
+ *
+ *  Returns true on successful share, false on failure or web context.
+ *  The share sheet itself is the success signal; the player picks the
+ *  destination after this returns. */
+export async function exportSaveToFilesystem(filename: string, jsonContent: string): Promise<boolean> {
+  if (!isNative()) return false;
   try {
-    const result = await Filesystem.writeFile({
+    // Write to Cache directory — temporary, no permission needed.
+    // The Share API only needs the URI to exist long enough for the
+    // receiving app to copy it; cache is the right scope.
+    const writeResult = await Filesystem.writeFile({
       path: filename,
       data: jsonContent,
-      directory: Directory.Documents,
+      directory: Directory.Cache,
       encoding: Encoding.UTF8,
       recursive: true,
     });
-    return result.uri ?? `Documents/${filename}`;
+
+    if (!writeResult.uri) {
+      console.error('exportSaveToFilesystem: write succeeded but no URI returned');
+      return false;
+    }
+
+    // Open the system share sheet. The user picks where the file goes —
+    // Drive, Files (via SAF), email, etc. Android handles the permission
+    // grant via the share intent so we don't need MANAGE_EXTERNAL_STORAGE
+    // or MediaStore writes.
+    await Share.share({
+      title: 'Clowder & Crest save',
+      text: `Your Clowder & Crest save: ${filename}`,
+      url: writeResult.uri,
+      dialogTitle: 'Save your Clowder & Crest save file',
+    });
+
+    return true;
   } catch (e) {
-    console.error('exportSaveToFilesystem failed:', e);
-    return null;
+    // Share.share rejects if the user dismisses the share sheet — that's
+    // not a failure, that's just "no thanks". Distinguishing dismissal
+    // from real errors isn't critical; the toast in the caller covers
+    // both with the same message.
+    console.warn('exportSaveToFilesystem ended:', e);
+    return false;
   }
 }
 
-/** Overwrite the auto-snapshot file with the latest save JSON. Called
- *  on day-end (NOT on every saveGame, which would be too frequent and
- *  laggy on Android). Silent on failure — the autosnapshot is a
- *  belt-and-suspenders backup, not a critical write path. */
+/** Overwrite the auto-snapshot file in app data with the latest save
+ *  JSON. Called on day-end (NOT on every saveGame, which would be too
+ *  frequent and laggy on Android). Silent on failure — the autosnapshot
+ *  is a belt-and-suspenders backup, not a critical write path.
+ *
+ *  Stored in Directory.Data (app-private) — survives APK updates but
+ *  NOT a full uninstall + reinstall. For uninstall recovery the user
+ *  must use the Share-sheet manual export above. */
 export async function writeAutoSnapshot(jsonContent: string): Promise<void> {
   if (!isNative()) return;
   try {
     await Filesystem.writeFile({
       path: AUTO_SNAPSHOT_FILENAME,
       data: jsonContent,
-      directory: Directory.Documents,
+      directory: Directory.Data,
       encoding: Encoding.UTF8,
       recursive: true,
     });
@@ -263,21 +312,34 @@ export async function writeAutoSnapshot(jsonContent: string): Promise<void> {
   }
 }
 
-/** Read the auto-snapshot file from Documents if it exists. Returns the
+/** Read the auto-snapshot file from app data if it exists. Returns the
  *  raw JSON string, or null if missing/unreadable. Used at startup to
- *  detect a recoverable save after an APK reinstall. */
+ *  detect a recoverable save after an APK update.
+ *
+ *  Tries Directory.Data first (the new location). For compatibility
+ *  with the v2.4.0 export that wrote to Directory.Documents, falls
+ *  back to that path on miss so older snapshots still get recovered. */
 export async function readAutoSnapshot(): Promise<string | null> {
   if (!isNative()) return null;
   try {
     const result = await Filesystem.readFile({
       path: AUTO_SNAPSHOT_FILENAME,
-      directory: Directory.Documents,
+      directory: Directory.Data,
       encoding: Encoding.UTF8,
     });
     if (typeof result.data === 'string') return result.data;
+  } catch {
+    // Fall through to legacy Documents location below
+  }
+  try {
+    const legacy = await Filesystem.readFile({
+      path: AUTO_SNAPSHOT_FILENAME,
+      directory: Directory.Documents,
+      encoding: Encoding.UTF8,
+    });
+    if (typeof legacy.data === 'string') return legacy.data;
     return null;
   } catch {
-    // File missing or unreadable — no snapshot to recover
     return null;
   }
 }
