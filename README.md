@@ -2,7 +2,7 @@
 
 A cozy medieval cat guild management game. Recruit cats, take jobs, solve puzzles, and build your guild from a lone stray to a renowned clowder.
 
-**Play now:** [clowderandcrest.com](https://clowderandcrest.com) (also at [clowder.stephens.page](https://clowder.stephens.page))
+**Play now:** [clowderandcrest.com](https://clowderandcrest.com)
 
 **Listen to the soundtrack:** [Clowder & Crest Suno playlist](https://suno.com/playlist/76de63b1-aa56-47a9-a2e8-f11499e93cf2)
 
