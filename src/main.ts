@@ -444,7 +444,10 @@ function switchScene(target: string, data?: object): void {
   game.scene.start(target, data);
   // Show floating guild UI only on guild overview
   guildEndDayBtn.style.display = target === 'GuildhallScene' ? 'block' : 'none';
-  if (target === 'GuildhallScene') {
+  // Wish banner shows on BOTH guildhall and town map (per user request:
+  // "show the wishes on the town view as well"). Both scenes are full-
+  // screen so the top-anchored floating banner works in either context.
+  if (target === 'GuildhallScene' || target === 'TownMapScene') {
     updateGuildWishBanner();
   } else {
     guildWishBanner.style.display = 'none';
