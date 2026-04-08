@@ -70,11 +70,24 @@ export function checkAndShowConversation(): void {
     return;
   }
 
+  // Cap at one bond/group dialogue per in-game day. Per user feedback in
+  // chapter 4: "I feel like dialogue scenes are occurring even more than
+  // they need to". The original triggers fire from every job result,
+  // every end-day, every wish, every room interaction — easy to land 3+
+  // dialogues per day in chapter 4 once enough bond pairs are unlocked.
+  // The cap throttles without disabling: meaningful conversations still
+  // play, just at the rate the player can savor them.
+  const lastDay = Number(gameState.flags.lastConversationDay ?? 0);
+  if (lastDay >= gameState.day) {
+    return;
+  }
+
   const catBreeds = gameState.cats.map((c) => c.breed);
   for (const [a, b] of getBondPairs()) {
     if (catBreeds.includes(a) && catBreeds.includes(b)) {
       const rank = getAvailableConversation(gameState, a, b);
       if (rank) {
+        gameState.flags.lastConversationDay = gameState.day;
         showConversation(a, b, rank);
         return;
       }
@@ -117,6 +130,7 @@ export function checkAndShowConversation(): void {
           if (!allSpeakersPresent) continue;
 
           gameState.flags[viewedKey] = true;
+          gameState.flags.lastConversationDay = gameState.day;
           deps.saveGame(gameState);
           showGroupConversation(key);
           return;
