@@ -61,8 +61,7 @@ export function initSessionFlow(deps: SessionFlowDeps): SessionFlowApi {
       <input type="text" class="cat-name-input" placeholder="Enter name..." maxlength="20" autocomplete="off" />
       <div style="margin-top:12px;color:#8b7355;font-size:11px;font-family:Georgia,serif">Pronouns</div>
       <div style="display:flex;gap:6px;margin-top:6px">
-        <button class="gender-btn" data-gender="they" style="flex:1;background:#3a3530;border:1px solid #6b5b3e;color:#c4956a;padding:6px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer">they / them</button>
-        <button class="gender-btn" data-gender="female" style="flex:1;background:#2a2520;border:1px solid #3a3530;color:#8b7355;padding:6px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer">she / her</button>
+        <button class="gender-btn" data-gender="female" style="flex:1;background:#3a3530;border:1px solid #6b5b3e;color:#c4956a;padding:6px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer">she / her</button>
         <button class="gender-btn" data-gender="male" style="flex:1;background:#2a2520;border:1px solid #3a3530;color:#8b7355;padding:6px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer">he / him</button>
       </div>
       <button class="cat-name-submit" style="margin-top:12px">Begin</button>
@@ -73,12 +72,15 @@ export function initSessionFlow(deps: SessionFlowDeps): SessionFlowApi {
     const submit = prompt.querySelector<HTMLButtonElement>('.cat-name-submit')!;
     input.focus();
 
-    // Gender selection — defaults to 'they' (the previous behaviour)
-    let chosenGender: 'male' | 'female' | 'they' = 'they';
+    // Gender selection — defaults to 'female' (she/her is highlighted by
+    // default in the prompt). The 'they' option was removed per user
+    // feedback (2026-04-08); legacy saves still resolve via the pronouns
+    // helper, but new games choose between he/him and she/her.
+    let chosenGender: 'male' | 'female' = 'female';
     const genderBtns = prompt.querySelectorAll<HTMLButtonElement>('.gender-btn');
     genderBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
-        chosenGender = (btn.dataset.gender as 'male' | 'female' | 'they') ?? 'they';
+        chosenGender = (btn.dataset.gender as 'male' | 'female') ?? 'female';
         genderBtns.forEach((b) => {
           const isSelected = b === btn;
           b.style.background = isSelected ? '#3a3530' : '#2a2520';
