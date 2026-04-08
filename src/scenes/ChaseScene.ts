@@ -884,21 +884,19 @@ export class ChaseScene extends Phaser.Scene {
     this.ratGfx.setVisible(false);
     this.ratEyes.setVisible(false);
 
-    // Sweep all remaining fish dots toward the cat in a staggered cascade.
-    // Uses tweens.stagger() to auto-delay each target by 40ms — one tween,
-    // one call, real Pac-Man-style satisfaction.
+    // Fade out the uncollected fish dots in place — they were NOT collected.
+    // The previous version swept them toward the cat in a Pac-Man-style
+    // cascade, which looked satisfying but read to players as "you got
+    // all of them for free", killing the incentive to actually go pick
+    // up fish dots during the chase. The fade-out makes it clear that
+    // the missed dots are leaving the playfield, not entering the score.
     if (this.dots.length > 0) {
-      const catWorld = this.cellToWorld(this.catPos.r, this.catPos.c);
       const dotTargets = this.dots.map((d) => d.gfx);
       this.tweens.add({
         targets: dotTargets,
-        x: catWorld.x,
-        y: catWorld.y,
-        scale: 0.2,
         alpha: 0,
-        duration: 280,
-        ease: 'Sine.easeIn',
-        delay: this.tweens.stagger(40, {}),
+        duration: 350,
+        ease: 'Sine.easeOut',
         onComplete: () => {
           for (const d of this.dots) d.gfx.destroy();
           this.dots = [];
@@ -916,9 +914,14 @@ export class ChaseScene extends Phaser.Scene {
 
     playSfx('rat_caught');
     haptic.success();
+    // Show the explicit collected/total count so the player can see how
+    // many fish dots they actually picked up vs how many were left behind.
+    // This is the player-visible signal that the dots ARE worth collecting
+    // during the chase.
+    const collectedLine = `${this.dotsCollected}/${this.totalDots} fish dots collected`;
     const bonusLine = this.comboMaxBonus > 0
-      ? `+${bonusFish} fish (${this.dotsCollected} collected + ${this.comboMaxBonus} combo bonus)`
-      : `+${bonusFish} bonus fish collected`;
+      ? `+${bonusFish} fish (${collectedLine} + ${this.comboMaxBonus} combo bonus)`
+      : `+${bonusFish} fish (${collectedLine})`;
     showSceneOutcomeBanner(this, {
       title: 'Caught!',
       subtitle: bonusLine,
