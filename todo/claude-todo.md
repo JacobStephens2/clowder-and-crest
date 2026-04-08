@@ -1,4 +1,4 @@
-[] do you get all of the fish when you catch the rat in the chase scene? The way they animate all coming to the cat makes it look like it, which disincentivizes picking up the fish throughout the maze chase
-[] display the sprite of the assigned cats in the stationed cats section of the menu in the town job hall menu view
-[] I'm in chapter 4, and I feel like dialogue scenes are occurring even more than they need to
-[] Use the different emotional portraits of the cats in the dialogues
+[] a player should have a way to re-view the tutorial of a game. I didn't catch how to play the patrol game, and after losing it again I still don't understand
+[] make it clear on mobile where the save export goes to
+[] I want to reinstall the game on Android to get updates and still have haptics, but I'm worried about losing the save. Adding accounts / cloud saves would be good to ameliorate this concern in players. For the email / password account system that could be used here, SMTP creds used in /var/www/wedding.stephens.page for Mandrill can also be used here in this project to send email
+[] When a scene starts to play, it should be clear if it is staring a new chapter
