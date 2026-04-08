@@ -37,8 +37,19 @@ export class HeistScene extends Phaser.Scene {
   private timerText!: Phaser.GameObjects.Text;
   private movesText!: Phaser.GameObjects.Text;
   private setText!: Phaser.GameObjects.Text;
+  private noiseText!: Phaser.GameObjects.Text;
+  private noiseBar!: Phaser.GameObjects.Rectangle;
+  private noiseBarBg!: Phaser.GameObjects.Rectangle;
   private moveCount = 0;
   private ringGfx!: Phaser.GameObjects.Graphics;
+  /** Noise meter — every rotation adds 1, every trap-notch slip adds 4.
+   *  When it crosses noiseBudget the heist fails (caught). Per the
+   *  genre-pillar doc's "world embeddedness" + "failure as teacher"
+   *  principles: gives the player a real cost for naive over-spinning,
+   *  and forces them to plan the shorter rotation path instead of
+   *  spam-clicking. Easy mode has a generous budget; hard mode is tight. */
+  private noise = 0;
+  private noiseBudget = 30;
 
   constructor() { super({ key: 'HeistScene' }); }
 
@@ -53,10 +64,19 @@ export class HeistScene extends Phaser.Scene {
     const notches = this.difficulty === 'hard' ? 16 : this.difficulty === 'medium' ? 16 : 12;
     this.timeLeft = this.difficulty === 'hard' ? 20 : this.difficulty === 'medium' ? 25 : 30;
 
+    // Noise budget — total rotations the cat can perform before being
+    // heard. Easy gives breathing room; hard demands almost-perfect
+    // pathing. Stealth stat extends the budget so a sneaky cat has
+    // an actual edge in this scene.
+    this.noise = 0;
+    this.noiseBudget = this.difficulty === 'hard' ? 22 : this.difficulty === 'medium' ? 32 : 42;
+    this.moveCount = 0;
+
     const state = getGameState();
     const cat = state?.cats.find((c) => c.id === this.catId);
     const stealth = cat?.stats?.stealth ?? 5;
     this.timeLeft += Math.floor(stealth * 0.5);
+    this.noiseBudget += Math.floor((stealth - 5) * 1.5);
 
     // Generate rings
     for (let i = 0; i < ringCount; i++) {
@@ -86,33 +106,39 @@ export class HeistScene extends Phaser.Scene {
       }
     }
 
-    // Hard difficulty: add trap notches. The doc's "harder locks require
-    // different strategies, not just more of the same" — trap notches
-    // change the gameplay from spam-clicking to careful path planning.
-    if (this.difficulty === 'hard') {
-      for (let i = 0; i < this.rings.length; i++) {
-        const ring = this.rings[i];
-        // Skip linked rings (the linking is already a strategic complication)
-        if (ring.linkedTo >= 0) continue;
-        // Pick 1-2 trap notches that are NOT the gap and NOT the starting
-        // position (so the player can read the situation before stepping
-        // into a trap on their first move)
-        const candidates: number[] = [];
-        for (let n = 0; n < ring.notches; n++) {
-          if (n === ring.gapPos) continue;
-          // Skip notches at the current top (player's first step is safe)
-          const effective = (n + ring.rotation) % ring.notches;
-          if (effective === 0) continue;
-          candidates.push(n);
-        }
-        // Shuffle and pick 1-2
-        for (let j = candidates.length - 1; j > 0; j--) {
-          const k = Math.floor(Math.random() * (j + 1));
-          [candidates[j], candidates[k]] = [candidates[k], candidates[j]];
-        }
-        const trapCount = Math.random() < 0.5 ? 2 : 1;
-        ring.trapNotches = candidates.slice(0, trapCount);
+    // Trap notches on every difficulty. Per user feedback (2026-04-08):
+    // "the heist game doesn't feel like it has a failure condition. It
+    // feels like I just click a ring until it locks into place... no
+    // thinking required." Easy used to have ZERO trap notches which
+    // made it pure spam-clicking. Now every difficulty has them, with
+    // counts scaled to keep easy still beginner-friendly:
+    //   easy:   1 trap notch per ring (or 0 on linked rings)
+    //   medium: 1-2
+    //   hard:   2-3
+    const trapCountByDiff = this.difficulty === 'hard' ? [2, 3]
+      : this.difficulty === 'medium' ? [1, 2]
+      : [1, 1];
+    for (let i = 0; i < this.rings.length; i++) {
+      const ring = this.rings[i];
+      // Skip linked rings (the linking is already a strategic complication)
+      if (ring.linkedTo >= 0) continue;
+      // Pick trap notches that are NOT the gap and NOT the starting
+      // position (so the player can read the situation before stepping
+      // into a trap on their first move)
+      const candidates: number[] = [];
+      for (let n = 0; n < ring.notches; n++) {
+        if (n === ring.gapPos) continue;
+        const effective = (n + ring.rotation) % ring.notches;
+        if (effective === 0) continue;
+        candidates.push(n);
       }
+      // Shuffle
+      for (let j = candidates.length - 1; j > 0; j--) {
+        const k = Math.floor(Math.random() * (j + 1));
+        [candidates[j], candidates[k]] = [candidates[k], candidates[j]];
+      }
+      const trapCount = trapCountByDiff[Math.floor(Math.random() * trapCountByDiff.length)];
+      ring.trapNotches = candidates.slice(0, trapCount);
     }
 
     // Initial set-state pass — usually all false because of the avoidance
@@ -127,13 +153,13 @@ export class HeistScene extends Phaser.Scene {
     this.cameras.main.setZoom(DPR);
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
-    // Tutorial bumped to v2 — set feedback, counter-clockwise rotation,
-    // and trap notches are all new mechanics returning players should know.
-    if (showMinigameTutorial(this, 'clowder_heist_tutorial_v2', 'Pick the Lock',
+    // Tutorial bumped to v3 — noise meter is the new tension mechanic.
+    if (showMinigameTutorial(this, 'clowder_heist_tutorial_v3', 'Pick the Lock',
       `Rotate the rings to align all gaps at the top.<br><br>
       Tap the <strong>right side</strong> of a ring to rotate clockwise, or the <strong>left side</strong> for counter-clockwise.<br><br>
       A satisfying click means a tumbler is <strong style="color:#dda055">set</strong>.<br><br>
-      <strong style="color:#cc6666">Red trap notches</strong> reset the ring if you cross them. Plan your path!`,
+      <strong style="color:#cc6666">Red trap notches</strong> reset the ring if you cross them. Plan your path!<br><br>
+      Every rotation adds to the <strong style="color:#aa44aa">noise meter</strong> — fill it and a guard hears you. Pick the shorter path.`,
       () => { this.tutorialShowing = false; }
     )) { this.tutorialShowing = true; }
 
@@ -163,8 +189,17 @@ export class HeistScene extends Phaser.Scene {
       fontFamily: 'Georgia, serif', fontSize: '11px', color: '#dda055',
     }).setOrigin(0.5);
 
+    // Noise meter — fills with each rotation. Visible always so the
+    // player can pace their movement. Overflow = caught.
+    this.noiseText = this.add.text(GAME_WIDTH / 2, 95, `Noise: 0/${this.noiseBudget}`, {
+      fontFamily: 'Georgia, serif', fontSize: '10px', color: '#aa44aa',
+    }).setOrigin(0.5);
+    const barW = 220;
+    this.noiseBarBg = this.add.rectangle(GAME_WIDTH / 2, 110, barW, 6, 0x2a2520).setStrokeStyle(1, 0x3a3530);
+    this.noiseBar = this.add.rectangle(GAME_WIDTH / 2 - barW / 2, 110, 0, 6, 0xaa44aa).setOrigin(0, 0.5);
+
     // Alignment indicator at top
-    this.add.text(GAME_WIDTH / 2, 85, '\u25BC', {
+    this.add.text(GAME_WIDTH / 2, 122, '\u25BC', {
       fontSize: '18px', color: '#dda055',
     }).setOrigin(0.5);
 
@@ -229,6 +264,8 @@ export class HeistScene extends Phaser.Scene {
     ring.rotation = (ring.rotation + dir + ring.notches) % ring.notches;
     this.moveCount++;
     this.movesText.setText(`Moves: ${this.moveCount}`);
+    // Every rotation adds 1 noise. Spam-clicking has a real cost now.
+    this.addNoise(1);
 
     // Trap-notch check: if a trap notch landed at the top position after
     // rotation, this ring resets to its starting rotation. The doc's
@@ -247,6 +284,8 @@ export class HeistScene extends Phaser.Scene {
       playSfx('fail', 0.4);
       haptic.error();
       this.cameras.main.flash(120, 80, 30, 30);
+      // Slip is loud — adds extra noise on top of the per-rotation cost.
+      this.addNoise(4);
     } else {
       // Update set state and play context-appropriate audio. The doc's
       // "audio is primary" pillar: distinct sounds for set vs nudge.
@@ -291,6 +330,30 @@ export class HeistScene extends Phaser.Scene {
   private updateSetText(): void {
     const setCount = this.countSetRings();
     this.setText.setText(`Set: ${setCount}/${this.rings.length}`);
+  }
+
+  /** Add to the noise meter and refresh the HUD. If the meter
+   *  overflows the budget, the heist fails (caught) — the doc's
+   *  "world embeddedness" + "failure as teacher" combo. */
+  private addNoise(amount: number): void {
+    if (this.finished) return;
+    this.noise += amount;
+    const pct = Math.min(1, this.noise / this.noiseBudget);
+    if (this.noiseBar) {
+      this.noiseBar.width = 220 * pct;
+      // Bar reddens as we approach overflow
+      const color = pct > 0.85 ? 0xcc4444 : pct > 0.6 ? 0xdda055 : 0xaa44aa;
+      this.noiseBar.setFillStyle(color);
+    }
+    if (this.noiseText) {
+      this.noiseText.setText(`Noise: ${Math.min(this.noise, this.noiseBudget)}/${this.noiseBudget}`);
+      this.noiseText.setColor(pct > 0.85 ? '#cc6666' : pct > 0.6 ? '#dda055' : '#aa44aa');
+    }
+    if (this.noise >= this.noiseBudget) {
+      // Caught — triggered by overflow rather than the timer running out.
+      this.cameras.main.shake(200, 0.012);
+      this.endGame(false);
+    }
   }
 
   private drawRings(): void {
@@ -368,7 +431,8 @@ export class HeistScene extends Phaser.Scene {
     } else {
       playSfx('fail');
       haptic.error();
-      this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 130, 'Time\'s up!', {
+      const failMsg = this.noise >= this.noiseBudget ? 'Caught!' : 'Time\u2019s up!';
+      this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 130, failMsg, {
         fontFamily: 'Georgia, serif', fontSize: '22px', color: '#cc6666',
       }).setOrigin(0.5);
       this.time.delayedCall(1500, () => {
