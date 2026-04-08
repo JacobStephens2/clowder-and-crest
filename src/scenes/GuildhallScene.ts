@@ -488,20 +488,32 @@ export class GuildhallScene extends Phaser.Scene {
    *  that bubble to see the wish, then they can close it again."
    *  The bubble is a circle with a small pendant trail and a 💭
    *  glyph; tapping it pops up a bordered text panel with the wish
-   *  text, and tapping the panel (or its close button) hides it. */
+   *  text, and tapping the panel (or its close button) hides it.
+   *
+   *  v2: bumped the hit-zone to a 26px-radius invisible disc and
+   *  added an explicit stopPropagation in the pointerdown handler.
+   *  Per follow-up feedback: "I click it and enter the sleeping
+   *  quarters" — the original visual radius was 9px and the room
+   *  border underneath has its own pointerdown that navigates into
+   *  the room, so finger taps that landed just outside the visual
+   *  fell through to the room. The larger hit zone (22px) makes the
+   *  bubble forgiving without changing how it looks. */
   private drawWishBubble(x: number, y: number): void {
     if (!this.activeWish) return;
     // Two small trail dots leading from the cat up to the bubble
     this.add.circle(x - 7, y + 8, 2, 0xfff8e0, 0.85).setDepth(15);
     this.add.circle(x - 4, y + 4, 2.5, 0xfff8e0, 0.9).setDepth(15);
-    // Bubble body
+    // Bubble visual
     const bubble = this.add.circle(x, y, 9, 0xfff8e0, 0.95).setDepth(15);
     bubble.setStrokeStyle(1, 0x8b7355);
     const glyph = this.add.text(x, y, '\u{1F4AD}', {
       fontFamily: 'Georgia, serif', fontSize: '11px',
     }).setOrigin(0.5).setDepth(16);
     void glyph;
-    bubble.setInteractive({ useHandCursor: true });
+    // Invisible larger hit zone overlaying the bubble — gives the
+    // player a forgiving tap target. The visible bubble stays small.
+    const hitZone = this.add.zone(x, y, 44, 44).setDepth(17);
+    hitZone.setInteractive({ useHandCursor: true });
     // Gentle pulse so the player notices it
     this.tweens.add({
       targets: bubble,
@@ -511,7 +523,14 @@ export class GuildhallScene extends Phaser.Scene {
       repeat: -1,
       ease: 'Sine.easeInOut',
     });
-    bubble.on('pointerdown', () => this.toggleWishPopup(x, y));
+    hitZone.on('pointerdown', (_pointer: Phaser.Input.Pointer, _localX: number, _localY: number, event: Phaser.Types.Input.EventData) => {
+      // Stop the room border behind from also firing its navigate
+      // handler. Without this, tapping the bubble enters the room
+      // AND opens the popup, but the scene transitions before the
+      // popup is visible.
+      event.stopPropagation();
+      this.toggleWishPopup(x, y);
+    });
   }
 
   /** Show or hide a small wish-text popup near the bubble. The popup
