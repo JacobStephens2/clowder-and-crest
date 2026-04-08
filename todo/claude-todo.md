@@ -1,4 +1,3 @@
 [] when all other claude todo is done, build a new apk and put it in todo
 [] I keep running out of space on this server. How big of a volume should I add to this server? 50GB? 100GB? Some other size?
-[] Only show cats on the main title screen that have been recruited in saves. If there are no save, show the wildcat only.
 [] brainstorm how we could use this video of wildcat with a neutral expression which zooms in on the portrait and has some petals flow by in the wind: todo/art/portrait-videos/wildcat-neutral-zoom-in_jacob_stehens_medieval_fantasy_character_portrait_anthropomor_40fe2cd8-9d61-4d02-b8c8-d17a0c6a9966_3.mp4

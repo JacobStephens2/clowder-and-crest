@@ -148,8 +148,22 @@ export class TitleScene extends Phaser.Scene {
     wallGfx.lineStyle(1, 0x3a3530, 0.5);
     wallGfx.lineBetween(cx - 60, 405, cx + 60, 405);
 
-    // Pixel art cat sitting on wall — random breed and direction
-    const breeds = ['wildcat', 'russian_blue', 'tuxedo', 'maine_coon', 'siamese', 'bengal'];
+    // Pixel art cat sitting on wall — only show breeds the player has
+    // actually recruited across their saves (per user feedback
+    // 2026-04-08: "Only show cats on the main title screen that have
+    // been recruited in saves. If there are no save, show the wildcat
+    // only."). The wildcat is always available since the player IS one.
+    const recruitedBreeds = new Set<string>(['wildcat']);
+    for (const slot of [1, 2, 3] as const) {
+      try {
+        const save = loadFromSlot(slot);
+        if (!save) continue;
+        for (const cat of save.cats) recruitedBreeds.add(cat.breed);
+      } catch {
+        // Ignore corrupt slot — wildcat fallback covers it
+      }
+    }
+    const breeds = Array.from(recruitedBreeds);
     const dirs = ['south', 'east', 'west'];
     const titleBreed = breeds[Math.floor(Math.random() * breeds.length)];
     const titleDir = dirs[Math.floor(Math.random() * dirs.length)];
