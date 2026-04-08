@@ -133,6 +133,18 @@ All playtests use the same multi-layer resilience pattern: hard top-level setTim
 - **Per-scene resilient playtests** — every minigame has a `test/*-playtest.mjs` script. They use direct method calls and state inspection (not Phaser timer waits, which are unreliable under page.evaluate scene launches). Three layers of hang protection: top-level setTimeout, process-group kill for the dev server, and an outer `timeout 150s` wrapper. **When changing a scene, run its playtest.**
 - **Native Capacitor features** — `src/systems/NativeFeatures.ts` is the single facade for all native plugins (`@capacitor/haptics`, `@capacitor/local-notifications`, `@capacitor/app`, `@capacitor/status-bar`). Every entry point checks `Capacitor.isNativePlatform()` and silently no-ops on web. Haptics are wired at high-leverage emotional beats across all 14 minigame scenes (kills, perfects, fails, lock clicks). The app lifecycle hook pauses the day timer and music when Android backgrounds the app. Day-end schedules a single ~16h "your cats are waiting" local notification (cancelled on next launch).
 
+## Commit style — atomic commits
+
+**Always prefer atomic commits.** Each commit should represent one logical, reversible change that can stand alone in `git log` and be reverted independently. When the working tree contains multiple unrelated changes (e.g. a feature edit alongside a doc update alongside a workspace reorg), split them into separate commits in the same push rather than bundling them.
+
+Concrete rules:
+
+- Stage files explicitly with `git add <path>` rather than `git add -A` or `git add .` so each commit's scope is intentional.
+- A bug fix is one commit. A doc/comment cleanup is a separate commit. A workspace reorganization is its own commit. A new feature with its tests is one commit (the tests *are* part of the change).
+- Don't bundle a refactor with a behaviour change — they should land separately so a future bisect can isolate which one broke things.
+- It is fine and expected to make 2-4 commits in a single response when the user has asked for multi-faceted work. Push them all in one `git push`.
+- The commit message body explains *why* in the same one-logical-change framing — if you find yourself writing "also" or "additionally" in the body, that's usually a sign the commit should be split.
+
 ## Deployment
 
 The game is served from two Apache VirtualHosts pointing at the same dist:
