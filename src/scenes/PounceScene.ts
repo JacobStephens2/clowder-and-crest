@@ -648,6 +648,18 @@ export class PounceScene extends Phaser.Scene {
       }
     }
     this.ratsKnocked = knocked;
+    // If every rat has settled on the floor, fire the win — even
+    // outside the post-launch 2500ms window. The previous code only
+    // checked the win condition immediately after a launch settled,
+    // so a slow domino chain that finished a few hundred ms after
+    // the launch timeout left the player staring at fallen rats and
+    // a "still your turn" UI. Per user feedback (2026-04-10): "in
+    // pounce, I knocked all the rats down to the floor, but the
+    // game didn't seem to notice." The periodic check (every 500ms
+    // throughout the run) now closes that gap.
+    if (!this.finished && this.totalRats > 0 && this.ratsKnocked >= this.totalRats) {
+      this.winGame();
+    }
   }
 
   private winGame(): void {
