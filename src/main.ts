@@ -560,6 +560,14 @@ eventBus.on('navigate', (target: string, data?: object) => {
   switchScene(target, data);
 });
 
+// Lightweight gameState setter — used by the title-screen Day of Rest
+// entry to install a minimal stub save without firing the full
+// `game-loaded` side-effect cascade (BGM swap, day timer start, offline
+// earnings, etc.). Pass null to clear. Per user feedback (2026-04-10).
+eventBus.on('set-transient-game-state', (save: SaveData | null) => {
+  gameState = save;
+});
+
 eventBus.on('hide-ui', () => {
   statusBar.style.display = 'none';
   bottomBar.style.display = 'none';
@@ -1346,9 +1354,18 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
   // the practice flag. None of the reward / XP / mood / job-flag logic
   // below runs.
   if (isPracticeRun()) {
+    const wasTitleDemoMode = gameState?.flags?.titleDemoState === true;
     endPracticeRun();
     void puzzleId; void moves; void minMoves; void jobId; void catId; void bonusFish;
     showToast(stars >= 3 ? 'Practice run \u2014 perfect!' : 'Practice run complete.');
+    if (wasTitleDemoMode) {
+      // Title-screen Day of Rest practice — clear the stub save and
+      // return to the title scene instead of dumping the player into
+      // a fake guildhall. Per user feedback (2026-04-10).
+      gameState = null;
+      switchScene('TitleScene');
+      return;
+    }
     switchScene('GuildhallScene');
     setTimeout(() => showDayOfRestPanel(), 400);
     return;
@@ -1560,8 +1577,16 @@ eventBus.on('puzzle-quit', ({ jobId, catId }: any = {}) => {
   // Day of Rest quits never count: no fish penalty, no mood drop, no
   // cat-of-the-day burn. Just route back to the panel.
   if (isPracticeRun()) {
+    const wasTitleDemoMode = gameState?.flags?.titleDemoState === true;
     endPracticeRun();
     void jobId; void catId;
+    if (wasTitleDemoMode) {
+      // Title-screen Day of Rest practice quit — clear the stub save
+      // and return to the title scene. Per user feedback (2026-04-10).
+      gameState = null;
+      switchScene('TitleScene');
+      return;
+    }
     switchScene('GuildhallScene');
     setTimeout(() => showDayOfRestPanel(), 400);
     return;

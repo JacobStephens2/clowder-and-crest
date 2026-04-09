@@ -27,7 +27,7 @@
 // 7-chapter campaign first.
 
 import demoSaveJson from '../data/demoSave.json';
-import { validateAndSanitizeSave, saveToSlot, type SaveData } from './SaveManager';
+import { validateAndSanitizeSave, saveToSlot, createDefaultSave, type SaveData } from './SaveManager';
 import { eventBus } from '../utils/events';
 import { showDayOfRestSpoilerWarning, showDayOfRestPanel } from '../ui/DayOfRestPanel';
 
@@ -89,45 +89,48 @@ export function enterShowcase(showToast?: (msg: string) => void): boolean {
 }
 
 /** Title-screen Day of Rest entry — show the spoiler warning, and on
- *  confirm load the demo save into the in-memory game state, navigate
- *  to the guildhall, and auto-open the fully-unlocked Day of Rest
- *  panel. The demo save is loaded VIA `game-loaded` (which sets
- *  in-memory state) but NOT written to any save slot, so the player's
- *  real saves stay untouched.
+ *  confirm set up a minimal in-memory game state and open the
+ *  fully-unlocked Day of Rest panel directly over the title scene.
  *
- *  Per user feedback (2026-04-09): "move the day of rest - all
- *  unlocked menu item to the main title menu, and just call it day of
- *  rest there. Leave the spoiler warning."
+ *  Per user feedback (2026-04-10): "for accessing the day of rest
+ *  from the title screen, give player access to the minigame menu
+ *  without creating a fully unlocked save." The earlier
+ *  implementation loaded the full demo save (all 5 cats, all
+ *  furniture, all chapters) and dropped the player into a fully
+ *  unlocked guildhall after the panel closed. The new path uses
+ *  `createDefaultSave('Demo')` — a Day 1 / Chapter 1 / one-cat stub
+ *  — and stays on the title scene (the panel renders over it).
  *
- *  After practice runs the puzzle-complete handler in main.ts routes
- *  back to GuildhallScene + re-opens the panel — same as the in-game
- *  Day of Rest flow. The transient demo state lives in memory until
- *  the player quits to title.
+ *  The stub save is flagged with `titleDemoState: true` so the
+ *  puzzle-complete / puzzle-quit handlers in main.ts know to route
+ *  back to TitleScene + clear the in-memory state when a practice
+ *  run finishes, instead of dumping the player into the stub
+ *  guildhall. Same flag is checked when the close button (X) on
+ *  the panel is tapped.
  *
- *  Returns true on success, false if the demo save fails sanitization
- *  or the player cancelled the spoiler warning. */
-export function showTitleScreenDayOfRest(showToast?: (msg: string) => void): void {
+ *  Nothing is written to any save slot at any point; the player's
+ *  real saves stay untouched. */
+export function showTitleScreenDayOfRest(_showToast?: (msg: string) => void): void {
   showDayOfRestSpoilerWarning({
     onCancel: () => {
       // Title screen has no menu to return to — bail silently.
     },
     onConfirm: () => {
-      const sanitized = validateAndSanitizeSave(demoSaveJson as unknown);
-      if (!sanitized) {
-        showToast?.('Day of Rest demo save failed to load');
-        return;
-      }
-      const save: SaveData = sanitized;
-      save.flags = save.flags ?? {};
-      save.flags.demoSave = true;
-      // NOT writing to any slot — purely in-memory. The player's real
-      // saves stay intact.
-      eventBus.emit('game-loaded', save);
-      eventBus.emit('navigate', 'GuildhallScene');
-      // Wait for the scene transition to settle, then open the panel.
-      setTimeout(() => {
-        showDayOfRestPanel(true);
-      }, 600);
+      // Minimal stub save: Day 1, one cat (the player wildcat), no
+      // chapter unlocks, no furniture. The Day of Rest panel with
+      // unlockAll=true ignores puzzlesCompleted so all 14 minigames
+      // still show on the catalogue regardless of how empty this
+      // stub is.
+      const save: SaveData = createDefaultSave('Demo');
+      save.flags.titleDemoState = true;
+      // Lightweight setter — sets gameState in main.ts WITHOUT firing
+      // the full game-loaded side-effect cascade (which would start
+      // the day timer, switch BGM, fire offline-earnings checks, etc.).
+      eventBus.emit('set-transient-game-state', save);
+      // Open the panel directly over the title scene. The panel's
+      // pauseActiveScenes() call pauses TitleScene; closing the
+      // panel resumes it.
+      showDayOfRestPanel(true);
     },
   });
 }
