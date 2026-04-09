@@ -402,10 +402,19 @@ export class RoofScoutScene extends Phaser.Scene {
     this.wallFallCap = Math.max(20, WALL_FALL_CAP - (agility - 5) * 4);
     // hardier cats survive bigger plummets before resetting to a checkpoint
     this.fallForgiveness = GAME_HEIGHT * (0.55 + courage * 0.025);
-    // Easy mode is much more forgiving on falls — the player can drop
-    // a full screen-and-a-half before they hit the checkpoint reset.
+    // Easy mode is "trivially easy" per user feedback (2026-04-09).
+    // The player should basically not be able to fail. Stack of buffs:
+    //   - jump velocity: extra -60 boost over the base
+    //   - wall fall cap: 20 (slowest possible slide)
+    //   - fall forgiveness: huge — the run-end check still fires for
+    //     world-bottom catches but not from normal play
+    //   - tier 1 chunks only (see pickTierForAnchor)
+    //   - falls teleport back to the highest checkpoint instead of
+    //     ending the run (see update())
     if (this.difficulty === 'easy') {
-      this.fallForgiveness = GAME_HEIGHT * 1.5;
+      this.jumpVelocity -= 60;
+      this.wallFallCap = 20;
+      this.fallForgiveness = GAME_HEIGHT * 4;
     }
   }
 
@@ -429,6 +438,13 @@ export class RoofScoutScene extends Phaser.Scene {
     // platformer Pac-Man-style screen wrap, requested by the user — a
     // jump off the right edge re-enters from the left, and vice versa.
     this.physics.world.setBounds(-GAME_WIDTH, 0, GAME_WIDTH * 3, WORLD_HEIGHT);
+
+    // Easy mode lowers world gravity from 1050 to 850 for longer hang
+    // time and a more forgiving reaction window. This complements the
+    // jump-velocity boost and the no-fall-death checkpoint teleport.
+    if (this.difficulty === 'easy') {
+      this.physics.world.gravity.y = 850;
+    }
 
     if (showMinigameTutorial(this, 'clowder_roof_scout_tutorial_v1', 'Roof Scout',
       `Climb to the rooftop watchpoint!<br><br>
@@ -648,16 +664,17 @@ export class RoofScoutScene extends Phaser.Scene {
   }
 
   /** Difficulty tier ramps from 1 (bottom of climb) to 3 (near summit).
-   *  Easy mode caps at tier 2 — the player never sees the punishing
-   *  tier-3 chimney/spike chunks at all. Easy mode is meant to teach
-   *  the basics, so the curve stays in tier 1 most of the way and only
-   *  introduces tier-2 wall-cling chunks near the top. */
+   *  Easy mode is "trivially easy" per user feedback (2026-04-09): the
+   *  whole climb is tier-1 stairs / wide ledges. Medium splits roughly
+   *  thirds; hard ramps faster. */
   private pickTierForAnchor(anchorY: number): 1 | 2 | 3 {
-    const climbProgress = 1 - (anchorY - TARGET_Y) / (START_Y - TARGET_Y);
     if (this.difficulty === 'easy') {
-      // 70% tier 1, 30% tier 2, 0% tier 3.
-      return climbProgress < 0.7 ? 1 : 2;
+      // Tier 1 the entire way up — wide ledges, no wall-cling pressure,
+      // no tier-3 chimney/spike chunks. Easy mode is the "no fail"
+      // tutorial climb.
+      return 1;
     }
+    const climbProgress = 1 - (anchorY - TARGET_Y) / (START_Y - TARGET_Y);
     // hard runs ramp faster; medium splits roughly thirds
     const offset = this.difficulty === 'hard' ? 0.15 : 0;
     const t = climbProgress + offset;
@@ -922,10 +939,19 @@ export class RoofScoutScene extends Phaser.Scene {
     }
 
     // Out-of-bounds fall — drop a meaningful distance below the highest
-    // checkpoint and the run ends. Endurance widens this window.
+    // checkpoint and the run ends. Endurance widens this window. On
+    // easy mode the run NEVER ends from a fall — instead the cat is
+    // teleported back to the last checkpoint with a brief screen flash
+    // and a velocity reset, so the player can keep climbing without
+    // any actual fail state. Per user feedback (2026-04-09): "make the
+    // easy roof scout level trivially easy."
     if (this.player.y > this.lastCheckpointY + this.fallForgiveness) {
-      this.endRun(false);
-      return;
+      if (this.difficulty === 'easy') {
+        this.respawnAtCheckpoint();
+      } else {
+        this.endRun(false);
+        return;
+      }
     }
 
     // Update HUD
@@ -1062,6 +1088,25 @@ export class RoofScoutScene extends Phaser.Scene {
     this.fishText.setText(`\u{1F41F} ${this.fishCollected}`);
     playSfx('fish_earn', 0.3);
     haptic.tap();
+  }
+
+  // ── Easy-mode safety net ──
+
+  /** Easy-mode "no fail" respawn. Teleports the cat back to the
+   *  highest checkpoint reached, zeroes velocity, briefly flashes the
+   *  screen + camera. Used in place of endRun(false) on easy mode so
+   *  the player can keep climbing without any actual fail state.
+   *  Per user feedback (2026-04-09): "make the easy roof scout level
+   *  trivially easy." */
+  private respawnAtCheckpoint(): void {
+    if (this.finished) return;
+    this.player.setX(GAME_WIDTH / 2);
+    this.player.setY(this.lastCheckpointY - PLAYER_H);
+    this.player.setVelocity(0, 0);
+    this.cameras.main.flash(180, 60, 60, 80);
+    this.cameras.main.shake(120, 0.004);
+    haptic.tap();
+    playSfx('crate_push', 0.18);
   }
 
   // ── End conditions ──
