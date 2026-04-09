@@ -246,7 +246,9 @@ function showGroupConversation(key: string, opts: GroupConversationOpts = {}): v
   // imperatively below so each img can swap independently.
   const portraitsHtml = gameState.cats.slice(0, 5).map((cat, i) => {
     const color = BREED_COLORS[cat.breed] ?? '#8b7355';
-    return `<div class="conversation-portrait" style="background:${color};width:60px;height:60px">
+    // transition: smooth scale + opacity when the speaker swaps. The
+    // scale/opacity values themselves are set per-line in showLine().
+    return `<div class="conversation-portrait" style="background:${color};width:60px;height:60px;transition:transform 240ms ease-out,opacity 240ms ease-out;transform-origin:center bottom">
       <img id="group-portrait-${i}" data-breed="${cat.breed}" src="assets/sprites/portraits/${cat.breed}_neutral.png" style="width:56px;height:56px;object-fit:cover;border-radius:4px" alt="" />
       <div style="font-size:8px;margin-top:2px">${esc(cat.name)}</div>
     </div>`;
@@ -320,14 +322,25 @@ function showGroupConversation(key: string, opts: GroupConversationOpts = {}): v
     const name = cat?.name ?? BREED_NAMES[line.speaker] ?? line.speaker;
     const breedName = BREED_NAMES[line.speaker] ?? line.speaker;
     speaker.innerHTML = `${esc(name)} <span class="speaker-breed">${breedName}</span>`;
-    if (line.expression) {
+    const portraitIndex = gameState!.cats.findIndex((c) => c.breed === line.speaker);
+    if (line.expression && portraitIndex >= 0) {
       groupExpressions.set(line.speaker, line.expression);
-      const portraitIndex = gameState!.cats.findIndex((c) => c.breed === line.speaker);
-      if (portraitIndex >= 0) {
-        const portrait = document.getElementById(`group-portrait-${portraitIndex}`) as HTMLImageElement | null;
-        if (portrait) setPortrait(portrait, line.speaker, line.expression);
-      }
+      const portrait = document.getElementById(`group-portrait-${portraitIndex}`) as HTMLImageElement | null;
+      if (portrait) setPortrait(portrait, line.speaker, line.expression);
     }
+    // Speaker emphasis — scale the speaker's portrait up and dim the
+    // rest. Per user feedback (2026-04-10): "in guild moments,
+    // increase the size of the speaker's portrait when they are
+    // speaking." Pure CSS transform; no DOM rebuild, so it animates
+    // smoothly via the transition rule applied below at scene init.
+    gameState!.cats.slice(0, 5).forEach((_c, i) => {
+      const tile = document.querySelector(`#group-portrait-${i}`)?.parentElement as HTMLElement | null;
+      if (!tile) return;
+      const isSpeaking = i === portraitIndex;
+      tile.style.transform = isSpeaking ? 'scale(1.35)' : 'scale(0.9)';
+      tile.style.opacity = isSpeaking ? '1' : '0.55';
+      tile.style.zIndex = isSpeaking ? '5' : '1';
+    });
     // Per user feedback (2026-04-08): "in the dialogues, remove the
     // note about what kind of expression is showing. Let the player
     // see the expression and know by just looking at the portrait."
