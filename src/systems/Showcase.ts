@@ -29,6 +29,7 @@
 import demoSaveJson from '../data/demoSave.json';
 import { validateAndSanitizeSave, saveToSlot, type SaveData } from './SaveManager';
 import { eventBus } from '../utils/events';
+import { showDayOfRestSpoilerWarning, showDayOfRestPanel } from '../ui/DayOfRestPanel';
 
 /** Returns true if the current URL contains `?showcase=1` or
  *  `?showcase=true`. Used by TitleScene at create() time to bypass the
@@ -85,4 +86,48 @@ export function enterShowcase(showToast?: (msg: string) => void): boolean {
   }, 1200);
 
   return true;
+}
+
+/** Title-screen Day of Rest entry — show the spoiler warning, and on
+ *  confirm load the demo save into the in-memory game state, navigate
+ *  to the guildhall, and auto-open the fully-unlocked Day of Rest
+ *  panel. The demo save is loaded VIA `game-loaded` (which sets
+ *  in-memory state) but NOT written to any save slot, so the player's
+ *  real saves stay untouched.
+ *
+ *  Per user feedback (2026-04-09): "move the day of rest - all
+ *  unlocked menu item to the main title menu, and just call it day of
+ *  rest there. Leave the spoiler warning."
+ *
+ *  After practice runs the puzzle-complete handler in main.ts routes
+ *  back to GuildhallScene + re-opens the panel — same as the in-game
+ *  Day of Rest flow. The transient demo state lives in memory until
+ *  the player quits to title.
+ *
+ *  Returns true on success, false if the demo save fails sanitization
+ *  or the player cancelled the spoiler warning. */
+export function showTitleScreenDayOfRest(showToast?: (msg: string) => void): void {
+  showDayOfRestSpoilerWarning({
+    onCancel: () => {
+      // Title screen has no menu to return to — bail silently.
+    },
+    onConfirm: () => {
+      const sanitized = validateAndSanitizeSave(demoSaveJson as unknown);
+      if (!sanitized) {
+        showToast?.('Day of Rest demo save failed to load');
+        return;
+      }
+      const save: SaveData = sanitized;
+      save.flags = save.flags ?? {};
+      save.flags.demoSave = true;
+      // NOT writing to any slot — purely in-memory. The player's real
+      // saves stay intact.
+      eventBus.emit('game-loaded', save);
+      eventBus.emit('navigate', 'GuildhallScene');
+      // Wait for the scene transition to settle, then open the panel.
+      setTimeout(() => {
+        showDayOfRestPanel(true);
+      }, 600);
+    },
+  });
 }
