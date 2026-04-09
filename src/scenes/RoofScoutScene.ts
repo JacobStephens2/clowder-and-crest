@@ -96,6 +96,11 @@ interface PlatformDef {
   x: number;
   y: number;
   width: number;
+  /** Vertical thickness. Defaults to 12 (a normal floor ledge). Set to
+   *  60-110 for tall vertical walls authored specifically for chained
+   *  wall jumps — a wall is just a rectangle with the long axis
+   *  vertical instead of horizontal. */
+  height?: number;
 }
 
 interface ChunkDef {
@@ -192,6 +197,36 @@ const CHUNKS: ChunkDef[] = [
     ],
     fish: [{ x: 175, y: -45 }],
   },
+  // ── Tier 2 wall-jump chunks (added 2026-04-09) ──
+  // Designed specifically for chained wall jumps. Tall vertical walls
+  // (height >= 60) on alternating sides give the player a real "bounce
+  // wall to wall up the channel" experience that the proximity wall
+  // jump now makes practical. Per user feedback: "add vertical walls /
+  // platforms really designed for wall jumping off of."
+  {
+    // Two-bounce zigzag: launch low, hit left wall, kick right onto
+    // right wall higher up, kick left onto exit ledge at the top.
+    id: 't2-walljump-zigzag', difficulty: 2,
+    platforms: [
+      { x: 100, y: -10, width: 140 },                                     // launch ledge
+      { x: 0, y: -75, width: 22, height: 80 },                             // left wall (-115 to -35)
+      { x: GAME_WIDTH - 22, y: -135, width: 22, height: 80 },              // right wall (-175 to -95)
+      { x: 80, y: -195, width: 180 },                                      // exit ledge
+    ],
+    fish: [{ x: 195, y: -100 }, { x: 195, y: -160 }],
+  },
+  {
+    // Single decisive vault: launch low on the right, big tall wall on
+    // the left, exit high on the right. One well-timed wall jump
+    // crosses the whole screen.
+    id: 't2-vault', difficulty: 2,
+    platforms: [
+      { x: 220, y: -15, width: 110 },                                      // launch ledge (right)
+      { x: 0, y: -100, width: 26, height: 110 },                           // big left wall (-155 to -45)
+      { x: 220, y: -180, width: 110 },                                     // exit ledge (right, high)
+    ],
+    fish: [{ x: 100, y: -110 }],
+  },
   // ── Tier 3: demand wall-jumps and tighter spacing ──
   {
     id: 't3-chimney', difficulty: 3,
@@ -249,6 +284,19 @@ const CHUNKS: ChunkDef[] = [
     ],
     fish: [{ x: 80, y: -160 }],
   },
+  {
+    // Three-bounce twin towers: tall walls on alternating sides, no
+    // floor between them. Climb is purely a chain of three wall jumps.
+    id: 't3-twin-towers', difficulty: 3,
+    platforms: [
+      { x: 130, y: -10, width: 130 },                                      // launch ledge
+      { x: 0, y: -65, width: 20, height: 70 },                              // left wall #1 (-100 to -30)
+      { x: GAME_WIDTH - 20, y: -110, width: 20, height: 70 },               // right wall #2 (-145 to -75)
+      { x: 0, y: -155, width: 20, height: 60 },                             // left wall #3 (-185 to -125)
+      { x: 110, y: -195, width: 140 },                                      // exit ledge
+    ],
+    fish: [{ x: GAME_WIDTH / 2, y: -80 }, { x: GAME_WIDTH / 2, y: -155 }],
+  },
 ];
 
 export class RoofScoutScene extends Phaser.Scene {
@@ -260,6 +308,12 @@ export class RoofScoutScene extends Phaser.Scene {
   // Player + physics
   private player!: Phaser.Physics.Arcade.Sprite;
   private playerVisual!: Phaser.GameObjects.Rectangle;
+  /** Pulsing chevron rendered next to the player on the wall side
+   *  whenever a wall jump is available (cling, wall-coyote, or
+   *  proximity). Points away from the wall — the direction the wall
+   *  jump will pop the cat. Per user feedback (2026-04-09): "add a
+   *  more clear visual cue when the player can wall jump." */
+  private wallJumpCue!: Phaser.GameObjects.Triangle;
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
   private fishGroup!: Phaser.Physics.Arcade.Group;
 
@@ -429,6 +483,21 @@ export class RoofScoutScene extends Phaser.Scene {
     this.playerVisual.setStrokeStyle(1, 0x6b4a28);
     this.playerVisual.setDepth(10);
 
+    // Wall-jump cue — a small chevron drawn next to the cat on the
+    // side where a wall is available. Default geometry points right
+    // (toward +x); we flip scaleX to point left when the wall is on
+    // the right side. Hidden until needed.
+    this.wallJumpCue = this.add.triangle(
+      GAME_WIDTH / 2, START_Y,
+      0, -8,
+      14, 0,
+      0, 8,
+      0xfff8e0
+    );
+    this.wallJumpCue.setStrokeStyle(2, 0xc4956a);
+    this.wallJumpCue.setDepth(11);
+    this.wallJumpCue.setVisible(false);
+
     this.physics.add.collider(this.player, this.platforms);
     this.physics.add.overlap(this.player, this.fishGroup, (_p, fish) => {
       this.collectFish(fish as Phaser.GameObjects.Rectangle);
@@ -548,23 +617,16 @@ export class RoofScoutScene extends Phaser.Scene {
     // player can't immediately fall off the world.
     this.makePlatform(GAME_WIDTH / 2, START_Y + 30, GAME_WIDTH, 12);
 
-    // Easy-mode side walls. Per user feedback (2026-04-08): "put walls
-    // completely up along the sides of the first course, making it
-    // easier for the player to have something to wall jump off of for
-    // the first level / easy level." Solid full-height pillars at the
-    // screen edges give beginners obvious wall-cling/wall-jump anchors
-    // and turn easy mode into a wall-jump tutorial. Medium/hard runs
-    // skip this and rely on the Pac-Man screen wrap for horizontal
-    // mobility — distinct mechanic per difficulty.
-    if (this.difficulty === 'easy') {
-      const wallW = 18;
-      const wallTop = TARGET_Y - 50;
-      const wallBottom = START_Y + 30;
-      const wallH = wallBottom - wallTop;
-      const wallY = (wallTop + wallBottom) / 2;
-      this.makePlatform(wallW / 2, wallY, wallW, wallH, 0x4a3a28);
-      this.makePlatform(GAME_WIDTH - wallW / 2, wallY, wallW, wallH, 0x4a3a28);
-    }
+    // Easy-mode side walls were removed 2026-04-09 per user feedback:
+    // "modify the easy level of roof scout so it doesn't have walls
+    // completely lining the sides of the stage, enabling more jump
+    // through here." The full-height pillars added 2026-04-08 made
+    // wall-jump tutoring easier but blocked the Pac-Man screen wrap on
+    // every difficulty, making easy mode feel claustrophobic. The new
+    // tier-2 wall-jump chunks (t2-walljump-zigzag, t2-vault) teach
+    // wall jumps without sealing the sides, and the proximity wall
+    // jump (v2.5.16) makes any vertical surface wall-jumpable. Easy
+    // mode now uses the same open sides + screen wrap as medium/hard.
 
     let anchorY = START_Y - 60;
     let chunkIndex = 0;
@@ -608,7 +670,13 @@ export class RoofScoutScene extends Phaser.Scene {
     for (const p of chunk.platforms) {
       const px = p.x + p.width / 2;
       const py = anchorY + p.y;
-      this.makePlatform(px, py, p.width, 12);
+      const ph = p.height ?? 12;
+      // Tall walls (height >> 12) get a slightly cooler tone so the
+      // player visually distinguishes "wall to bounce off" from "ledge
+      // to land on" at a glance.
+      const isWall = ph >= 30;
+      const color = isWall ? 0x4a5060 : 0x6b5b3e;
+      this.makePlatform(px, py, p.width, ph, color);
     }
     if (chunk.fish) {
       for (const f of chunk.fish) {
@@ -801,6 +869,30 @@ export class RoofScoutScene extends Phaser.Scene {
     // improvement; doing the simple version now (no sprite atlas yet).
     this.playerVisual.setFillStyle(this.isWallClinging ? 0xddc878 : 0xc4956a);
 
+    // Wall-jump cue — pulsing chevron next to the cat on the wall
+    // side. Visible whenever a wall jump is currently authorized
+    // (proximity, contact cling, or wall-coyote). Points away from
+    // the wall = the direction the cat will pop. Per user feedback
+    // (2026-04-09): "add a more clear visual cue when the player can
+    // wall jump."
+    const wallCoyoteForCue = (time - this.lastWallClingTime) < WALL_COYOTE_MS;
+    const cueSide = this.nearWallSide
+      ?? (this.isWallClinging ? this.lastWallSide : null)
+      ?? (wallCoyoteForCue ? this.lastWallSide : null);
+    if (cueSide && !onGround) {
+      const offsetX = cueSide === 'left' ? -(PLAYER_W / 2 + 10) : (PLAYER_W / 2 + 10);
+      this.wallJumpCue.setPosition(this.player.x + offsetX, this.player.y);
+      // Default geometry points right; flip when wall is on the right
+      // so the chevron always points AWAY from the wall.
+      this.wallJumpCue.setScale(cueSide === 'right' ? -1 : 1, 1);
+      // Pulse alpha to draw the eye. Sin wave on time gives a smooth
+      // 0.55..0.95 oscillation roughly twice per second.
+      this.wallJumpCue.setAlpha(0.55 + 0.4 * Math.abs(Math.sin(time * 0.012)));
+      this.wallJumpCue.setVisible(true);
+    } else {
+      this.wallJumpCue.setVisible(false);
+    }
+
     // Variable jump height — if the player released the tap while still
     // ascending, cut the upward velocity to ~40% so a quick tap = small
     // jump and a held tap = full jump. Only cut once per ascent.
@@ -913,6 +1005,7 @@ export class RoofScoutScene extends Phaser.Scene {
       this.lastWallClingTime = -Infinity;
       this.lastWallSide = null;
       this.nearWallSide = null;
+      if (this.wallJumpCue) this.wallJumpCue.setVisible(false);
       // Wall-jump pop — small camera shake + brighter player flash
       // so the player feels the bounce. Pure juice; no gameplay
       // effect, just makes the wall jump satisfying to chain.
