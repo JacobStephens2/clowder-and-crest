@@ -80,6 +80,13 @@ const WALL_FALL_CAP = 40;
 const MAX_FALL_VELOCITY = 900;
 const PLAYER_DRAG_X = 90;
 const PLAYER_GRAVITY_Y = 1050;
+/** Proximity radius for "I'm next to a wall, let me jump off it." Per
+ *  user feedback (2026-04-09): "any time I'm next to a vertical surface
+ *  I should be able to tap to jump off it." Doesn't require actual body
+ *  contact — any platform whose vertical band overlaps the player and
+ *  whose face is within WALL_NEAR_PX of the player's body counts. Very
+ *  generous so the wall-jump feels easy to fire on touch. */
+const WALL_NEAR_PX = 16;
 
 // Each chunk is one vertical band of authored level. Chunks are stacked
 // upward from the start until the world is filled. Y values are RELATIVE
@@ -270,6 +277,12 @@ export class RoofScoutScene extends Phaser.Scene {
    *  left). Used so a wall-coyote jump knows which direction to kick
    *  even though the contact is no longer touching. */
   private lastWallSide: 'left' | 'right' | null = null;
+  /** Which side has a vertical surface within WALL_NEAR_PX this frame.
+   *  Independent of `isWallClinging` (which requires actual contact) —
+   *  this is the looser "proximity wall jump" that lets a tap fire a
+   *  wall jump even if the player is hovering a few px away from the
+   *  wall face. Recomputed every update tick. */
+  private nearWallSide: 'left' | 'right' | null = null;
   private jumpBufferTime = -Infinity;
   private jumpBufferDirection: 'left' | 'right' = 'left';
   private isWallClinging = false;
@@ -317,6 +330,7 @@ export class RoofScoutScene extends Phaser.Scene {
     this.lastGroundedTime = -Infinity;
     this.jumpBufferTime = -Infinity;
     this.isWallClinging = false;
+    this.nearWallSide = null;
     this.prevVelocityY = 0;
     this.leftHeld = false;
     this.rightHeld = false;
@@ -725,6 +739,56 @@ export class RoofScoutScene extends Phaser.Scene {
         this.jumpBufferTime = -Infinity;
       }
     }
+
+    // Proximity wall detection — looser than `isWallClinging`, which
+    // requires actual contact. Per user feedback (2026-04-09): "any
+    // time I'm next to a vertical surface I should be able to tap to
+    // jump off it." Scan platforms for any whose vertical band overlaps
+    // the player and whose face is within WALL_NEAR_PX of the player's
+    // body. Doesn't need the cat to be airborne — proximity alone is
+    // enough to authorize a wall jump on next tap.
+    this.nearWallSide = null;
+    if (!onGround) {
+      const playerLeft = this.player.x - PLAYER_BODY_W / 2;
+      const playerRight = this.player.x + PLAYER_BODY_W / 2;
+      const playerTop = this.player.y - PLAYER_H / 2;
+      const playerBottom = this.player.y + PLAYER_H / 2;
+      const platformsForNear = this.platforms.getChildren();
+      let nearLeftDist = Infinity;
+      let nearRightDist = Infinity;
+      for (const p of platformsForNear) {
+        const plat = p as Phaser.GameObjects.Rectangle;
+        const platBody = plat.body as Phaser.Physics.Arcade.StaticBody | null;
+        if (!platBody) continue;
+        const platLeft = plat.x - plat.width / 2;
+        const platRight = plat.x + plat.width / 2;
+        const platTop = platBody.y;
+        const platBottom = platBody.y + platBody.height;
+        // Vertical bands must overlap (share at least 1px of height) for
+        // the wall to count as "next to" the player.
+        const verticalOverlap = playerBottom > platTop && playerTop < platBottom;
+        if (!verticalOverlap) continue;
+        // Distance from player's right edge to the platform's left face
+        // (wall is on the right of the player).
+        const distRight = platLeft - playerRight;
+        if (distRight >= 0 && distRight <= WALL_NEAR_PX && distRight < nearRightDist) {
+          nearRightDist = distRight;
+        }
+        // Distance from the platform's right face to the player's left
+        // edge (wall is on the left of the player).
+        const distLeft = playerLeft - platRight;
+        if (distLeft >= 0 && distLeft <= WALL_NEAR_PX && distLeft < nearLeftDist) {
+          nearLeftDist = distLeft;
+        }
+      }
+      if (nearLeftDist < Infinity || nearRightDist < Infinity) {
+        // Pick the closer side. Ties go to the side opposite the
+        // current movement, which feels more natural for chained
+        // wall jumps.
+        this.nearWallSide = nearLeftDist <= nearRightDist ? 'left' : 'right';
+      }
+    }
+
     // Slow the fall only when actually descending — clinging while
     // ascending shouldn't drag the player to a stop.
     if (this.isWallClinging && body.velocity.y > this.wallFallCap) {
@@ -799,7 +863,11 @@ export class RoofScoutScene extends Phaser.Scene {
     // resolution can land in different frames on Android, so the
     // wall window needs to be a bit looser than ground.
     const wallCoyoteOk = (this.time.now - this.lastWallClingTime) < WALL_COYOTE_MS;
-    const canJump = onGround || coyoteOk || this.isWallClinging || wallCoyoteOk;
+    // Proximity wall jump — any frame where a vertical surface is
+    // within WALL_NEAR_PX of the player counts as wall-jumpable, even
+    // without contact. Per user feedback (2026-04-09).
+    const nearWall = this.nearWallSide !== null && !onGround;
+    const canJump = onGround || coyoteOk || this.isWallClinging || wallCoyoteOk || nearWall;
 
     if (canJump) {
       this.doJump(direction);
@@ -819,16 +887,20 @@ export class RoofScoutScene extends Phaser.Scene {
     const wallRight = body.blocked.right || body.touching.right;
     const onGround = body.blocked.down || body.touching.down;
 
-    // Wall-jump branch fires when the player is currently clinging OR
-    // when wall coyote is active (recently separated from a wall).
-    // The wall-coyote case may have no current contact, so we use the
-    // remembered lastWallSide to decide which direction to kick.
+    // Wall-jump branch fires when the player is currently clinging, when
+    // wall coyote is active (recently separated from a wall), OR when a
+    // vertical surface is within WALL_NEAR_PX (the proximity wall jump).
+    // The wall-coyote and proximity cases may have no current contact,
+    // so we use the remembered lastWallSide / current nearWallSide to
+    // decide which direction to kick.
     const wallCoyoteActive = (this.time.now - this.lastWallClingTime) < WALL_COYOTE_MS;
-    if (!onGround && (this.isWallClinging || wallCoyoteActive)) {
+    const nearWallActive = this.nearWallSide !== null;
+    if (!onGround && (this.isWallClinging || wallCoyoteActive || nearWallActive)) {
       // Determine which side the wall is on. Prefer current contact;
-      // fall back to lastWallSide for the wall-coyote case.
-      const wallOnRight = wallRight || this.lastWallSide === 'right';
-      const wallOnLeft = wallLeft || this.lastWallSide === 'left';
+      // fall back to lastWallSide for the wall-coyote case; finally
+      // fall back to nearWallSide for the proximity case.
+      const wallOnRight = wallRight || this.lastWallSide === 'right' || this.nearWallSide === 'right';
+      const wallOnLeft = wallLeft || this.lastWallSide === 'left' || this.nearWallSide === 'left';
       const pushDir = wallOnRight ? -1 : wallOnLeft ? 1 : (direction === 'left' ? -1 : 1);
       // Wall jumps get a slightly stronger upward kick than ground
       // jumps so the bounce-off-the-wall arc clearly clears the next
@@ -840,6 +912,7 @@ export class RoofScoutScene extends Phaser.Scene {
       this.isWallClinging = false;
       this.lastWallClingTime = -Infinity;
       this.lastWallSide = null;
+      this.nearWallSide = null;
       // Wall-jump pop — small camera shake + brighter player flash
       // so the player feels the bounce. Pure juice; no gameplay
       // effect, just makes the wall jump satisfying to chain.
