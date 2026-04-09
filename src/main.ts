@@ -63,6 +63,7 @@ import { showGuildReport, showIntroStory, showTutorial } from './ui/onboarding';
 import { initJobFlow, showAssignOverlay, showResultOverlay, showPracticeResultOverlay, type ResultInfo, SPECIALIZATION_CATEGORIES } from './ui/jobFlow';
 import { initSessionFlow } from './systems/SessionFlow';
 import { isPracticeRun, endPracticeRun } from './systems/PracticeMode';
+import { setPendingTitleDayOfRestReopen } from './systems/Showcase';
 import { initDayOfRest, showDayOfRestPanel } from './ui/DayOfRestPanel';
 
 // ──── Game State ────
@@ -1375,21 +1376,21 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
       onContinue: () => {
         if (wasTitleDemoMode) {
           // Title-screen Day of Rest practice — return to TitleScene
-          // and reopen the catalogue. Re-create the stub save and
-          // re-install it via set-transient-game-state so the panel
-          // is GUARANTEED to have a non-null gameState when it
-          // renders, regardless of what the practice run did. Per
-          // user feedback (2026-04-10): "I completed the easy roof
-          // scout track from the title day of rest menu, but when i
-          // clicked back to day of rest, i came to a blank game
-          // screen rather than the title day of rest menu" — the
-          // previous code relied on gameState surviving the
-          // practice run intact, which it apparently doesn't always.
+          // and reopen the catalogue. Set the pending-reopen flag
+          // BEFORE switchScene so TitleScene's create() picks it up
+          // synchronously when it runs. The previous setTimeout-based
+          // approach raced with TitleScene's setup and could leave
+          // the player on a blank screen — particularly after Pounce
+          // (Matter physics teardown takes longer than Arcade). Per
+          // user feedback (2026-04-10, third pass): "after i finish
+          // pounce in from the title day of rest menu, I click
+          // continue and am brought back to a blank town scene
+          // rather than the day of rest menu."
           const stub = createDefaultSave('Demo');
           stub.flags.titleDemoState = true;
           gameState = stub;
+          setPendingTitleDayOfRestReopen(true);
           switchScene('TitleScene');
-          setTimeout(() => showDayOfRestPanel(true), 400);
           return;
         }
         switchScene('GuildhallScene');
@@ -1626,13 +1627,14 @@ eventBus.on('puzzle-quit', ({ jobId, catId }: any = {}) => {
       outcome: 'quit',
       onContinue: () => {
         if (wasTitleDemoMode) {
-          // Same defensive re-stub as the puzzle-complete branch.
-          // Per user feedback (2026-04-10): blank screen on return.
+          // Same flag-based reopen as the puzzle-complete branch —
+          // synchronous handoff to TitleScene.create() so there's
+          // no setTimeout race.
           const stub = createDefaultSave('Demo');
           stub.flags.titleDemoState = true;
           gameState = stub;
+          setPendingTitleDayOfRestReopen(true);
           switchScene('TitleScene');
-          setTimeout(() => showDayOfRestPanel(true), 400);
           return;
         }
         switchScene('GuildhallScene');

@@ -31,6 +31,26 @@ import { validateAndSanitizeSave, saveToSlot, createDefaultSave, type SaveData }
 import { eventBus } from '../utils/events';
 import { showDayOfRestSpoilerWarning, showDayOfRestPanel } from '../ui/DayOfRestPanel';
 
+/** Module-level flag set when the puzzle-complete / puzzle-quit handler
+ *  finishes a title-screen Day of Rest practice run. TitleScene checks
+ *  this in create() and re-opens the catalogue immediately, bypassing
+ *  the setTimeout race that previously left the player on a blank
+ *  scene. Per user feedback (2026-04-10, third pass): "after i finish
+ *  pounce in from the title day of rest menu, I click continue and am
+ *  brought back to a blank town scene rather than the day of rest
+ *  menu." */
+let pendingTitleDayOfRestReopen = false;
+
+export function setPendingTitleDayOfRestReopen(value: boolean): void {
+  pendingTitleDayOfRestReopen = value;
+}
+
+export function consumePendingTitleDayOfRestReopen(): boolean {
+  const v = pendingTitleDayOfRestReopen;
+  pendingTitleDayOfRestReopen = false;
+  return v;
+}
+
 /** Returns true if the current URL contains `?showcase=1` or
  *  `?showcase=true`. Used by TitleScene at create() time to bypass the
  *  slot picker and drop the user straight into the demo save. */

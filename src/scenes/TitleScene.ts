@@ -5,7 +5,8 @@ import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { esc } from '../utils/helpers';
 import { isNative, readAutoSnapshot } from '../systems/NativeFeatures';
-import { enterShowcase, isShowcaseUrlRequested, showTitleScreenDayOfRest } from '../systems/Showcase';
+import { enterShowcase, isShowcaseUrlRequested, showTitleScreenDayOfRest, consumePendingTitleDayOfRestReopen } from '../systems/Showcase';
+import { showDayOfRestPanel } from '../ui/DayOfRestPanel';
 import { showToast as renderToast } from '../ui/feedback';
 
 export class TitleScene extends Phaser.Scene {
@@ -290,6 +291,21 @@ export class TitleScene extends Phaser.Scene {
     });
 
     eventBus.emit('hide-ui');
+
+    // If the player just finished a title-screen Day of Rest practice
+    // run, the puzzle-complete handler in main.ts set this flag and
+    // re-stubbed gameState before navigating here. Re-open the
+    // catalogue immediately. This bypasses the setTimeout race that
+    // previously left the player on a blank screen — particularly
+    // after Pounce, where Matter physics teardown takes longer than
+    // an Arcade scene shutdown. Per user feedback (2026-04-10).
+    if (consumePendingTitleDayOfRestReopen()) {
+      // One animation frame so TitleScene's first paint completes
+      // before the panel slides on top of it.
+      this.time.delayedCall(50, () => {
+        showDayOfRestPanel(true);
+      });
+    }
   }
 
   private showSlotPicker(mode: 'load' | 'new'): void {
