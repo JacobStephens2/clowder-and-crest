@@ -60,7 +60,7 @@ import { showEndDaySuggestion } from './ui/overlays/EndDaySuggestion';
 import { showExileChoice as showExileChoiceOverlay } from './ui/overlays/ExileChoice';
 import { showDayTransitionOverlay, showToast as renderToast } from './ui/feedback';
 import { showGuildReport, showIntroStory, showTutorial } from './ui/onboarding';
-import { initJobFlow, showAssignOverlay, showResultOverlay, type ResultInfo, SPECIALIZATION_CATEGORIES } from './ui/jobFlow';
+import { initJobFlow, showAssignOverlay, showResultOverlay, showPracticeResultOverlay, type ResultInfo, SPECIALIZATION_CATEGORIES } from './ui/jobFlow';
 import { initSessionFlow } from './systems/SessionFlow';
 import { isPracticeRun, endPracticeRun } from './systems/PracticeMode';
 import { initDayOfRest, showDayOfRestPanel } from './ui/DayOfRestPanel';
@@ -1346,7 +1346,6 @@ eventBus.on('enter-building', (buildingId: string) => {
 
 // Puzzle complete
 eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId, bonusFish }: any) => {
-  switchToNormalMusic();
   // Day of Rest practice run — short-circuit BEFORE resumeDayTimer so we
   // don't accidentally start the campaign clock when the player was just
   // poking at memories. The day timer was paused at launch and stays
@@ -1355,21 +1354,44 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
   // below runs.
   if (isPracticeRun()) {
     const wasTitleDemoMode = gameState?.flags?.titleDemoState === true;
-    endPracticeRun();
-    void puzzleId; void moves; void minMoves; void jobId; void catId; void bonusFish;
-    showToast(stars >= 3 ? 'Practice run \u2014 perfect!' : 'Practice run complete.');
+    // Music routing — title-demo runs swap directly to the title
+    // trackset (NOT through __normal_pool__) so the practice track
+    // and the next track don't briefly stack. Per user feedback
+    // (2026-04-10): "after i finished prowler from the day of rest
+    // title menu, I think there were two songs playing
+    // simultaneously."
     if (wasTitleDemoMode) {
-      // Title-screen Day of Rest practice — clear the stub save and
-      // return to the title scene instead of dumping the player into
-      // a fake guildhall. Per user feedback (2026-04-10).
-      gameState = null;
-      switchScene('TitleScene');
-      return;
+      switchToTrackset('title');
+    } else {
+      switchToNormalMusic();
     }
-    switchScene('GuildhallScene');
-    setTimeout(() => showDayOfRestPanel(), 400);
+    endPracticeRun();
+    void puzzleId; void moves; void minMoves; void bonusFish;
+    const job = getJob(jobId);
+    showPracticeResultOverlay({
+      stars,
+      jobName: job?.name,
+      outcome: 'win',
+      onContinue: () => {
+        if (wasTitleDemoMode) {
+          // Title-screen Day of Rest practice — return to TitleScene
+          // and reopen the catalogue. Keep gameState (still flagged
+          // titleDemoState) so the panel can render. Per user
+          // feedback (2026-04-10): "when they exit a mini game, take
+          // them back to the fully unlocked no save needed day of
+          // rest game choice menu."
+          switchScene('TitleScene');
+          setTimeout(() => showDayOfRestPanel(true), 400);
+          return;
+        }
+        switchScene('GuildhallScene');
+        setTimeout(() => showDayOfRestPanel(), 400);
+      },
+    });
+    void catId;
     return;
   }
+  switchToNormalMusic();
   resumeDayTimer();
   if (!gameState) return;
 
@@ -1573,24 +1595,40 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
 });
 
 eventBus.on('puzzle-quit', ({ jobId, catId }: any = {}) => {
-  switchToNormalMusic();
   // Day of Rest quits never count: no fish penalty, no mood drop, no
   // cat-of-the-day burn. Just route back to the panel.
   if (isPracticeRun()) {
     const wasTitleDemoMode = gameState?.flags?.titleDemoState === true;
-    endPracticeRun();
-    void jobId; void catId;
     if (wasTitleDemoMode) {
-      // Title-screen Day of Rest practice quit — clear the stub save
-      // and return to the title scene. Per user feedback (2026-04-10).
-      gameState = null;
-      switchScene('TitleScene');
-      return;
+      switchToTrackset('title');
+    } else {
+      switchToNormalMusic();
     }
-    switchScene('GuildhallScene');
-    setTimeout(() => showDayOfRestPanel(), 400);
+    endPracticeRun();
+    void catId;
+    const job = getJob(jobId);
+    // Quits skip the star rating and go straight back to the menu via
+    // the practice result overlay (so the player still gets a "click
+    // to leave" beat instead of a silent jump). Per user feedback
+    // (2026-04-10): the title-screen Day of Rest exit should always
+    // return to the catalogue.
+    showPracticeResultOverlay({
+      stars: 0,
+      jobName: job?.name,
+      outcome: 'quit',
+      onContinue: () => {
+        if (wasTitleDemoMode) {
+          switchScene('TitleScene');
+          setTimeout(() => showDayOfRestPanel(true), 400);
+          return;
+        }
+        switchScene('GuildhallScene');
+        setTimeout(() => showDayOfRestPanel(), 400);
+      },
+    });
     return;
   }
+  switchToNormalMusic();
   resumeDayTimer();
   playSfx('fail');
   if (!gameState) return;

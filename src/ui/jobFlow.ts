@@ -356,6 +356,52 @@ export function showSpecializationChoice(catId: string, catName: string): void {
   });
 }
 
+/** Lightweight result overlay for Day of Rest practice runs. No fish,
+ *  XP, level-up, or specialization plumbing — just a star rating and a
+ *  Continue button that calls the provided callback. Used by both
+ *  in-game and title-screen Day of Rest practice flows so the player
+ *  always gets a real "click OK to leave" beat instead of being dumped
+ *  back to the menu by a silent toast. Per user feedback (2026-04-10):
+ *  "i got a success message, but then i got stuck in the game, it
+ *  didnt take me to a star rating screen at which i could click ok and
+ *  go back to the minigame menu." */
+export function showPracticeResultOverlay(opts: {
+  stars: number;
+  jobName?: string;
+  outcome: 'win' | 'quit';
+  onContinue: () => void;
+}): void {
+  // Tear down any old result overlays so we never stack two on the
+  // same practice run.
+  deps.overlayLayer.querySelectorAll('.result-overlay').forEach((el) => el.remove());
+
+  const overlay = document.createElement('div');
+  overlay.className = 'result-overlay';
+  const stars = Math.max(0, Math.min(3, opts.stars));
+  const starsStr = '&#11088;'.repeat(stars) + '&#9734;'.repeat(3 - stars);
+  const heading = opts.outcome === 'win'
+    ? (stars === 3 ? '\u2728 Perfect Practice! \u2728' : 'Practice Run Complete')
+    : 'Practice Run Ended';
+  const sub = opts.outcome === 'win'
+    ? 'No fish, no XP, no penalties \u2014 just the game.'
+    : 'Bow out any time \u2014 the cats won\u2019t mind.';
+
+  overlay.innerHTML = `
+    <h2>${heading}</h2>
+    ${opts.outcome === 'win' ? `<div class="result-stars">${starsStr}</div>` : ''}
+    <div class="result-details">
+      ${opts.jobName ? `<strong>${esc(opts.jobName)}</strong><br>` : ''}
+      <span style="color:#8b7355;font-size:12px">${sub}</span>
+    </div>
+    <button id="practice-continue">Back to Day of Rest</button>
+  `;
+  deps.overlayLayer.appendChild(overlay);
+  document.getElementById('practice-continue')?.addEventListener('click', () => {
+    overlay.remove();
+    opts.onContinue();
+  });
+}
+
 export function showResultOverlay(info: ResultInfo): void {
   const gameState = deps.getGameState();
   const overlay = document.createElement('div');
