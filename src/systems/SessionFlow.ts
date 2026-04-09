@@ -63,11 +63,14 @@ export function initSessionFlow(deps: SessionFlowDeps): SessionFlowApi {
       <button class="name-prompt-back" id="name-prompt-back" style="position:absolute;top:10px;left:10px;background:none;border:1px solid #3a3530;color:#8b7355;padding:4px 10px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer">\u2190 Back</button>
       <h2>Name Your Cat</h2>
       <p>You are a wildcat stray, arriving at a crumbling settlement in a storm. What is your name?</p>
+      <div style="display:flex;justify-content:center;margin:8px 0 4px">
+        <img class="name-prompt-portrait" src="assets/sprites/portraits/wildcat_female_neutral.png" alt="" style="width:140px;height:auto;image-rendering:pixelated;border:1px solid #3a3530;border-radius:6px;background:#1a1614" />
+      </div>
       <input type="text" class="cat-name-input" placeholder="Enter name..." maxlength="20" autocomplete="off" />
-      <div style="margin-top:12px;color:#8b7355;font-size:11px;font-family:Georgia,serif">Pronouns</div>
+      <div style="margin-top:12px;color:#8b7355;font-size:11px;font-family:Georgia,serif">Cat</div>
       <div style="display:flex;gap:6px;margin-top:6px">
-        <button class="gender-btn" data-gender="female" style="flex:1;background:#3a3530;border:1px solid #6b5b3e;color:#c4956a;padding:6px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer">she / her</button>
-        <button class="gender-btn" data-gender="male" style="flex:1;background:#2a2520;border:1px solid #3a3530;color:#8b7355;padding:6px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer">he / him</button>
+        <button class="gender-btn" data-gender="female" style="flex:1;background:#3a3530;border:1px solid #6b5b3e;color:#c4956a;padding:6px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer">queen<br><span style="font-size:10px;color:#8b7355">she / her</span></button>
+        <button class="gender-btn" data-gender="male" style="flex:1;background:#2a2520;border:1px solid #3a3530;color:#8b7355;padding:6px;border-radius:4px;font-family:Georgia,serif;font-size:12px;cursor:pointer">tomcat<br><span style="font-size:10px;color:#8b7355">he / him</span></button>
       </div>
       <button class="cat-name-submit" style="margin-top:12px">Begin</button>
     `;
@@ -83,15 +86,23 @@ export function initSessionFlow(deps: SessionFlowDeps): SessionFlowApi {
       deps.switchScene('TitleScene');
     });
 
-    // Gender selection — defaults to 'female' (she/her is highlighted by
-    // default in the prompt). The 'they' option was removed per user
-    // feedback (2026-04-08); legacy saves still resolve via the pronouns
-    // helper, but new games choose between he/him and she/her.
+    // Gender selection — defaults to 'female' (queen / she / her is
+    // highlighted by default). The 'they' option was removed per user
+    // feedback (2026-04-08); legacy saves still resolve via the
+    // pronouns helper, but new games choose between tomcat (he/him)
+    // and queen (she/her). Per user feedback (2026-04-09): the prompt
+    // now shows the matching wildcat portrait above the input and
+    // swaps it live when the player picks a different option, so they
+    // can see the cat they're committing to before clicking Begin.
     let chosenGender: 'male' | 'female' = 'female';
+    const portraitImg = prompt.querySelector<HTMLImageElement>('.name-prompt-portrait')!;
     const genderBtns = prompt.querySelectorAll<HTMLButtonElement>('.gender-btn');
     genderBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
         chosenGender = (btn.dataset.gender as 'male' | 'female') ?? 'female';
+        portraitImg.src = chosenGender === 'female'
+          ? 'assets/sprites/portraits/wildcat_female_neutral.png'
+          : 'assets/sprites/portraits/wildcat_neutral.png';
         genderBtns.forEach((b) => {
           const isSelected = b === btn;
           b.style.background = isSelected ? '#3a3530' : '#2a2520';
