@@ -1,6 +1,6 @@
 # Clowder & Crest
 
-Cat guild management game with 14 minigame types and Fire Emblem-style bond conversations. Built with Phaser 3 + TypeScript, deployed at https://clowderandcrest.com (also at https://clowder.stephens.page).
+Cat guild management game with 15 minigame types and Fire Emblem-style bond conversations. Built with Phaser 3 + TypeScript, deployed at https://clowderandcrest.com (also at https://clowder.stephens.page).
 
 ## Commands
 
@@ -106,7 +106,7 @@ All playtests use the same multi-layer resilience pattern: hard top-level setTim
 5. **Guildhall** — "Behind the Grain Market" (Ch.1) → "The Guildhall" (Ch.2+), rooms with cats and furniture
 6. **Town Map** — explorable 8x10 grid with buildings, stray cats, NPC cats
 7. **Job Board** — accept a job, walk to a building to start it
-8. **Minigame** — 2+ choices per job category from 14 types, staggered unlock across chapters
+8. **Minigame** — 2+ choices per job category from 15 types, staggered unlock across chapters
 9. **Results** — fish earned, XP, level ups, combo streak, perfect celebration
 10. **Conversation** — Fire Emblem-style pair bonds (C/B/A) or group conversations at milestones
 11. **Day End** — upkeep deducted, stationed earnings, reputation bonuses, crisis events, random expenses
@@ -117,7 +117,7 @@ All playtests use the same multi-layer resilience pattern: hard top-level setTim
 
 - **Player is the founding Wildcat** — always in the roster, named at game start, can't be dismissed
 - **All 6 breeds have PixelLab pixel art** — idle (4 directions), walk (6 frames x 4 dirs), scratch, sit, eat, sleep animations
-- **14 minigame types** — Rush Hour, Sokoban, Chase, Fishing, Hunt, Brawl, Nonogram, Stealth, Pounce, Patrol, Ritual, Scent Trail, Heist, Courier Run (staggered unlock across chapters)
+- **15 minigame types** — Rush Hour, Sokoban, Chase, Fishing, Hunt, Brawl, Nonogram, Stealth, Pounce, Patrol, Ritual, Scent Trail, Heist, Courier Run, Roof Scout (staggered unlock across chapters)
 - **Genre-pillar pass** — every minigame has been audited against `todo/ideas/game-genre-principles/scenes/*.md`. Each scene now expresses the doc's biggest implication for its genre (e.g. Hunt has speed escalation + fake-outs, Brawl has telegraphed windups + hit-stop, Stealth has graduated detection, Sokoban has named themed levels). The genre docs are the source of truth for "why does this scene work this way?"
 - **Roguelike dungeon run** — chain random minigame floors with persistent HP, inter-floor upgrade picks (Slay-the-Spire model), and a Hades-style reactive narrative driven by `dungeonHistory` in SaveData. Unlocks Chapter 5+
 - **35 jobs across 6 categories** — pest control, courier, guard, sacred, detection, shadow (chapter-gated)
@@ -131,7 +131,7 @@ All playtests use the same multi-layer resilience pattern: hard top-level setTim
 - **Scene shutdown cleanup** — all scenes register shutdown handlers to prevent memory leaks
 - **HTML escaping** — user-provided names escaped with esc() to prevent injection
 - **Per-scene resilient playtests** — every minigame has a `test/*-playtest.mjs` script. They use direct method calls and state inspection (not Phaser timer waits, which are unreliable under page.evaluate scene launches). Three layers of hang protection: top-level setTimeout, process-group kill for the dev server, and an outer `timeout 150s` wrapper. **When changing a scene, run its playtest.**
-- **Native Capacitor features** — `src/systems/NativeFeatures.ts` is the single facade for all native plugins (`@capacitor/haptics`, `@capacitor/local-notifications`, `@capacitor/app`, `@capacitor/status-bar`). Every entry point checks `Capacitor.isNativePlatform()` and silently no-ops on web. Haptics are wired at high-leverage emotional beats across all 14 minigame scenes (kills, perfects, fails, lock clicks). The app lifecycle hook pauses the day timer and music when Android backgrounds the app. Day-end schedules a single ~16h "your cats are waiting" local notification (cancelled on next launch).
+- **Native Capacitor features** — `src/systems/NativeFeatures.ts` is the single facade for all native plugins (`@capacitor/haptics`, `@capacitor/local-notifications`, `@capacitor/app`, `@capacitor/status-bar`). Every entry point checks `Capacitor.isNativePlatform()` and silently no-ops on web. Haptics are wired at high-leverage emotional beats across all 15 minigame scenes (kills, perfects, fails, lock clicks). The app lifecycle hook pauses the day timer and music when Android backgrounds the app. Day-end schedules a single ~16h "your cats are waiting" local notification (cancelled on next launch).
 
 ## Commit style — atomic commits
 

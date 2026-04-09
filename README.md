@@ -12,7 +12,7 @@ A hybrid daily-life sim and minigame anthology, framed as a Fire Emblem-style su
 
 ## Minigames
 
-**14 distinct minigame types**, each authored against the design pillars of its genre. They're staggered across the chapter unlocks so the player learns the vocabulary one piece at a time:
+**15 distinct minigame types**, each authored against the design pillars of its genre. They're staggered across the chapter unlocks so the player learns the vocabulary one piece at a time:
 
 | # | Minigame | Genre | Highlights |
 |---|---|---|---|
@@ -30,6 +30,7 @@ A hybrid daily-life sim and minigame anthology, framed as a Fire Emblem-style su
 | 12 | **Pounce** | Projectile physics (Angry Birds) | Breed-specific mid-flight abilities (Power Shot, Heavy Drop, Triple Split, Whirlwind...), wood/stone/glass material variety, 4 hand-crafted structure templates |
 | 13 | **Heist** | Lock picking | Per-ring "set" state with distinct sparkle SFX, counter-clockwise rotation via tap-side detection, trap notches on hard difficulty |
 | 14 | **Stealth** | Top-down stealth | Graduated detection (alert + pursuit, not instant fail), grass-recovery loop, ghost run reward layer, alert spreading to nearby guards |
+| 15 | **Roof Scout** | Vertical climbing platformer | Two-zone touch + auto-lean, coyote time + jump buffer + wall coyote, proximity wall jumps off ledge edges, hand-crafted chunks across 3 difficulty tiers, trivially-easy easy mode with no-fail checkpoint teleport |
 
 Plus the **Dungeon Run** roguelike meta-loop (Ch.5+) that chains random minigame floors with persistent HP, inter-floor upgrade picks (Slay-the-Spire model), and a Hades-style reactive narrative driven by run history.
 
@@ -46,9 +47,9 @@ Plus the **Dungeon Run** roguelike meta-loop (Ch.5+) that chains random minigame
 - **Daily wishes**, **traveling merchant** (every 3rd day), **rotating festivals** (every 7 days)
 - **3 save slots** with forward migration (saves never destroyed on updates)
 - **Guild journal** — chapter beats, recruits, level-ups, bond rank-ups, dungeon runs
-- **14 music tracks** + 22 sound effects + rain ambience (most via ElevenLabs)
+- **70+ music tracks** across every minigame, chapter, room, and event + 22 sound effects + rain ambience (most via ElevenLabs)
 - **Native Android features** (Capacitor build) — haptic feedback wired into every minigame's emotional beats, pause-on-background lifecycle so the day timer doesn't drain when the app is closed, daily "your cats are waiting" return notification, dark status bar matching the game theme
-- **Day of Rest** — in-universe minigame archive unlocked through play. Each of the 14 minigames appears as a "memory" card the first time the player completes it in a job; tapping a card replays the game in a no-stakes sandbox (no fish, no XP, no penalties). Lives behind the menu so it never competes with the campaign's pacing. A hidden showcase entry (`?showcase=1` URL parameter on web, five quick taps on the title-screen crest on web + APK) loads a fully-unlocked demo save for portfolio reviewers
+- **Day of Rest** — in-universe minigame archive. Each of the 15 minigames appears as a "memory" card the first time the player completes it in a job; tapping a card replays the game in a no-stakes sandbox (no fish, no XP, no penalties). The campaign-progress entry lives behind the menu so it never competes with the pacing. A separate fully-unlocked entry on the title screen (gated by a spoiler warning) lets new players browse the entire catalogue without committing to a save. A hidden showcase entry (`?showcase=1` URL parameter on web, five quick taps on the title-screen crest on web + APK) loads a fully-unlocked demo save for portfolio reviewers
 - **Resilient playtest harness** — every minigame has a `test/*-playtest.mjs` script with hard timeouts, process group cleanup, and direct-method verification
 
 ## Tech stack
