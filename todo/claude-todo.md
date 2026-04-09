@@ -1,2 +1,0 @@
-- move the day of rest - all unlocked menu item to the main title menu, and just call it day of rest there. Leave the spoiler warning
-- make the easy roof scout level trivially easy
