@@ -633,9 +633,19 @@ export class RoofScoutScene extends Phaser.Scene {
    *  world is filled. Tier-1 chunks always populate the bottom band; tier
    *  selection ramps with progress so the climb gets harder near the top. */
   private buildLevel(): void {
-    // Ground floor — a wide stable platform under the spawn point so the
-    // player can't immediately fall off the world.
-    this.makePlatform(GAME_WIDTH / 2, START_Y + 30, GAME_WIDTH, 12);
+    // Ground floor — a wide TALL platform under the spawn point so the
+    // player can't fall off the world OR tunnel under it. Per user
+    // feedback (2026-04-10): "I fell a long distance and fell under
+    // the base platform and got stuck there." With max fall velocity
+    // ~900 px/s and a 12-px-tall platform, a fast fall could tunnel
+    // through in a single frame at 60fps. The base now extends from
+    // just below the spawn down to the world bottom, giving infinite
+    // collision depth so tunneling is physically impossible.
+    const baseTop = START_Y + 24;
+    const baseBottom = WORLD_HEIGHT;
+    const baseCenter = (baseTop + baseBottom) / 2;
+    const baseHeight = baseBottom - baseTop;
+    this.makePlatform(GAME_WIDTH / 2, baseCenter, GAME_WIDTH, baseHeight);
 
     // Easy-mode side walls were removed 2026-04-09 per user feedback:
     // "modify the easy level of roof scout so it doesn't have walls
