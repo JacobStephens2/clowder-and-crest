@@ -249,6 +249,60 @@ export function initDayOfRest(d: DayOfRestDeps): void {
   deps = d;
 }
 
+/** Show a confirmation overlay warning the player that opening the
+ *  fully-unlocked Day of Rest will reveal every minigame in the game,
+ *  including ones their campaign hasn't reached yet. Two buttons:
+ *  "Show me anyway" → opens `showDayOfRestPanel(true)`, and "Cancel"
+ *  → closes the warning and re-opens the main menu via `onCancel`.
+ *
+ *  Per user feedback (2026-04-09): "add a fully unlocked Day of Rest
+ *  link to the main menu, and when the player opens it, give a spoiler
+ *  warning they have to click through." */
+export function showDayOfRestSpoilerWarning(onCancel: () => void): void {
+  // Pause underlying scenes the same way the panel does, so taps on
+  // the warning don't fall through to gameplay.
+  if (pausedSceneKeys.length === 0) {
+    pausedSceneKeys = pauseActiveScenes();
+  }
+
+  deps.overlayLayer.querySelectorAll('.menu-overlay, .day-of-rest-overlay').forEach((el) => el.remove());
+
+  const panel = document.createElement('div');
+  panel.className = 'menu-overlay day-of-rest-overlay';
+  panel.innerHTML = `
+    <button class="panel-close" id="dor-spoiler-close">&times;</button>
+    <h2>Spoiler Warning</h2>
+    <div style="margin:14px 0;color:#bfa8d8;font-size:13px;line-height:1.55;text-align:center">
+      The fully unlocked Day of Rest reveals <strong>every minigame</strong>
+      in Clowder &amp; Crest \u2014 including ones your campaign hasn't
+      reached yet.
+    </div>
+    <div style="margin:0 0 16px;color:#8b7355;font-size:12px;line-height:1.5;text-align:center;font-style:italic">
+      Card titles and taglines may hint at story beats from later chapters.
+      You can always come back here once you've played through.
+    </div>
+    <button class="menu-btn" id="dor-spoiler-confirm" style="border-color:#9d8bb3;color:#bfa8d8">Show me anyway</button>
+    <button class="menu-btn" id="dor-spoiler-cancel">Cancel</button>
+  `;
+  deps.overlayLayer.appendChild(panel);
+
+  const cancel = () => {
+    panel.remove();
+    // Resume the scenes we paused on open — the player is bailing.
+    resumeScenes(pausedSceneKeys);
+    pausedSceneKeys = [];
+    deps.guildWishBanner.style.display = '';
+    onCancel();
+  };
+
+  document.getElementById('dor-spoiler-close')!.addEventListener('click', cancel);
+  document.getElementById('dor-spoiler-cancel')!.addEventListener('click', cancel);
+  document.getElementById('dor-spoiler-confirm')!.addEventListener('click', () => {
+    panel.remove();
+    showDayOfRestPanel(true);
+  });
+}
+
 /** Returns true if at least one minigame in the catalogue has been
  *  completed by the player. Used by the menu to decide whether to even
  *  show the Day of Rest entry — for a fresh chapter-1 save the panel
@@ -300,9 +354,17 @@ function resumeScenes(keys: string[]): void {
 }
 
 let pausedSceneKeys: string[] = [];
+/** Tracks whether the most recent showDayOfRestPanel() call was the
+ *  spoiler-warned "all unlocked" mode, so the difficulty picker's back
+ *  button re-opens the same view rather than flipping back to the
+ *  campaign-progress-gated grid. */
+let lastUnlockAll: boolean = false;
 
-/** Render the Day of Rest panel as an overlay. Called from the menu. */
-export function showDayOfRestPanel(): void {
+/** Render the Day of Rest panel as an overlay. Called from the menu.
+ *  Pass `unlockAll: true` to show every minigame regardless of campaign
+ *  progress — used by the "Day of Rest \u00B7 All Unlocked" menu entry that
+ *  fires after the spoiler warning. */
+export function showDayOfRestPanel(unlockAll: boolean = false): void {
   const gameState = deps.getGameState();
   if (!gameState) return;
 
@@ -325,7 +387,17 @@ export function showDayOfRestPanel(): void {
   deps.guildWishBanner.style.display = 'none';
 
   const completedKeys = Object.keys(gameState.puzzlesCompleted ?? {});
-  const unlockedGames = MINIGAMES.filter((mg) => isUnlocked(mg, completedKeys));
+  // unlockAll branch shows the full catalogue regardless of progress.
+  // Used by the "Day of Rest \u00B7 All Unlocked" menu entry, which is
+  // gated behind a spoiler warning the player has to click through.
+  const unlockedGames = unlockAll
+    ? MINIGAMES.slice()
+    : MINIGAMES.filter((mg) => isUnlocked(mg, completedKeys));
+
+  // Remember the unlockAll mode on the panel so the close handler can
+  // re-open the same view if the player backs out of the difficulty
+  // picker (otherwise they'd flip back to the campaign-locked grid).
+  lastUnlockAll = unlockAll;
 
   const panel = document.createElement('div');
   panel.className = 'menu-overlay day-of-rest-overlay';
@@ -336,14 +408,18 @@ export function showDayOfRestPanel(): void {
   // grey "coming soon" placeholders that spoil the catalogue. Total
   // count is also hidden so the player doesn't know how many more are
   // coming.
+  const titleSuffix = unlockAll ? ' \u00B7 All Unlocked' : '';
+  const subtitle = unlockAll
+    ? 'Every memory laid out together. Revisit any game \u2014<br>these runs carry no stakes today.'
+    : 'Even guilds rest. Sit a while and revisit a memory \u2014<br>these games carry no stakes today.';
   let html = `
     <button class="panel-close" id="dor-close">&times;</button>
-    <h2>Day of Rest</h2>
+    <h2>Day of Rest${titleSuffix}</h2>
     <div style="margin-bottom:8px;color:#8b7355;font-size:12px;font-style:italic;text-align:center;line-height:1.5">
-      Even guilds rest. Sit a while and revisit a memory \u2014<br>these games carry no stakes today.
+      ${subtitle}
     </div>
     <div style="margin-bottom:14px;color:#6b5b3e;font-size:11px;text-align:center">
-      ${unlockedGames.length} ${unlockedGames.length === 1 ? 'memory' : 'memories'} unlocked
+      ${unlockedGames.length} ${unlockedGames.length === 1 ? 'memory' : 'memories'}${unlockAll ? ' \u2014 spoilers ahead' : ' unlocked'}
     </div>
     <div class="dor-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
   `;
@@ -432,7 +508,8 @@ function showDifficultyPicker(mg: MinigameDef): void {
     panel.remove();
     // Stay paused — showDayOfRestPanel re-opens but its pause guard
     // sees pausedSceneKeys is non-empty and skips the re-pause.
-    showDayOfRestPanel();
+    // Honour the unlockAll mode the player came in with.
+    showDayOfRestPanel(lastUnlockAll);
   });
 
   panel.querySelectorAll('.dor-diff-btn').forEach((btn) => {
