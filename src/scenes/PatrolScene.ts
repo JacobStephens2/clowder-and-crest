@@ -414,12 +414,56 @@ export class PatrolScene extends Phaser.Scene {
 
   /** Tap-to-dispatch handler for prowlers. Cooldown removed alongside
    *  the lantern cooldown so the player can swat several prowlers in
-   *  quick succession during a heavy wave. */
+   *  quick succession during a heavy wave. Per user feedback
+   *  (2026-04-10): "in patrol, give more feedback when i tap and
+   *  eliminate a prowler." Adds a layered burst — louder swat SFX,
+   *  medium haptic, an expanding ring at the strike point, a brief
+   *  "Got it!" text callout, and a small camera shake — so each
+   *  successful tap reads as a satisfying hit instead of a silent
+   *  cleanup. */
   tapProwler(prowler: Prowler): void {
     if (this.finished || this.tutorialShowing) return;
     if (!prowler.alive) return;
-    playSfx('tap', 0.4);
+    // Capture position BEFORE killProwler nukes the gfx container.
+    const px = prowler.x;
+    const py = prowler.y;
+    playSfx('tap', 0.7);
+    playSfx('crate_push', 0.35);
+    haptic.medium();
+    this.cameras.main.shake(80, 0.004);
+    this.spawnProwlerHitFx(px, py);
     this.killProwler(prowler);
+  }
+
+  /** Visual burst at a prowler kill location: an expanding/fading
+   *  purple ring + a small "Got it!" text that floats up. Pure juice;
+   *  no gameplay effect. */
+  private spawnProwlerHitFx(x: number, y: number): void {
+    const ring = this.add.circle(x, y, 8, 0x000000, 0).setStrokeStyle(2, 0xc88aff, 1);
+    ring.setDepth(20);
+    this.tweens.add({
+      targets: ring,
+      radius: 28,
+      alpha: 0,
+      duration: 320,
+      ease: 'Quad.easeOut',
+      onComplete: () => ring.destroy(),
+    });
+    const callout = this.add.text(x, y - 12, 'Got it!', {
+      fontFamily: 'Georgia, serif',
+      fontSize: '12px',
+      color: '#dda055',
+      stroke: '#1a1020',
+      strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(21);
+    this.tweens.add({
+      targets: callout,
+      y: y - 32,
+      alpha: 0,
+      duration: 520,
+      ease: 'Sine.easeOut',
+      onComplete: () => callout.destroy(),
+    });
   }
 
   private killProwler(p: Prowler): void {
