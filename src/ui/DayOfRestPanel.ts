@@ -454,6 +454,14 @@ export function showDayOfRestPanel(unlockAll: boolean = false): void {
     // we paused on open.
     resumeScenes(pausedSceneKeys);
     pausedSceneKeys = [];
+    // If this was a title-screen Day of Rest browse (stub demo state),
+    // clear the in-memory game state so it doesn't linger after the
+    // player bails. Per user feedback (2026-04-10): the title-screen
+    // entry should not leave a fake save behind.
+    const gs = deps.getGameState();
+    if (gs?.flags?.titleDemoState) {
+      eventBus.emit('set-transient-game-state', null);
+    }
   });
 
   panel.querySelectorAll('.dor-card').forEach((card) => {
