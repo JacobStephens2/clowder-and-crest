@@ -1,1 +1,0 @@
-[] Only show cats on the main title screen that have been recruited in saves. If there are no save, show the wildcat only.
