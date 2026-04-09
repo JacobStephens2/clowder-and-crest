@@ -1375,11 +1375,19 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
       onContinue: () => {
         if (wasTitleDemoMode) {
           // Title-screen Day of Rest practice — return to TitleScene
-          // and reopen the catalogue. Keep gameState (still flagged
-          // titleDemoState) so the panel can render. Per user
-          // feedback (2026-04-10): "when they exit a mini game, take
-          // them back to the fully unlocked no save needed day of
-          // rest game choice menu."
+          // and reopen the catalogue. Re-create the stub save and
+          // re-install it via set-transient-game-state so the panel
+          // is GUARANTEED to have a non-null gameState when it
+          // renders, regardless of what the practice run did. Per
+          // user feedback (2026-04-10): "I completed the easy roof
+          // scout track from the title day of rest menu, but when i
+          // clicked back to day of rest, i came to a blank game
+          // screen rather than the title day of rest menu" — the
+          // previous code relied on gameState surviving the
+          // practice run intact, which it apparently doesn't always.
+          const stub = createDefaultSave('Demo');
+          stub.flags.titleDemoState = true;
+          gameState = stub;
           switchScene('TitleScene');
           setTimeout(() => showDayOfRestPanel(true), 400);
           return;
@@ -1618,6 +1626,11 @@ eventBus.on('puzzle-quit', ({ jobId, catId }: any = {}) => {
       outcome: 'quit',
       onContinue: () => {
         if (wasTitleDemoMode) {
+          // Same defensive re-stub as the puzzle-complete branch.
+          // Per user feedback (2026-04-10): blank screen on return.
+          const stub = createDefaultSave('Demo');
+          stub.flags.titleDemoState = true;
+          gameState = stub;
           switchScene('TitleScene');
           setTimeout(() => showDayOfRestPanel(true), 400);
           return;
