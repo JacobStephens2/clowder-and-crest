@@ -55,10 +55,14 @@ const COYOTE_MS = 120;
 // todo/tech/Wall Jump Advice.md fix #2. Body friction resolution and
 // touch event delivery on Android can land in different frames; 120ms
 // (≈7 frames at 60fps) is too tight for "I just left the wall" intent.
-// 180ms is still invisible to players as a "cheat" but meaningfully
-// closes the gap between cling and jump.
-const WALL_COYOTE_MS = 180;
-const JUMP_BUFFER_MS = 150;
+// Bumped 180 → 320 (2026-04-10 ease pass) per user feedback "make the
+// window of opportunity to wall jump longer" — at 60fps that's ~19
+// frames of grace, well within "I tapped after leaving the wall" intent
+// without crossing into "phantom wall jump out of nowhere" territory.
+const WALL_COYOTE_MS = 320;
+// Jump buffer also bumped from 150 → 220 so a tap that lands a little
+// early still gets consumed by the next ground/wall contact.
+const JUMP_BUFFER_MS = 220;
 
 // Physics tuning, third pass (2026-04-08 ease pass): the user reported
 // the climb still felt punishing and wall jumps were hard to chain.
@@ -828,10 +832,22 @@ export class RoofScoutScene extends Phaser.Scene {
     // Proximity wall detection — looser than `isWallClinging`, which
     // requires actual contact. Per user feedback (2026-04-09): "any
     // time I'm next to a vertical surface I should be able to tap to
-    // jump off it." Scan platforms for any whose vertical band overlaps
-    // the player and whose face is within WALL_NEAR_PX of the player's
-    // body. Doesn't need the cat to be airborne — proximity alone is
-    // enough to authorize a wall jump on next tap.
+    // jump off it." Scan platforms for any whose vertical reach
+    // overlaps the player and whose face is within WALL_NEAR_PX of
+    // the player's body. Doesn't need the cat to be airborne —
+    // proximity alone is enough to authorize a wall jump on next tap.
+    //
+    // Vertical reach is widened past the platform's actual top/bottom
+    // by WALL_VERTICAL_REACH (20px) so the player can still wall-jump
+    // off a normal 12px-tall ledge while passing it on a fall. Per
+    // user feedback (2026-04-10): "if I am falling straight down and
+    // cross a surface, such as the edge of a platform, let me wall
+    // jump off of it." A fast straight-down fall only spends ~2-3
+    // frames in the actual band of a thin ledge — extending the
+    // reach gives a forgiving window above and below each ledge so
+    // the proximity check fires for several frames as the player
+    // passes by.
+    const WALL_VERTICAL_REACH = 20;
     this.nearWallSide = null;
     if (!onGround) {
       const playerLeft = this.player.x - PLAYER_BODY_W / 2;
@@ -847,10 +863,12 @@ export class RoofScoutScene extends Phaser.Scene {
         if (!platBody) continue;
         const platLeft = plat.x - plat.width / 2;
         const platRight = plat.x + plat.width / 2;
-        const platTop = platBody.y;
-        const platBottom = platBody.y + platBody.height;
-        // Vertical bands must overlap (share at least 1px of height) for
-        // the wall to count as "next to" the player.
+        const platTop = platBody.y - WALL_VERTICAL_REACH;
+        const platBottom = platBody.y + platBody.height + WALL_VERTICAL_REACH;
+        // Vertical reach must overlap (share at least 1px of height)
+        // for the wall to count as "next to" the player. The reach is
+        // wider than the actual platform band so falling-past-edge
+        // wall jumps trigger reliably.
         const verticalOverlap = playerBottom > platTop && playerTop < platBottom;
         if (!verticalOverlap) continue;
         // Distance from player's right edge to the platform's left face
