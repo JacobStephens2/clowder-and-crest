@@ -539,8 +539,13 @@ export class PounceScene extends Phaser.Scene {
     const projVis = this.add.circle(LAUNCH_X, LAUNCH_Y, 8, 0xc4956a);
     this.bodySprites.push({ body: proj, sprite: projVis });
 
-    // Wait for physics to settle, then check result
-    this.time.delayedCall(2500, () => {
+    // Wait for physics to settle, then check result. Reload time
+    // dropped from 2500 → 1100ms per user feedback (2026-04-10):
+    // "make reload time shorter in pounce." The periodic 500ms
+    // checkFallenRats already catches slow domino chains that finish
+    // after this window, so the post-launch settle wait can be much
+    // shorter without missing late wins.
+    this.time.delayedCall(1100, () => {
       this.checkFallenRats();
       this.activeProjectile = null;
       this.abilityAvailable = false;
@@ -642,21 +647,30 @@ export class PounceScene extends Phaser.Scene {
 
   private checkFallenRats(): void {
     let knocked = 0;
+    // Threshold fix per user feedback (2026-04-10, second pass): "all
+    // the rats are on the ground, yet it doesnt register as complete."
+    // Phaser/Matter Y increases downward. The static ground top is at
+    // GROUND_Y (650). A rat is a circle with radius 8, so when it
+    // rests ON TOP of the ground its CENTER is at GROUND_Y - 8 = 642
+    // (above the ground top by the radius). The previous threshold
+    // `> GROUND_Y - 5` (= 645) required the rat center to be BELOW
+    // 645, but a resting rat center sits at 642 (ABOVE 645) — so the
+    // check returned false for every successfully knocked rat. The
+    // entire fix from the first pass (periodic win check) was correct
+    // but the threshold it relied on never actually fired. Now using
+    // `> GROUND_Y - 30` (= 620) which is well above any resting rat
+    // center (642) but still well below the lowest in-place rat
+    // starting position (~570 for the bridge template).
     for (const rat of this.ratBodies) {
-      if (rat.position && rat.position.y > GROUND_Y - 5) {
+      if (rat.position && rat.position.y > GROUND_Y - 30) {
         knocked++;
       }
     }
     this.ratsKnocked = knocked;
     // If every rat has settled on the floor, fire the win — even
-    // outside the post-launch 2500ms window. The previous code only
-    // checked the win condition immediately after a launch settled,
-    // so a slow domino chain that finished a few hundred ms after
-    // the launch timeout left the player staring at fallen rats and
-    // a "still your turn" UI. Per user feedback (2026-04-10): "in
-    // pounce, I knocked all the rats down to the floor, but the
-    // game didn't seem to notice." The periodic check (every 500ms
-    // throughout the run) now closes that gap.
+    // outside the post-launch settling window. The periodic check
+    // (every 500ms throughout the run) closes the gap where slow
+    // domino chains finished after the post-launch settle window.
     if (!this.finished && this.totalRats > 0 && this.ratsKnocked >= this.totalRats) {
       this.winGame();
     }
