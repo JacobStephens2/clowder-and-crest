@@ -5,7 +5,7 @@ import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { esc } from '../utils/helpers';
 import { isNative, readAutoSnapshot } from '../systems/NativeFeatures';
-import { enterShowcase, isShowcaseUrlRequested } from '../systems/Showcase';
+import { enterShowcase, isShowcaseUrlRequested, showTitleScreenDayOfRest } from '../systems/Showcase';
 import { showToast as renderToast } from '../ui/feedback';
 
 export class TitleScene extends Phaser.Scene {
@@ -217,6 +217,16 @@ export class TitleScene extends Phaser.Scene {
 
     const anySlotUsed = [1, 2, 3].some((s) => getSlotSummary(s) !== null);
 
+    // Day of Rest button is always shown — pre-save activity that
+    // browses the full minigame catalogue without committing to a
+    // campaign run. Spoiler-warned. Per user feedback (2026-04-09):
+    // moved here from the in-game menu.
+    const dayOfRestY = anySlotUsed ? btnY + 100 : btnY + 50;
+    const showToastFn = (msg: string) => {
+      const overlayLayer = document.getElementById('overlay-layer');
+      if (overlayLayer) renderToast(overlayLayer, msg);
+    };
+
     if (anySlotUsed) {
       this.createButton(cx, btnY, 'Continue', () => {
         this.showSlotPicker('load');
@@ -256,6 +266,13 @@ export class TitleScene extends Phaser.Scene {
         });
       }
     }
+
+    // Day of Rest entry — sits below the save buttons. Tinted purple
+    // to match the in-game "rest day" entry. Tap → spoiler warning →
+    // confirm → loads transient demo save + opens the catalogue.
+    this.createButton(cx, dayOfRestY, 'Day of Rest', () => {
+      showTitleScreenDayOfRest(showToastFn);
+    }, { tint: 'purple' });
 
     // Credits
     this.add.text(cx, GAME_HEIGHT - 85, 'A game about cats, saints, and rats', {
@@ -372,24 +389,37 @@ export class TitleScene extends Phaser.Scene {
     document.getElementById('slot-cancel')!.addEventListener('click', () => overlay.remove());
   }
 
-  private createButton(x: number, y: number, label: string, onClick: () => void): void {
-    const bg = this.add.rectangle(x, y, 200, 44, 0x2a2520, 0.9);
-    bg.setStrokeStyle(1, 0x6b5b3e);
+  private createButton(
+    x: number,
+    y: number,
+    label: string,
+    onClick: () => void,
+    opts?: { tint?: 'purple' }
+  ): void {
+    const isPurple = opts?.tint === 'purple';
+    const baseFill = isPurple ? 0x2a2030 : 0x2a2520;
+    const hoverFill = isPurple ? 0x3a2c46 : 0x3a3530;
+    const stroke = isPurple ? 0x5a4a6a : 0x6b5b3e;
+    const baseColor = isPurple ? '#bfa8d8' : '#c4956a';
+    const hoverColor = isPurple ? '#dac6f0' : '#ddb87a';
+
+    const bg = this.add.rectangle(x, y, 200, 44, baseFill, 0.9);
+    bg.setStrokeStyle(1, stroke);
     bg.setInteractive({ useHandCursor: true });
 
     const text = this.add.text(x, y, label, {
       fontFamily: 'Georgia, serif',
       fontSize: '18px',
-      color: '#c4956a',
+      color: baseColor,
     }).setOrigin(0.5);
 
     bg.on('pointerover', () => {
-      bg.setFillStyle(0x3a3530, 0.9);
-      text.setColor('#ddb87a');
+      bg.setFillStyle(hoverFill, 0.9);
+      text.setColor(hoverColor);
     });
     bg.on('pointerout', () => {
-      bg.setFillStyle(0x2a2520, 0.9);
-      text.setColor('#c4956a');
+      bg.setFillStyle(baseFill, 0.9);
+      text.setColor(baseColor);
     });
     bg.on('pointerdown', onClick);
   }

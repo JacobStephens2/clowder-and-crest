@@ -16,7 +16,7 @@ import { pausePlaytimeSession, getCurrentSessionMs, formatPlaytime } from '../sy
 import { isNative, exportSaveToFilesystem } from '../systems/NativeFeatures';
 import { addBondPoints } from '../systems/BondSystem';
 import { getDailyWish } from '../systems/GameSystems';
-import { showDayOfRestPanel, hasAnyDayOfRestUnlock, showDayOfRestSpoilerWarning } from './DayOfRestPanel';
+import { showDayOfRestPanel, hasAnyDayOfRestUnlock } from './DayOfRestPanel';
 import { showRelationalJournalPanel, hasAnyRelationalJournalEntries } from './RelationalJournal';
 import { isRestDay } from '../systems/ProgressionManager';
 
@@ -379,7 +379,6 @@ export function showMenuPanel(): void {
     <button class="menu-btn" id="menu-achievements">Achievements</button>
     <button class="menu-btn" id="menu-journal">Guild Journal</button>
     ${(hasAnyDayOfRestUnlock(gameState) || isRestDay(gameState)) ? `<button class="menu-btn" id="menu-day-of-rest"${isRestDay(gameState) ? ' style="border-color:#9d8bb3;color:#bfa8d8"' : ''}>Day of Rest${isRestDay(gameState) ? ' \u00B7 today' : ''}</button>` : ''}
-    <button class="menu-btn" id="menu-day-of-rest-all" style="border-color:#5a4a6a;color:#9d8bb3">Day of Rest \u00B7 All Unlocked</button>
     ${hasAnyRelationalJournalEntries(gameState) ? `<button class="menu-btn" id="menu-relational-journal">Memories</button>` : ''}
     <button class="menu-btn" id="menu-save">Save Game</button>
     <div style="padding:4px 12px;font-size:10px;color:#555;font-style:italic;text-align:center">Visit the Carpenter in town to buy furniture</div>
@@ -474,15 +473,10 @@ export function showMenuPanel(): void {
     showDayOfRestPanel();
   });
 
-  // Fully unlocked Day of Rest — gated behind a spoiler warning. Always
-  // visible in the menu (unlike the campaign-progress entry above)
-  // because it's the "I want to poke at every minigame right now"
-  // surface, independent of how far the player has gotten in the story.
-  // Per user feedback (2026-04-09).
-  document.getElementById('menu-day-of-rest-all')?.addEventListener('click', () => {
-    panel.remove();
-    showDayOfRestSpoilerWarning(() => showMenuPanel());
-  });
+  // The "Day of Rest \u00B7 All Unlocked" entry was moved to the title
+  // screen menu on 2026-04-09 per user feedback. The in-game menu still
+  // exposes the campaign-progress-gated entry above. The fully-unlocked
+  // catalogue is now a pre-save activity, reachable from the title.
 
   document.getElementById('menu-relational-journal')?.addEventListener('click', () => {
     panel.remove();

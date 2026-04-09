@@ -252,13 +252,16 @@ export function initDayOfRest(d: DayOfRestDeps): void {
 /** Show a confirmation overlay warning the player that opening the
  *  fully-unlocked Day of Rest will reveal every minigame in the game,
  *  including ones their campaign hasn't reached yet. Two buttons:
- *  "Show me anyway" → opens `showDayOfRestPanel(true)`, and "Cancel"
- *  → closes the warning and re-opens the main menu via `onCancel`.
+ *  "Show me anyway" → onConfirm (defaults to opening the panel) and
+ *  "Cancel" → onCancel.
  *
  *  Per user feedback (2026-04-09): "add a fully unlocked Day of Rest
  *  link to the main menu, and when the player opens it, give a spoiler
  *  warning they have to click through." */
-export function showDayOfRestSpoilerWarning(onCancel: () => void): void {
+export function showDayOfRestSpoilerWarning(opts: {
+  onCancel?: () => void;
+  onConfirm?: () => void;
+}): void {
   // Pause underlying scenes the same way the panel does, so taps on
   // the warning don't fall through to gameplay.
   if (pausedSceneKeys.length === 0) {
@@ -291,15 +294,23 @@ export function showDayOfRestSpoilerWarning(onCancel: () => void): void {
     // Resume the scenes we paused on open — the player is bailing.
     resumeScenes(pausedSceneKeys);
     pausedSceneKeys = [];
-    deps.guildWishBanner.style.display = '';
-    onCancel();
+    if (deps.guildWishBanner) deps.guildWishBanner.style.display = '';
+    opts.onCancel?.();
   };
 
   document.getElementById('dor-spoiler-close')!.addEventListener('click', cancel);
   document.getElementById('dor-spoiler-cancel')!.addEventListener('click', cancel);
   document.getElementById('dor-spoiler-confirm')!.addEventListener('click', () => {
     panel.remove();
-    showDayOfRestPanel(true);
+    // Reset the paused-scene tracking so the next showDayOfRestPanel
+    // call can re-pause whatever is current at that moment (which may
+    // be a different scene if the confirm callback navigated).
+    pausedSceneKeys = [];
+    if (opts.onConfirm) {
+      opts.onConfirm();
+    } else {
+      showDayOfRestPanel(true);
+    }
   });
 }
 
