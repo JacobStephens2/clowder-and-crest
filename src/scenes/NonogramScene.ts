@@ -4,6 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
 import { haptic } from '../systems/NativeFeatures';
+import { isPracticeRun } from '../systems/PracticeMode';
 import { showMinigameTutorial } from '../ui/sceneHelpers';
 
 // Grid sizes per difficulty — multiples of 5 per the genre's UX rule.
@@ -572,7 +573,7 @@ export class NonogramScene extends Phaser.Scene {
     }).setOrigin(0.5);
     quitBg.on('pointerdown', () => {
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      eventBus.emit('navigate', 'TownMapScene');
+      if (!isPracticeRun()) eventBus.emit('navigate', 'TownMapScene');
     });
 
     // Clean up on scene stop (prevent timer/tween memory leaks)
