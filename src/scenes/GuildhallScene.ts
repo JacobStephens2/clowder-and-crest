@@ -54,6 +54,28 @@ export class GuildhallScene extends Phaser.Scene {
     // Fade in
     this.cameras.main.fadeIn(300, 10, 9, 8);
 
+    // Mood-reactive guildhall tint — when collective cat morale is
+    // low, the whole scene dims slightly; when it's high, a warm
+    // amber glow washes over the hall. Per the philosophy docs:
+    // beauty is "harmonious form… parts fitting a whole." The
+    // guildhall should FEEL like its inhabitants' mood — not just
+    // display mood text on each cat's card but let the player sense
+    // it from the atmosphere the moment the scene opens. A full
+    // overlay rectangle at low alpha creates the tint without
+    // changing individual sprite colors.
+    const moodScores: Record<string, number> = { happy: 2, content: 1, unhappy: -1 };
+    const totalMood = save.cats.reduce((sum, c) => sum + (moodScores[c.mood] ?? 0), 0);
+    const avgMood = totalMood / Math.max(1, save.cats.length);
+    if (avgMood >= 1.2) {
+      // Warm amber glow — guild is thriving
+      const warmth = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0xdda055, 0.04);
+      warmth.setScrollFactor(0).setDepth(0);
+    } else if (avgMood <= -0.5) {
+      // Cool dim — guild morale is suffering
+      const chill = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x1a2030, 0.12);
+      chill.setScrollFactor(0).setDepth(0);
+    }
+
     // Ambient dust motes
     for (let i = 0; i < 6; i++) {
       const mote = this.add.circle(
