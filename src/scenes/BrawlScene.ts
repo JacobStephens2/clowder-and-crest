@@ -682,7 +682,7 @@ export class BrawlScene extends Phaser.Scene {
     if (now - this.lastAttackTime < this.attackCooldown) return;
     this.lastAttackTime = now;
 
-    playSfx('tap', 0.4);
+    playSfx('swipe', 0.35);
 
     // Draw attack slash — filled arc wedge
     this.attackGfx.clear();

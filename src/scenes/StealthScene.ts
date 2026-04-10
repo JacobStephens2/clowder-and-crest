@@ -460,6 +460,10 @@ export class StealthScene extends Phaser.Scene {
       if (nr >= 0 && nr < GRID_ROWS && nc >= 0 && nc < GRID_COLS && this.grid[nr][nc] !== WALL) {
         guard.r = nr;
         guard.c = nc;
+        // Faint footstep — very quiet so it reads as ambient
+        // rather than a prominent cue. Per sfx-gaps-audit.md:
+        // "guards move silently" was a major immersion gap.
+        playSfx('footstep_stone', 0.06);
       }
     }
   }

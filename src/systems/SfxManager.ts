@@ -14,6 +14,13 @@ let sfxVolume = parseFloat(localStorage.getItem('clowder_sfx_volume') ?? '0.5');
 // sparkle, and bell chime).
 const SFX_POOLS: Record<string, string[]> = {
   victory: ['victory_fanfare', 'chapter', 'sparkle', 'bell_chime'],
+  // Anti-repetition pools for high-frequency SFX (per sfx-gaps-audit.md
+  // Tier 3). Each pool rotates variants so the player never hears the
+  // exact same sample twice in a row.
+  block_snap: ['block_snap_1', 'block_snap_2'],
+  dialogue_advance: ['page_turn_1', 'page_turn_2'],
+  swipe: ['swipe_1', 'swipe_2'],
+  footstep_stone: ['footstep_stone_1', 'footstep_stone_2'],
 };
 const lastPoolPick: Record<string, string> = {};
 
@@ -48,6 +55,17 @@ const SFX_PATHS: Record<string, string> = {
   bell_chime: 'assets/sfx/bell_chime.mp3',
   sniff: 'assets/sfx/sniff.mp3',
   match_strike: 'assets/sfx/match_strike.mp3',
+  // New purpose-built SFX (Freesound, 2026-04-10)
+  block_snap_1: 'assets/sfx/block_snap.mp3',
+  block_snap_2: 'assets/sfx/block_snap_2.mp3',
+  page_turn_1: 'assets/sfx/page_turn.mp3',
+  page_turn_2: 'assets/sfx/page_turn_2.mp3',
+  swipe_1: 'assets/sfx/swipe.mp3',
+  swipe_2: 'assets/sfx/swipe_2.mp3',
+  fish_catch: 'assets/sfx/fish_splash_catch.mp3',
+  flame_out: 'assets/sfx/flame_out.mp3',
+  footstep_stone_1: 'assets/sfx/footstep_stone.mp3',
+  footstep_stone_2: 'assets/sfx/footstep_stone_2.mp3',
 };
 
 function getAvailableAudio(key: string): HTMLAudioElement | null {

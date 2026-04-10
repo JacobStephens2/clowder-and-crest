@@ -213,7 +213,7 @@ export class PuzzleScene extends Phaser.Scene {
         this.snapBlock(this.dragBlock);
         this.dragBlock.container.setDepth(0);
         this.dragBlock = null;
-        playSfx('lock_click', 0.15);
+        playSfx('block_snap', 0.2);
       });
     });
 

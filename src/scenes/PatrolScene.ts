@@ -331,7 +331,8 @@ export class PatrolScene extends Phaser.Scene {
     this.lanternsLost++;
     this.lives--;
     this.livesText.setText(`Lives: ${this.lives}`);
-    playSfx('hiss', 0.3);
+    playSfx('flame_out', 0.25);
+    playSfx('hiss', 0.15);
     // Partial relight so the round can continue
     l.brightness = 0.5;
     l.failed = false;
