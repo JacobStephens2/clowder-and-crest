@@ -9,3 +9,5 @@
 [x] the brawl joystick now is really top left magnetic / hard to move any other direction, unlike the well functioning chase joystick
 [x] after failing the heist game when it is started from the title day of rest menu, i go back to the town scene rather than the day of rest menu
 [x] for roof scout, use a running animation when the character is sliding across a surface
+[x] i completed the roof scout from the title day of rest menu, and when i clicked continue i was brought to a blank town scene rather than back to the day of rest menu
+[x] there appears to be some invisible platform aspect to the top platform in roof scout, maybe the art doesnt match the game object size? I jumped up and hit an invisible ceiling part of that platform
