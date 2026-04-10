@@ -43,6 +43,15 @@ interface Prowler {
   gfx: Phaser.GameObjects.Container;
   zone: Phaser.GameObjects.Zone;
   alive: boolean;
+  /** 'normal' = 1 tap, 'tough' = 2 taps (per user feedback 2026-04-10),
+   *  'swipe' = swipe gesture to defeat. */
+  type: 'normal' | 'tough' | 'swipe';
+  /** Hits remaining before death (tough prowlers start at 2). */
+  hitsRemaining: number;
+  /** For swipe prowlers: tracks whether a pointerdown has started on
+   *  this prowler so the pointerup can check for sufficient distance. */
+  swipeStartX?: number;
+  swipeStartY?: number;
 }
 
 export class PatrolScene extends Phaser.Scene {
@@ -388,10 +397,15 @@ export class PatrolScene extends Phaser.Scene {
   }
 
   /** Spawn a single prowler at a random screen edge, targeting one of the
-      currently-lit lanterns. */
+      currently-lit lanterns. Per user feedback (2026-04-10): "add another
+      enemy type which requires two clicks to defeat. Add another type
+      which requires a swipe to defeat."
+      - normal: 1 tap to dispatch (purple eyes)
+      - tough: 2 taps to dispatch (red eyes, slightly larger)
+      - swipe: swipe gesture to dispatch (green eyes, "~" indicator)
+      Type selection ramps with difficulty and elapsed time. */
   spawnProwler(litLanterns: Lantern[]): void {
     const target = litLanterns[Math.floor(Math.random() * litLanterns.length)];
-    // Pick a random edge
     const edge = Math.floor(Math.random() * 4);
     let px = 0, py = 0;
     const margin = 20;
@@ -402,30 +416,75 @@ export class PatrolScene extends Phaser.Scene {
       default: px = Math.random() * GAME_WIDTH; py = 540; break;
     }
 
+    // Type selection: easy = all normal, medium = 30% tough/swipe
+    // after half time, hard = 40% from start
+    const elapsed = this.startingTimeLeft - this.timeLeft;
+    const halfTime = this.startingTimeLeft / 2;
+    let type: Prowler['type'] = 'normal';
+    if (this.difficulty === 'hard' || (this.difficulty === 'medium' && elapsed > halfTime)) {
+      const r = Math.random();
+      if (r < 0.2) type = 'tough';
+      else if (r < 0.4) type = 'swipe';
+    }
+
     const container = this.add.container(px, py);
-    // Use pixel art prowler sprite when available; fall back to
-    // hand-drawn circles.
+    // Visual differs by type — tough prowlers are larger/red,
+    // swipe prowlers have a "~" indicator.
+    const prowlerColor = type === 'tough' ? 0xcc4444 : type === 'swipe' ? 0x44aa66 : 0xaa44aa;
     if (this.textures.exists('prowler_sprite')) {
       const spr = this.add.sprite(0, 0, 'prowler_sprite');
       spr.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      if (type === 'tough') { spr.setScale(1.3); spr.setTint(0xcc6666); }
+      else if (type === 'swipe') { spr.setTint(0x66cc88); }
       container.add(spr);
     } else {
-      const body = this.add.circle(0, 0, 8, 0x1a1020).setStrokeStyle(2, 0xaa44aa);
+      const bodySize = type === 'tough' ? 10 : 8;
+      const body = this.add.circle(0, 0, bodySize, 0x1a1020).setStrokeStyle(2, prowlerColor);
       container.add(body);
-      const eye1 = this.add.circle(-3, -2, 1.5, 0xaa44aa);
-      const eye2 = this.add.circle(3, -2, 1.5, 0xaa44aa);
+      const eye1 = this.add.circle(-3, -2, 1.5, prowlerColor);
+      const eye2 = this.add.circle(3, -2, 1.5, prowlerColor);
       container.add([eye1, eye2]);
+    }
+    // Type indicator label
+    if (type === 'tough') {
+      const label = this.add.text(0, -14, '2', { fontFamily: 'Georgia, serif', fontSize: '9px', color: '#cc6666' }).setOrigin(0.5);
+      container.add(label);
+    } else if (type === 'swipe') {
+      const label = this.add.text(0, -14, '~', { fontFamily: 'Georgia, serif', fontSize: '11px', color: '#66cc88' }).setOrigin(0.5);
+      container.add(label);
     }
     container.setDepth(10);
 
-    // Tap zone — slightly larger than the visual so they're easy to hit
-    const zone = this.add.zone(px, py, 28, 28);
+    const zone = this.add.zone(px, py, 34, 34);
     zone.setInteractive({ useHandCursor: true });
 
-    const prowler: Prowler = { x: px, y: py, targetLantern: target, speed: 22, gfx: container, zone, alive: true };
+    const prowler: Prowler = {
+      x: px, y: py, targetLantern: target, speed: type === 'tough' ? 18 : 22,
+      gfx: container, zone, alive: true, type, hitsRemaining: type === 'tough' ? 2 : 1,
+    };
     this.prowlers.push(prowler);
 
-    zone.on('pointerdown', () => this.tapProwler(prowler));
+    // Swipe prowlers use pointerdown + pointerup distance check
+    if (type === 'swipe') {
+      zone.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        prowler.swipeStartX = pointer.x;
+        prowler.swipeStartY = pointer.y;
+      });
+      zone.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+        if (prowler.swipeStartX == null || prowler.swipeStartY == null) return;
+        const dx = pointer.x - prowler.swipeStartX;
+        const dy = pointer.y - prowler.swipeStartY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        prowler.swipeStartX = undefined;
+        prowler.swipeStartY = undefined;
+        if (dist > 30) {
+          // Successful swipe
+          this.tapProwler(prowler);
+        }
+      });
+    } else {
+      zone.on('pointerdown', () => this.tapProwler(prowler));
+    }
   }
 
   /** Tap-to-dispatch handler for prowlers. Cooldown removed alongside
@@ -440,9 +499,33 @@ export class PatrolScene extends Phaser.Scene {
   tapProwler(prowler: Prowler): void {
     if (this.finished || this.tutorialShowing) return;
     if (!prowler.alive) return;
-    // Capture position BEFORE killProwler nukes the gfx container.
     const px = prowler.x;
     const py = prowler.y;
+
+    // Tough prowlers take multiple hits before dying
+    if (prowler.hitsRemaining > 1) {
+      prowler.hitsRemaining--;
+      playSfx('tap', 0.5);
+      haptic.light();
+      this.cameras.main.shake(50, 0.002);
+      // Flash the container to show the hit registered
+      const children = prowler.gfx.getAll();
+      for (const c of children) {
+        if ('setAlpha' in c) (c as unknown as { setAlpha: (a: number) => void }).setAlpha(0.3);
+      }
+      this.time.delayedCall(100, () => {
+        if (!prowler.alive) return;
+        for (const c of prowler.gfx.getAll()) {
+          if ('setAlpha' in c) (c as unknown as { setAlpha: (a: number) => void }).setAlpha(1);
+        }
+      });
+      // Update the "2" label to "1"
+      const label = prowler.gfx.getAll().find(c => c instanceof Phaser.GameObjects.Text) as Phaser.GameObjects.Text | undefined;
+      if (label) label.setText(`${prowler.hitsRemaining}`);
+      return;
+    }
+
+    // Final hit or single-hit prowler — full kill feedback
     playSfx('tap', 0.7);
     playSfx('crate_push', 0.35);
     haptic.medium();
