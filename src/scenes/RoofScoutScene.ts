@@ -347,6 +347,12 @@ export class RoofScoutScene extends Phaser.Scene {
   private prevVelocityY = 0;
   private leftHeld = false;
   private rightHeld = false;
+  /** Tracks the last facing direction so we only swap the sprite texture
+   *  when the direction actually changes — avoids re-setting the same
+   *  texture 60 times per second. */
+  private lastFacingDir: 'left' | 'right' = 'right';
+  /** True if the playerVisual is a Sprite (not a Rectangle fallback). */
+  private playerIsSprite = false;
 
   // Run state
   private fishCollected = 0;
@@ -501,15 +507,22 @@ export class RoofScoutScene extends Phaser.Scene {
 
     // Use the breed's idle sprite if available; fall back to the
     // tan rectangle for breeds without pixel art.
-    const idleKey = `${this.catBreed}_idle_south`;
+    // Per user feedback (2026-04-10): "use left and right facing
+    // sprites, depending on the direction of movement, and add and
+    // use jump animations." Start with east-facing idle; update()
+    // swaps the texture based on horizontal velocity.
+    const idleKey = `${this.catBreed}_idle_east`;
     if (this.textures.exists(idleKey)) {
       const catSprite = this.add.sprite(GAME_WIDTH / 2, START_Y, idleKey);
       catSprite.setScale(1.2);
       catSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
       this.playerVisual = catSprite as unknown as Phaser.GameObjects.Rectangle;
+      this.playerIsSprite = true;
+      this.lastFacingDir = 'right';
     } else {
       this.playerVisual = this.add.rectangle(GAME_WIDTH / 2, START_Y, PLAYER_W, PLAYER_H, 0xc4956a);
       this.playerVisual.setStrokeStyle(1, 0x6b4a28);
+      this.playerIsSprite = false;
     }
     this.playerVisual.setDepth(10);
 
@@ -830,6 +843,36 @@ export class RoofScoutScene extends Phaser.Scene {
 
     // Sync the colored visual to the physics body each frame.
     this.playerVisual.setPosition(this.player.x, this.player.y);
+
+    // Direction-based sprite swapping + jump pose. Only runs when
+    // the playerVisual is a Sprite (not the rectangle fallback).
+    if (this.playerIsSprite) {
+      const spr = this.playerVisual as unknown as Phaser.GameObjects.Sprite;
+      const vx = body.velocity.x;
+      const vy = body.velocity.y;
+      const grounded = body.blocked.down || body.touching.down;
+      // Determine facing direction from horizontal velocity
+      const newDir: 'left' | 'right' = vx < -10 ? 'left' : vx > 10 ? 'right' : this.lastFacingDir;
+      const dirKey = newDir === 'left' ? 'west' : 'east';
+
+      if (!grounded) {
+        // Airborne — use a walk frame as the "jump" pose. Walk
+        // frame 2 (mid-stride) reads as a leaping silhouette.
+        const jumpKey = `${this.catBreed}_walk_${dirKey}_2`;
+        if (this.textures.exists(jumpKey) && spr.texture.key !== jumpKey) {
+          spr.setTexture(jumpKey);
+          spr.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        }
+      } else {
+        // Grounded — use the idle sprite for the current direction
+        const idleKey = `${this.catBreed}_idle_${dirKey}`;
+        if (this.textures.exists(idleKey) && spr.texture.key !== idleKey) {
+          spr.setTexture(idleKey);
+          spr.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        }
+      }
+      this.lastFacingDir = newDir;
+    }
 
     // Track grounded state for coyote-time. Refresh whenever the body
     // is touching down so the timer resets every frame the cat sits on
