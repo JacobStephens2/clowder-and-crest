@@ -354,6 +354,11 @@ export class RoofScoutScene extends Phaser.Scene {
   private lastFacingDir: 'left' | 'right' = 'right';
   /** True if the playerVisual is a Sprite (not a Rectangle fallback). */
   private playerIsSprite = false;
+  /** Walk animation frame counter — cycles 0..5 at ~8fps when grounded
+   *  and moving horizontally. Per user feedback (2026-04-10): "use a
+   *  running animation when the character is sliding across a surface." */
+  private walkFrame = 0;
+  private walkFrameTimer = 0;
 
   // Run state
   private fishCollected = 0;
@@ -864,13 +869,31 @@ export class RoofScoutScene extends Phaser.Scene {
           spr.setTexture(jumpKey);
           spr.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
         }
+        this.walkFrame = 0;
+        this.walkFrameTimer = 0;
+      } else if (Math.abs(vx) > 20) {
+        // Grounded + moving — cycle walk animation frames at ~8fps.
+        // Per user feedback (2026-04-10): "use a running animation
+        // when the character is sliding across a surface."
+        this.walkFrameTimer += 16; // ~1 frame at 60fps
+        if (this.walkFrameTimer > 125) { // ~8fps cycle
+          this.walkFrameTimer = 0;
+          this.walkFrame = (this.walkFrame + 1) % 6;
+        }
+        const walkKey = `${this.catBreed}_walk_${dirKey}_${this.walkFrame}`;
+        if (this.textures.exists(walkKey) && spr.texture.key !== walkKey) {
+          spr.setTexture(walkKey);
+          spr.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        }
       } else {
-        // Grounded — use the idle sprite for the current direction
+        // Grounded + still — idle sprite
         const idleKey = `${this.catBreed}_idle_${dirKey}`;
         if (this.textures.exists(idleKey) && spr.texture.key !== idleKey) {
           spr.setTexture(idleKey);
           spr.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
         }
+        this.walkFrame = 0;
+        this.walkFrameTimer = 0;
       }
       this.lastFacingDir = newDir;
     }
