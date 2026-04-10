@@ -7,3 +7,5 @@
 [x] for heist, no penalty seems to happen when i move the ring onto a red spot
 [x] for heist, if haptic feedback is available, instead of turning the ring to yellow when the ring gets turned to the correct spot, don't give a visual cue that it is correct, only give a haptic cue- some kind of different vibration-longer maybe. This will make the player have to feel the correct spot.
 [x] the brawl joystick now is really top left magnetic / hard to move any other direction, unlike the well functioning chase joystick
+[x] after failing the heist game when it is started from the title day of rest menu, i go back to the town scene rather than the day of rest menu
+[x] for roof scout, use a running animation when the character is sliding across a surface
