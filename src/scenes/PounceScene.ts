@@ -418,8 +418,17 @@ export class PounceScene extends Phaser.Scene {
         density: mat.density,
         label: `block_${block.material}`,
       });
-      const vis = this.add.rectangle(cx, cy, block.size - 2, block.size - 2, mat.color)
-        .setStrokeStyle(1, mat.borderColor);
+      const texKey = `block_${block.material}`;
+      let vis: Phaser.GameObjects.Rectangle | Phaser.GameObjects.Sprite;
+      if (this.textures.exists(texKey)) {
+        const spr = this.add.sprite(cx, cy, texKey);
+        spr.setDisplaySize(block.size - 2, block.size - 2);
+        spr.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        vis = spr;
+      } else {
+        vis = this.add.rectangle(cx, cy, block.size - 2, block.size - 2, mat.color)
+          .setStrokeStyle(1, mat.borderColor);
+      }
       this.bodySprites.push({ body, sprite: vis });
     }
 

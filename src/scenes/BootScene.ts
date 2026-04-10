@@ -127,6 +127,34 @@ export class BootScene extends Phaser.Scene {
     this.load.image('fish_sprite', 'assets/sprites/fish.png');
     this.load.image('barrel_sprite', 'assets/sprites/barrel.png');
 
+    // Load minigame pixel art sprites (generated via PixelLab 2026-04-10)
+    // Patrol
+    this.load.image('lantern_lit', 'assets/sprites/patrol/lantern_lit.png');
+    this.load.image('lantern_dark', 'assets/sprites/patrol/lantern_dark.png');
+    this.load.image('lantern_trap', 'assets/sprites/patrol/lantern_trap.png');
+    this.load.image('prowler_sprite', 'assets/sprites/patrol/prowler.png');
+    // Ritual
+    this.load.image('candle_sprite', 'assets/sprites/ritual/candle.png');
+    this.load.image('altar_sprite', 'assets/sprites/ritual/altar.png');
+    // Heist
+    this.load.image('lock_body', 'assets/sprites/heist/lock_body.png');
+    // Brawl
+    this.load.image('rat_boss', 'assets/sprites/brawl/rat_boss.png');
+    this.load.image('rat_skirmisher', 'assets/sprites/brawl/rat_skirmisher.png');
+    this.load.image('arena_floor', 'assets/sprites/brawl/arena_floor.png');
+    // Fishing
+    this.load.image('bobber_sprite', 'assets/sprites/fishing/bobber.png');
+    this.load.image('dock_sprite', 'assets/sprites/fishing/dock.png');
+    this.load.image('water_tile', 'assets/sprites/fishing/water_tile.png');
+    // Pounce
+    this.load.image('block_wood', 'assets/sprites/pounce/block_wood.png');
+    this.load.image('block_stone', 'assets/sprites/pounce/block_stone.png');
+    this.load.image('block_glass', 'assets/sprites/pounce/block_glass.png');
+    // Roof Scout
+    this.load.image('roof_ledge', 'assets/sprites/roof_scout/ledge.png');
+    this.load.image('roof_wall', 'assets/sprites/roof_scout/wall.png');
+    this.load.image('roof_summit', 'assets/sprites/roof_scout/summit.png');
+
     // Load crest logo
     this.load.image('crest', 'assets/sprites/crest.png');
 
