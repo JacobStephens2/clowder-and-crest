@@ -499,8 +499,18 @@ export class RoofScoutScene extends Phaser.Scene {
     this.player.setMaxVelocity(260, MAX_FALL_VELOCITY);
     this.player.setDragX(PLAYER_DRAG_X);
 
-    this.playerVisual = this.add.rectangle(GAME_WIDTH / 2, START_Y, PLAYER_W, PLAYER_H, 0xc4956a);
-    this.playerVisual.setStrokeStyle(1, 0x6b4a28);
+    // Use the breed's idle sprite if available; fall back to the
+    // tan rectangle for breeds without pixel art.
+    const idleKey = `${this.catBreed}_idle_south`;
+    if (this.textures.exists(idleKey)) {
+      const catSprite = this.add.sprite(GAME_WIDTH / 2, START_Y, idleKey);
+      catSprite.setScale(1.2);
+      catSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      this.playerVisual = catSprite as unknown as Phaser.GameObjects.Rectangle;
+    } else {
+      this.playerVisual = this.add.rectangle(GAME_WIDTH / 2, START_Y, PLAYER_W, PLAYER_H, 0xc4956a);
+      this.playerVisual.setStrokeStyle(1, 0x6b4a28);
+    }
     this.playerVisual.setDepth(10);
 
     // Wall-jump cue — a small chevron drawn next to the cat on the
@@ -669,9 +679,17 @@ export class RoofScoutScene extends Phaser.Scene {
       anchorY -= CHUNK_HEIGHT;
     }
 
-    // Final summit platform — the win zone. A wide ledge the player can
-    // land on to complete the climb.
-    this.makePlatform(GAME_WIDTH / 2, TARGET_Y + 20, 200, 14, 0xdda055);
+    // Final summit platform — the win zone. Uses the summit sprite if
+    // available; falls back to a gold rectangle.
+    if (this.textures.exists('roof_summit')) {
+      const summitVis = this.add.sprite(GAME_WIDTH / 2, TARGET_Y + 20, 'roof_summit');
+      summitVis.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      summitVis.setDisplaySize(200, 14);
+      this.physics.add.existing(summitVis, true);
+      this.platforms.add(summitVis);
+    } else {
+      this.makePlatform(GAME_WIDTH / 2, TARGET_Y + 20, 200, 14, 0xdda055);
+    }
     this.add.text(GAME_WIDTH / 2, TARGET_Y - 10, 'WATCHPOINT', {
       fontFamily: 'Georgia, serif', fontSize: '12px', color: '#dda055',
     }).setOrigin(0.5);
@@ -717,15 +735,36 @@ export class RoofScoutScene extends Phaser.Scene {
   }
 
   private makePlatform(cx: number, cy: number, width: number, height = 12, color = 0x6b5b3e): void {
-    const rect = this.add.rectangle(cx, cy, width, height, color);
-    rect.setStrokeStyle(1, 0x3a2f24);
-    this.physics.add.existing(rect, true); // static body
-    this.platforms.add(rect);
+    const isWall = height >= 30;
+    const textureKey = isWall ? 'roof_wall' : 'roof_ledge';
+    let visual: Phaser.GameObjects.GameObject;
+    if (this.textures.exists(textureKey)) {
+      // Tile the sprite across the platform's full width/height.
+      // TileSprite repeats the 32x32 texture to fill the rect.
+      const ts = this.add.tileSprite(cx, cy, width, height, textureKey);
+      ts.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      visual = ts;
+    } else {
+      const rect = this.add.rectangle(cx, cy, width, height, color);
+      rect.setStrokeStyle(1, 0x3a2f24);
+      visual = rect;
+    }
+    this.physics.add.existing(visual, true); // static body
+    this.platforms.add(visual);
   }
 
   private makeFish(cx: number, cy: number): void {
-    const fish = this.add.rectangle(cx, cy, 12, 8, 0xdda055);
-    fish.setStrokeStyle(1, 0x8b6a32);
+    let fish: Phaser.GameObjects.GameObject;
+    if (this.textures.exists('fish_sprite')) {
+      const spr = this.add.sprite(cx, cy, 'fish_sprite');
+      spr.setScale(0.5);
+      spr.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      fish = spr;
+    } else {
+      const rect = this.add.rectangle(cx, cy, 12, 8, 0xdda055);
+      rect.setStrokeStyle(1, 0x8b6a32);
+      fish = rect;
+    }
     this.physics.add.existing(fish);
     (fish.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
     (fish.body as Phaser.Physics.Arcade.Body).setImmovable(true);
@@ -912,7 +951,13 @@ export class RoofScoutScene extends Phaser.Scene {
     // shade when clinging so the player can see "I'm latched on, I can
     // jump again." The guide's section 6 calls this out as a future
     // improvement; doing the simple version now (no sprite atlas yet).
-    this.playerVisual.setFillStyle(this.isWallClinging ? 0xddc878 : 0xc4956a);
+    if ('setFillStyle' in this.playerVisual) {
+      (this.playerVisual as Phaser.GameObjects.Rectangle).setFillStyle(this.isWallClinging ? 0xddc878 : 0xc4956a);
+    } else if (this.isWallClinging) {
+      (this.playerVisual as unknown as Phaser.GameObjects.Sprite).setTint(0xddc878);
+    } else {
+      (this.playerVisual as unknown as Phaser.GameObjects.Sprite).clearTint();
+    }
 
     // Wall-jump cue — pulsing chevron next to the cat on the wall
     // side. Visible whenever a wall jump is currently authorized
@@ -1064,9 +1109,18 @@ export class RoofScoutScene extends Phaser.Scene {
       // so the player feels the bounce. Pure juice; no gameplay
       // effect, just makes the wall jump satisfying to chain.
       this.cameras.main.shake(80, 0.005);
-      this.playerVisual.setFillStyle(0xfff8e0);
+      if ('setFillStyle' in this.playerVisual) {
+        (this.playerVisual as Phaser.GameObjects.Rectangle).setFillStyle(0xfff8e0);
+      } else {
+        (this.playerVisual as unknown as Phaser.GameObjects.Sprite).setTint(0xfff8e0);
+      }
       this.time.delayedCall(120, () => {
-        if (this.playerVisual) this.playerVisual.setFillStyle(0xc4956a);
+        if (!this.playerVisual) return;
+        if ('setFillStyle' in this.playerVisual) {
+          (this.playerVisual as Phaser.GameObjects.Rectangle).setFillStyle(0xc4956a);
+        } else {
+          (this.playerVisual as unknown as Phaser.GameObjects.Sprite).clearTint();
+        }
       });
       playSfx('block_slide', 0.18);
       haptic.medium();

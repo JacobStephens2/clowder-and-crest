@@ -195,10 +195,19 @@ export class PatrolScene extends Phaser.Scene {
       const baseDimRate = baseDim + Math.random() * (this.difficulty === 'easy' ? 0.005 : 0.01);
 
       const glow = this.add.circle(lx, ly, LANTERN_RADIUS + 10, 0xdda055, 0.3);
-      const flame = this.add.circle(lx, ly, LANTERN_RADIUS, isTrap ? 0xcc4444 : 0xdda055, 1);
-
-      // Post
-      this.add.rectangle(lx, ly + LANTERN_RADIUS + 8, 4, 16, 0x6b5b3e);
+      // Use pixel art lantern sprites when available; fall back to shapes.
+      const lanternTexKey = isTrap ? 'lantern_trap' : 'lantern_lit';
+      let flame: Phaser.GameObjects.Arc | Phaser.GameObjects.Sprite;
+      if (this.textures.exists(lanternTexKey)) {
+        const spr = this.add.sprite(lx, ly, lanternTexKey);
+        spr.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        spr.setScale(1.1);
+        flame = spr as unknown as Phaser.GameObjects.Arc;
+      } else {
+        flame = this.add.circle(lx, ly, LANTERN_RADIUS, isTrap ? 0xcc4444 : 0xdda055, 1);
+        // Post
+        this.add.rectangle(lx, ly + LANTERN_RADIUS + 8, 4, 16, 0x6b5b3e);
+      }
 
       const zone = this.add.zone(lx, ly, LANTERN_RADIUS * 3, LANTERN_RADIUS * 3);
       zone.setInteractive({ useHandCursor: true });
@@ -393,13 +402,19 @@ export class PatrolScene extends Phaser.Scene {
     }
 
     const container = this.add.container(px, py);
-    // Dark figure with glowing eyes — readable at a glance from across the
-    // arena. Purple tone matches the threat HUD color.
-    const body = this.add.circle(0, 0, 8, 0x1a1020).setStrokeStyle(2, 0xaa44aa);
-    container.add(body);
-    const eye1 = this.add.circle(-3, -2, 1.5, 0xaa44aa);
-    const eye2 = this.add.circle(3, -2, 1.5, 0xaa44aa);
-    container.add([eye1, eye2]);
+    // Use pixel art prowler sprite when available; fall back to
+    // hand-drawn circles.
+    if (this.textures.exists('prowler_sprite')) {
+      const spr = this.add.sprite(0, 0, 'prowler_sprite');
+      spr.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      container.add(spr);
+    } else {
+      const body = this.add.circle(0, 0, 8, 0x1a1020).setStrokeStyle(2, 0xaa44aa);
+      container.add(body);
+      const eye1 = this.add.circle(-3, -2, 1.5, 0xaa44aa);
+      const eye2 = this.add.circle(3, -2, 1.5, 0xaa44aa);
+      container.add([eye1, eye2]);
+    }
     container.setDepth(10);
 
     // Tap zone — slightly larger than the visual so they're easy to hit
