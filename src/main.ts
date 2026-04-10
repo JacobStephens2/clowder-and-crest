@@ -515,6 +515,16 @@ function switchScene(target: string, data?: object): void {
     if (!el.classList.contains('day-transition-overlay')) el.remove();
   });
   game.scene.start(target, data);
+  // Consistent fade-in on every scene transition. Per the philosophy
+  // docs: beauty is "the felt recognition that parts belong together"
+  // — a unified transition rhythm across every scene change makes the
+  // whole game feel like a cohesive experience rather than a set of
+  // disconnected screens. The 250ms black-to-clear fade is subtle
+  // enough to not slow gameplay but present enough to smooth the cut.
+  const started = game.scene.getScene(target);
+  if (started?.cameras?.main) {
+    started.cameras.main.fadeIn(250, 0, 0, 0);
+  }
   // Show floating guild UI only on guild overview
   guildEndDayBtn.style.display = target === 'GuildhallScene' ? 'block' : 'none';
   // Wish banner shows on BOTH guildhall and town map (per user request:
