@@ -5,6 +5,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT, GRID_SIZE, TILE_SIZE, PUZZLE_OFFSET_X, PU
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { haptic } from '../systems/NativeFeatures';
+import { playSfx } from '../systems/SfxManager';
 import { showMinigameTutorial } from '../ui/sceneHelpers';
 
 const GRID_COLOR = 0x2a2520;
@@ -212,6 +213,7 @@ export class PuzzleScene extends Phaser.Scene {
         this.snapBlock(this.dragBlock);
         this.dragBlock.container.setDepth(0);
         this.dragBlock = null;
+        playSfx('lock_click', 0.15);
       });
     });
 
@@ -397,6 +399,7 @@ export class PuzzleScene extends Phaser.Scene {
     this.solved = true;
     this.moveCount++;
     this.updateMoveText();
+    playSfx('lock_open', 0.3);
 
     // Animate cat off screen — one tween on the container carries the
     // rect, label, and overlay along automatically.
@@ -467,6 +470,7 @@ export class PuzzleScene extends Phaser.Scene {
 
   private undo(): void {
     if (this.moveHistory.length === 0 || this.solved) return;
+    playSfx('tap', 0.12);
     const last = this.moveHistory.pop()!;
     const block = this.config.blocks.find((b) => b.id === last.blockId)!;
     block.x = last.fromX;

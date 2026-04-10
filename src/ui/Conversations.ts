@@ -8,6 +8,7 @@ import conversationsData from '../data/conversations.json';
 import type { SaveData } from '../systems/SaveManager';
 import { pauseDayTimer, resumeDayTimer, isPaused } from '../systems/DayTimer';
 import { pausePlaytimeSession, startPlaytimeSession } from '../systems/PlaytimeTracker';
+import { playSfx } from '../systems/SfxManager';
 
 // ──── Dialogue Portrait System ────
 //
@@ -352,10 +353,12 @@ function showGroupConversation(key: string, opts: GroupConversationOpts = {}): v
   showLine();
   overlay.addEventListener('click', (e) => {
     if ((e.target as HTMLElement).id === 'conv-skip') return;
+    playSfx('tap', 0.08);
     showLine();
   });
   document.getElementById('conv-skip')!.addEventListener('click', (e) => {
     e.stopPropagation();
+    playSfx('tap', 0.15);
     overlay.remove();
     if (!dayTimerWasAlreadyPaused) {
       resumeDayTimer();
@@ -556,11 +559,13 @@ function showConversation(breedA: string, breedB: string, rank: string, opts: Co
 
   overlay.addEventListener('click', (e) => {
     if ((e.target as HTMLElement).id === 'conv-skip') return;
+    playSfx('tap', 0.08);
     showLine();
   });
 
   document.getElementById('conv-skip')!.addEventListener('click', (e) => {
     e.stopPropagation();
+    playSfx('tap', 0.15);
     overlay.remove();
     if (opts.replay) {
       // Replay skip: no save mutation, no toast, return to journal.
