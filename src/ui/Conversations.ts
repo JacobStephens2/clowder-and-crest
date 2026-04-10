@@ -353,7 +353,7 @@ function showGroupConversation(key: string, opts: GroupConversationOpts = {}): v
   showLine();
   overlay.addEventListener('click', (e) => {
     if ((e.target as HTMLElement).id === 'conv-skip') return;
-    playSfx('tap', 0.08);
+    playSfx('dialogue_advance', 0.1);
     showLine();
   });
   document.getElementById('conv-skip')!.addEventListener('click', (e) => {
@@ -559,7 +559,7 @@ function showConversation(breedA: string, breedB: string, rank: string, opts: Co
 
   overlay.addEventListener('click', (e) => {
     if ((e.target as HTMLElement).id === 'conv-skip') return;
-    playSfx('tap', 0.08);
+    playSfx('dialogue_advance', 0.1);
     showLine();
   });
 

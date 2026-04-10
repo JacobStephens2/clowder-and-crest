@@ -772,6 +772,7 @@ export class FishingScene extends Phaser.Scene {
     this.finished = true;
     this.isReeling = false;
     this.phase = 'done';
+    playSfx('fish_catch', 0.35);
 
     // Stars based on how quickly the catch was filled (catch-phase only)
     const catchElapsed = this.elapsed - this.phaseStart;
