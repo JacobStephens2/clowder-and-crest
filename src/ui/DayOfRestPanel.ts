@@ -71,9 +71,9 @@ interface MinigameDef {
  *    Ch.2 — courier_run, fishing, scent_trail (3)
  *    Ch.3 — roof_scout, patrol, brawl (3)
  *    Ch.4 — ritual, nonogram, puzzle (3)
- *    Ch.5 — pounce (1)
- *    Ch.6 — heist (1)
- *    Ch.7 — stealth (1)
+ *    Ch.5 — pounce, heist, stealth (3)
+ *    Ch.6 — (0, narrative climax)
+ *    Ch.7 — (0, narrative climax)
  */
 const MINIGAMES: MinigameDef[] = [
   // ── Chapter 1 (3 new: chase, hunt, sokoban) ──
@@ -168,7 +168,10 @@ const MINIGAMES: MinigameDef[] = [
     unlockedBy: { test: (ks) => ks.some((k) => /^(easy|medium|hard)_\d+$/.test(k)) },
     difficulties: ['easy', 'medium', 'hard'],
   },
-  // ── Chapter 5 (1 new: pounce) ──
+  // ── Chapter 5 (3 new: pounce, heist, stealth) ──
+  // All 15 minigames available by Ch.5 (guild established). Ch.6
+  // (Rival Guild) and Ch.7 (Inquisition) are narrative climax
+  // chapters — no new mechanics, full catalogue already open.
   {
     title: 'Pounce',
     tagline: 'Slingshot. Wood, stone, glass.',
@@ -177,7 +180,6 @@ const MINIGAMES: MinigameDef[] = [
     difficulties: ['easy', 'medium', 'hard'],
     needsBreed: true,
   },
-  // ── Chapter 6 (1 new: heist) ──
   {
     title: 'Heist',
     tagline: 'Feel each ring set into place.',
@@ -185,7 +187,6 @@ const MINIGAMES: MinigameDef[] = [
     unlockedBy: { prefix: 'heist_' },
     difficulties: ['easy', 'medium', 'hard'],
   },
-  // ── Chapter 7 (1 new: stealth) ──
   {
     title: 'Stealth',
     tagline: 'Stay low. Stay in the grass. Stay unseen.',
