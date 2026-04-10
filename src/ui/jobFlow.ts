@@ -186,30 +186,40 @@ export function showChoiceOverlay(job: JobDef, catIndex: number): void {
         const add = (game: string, label: string, minChapter: number) => {
           if (ch >= minChapter) opts.push(`<button class="btn-puzzle minigame-btn" data-game="${game}" style="flex:1;min-width:140px">${label}</button>`);
         };
+        // Per user feedback (2026-04-10): "introduce three mini games
+        // per chapter." Redistributed unlock gates so each of the first
+        // four chapters introduces exactly 3 new minigame types:
+        //   Ch.1 — chase, hunt, sokoban (3)
+        //   Ch.2 — courier_run, fishing, scent_trail (3)
+        //   Ch.3 — roof_scout, patrol, brawl (3)
+        //   Ch.4 — ritual, nonogram, puzzle (3)
+        //   Ch.5 — pounce (1)
+        //   Ch.6 — heist (1)
+        //   Ch.7 — stealth (1)
         switch (job.category) {
           case 'pest_control':
             add('chase', '\u{1F400} Chase', 1);
             add('hunt', '\u{1F3AF} Hunt', 1);
             break;
           case 'courier':
+            add('sokoban', '\u{1F4E6} Navigate', 1);
             add('courier_run', '\u{1F3C3} Sprint', 2);
-            add('sokoban', '\u{1F4E6} Navigate', 2);
             add('roof_scout', '\u{1F3D8}\u{FE0F} Rooftops', 3);
-            add('puzzle', '\u{1F9E9} Slide Blocks', 5);
+            add('puzzle', '\u{1F9E9} Slide Blocks', 4);
             break;
           case 'guard':
             add('patrol', '\u{1F56F}\u{FE0F} Patrol', 3);
             add('brawl', '\u{2694}\u{FE0F} Fight', 3);
-            add('pounce', '\u{1F43E} Pounce', 6);
+            add('pounce', '\u{1F43E} Pounce', 5);
             break;
           case 'sacred':
+            add('fishing', '\u{1F3A3} Vigil', 2);
             add('ritual', '\u{1F56F}\u{FE0F} Ritual', 4);
-            add('fishing', '\u{1F3A3} Vigil', 5);
             add('nonogram', '\u{1F4DC} Read Signs', 4);
             break;
           case 'detection':
             add('chase', '\u{1F400} Follow', 1);
-            add('scent_trail', '\u{1F43E} Track', 4);
+            add('scent_trail', '\u{1F43E} Track', 2);
             add('stealth', '\u{1F43E} Stalk', 7);
             break;
           case 'shadow':

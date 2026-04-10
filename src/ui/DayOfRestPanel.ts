@@ -67,16 +67,16 @@ interface MinigameDef {
  *  of rest list in the order they are unlocked in the game."
  *
  *  Unlock chapters (cross-reference src/ui/jobFlow.ts):
- *    Ch.1 — chase, hunt
- *    Ch.2 — courier_run, sokoban
- *    Ch.3 — roof_scout, patrol, brawl
- *    Ch.4 — ritual, nonogram, scent_trail
- *    Ch.5 — fishing, puzzle (Rush Hour)
- *    Ch.6 — pounce, heist
- *    Ch.7 — stealth
+ *    Ch.1 — chase, hunt, sokoban (3)
+ *    Ch.2 — courier_run, fishing, scent_trail (3)
+ *    Ch.3 — roof_scout, patrol, brawl (3)
+ *    Ch.4 — ritual, nonogram, puzzle (3)
+ *    Ch.5 — pounce (1)
+ *    Ch.6 — heist (1)
+ *    Ch.7 — stealth (1)
  */
 const MINIGAMES: MinigameDef[] = [
-  // ── Chapter 1 ──
+  // ── Chapter 1 (3 new: chase, hunt, sokoban) ──
   {
     title: 'The Chase',
     tagline: 'Eat all the dots before the dogs find you.',
@@ -92,7 +92,14 @@ const MINIGAMES: MinigameDef[] = [
     difficulties: ['easy', 'medium', 'hard'],
     needsBreed: true,
   },
-  // ── Chapter 2 ──
+  {
+    title: 'Sokoban',
+    tagline: 'Push the crates. One door at a time.',
+    sceneKey: 'SokobanScene',
+    unlockedBy: { prefix: 'sokoban_' },
+    difficulties: ['easy', 'medium', 'hard'],
+  },
+  // ── Chapter 2 (3 new: courier_run, fishing, scent_trail) ──
   {
     title: 'Courier Run',
     tagline: 'Three lanes. Don\u2019t drop the parcel.',
@@ -102,13 +109,20 @@ const MINIGAMES: MinigameDef[] = [
     needsBreed: true,
   },
   {
-    title: 'Sokoban',
-    tagline: 'Push the crates. One door at a time.',
-    sceneKey: 'SokobanScene',
-    unlockedBy: { prefix: 'sokoban_' },
+    title: 'Fishing',
+    tagline: 'Approach. Wait for the bite. Reel.',
+    sceneKey: 'FishingScene',
+    unlockedBy: { prefix: 'fishing_' },
     difficulties: ['easy', 'medium', 'hard'],
   },
-  // ── Chapter 3 ──
+  {
+    title: 'Scent Trail',
+    tagline: 'Hot or cold? Probe the grid.',
+    sceneKey: 'ScentTrailScene',
+    unlockedBy: { prefix: 'scent_' },
+    difficulties: ['easy', 'medium', 'hard'],
+  },
+  // ── Chapter 3 (3 new: roof_scout, patrol, brawl) ──
   {
     title: 'Roof Scout',
     tagline: 'Climb to the watchpoint. Don\u2019t look down.',
@@ -132,7 +146,7 @@ const MINIGAMES: MinigameDef[] = [
     difficulties: ['easy', 'medium', 'hard'],
     needsBreed: true,
   },
-  // ── Chapter 4 ──
+  // ── Chapter 4 (3 new: ritual, nonogram, puzzle) ──
   {
     title: 'Sacred Rite',
     tagline: 'Light the candles in the right order.',
@@ -148,28 +162,13 @@ const MINIGAMES: MinigameDef[] = [
     difficulties: ['easy', 'medium', 'hard'],
   },
   {
-    title: 'Scent Trail',
-    tagline: 'Hot or cold? Probe the grid.',
-    sceneKey: 'ScentTrailScene',
-    unlockedBy: { prefix: 'scent_' },
-    difficulties: ['easy', 'medium', 'hard'],
-  },
-  // ── Chapter 5 ──
-  {
-    title: 'Fishing',
-    tagline: 'Approach. Wait for the bite. Reel.',
-    sceneKey: 'FishingScene',
-    unlockedBy: { prefix: 'fishing_' },
-    difficulties: ['easy', 'medium', 'hard'],
-  },
-  {
     title: 'Rush Hour',
     tagline: 'Slide blocks. Find the only way out.',
     sceneKey: 'PuzzleScene',
     unlockedBy: { test: (ks) => ks.some((k) => /^(easy|medium|hard)_\d+$/.test(k)) },
     difficulties: ['easy', 'medium', 'hard'],
   },
-  // ── Chapter 6 ──
+  // ── Chapter 5 (1 new: pounce) ──
   {
     title: 'Pounce',
     tagline: 'Slingshot. Wood, stone, glass.',
@@ -178,6 +177,7 @@ const MINIGAMES: MinigameDef[] = [
     difficulties: ['easy', 'medium', 'hard'],
     needsBreed: true,
   },
+  // ── Chapter 6 (1 new: heist) ──
   {
     title: 'Heist',
     tagline: 'Feel each ring set into place.',
@@ -185,7 +185,7 @@ const MINIGAMES: MinigameDef[] = [
     unlockedBy: { prefix: 'heist_' },
     difficulties: ['easy', 'medium', 'hard'],
   },
-  // ── Chapter 7 ──
+  // ── Chapter 7 (1 new: stealth) ──
   {
     title: 'Stealth',
     tagline: 'Stay low. Stay in the grass. Stay unseen.',
