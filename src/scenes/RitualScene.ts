@@ -234,9 +234,13 @@ export class RitualScene extends Phaser.Scene {
         this.add.rectangle(cx, cy + 12, 10, 24, 0xd4c5a9).setStrokeStyle(1, 0x8b7355);
       }
 
-      // Flame/glow
-      const glow = this.add.circle(cx, cy, 14, color, 0.15);
-      const flame = this.add.circle(cx, cy, 6, color, 0.3);
+      // Flame/glow — per user feedback (2026-04-10): "don't show any
+      // circle back glow except for when the candle flashes to indicate
+      // the pattern or when the player taps it." Both start at alpha 0
+      // and are pulsed to full brightness by showNextInSequence and
+      // onCandleTap respectively.
+      const glow = this.add.circle(cx, cy, 14, color, 0);
+      const flame = this.add.circle(cx, cy, 6, color, 0);
 
       const zone = this.add.zone(cx, cy, 50, 60);
       zone.setInteractive({ useHandCursor: true });
@@ -244,12 +248,6 @@ export class RitualScene extends Phaser.Scene {
       zone.on('pointerdown', () => this.onCandleTap(idx));
 
       this.candles.push({ glow, zone, color });
-
-      // Idle flicker
-      this.tweens.add({
-        targets: flame, alpha: 0.15, duration: 1000 + Math.random() * 500,
-        yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-      });
     }
 
     // Status text
@@ -318,7 +316,7 @@ export class RitualScene extends Phaser.Scene {
     this.playTone(this.getCandleFrequency(idx), flashMs / 1000 * 0.85, 0.28);
     playSfx(CANDLE_SFX[idx % CANDLE_SFX.length], 0.18);
     this.time.delayedCall(flashMs, () => {
-      candle.glow.setAlpha(0.15);
+      candle.glow.setAlpha(0);
       candle.glow.setScale(1);
       this.showIdx++;
       this.time.delayedCall(gapMs, () => this.showNextInSequence());
@@ -329,8 +327,16 @@ export class RitualScene extends Phaser.Scene {
     if (this.phase !== 'input' || this.finished || this.tutorialShowing) return;
 
     const candle = this.candles[idx];
-    candle.glow.setAlpha(0.6);
-    this.time.delayedCall(200, () => candle.glow.setAlpha(0.15));
+    // Light up the candle fully — same flash as the pattern demo
+    // so the player sees a consistent response. Per user feedback
+    // (2026-04-10): "when a player taps a candle, light up that
+    // candle like when they light up in the pattern demonstration."
+    candle.glow.setAlpha(0.9);
+    candle.glow.setScale(1.3);
+    this.time.delayedCall(250, () => {
+      candle.glow.setAlpha(0);
+      candle.glow.setScale(1);
+    });
 
     // Same tone + same per-candle mp3 cue for tap as for show — keeps
     // the audio symmetric so the player learns "this candle = this
