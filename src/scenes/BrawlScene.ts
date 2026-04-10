@@ -105,7 +105,7 @@ export class BrawlScene extends Phaser.Scene {
   private pauseOverlay: HTMLDivElement | null = null;
   private obstacles: { x: number; y: number; r: number }[] = [];
   private powerup: { x: number; y: number; type: string; gfx: Phaser.GameObjects.Text } | null = null;
-  private joyConfig: { x: number; y: number; canvasX: number; canvasY: number; radius: number; knob: Phaser.GameObjects.Arc; pointerId: number } | null = null;
+  private joyConfig: { x: number; y: number; canvasCX: number; canvasCY: number; radius: number; knob: Phaser.GameObjects.Arc; pointerId: number } | null = null;
   private atkBtnBounds: { x: number; y: number; size: number } | null = null;
   private powerupTimer = 0;
 
@@ -275,11 +275,15 @@ export class BrawlScene extends Phaser.Scene {
         }
       }
 
-      // Check joystick area
+      // Check joystick area — capture the canvas-space center at
+      // first touch so subsequent polling uses canvas deltas, not
+      // world deltas (which are biased by the DPR camera transform).
       if (this.joyConfig) {
         const jc = this.joyConfig;
         if (Math.sqrt((wx - jc.x) ** 2 + (wy - jc.y) ** 2) < jc.radius * 1.5) {
-          this.joyConfig.pointerId = pointer.id;
+          jc.pointerId = pointer.id;
+          jc.canvasCX = pointer.x;
+          jc.canvasCY = pointer.y;
           return;
         }
       }
@@ -301,16 +305,14 @@ export class BrawlScene extends Phaser.Scene {
     joyBase.setInteractive({ draggable: false, useHandCursor: true });
 
     // Joystick + attack — poll-based for multi-touch reliability.
-    // Store refs for polling in update(). canvasX/Y are the joystick
-    // center in CANVAS pixel coords (pointer.x/y) — used for input
-    // delta calculation instead of pointer.worldX/Y which Phaser
-    // computes lazily off the camera and can be systematically biased.
+    // canvasCX/CY are captured at first touch (pointer.x/pointer.y)
+    // instead of pre-computed from world coords, because the DPR
+    // zoom + centerOn camera transform makes the world → canvas
+    // conversion unreliable. This is the same approach used by
+    // TouchJoystick (which works correctly in Chase).
     // Per user feedback (2026-04-10): "the joystick in brawl is hard
-    // to move any other direction than down."
-    const cam = this.cameras.main;
-    const canvasJoyX = (joyX - cam.scrollX) * cam.zoom;
-    const canvasJoyY = (joyY - cam.scrollY) * cam.zoom;
-    this.joyConfig = { x: joyX, y: joyY, canvasX: canvasJoyX, canvasY: canvasJoyY, radius: joyRadius, knob: joyKnob, pointerId: -1 };
+    // to move any other direction than down" / "top left magnetic."
+    this.joyConfig = { x: joyX, y: joyY, canvasCX: 0, canvasCY: 0, radius: joyRadius, knob: joyKnob, pointerId: -1 };
 
     // Attack button (visual only — hit detection in global pointerdown)
     const atkBtnX = GAME_WIDTH - 55;
@@ -372,8 +374,8 @@ export class BrawlScene extends Phaser.Scene {
         if (p && p.id === jc.pointerId) {
           if (p.isDown) {
             // Canvas-space delta — NEVER use worldX/Y here.
-            const pdx = p.x - jc.canvasX;
-            const pdy = p.y - jc.canvasY;
+            const pdx = p.x - jc.canvasCX;
+            const pdy = p.y - jc.canvasCY;
             const pdist = Math.sqrt(pdx * pdx + pdy * pdy);
             // Scale the visual knob back to world coords for display
             const zoom = this.cameras.main.zoom || 1;
