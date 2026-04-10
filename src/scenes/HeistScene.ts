@@ -416,12 +416,21 @@ export class HeistScene extends Phaser.Scene {
       const baseColor = ring.isSet ? 0xdda055 : (isLinked ? 0x8b6ea6 : 0x6b5b3e);
       const baseAlpha = ring.isSet ? 0.95 : 0.7;
 
+      // Pre-compute rotated trap positions so the red trap segments
+      // visually move WITH the ring as the player rotates it. Per
+      // user feedback (2026-04-10): "no penalty seems to happen when
+      // i move the ring onto a red spot" — the traps LOOKED fixed
+      // but the trigger check used the rotated position, so the
+      // player couldn't tell when they were about to hit one.
+      const rotatedTraps = new Set(ring.trapNotches.map(
+        t => ((t + ring.rotation) % ring.notches + ring.notches) % ring.notches
+      ));
       for (let n = 0; n < ring.notches; n++) {
         const startAngle = n * segmentAngle - Math.PI / 2 + 0.03;
         const endAngle = (n + 1) * segmentAngle - Math.PI / 2 - 0.03;
         const effective = (ring.gapPos + ring.rotation) % ring.notches;
         const isGap = effective === n;
-        const isTrap = ring.trapNotches.includes(n);
+        const isTrap = rotatedTraps.has(n);
 
         if (isGap) {
           // Gap indicator — bright when set, dim when not

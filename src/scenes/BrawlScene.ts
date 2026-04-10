@@ -5,6 +5,7 @@ import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
 import { haptic } from '../systems/NativeFeatures';
+import { isPracticeRun } from '../systems/PracticeMode';
 import { createDpad, showMinigameTutorial, showSceneOutcomeBanner } from '../ui/sceneHelpers';
 
 // ── Arena layout ──
@@ -104,7 +105,7 @@ export class BrawlScene extends Phaser.Scene {
   private pauseOverlay: HTMLDivElement | null = null;
   private obstacles: { x: number; y: number; r: number }[] = [];
   private powerup: { x: number; y: number; type: string; gfx: Phaser.GameObjects.Text } | null = null;
-  private joyConfig: { x: number; y: number; radius: number; knob: Phaser.GameObjects.Arc; pointerId: number } | null = null;
+  private joyConfig: { x: number; y: number; canvasX: number; canvasY: number; radius: number; knob: Phaser.GameObjects.Arc; pointerId: number } | null = null;
   private atkBtnBounds: { x: number; y: number; size: number } | null = null;
   private powerupTimer = 0;
 
@@ -299,9 +300,17 @@ export class BrawlScene extends Phaser.Scene {
     const joyKnob = this.add.circle(joyX, joyY, 14, 0x6b5b3e, 0.8);
     joyBase.setInteractive({ draggable: false, useHandCursor: true });
 
-    // Joystick + attack — poll-based for multi-touch reliability
-    // Store refs for polling in update()
-    this.joyConfig = { x: joyX, y: joyY, radius: joyRadius, knob: joyKnob, pointerId: -1 };
+    // Joystick + attack — poll-based for multi-touch reliability.
+    // Store refs for polling in update(). canvasX/Y are the joystick
+    // center in CANVAS pixel coords (pointer.x/y) — used for input
+    // delta calculation instead of pointer.worldX/Y which Phaser
+    // computes lazily off the camera and can be systematically biased.
+    // Per user feedback (2026-04-10): "the joystick in brawl is hard
+    // to move any other direction than down."
+    const cam = this.cameras.main;
+    const canvasJoyX = (joyX - cam.scrollX) * cam.zoom;
+    const canvasJoyY = (joyY - cam.scrollY) * cam.zoom;
+    this.joyConfig = { x: joyX, y: joyY, canvasX: canvasJoyX, canvasY: canvasJoyY, radius: joyRadius, knob: joyKnob, pointerId: -1 };
 
     // Attack button (visual only — hit detection in global pointerdown)
     const atkBtnX = GAME_WIDTH - 55;
@@ -316,8 +325,9 @@ export class BrawlScene extends Phaser.Scene {
     this.add.text(45, joyY, 'Quit', { fontFamily: 'Georgia, serif', fontSize: '12px', color: '#c4956a' }).setOrigin(0.5);
     quitBtn.on('pointerdown', () => {
       this.finished = true;
+      const wasPractice = isPracticeRun();
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      eventBus.emit('navigate', 'TownMapScene');
+      if (!wasPractice) eventBus.emit('navigate', 'TownMapScene');
     });
 
     // Pause button
@@ -346,9 +356,14 @@ export class BrawlScene extends Phaser.Scene {
     if (Date.now() < this.hitStopUntil) return;
     const dt = delta / 1000;
 
-    // Poll joystick — check the tracked pointer's current position each frame.
-    // Uses canonical Phaser multi-touch pattern: addPointer() + read pointer1/pointer2
-    // directly in update() (see phaserjs/examples multitouch/two touch inputs.js).
+    // Poll joystick — uses pointer.x/y (canvas pixel coords) instead of
+    // pointer.worldX/Y (which Phaser computes lazily off the camera and
+    // can be systematically biased — the same root cause as the Chase
+    // joystick bug fixed in v2.5.4). Per user feedback (2026-04-10):
+    // "the joystick in brawl is hard to move any other direction than
+    // down." The atan2 deadzone + equal-area quadrant logic from
+    // TouchJoystick isn't needed here because Brawl uses analog velocity,
+    // but the coord-space fix IS critical.
     if (this.joyConfig && this.joyConfig.pointerId >= 0) {
       const jc = this.joyConfig;
       const pointers = [this.input.pointer1, this.input.pointer2];
@@ -356,12 +371,15 @@ export class BrawlScene extends Phaser.Scene {
       for (const p of pointers) {
         if (p && p.id === jc.pointerId) {
           if (p.isDown) {
-            const pdx = p.worldX - jc.x;
-            const pdy = p.worldY - jc.y;
+            // Canvas-space delta — NEVER use worldX/Y here.
+            const pdx = p.x - jc.canvasX;
+            const pdy = p.y - jc.canvasY;
             const pdist = Math.sqrt(pdx * pdx + pdy * pdy);
-            const clampDist = Math.min(pdist, jc.radius);
-            if (pdist > 5) {
-              jc.knob.setPosition(jc.x + (pdx / pdist) * clampDist, jc.y + (pdy / pdist) * clampDist);
+            // Scale the visual knob back to world coords for display
+            const zoom = this.cameras.main.zoom || 1;
+            const worldDist = Math.min(pdist / zoom, jc.radius);
+            if (pdist > 5 * zoom) {
+              jc.knob.setPosition(jc.x + (pdx / pdist) * worldDist, jc.y + (pdy / pdist) * worldDist);
               this.moveDir = { x: pdx / pdist, y: pdy / pdist };
               this.catFacing = Math.atan2(pdy, pdx);
             } else {
@@ -374,7 +392,6 @@ export class BrawlScene extends Phaser.Scene {
         }
       }
       if (!found) {
-        // Pointer released
         jc.pointerId = -1;
         jc.knob.setPosition(jc.x, jc.y);
         this.moveDir = { x: 0, y: 0 };
@@ -1106,8 +1123,9 @@ export class BrawlScene extends Phaser.Scene {
       });
 
       this.time.delayedCall(2000, () => {
+        const wasPractice = isPracticeRun();
         eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-        eventBus.emit('navigate', 'TownMapScene');
+        if (!wasPractice) eventBus.emit('navigate', 'TownMapScene');
       });
     }
   }
