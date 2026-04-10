@@ -205,9 +205,15 @@ export class RitualScene extends Phaser.Scene {
       eventBus.emit('navigate', 'TownMapScene');
     });
 
-    // Altar background
+    // Altar background — use pixel art altar sprite when available.
     const altarY = 320;
-    this.add.rectangle(GAME_WIDTH / 2, altarY + 60, 300, 40, 0x2a2520).setStrokeStyle(1, 0x3a3530);
+    if (this.textures.exists('altar_sprite')) {
+      const altarSpr = this.add.sprite(GAME_WIDTH / 2, altarY + 60, 'altar_sprite');
+      altarSpr.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      altarSpr.setDisplaySize(300, 40);
+    } else {
+      this.add.rectangle(GAME_WIDTH / 2, altarY + 60, 300, 40, 0x2a2520).setStrokeStyle(1, 0x3a3530);
+    }
 
     // Create candles in an arc
     const arcCx = GAME_WIDTH / 2;
@@ -219,8 +225,14 @@ export class RitualScene extends Phaser.Scene {
       const cy = arcCy + Math.sin(angle) * arcR * 0.5;
       const color = CANDLE_COLORS[i % CANDLE_COLORS.length];
 
-      // Candle body
-      this.add.rectangle(cx, cy + 12, 10, 24, 0xd4c5a9).setStrokeStyle(1, 0x8b7355);
+      // Candle body — use pixel art candle sprite when available.
+      if (this.textures.exists('candle_sprite')) {
+        const candleSpr = this.add.sprite(cx, cy + 6, 'candle_sprite');
+        candleSpr.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        candleSpr.setScale(0.7);
+      } else {
+        this.add.rectangle(cx, cy + 12, 10, 24, 0xd4c5a9).setStrokeStyle(1, 0x8b7355);
+      }
 
       // Flame/glow
       const glow = this.add.circle(cx, cy, 14, color, 0.15);

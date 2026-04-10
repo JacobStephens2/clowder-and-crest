@@ -308,15 +308,21 @@ export class FishingScene extends Phaser.Scene {
     const dockX = 30;
     const dockW = 160;
     const dockY = waterTop - 10;
-    // Dock supports (posts)
-    this.add.rectangle(dockX + 20, dockY + 30, 8, 50, 0x4a3a2a);
-    this.add.rectangle(dockX + dockW - 20, dockY + 30, 8, 50, 0x4a3a2a);
-    // Main platform
-    this.add.rectangle(dockX + dockW / 2, dockY, dockW, 16, DOCK_COLOR);
-    // Planks
-    for (let p = 0; p < 5; p++) {
-      const px = dockX + 16 + p * 32;
-      this.add.rectangle(px, dockY, 30, 14, DOCK_PLANK).setStrokeStyle(1, 0x4a3a2a, 0.5);
+    if (this.textures.exists('dock_sprite')) {
+      const dockSpr = this.add.sprite(dockX + dockW / 2, dockY + 10, 'dock_sprite');
+      dockSpr.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      dockSpr.setDisplaySize(dockW, 60);
+    } else {
+      // Dock supports (posts)
+      this.add.rectangle(dockX + 20, dockY + 30, 8, 50, 0x4a3a2a);
+      this.add.rectangle(dockX + dockW - 20, dockY + 30, 8, 50, 0x4a3a2a);
+      // Main platform
+      this.add.rectangle(dockX + dockW / 2, dockY, dockW, 16, DOCK_COLOR);
+      // Planks
+      for (let p = 0; p < 5; p++) {
+        const px = dockX + 16 + p * 32;
+        this.add.rectangle(px, dockY, 30, 14, DOCK_PLANK).setStrokeStyle(1, 0x4a3a2a, 0.5);
+      }
     }
 
     // ── Cat sprite on dock ──

@@ -203,8 +203,19 @@ export class HeistScene extends Phaser.Scene {
       fontSize: '18px', color: '#dda055',
     }).setOrigin(0.5);
 
+    // Lock body pixel art sprite behind the ring graphics, centered
+    // on the lock. Purely decorative — the rings are still drawn as
+    // graphics arcs on top (they rotate and change state dynamically).
+    if (this.textures.exists('lock_body')) {
+      const lockSpr = this.add.sprite(GAME_WIDTH / 2, 330, 'lock_body');
+      lockSpr.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      lockSpr.setAlpha(0.35);
+      lockSpr.setDepth(0);
+    }
+
     // Lock graphics
     this.ringGfx = this.add.graphics();
+    this.ringGfx.setDepth(1);
     this.drawRings();
 
     // Touch input — detect which ring was tapped, and which side (left =

@@ -897,13 +897,18 @@ export class BrawlScene extends Phaser.Scene {
 
     const container = this.add.container(rx, ry);
 
-    // Rat body — use sprite if available, tinted differently per type
-    if (this.textures.exists('rat')) {
+    // Rat body — use dedicated sprite per type when available, then
+    // fall back to the generic rat sprite, then to hand-drawn shapes.
+    const skirmisherKey = type === 'skirmisher' ? 'rat_skirmisher' : null;
+    if (skirmisherKey && this.textures.exists(skirmisherKey)) {
+      const spr = this.add.sprite(0, 0, skirmisherKey);
+      spr.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      spr.setScale(0.8);
+      container.add(spr);
+    } else if (this.textures.exists('rat')) {
       const ratSprite = this.add.sprite(0, 0, 'rat');
       ratSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
       ratSprite.setScale(type === 'skirmisher' ? 0.7 : 0.8);
-      // Skirmishers wear a red tint so the player can spot them at a glance —
-      // the same visual identity as the lunge windup flash.
       if (type === 'skirmisher') ratSprite.setTint(0xff8888);
       container.add(ratSprite);
     } else {
@@ -948,7 +953,12 @@ export class BrawlScene extends Phaser.Scene {
     const bossY = ARENA_TOP + 30;
     const bossContainer = this.add.container(bossX, bossY);
 
-    if (this.textures.exists('rat')) {
+    if (this.textures.exists('rat_boss')) {
+      const bossSprite = this.add.sprite(0, 0, 'rat_boss');
+      bossSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      bossSprite.setScale(1.0);
+      bossContainer.add(bossSprite);
+    } else if (this.textures.exists('rat')) {
       const bossSprite = this.add.sprite(0, 0, 'rat');
       bossSprite.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
       bossSprite.setScale(1.6);
