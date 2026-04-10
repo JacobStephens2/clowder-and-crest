@@ -1100,8 +1100,14 @@ export class SokobanScene extends Phaser.Scene {
     for (let i = 0; i < this.crates.length; i++) {
       const crate = this.crates[i];
       const isOnTarget = this.level.targets.some(t => t.r === crate.r && t.c === crate.c);
+      const wasOnTarget = this.crateSprites[i]?.getData?.('onTarget') === true;
       const sprite = this.crateSprites[i];
       if (!sprite) continue;
+      // Play a satisfying click when a crate first lands on its target
+      if (isOnTarget && !wasOnTarget) {
+        playSfx('lock_click', 0.2);
+      }
+      sprite.setData?.('onTarget', isOnTarget);
       // Sprites use tint, Rectangles use fill style — pick the right method
       // for whichever fallback the runtime ended up with.
       if (sprite instanceof Phaser.GameObjects.Sprite) {
@@ -1116,6 +1122,7 @@ export class SokobanScene extends Phaser.Scene {
   private winPuzzle(): void {
     this.solved = true;
     haptic.success();
+    playSfx('sparkle', 0.3);
 
     const stars = this.calculateStars();
     const summary = stars === 3

@@ -50,6 +50,10 @@ export class HeistScene extends Phaser.Scene {
    *  spam-clicking. Easy mode has a generous budget; hard mode is tight. */
   private noise = 0;
   private noiseBudget = 30;
+  /** Tracks which noise thresholds have already triggered an audio
+   *  warning so they don't repeat on every drawRings call. */
+  private noiseWarned60 = false;
+  private noiseWarned85 = false;
 
   constructor() { super({ key: 'HeistScene' }); }
 
@@ -69,6 +73,8 @@ export class HeistScene extends Phaser.Scene {
     // pathing. Stealth stat extends the budget so a sneaky cat has
     // an actual edge in this scene.
     this.noise = 0;
+    this.noiseWarned60 = false;
+    this.noiseWarned85 = false;
     this.noiseBudget = this.difficulty === 'hard' ? 22 : this.difficulty === 'medium' ? 32 : 42;
     this.moveCount = 0;
 
@@ -373,6 +379,16 @@ export class HeistScene extends Phaser.Scene {
       // Bar reddens as we approach overflow
       const color = pct > 0.85 ? 0xcc4444 : pct > 0.6 ? 0xdda055 : 0xaa44aa;
       this.noiseBar.setFillStyle(color);
+      // Audio warning at 60% and 85% thresholds (fires once each)
+      if (pct > 0.6 && !this.noiseWarned60) {
+        this.noiseWarned60 = true;
+        playSfx('alarm', 0.08);
+      }
+      if (pct > 0.85 && !this.noiseWarned85) {
+        this.noiseWarned85 = true;
+        playSfx('alarm', 0.18);
+        haptic.medium();
+      }
     }
     if (this.noiseText) {
       this.noiseText.setText(`Noise: ${Math.min(this.noise, this.noiseBudget)}/${this.noiseBudget}`);

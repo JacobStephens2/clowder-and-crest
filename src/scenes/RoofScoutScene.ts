@@ -1008,7 +1008,10 @@ export class RoofScoutScene extends Phaser.Scene {
       // they're standing on a platform — preserves the "rest perch"
       // feel from section 10 without requiring authored checkpoint
       // tiles.
-      if (onGround) this.lastCheckpointY = this.player.y;
+      if (onGround) {
+        if (this.lastCheckpointY !== this.player.y) playSfx('sparkle', 0.1);
+        this.lastCheckpointY = this.player.y;
+      }
     }
 
     // Out-of-bounds fall — drop a meaningful distance below the highest
