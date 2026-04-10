@@ -5,6 +5,7 @@ import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
 import { haptic } from '../systems/NativeFeatures';
+import { isPracticeRun } from '../systems/PracticeMode';
 import { showMinigameTutorial, showTutorialOverlay } from '../ui/sceneHelpers';
 
 const LANTERN_RADIUS = 18;
@@ -181,7 +182,7 @@ export class PatrolScene extends Phaser.Scene {
       fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8b7355',
     }).setOrigin(1, 0).setInteractive({ useHandCursor: true }).on('pointerdown', () => {
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      eventBus.emit('navigate', 'TownMapScene');
+      if (!isPracticeRun()) eventBus.emit('navigate', 'TownMapScene');
     });
 
     // Create lanterns in a ring
@@ -608,7 +609,7 @@ export class PatrolScene extends Phaser.Scene {
       }).setOrigin(0.5);
       this.time.delayedCall(1500, () => {
         eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-        eventBus.emit('navigate', 'TownMapScene');
+        if (!isPracticeRun()) eventBus.emit('navigate', 'TownMapScene');
       });
     }
   }

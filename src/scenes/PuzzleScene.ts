@@ -5,6 +5,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT, GRID_SIZE, TILE_SIZE, PUZZLE_OFFSET_X, PU
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { haptic } from '../systems/NativeFeatures';
+import { isPracticeRun } from '../systems/PracticeMode';
 import { playSfx } from '../systems/SfxManager';
 import { showMinigameTutorial } from '../ui/sceneHelpers';
 
@@ -263,7 +264,7 @@ export class PuzzleScene extends Phaser.Scene {
     // Back button
     this.createButton(GAME_WIDTH / 2, offsetY + gridPx + 50, 'Quit', () => {
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      eventBus.emit('navigate', 'TownMapScene');
+      if (!isPracticeRun()) eventBus.emit('navigate', 'TownMapScene');
     });
 
     this.events.once('shutdown', () => {
