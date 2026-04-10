@@ -186,16 +186,16 @@ export function showChoiceOverlay(job: JobDef, catIndex: number): void {
         const add = (game: string, label: string, minChapter: number) => {
           if (ch >= minChapter) opts.push(`<button class="btn-puzzle minigame-btn" data-game="${game}" style="flex:1;min-width:140px">${label}</button>`);
         };
-        // Per user feedback (2026-04-10): "introduce three mini games
-        // per chapter." Redistributed unlock gates so each of the first
-        // four chapters introduces exactly 3 new minigame types:
+        // Minigame unlock cadence — 3 new types per chapter for Ch.1-5,
+        // then 0 for Ch.6-7 (narrative climax, no new mechanics). All
+        // 15 minigames are available by the time the guild is established.
         //   Ch.1 — chase, hunt, sokoban (3)
         //   Ch.2 — courier_run, fishing, scent_trail (3)
         //   Ch.3 — roof_scout, patrol, brawl (3)
         //   Ch.4 — ritual, nonogram, puzzle (3)
-        //   Ch.5 — pounce (1)
-        //   Ch.6 — heist (1)
-        //   Ch.7 — stealth (1)
+        //   Ch.5 — pounce, heist, stealth (3)
+        //   Ch.6 — (0)
+        //   Ch.7 — (0)
         switch (job.category) {
           case 'pest_control':
             add('chase', '\u{1F400} Chase', 1);
@@ -220,11 +220,11 @@ export function showChoiceOverlay(job: JobDef, catIndex: number): void {
           case 'detection':
             add('chase', '\u{1F400} Follow', 1);
             add('scent_trail', '\u{1F43E} Track', 2);
-            add('stealth', '\u{1F43E} Stalk', 7);
+            add('stealth', '\u{1F43E} Stalk', 5);
             break;
           case 'shadow':
-            add('heist', '\u{1F510} Pick Lock', 6);
-            add('stealth', '\u{1F43E} Sneak', 7);
+            add('heist', '\u{1F510} Pick Lock', 5);
+            add('stealth', '\u{1F43E} Sneak', 5);
             add('nonogram', '\u{1F4DC} Crack Code', 4);
             break;
         }
