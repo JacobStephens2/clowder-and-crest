@@ -4,7 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
-import { haptic } from '../systems/NativeFeatures';
+import { haptic, isNative } from '../systems/NativeFeatures';
 import { showMinigameTutorial } from '../ui/sceneHelpers';
 
 interface Ring {
@@ -326,11 +326,20 @@ export class HeistScene extends Phaser.Scene {
       // "audio is primary" pillar: distinct sounds for set vs nudge.
       ring.isSet = ((ring.gapPos + ring.rotation) % ring.notches) === 0;
       if (!oldSet && ring.isSet) {
-        // Just clicked into place — high-pitched satisfying sound
-        playSfx('sparkle', 0.5);
-        haptic.medium();
+        // Just clicked into place. Per user feedback (2026-04-10):
+        // "if haptic feedback is available, instead of turning the
+        // ring to yellow when correct, only give a haptic cue — some
+        // kind of different, longer vibration. This makes the player
+        // have to feel the correct spot." On native: suppress the
+        // sparkle SFX and give a heavy haptic pulse; on web (no
+        // haptic): keep the sparkle so the player still has a cue.
+        if (isNative()) {
+          haptic.heavy();
+        } else {
+          playSfx('sparkle', 0.5);
+        }
       } else if (oldSet && !ring.isSet) {
-        // Slipped out of place — soft "uh" feedback
+        // Slipped out of place — soft warning
         playSfx('lock_click', 0.6);
         haptic.warning();
       } else {
@@ -434,7 +443,12 @@ export class HeistScene extends Phaser.Scene {
 
         if (isGap) {
           // Gap indicator — bright when set, dim when not
-          this.ringGfx.lineStyle(8, 0xdda055, ring.isSet ? 0.85 : 0.4);
+          // On native (haptic available): suppress the bright gold
+          // visual cue when the ring is set — the player has to FEEL
+          // the correct position via haptic, not see it. On web: keep
+          // the visual cue since there's no haptic channel.
+          const gapAlpha = ring.isSet ? (isNative() ? 0.5 : 0.85) : 0.4;
+          this.ringGfx.lineStyle(8, 0xdda055, gapAlpha);
         } else if (isTrap) {
           // Trap notch — red so the player can spot the danger
           this.ringGfx.lineStyle(8, 0xcc4444, 0.85);
