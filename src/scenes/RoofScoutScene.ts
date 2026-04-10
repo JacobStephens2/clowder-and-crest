@@ -705,6 +705,17 @@ export class RoofScoutScene extends Phaser.Scene {
       summitVis.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
       summitVis.setDisplaySize(200, 14);
       this.physics.add.existing(summitVis, true);
+      // Per user feedback (2026-04-10): "there appears to be some
+      // invisible platform aspect to the top platform in roof scout,
+      // maybe the art doesn't match the game object size?" The sprite
+      // texture is 64x32 but displaySize is 200x14. Arcade physics
+      // creates the body from the texture dimensions, not the display
+      // dimensions, so the body was 64x32 with invisible collision
+      // zones 9px above and below the visual. Explicitly set the body
+      // to match the display size.
+      const summitBody = summitVis.body as Phaser.Physics.Arcade.StaticBody;
+      summitBody.setSize(200, 14);
+      summitBody.setOffset((64 - 200) / 2, (32 - 14) / 2);
       this.platforms.add(summitVis);
     } else {
       this.makePlatform(GAME_WIDTH / 2, TARGET_Y + 20, 200, 14, 0xdda055);

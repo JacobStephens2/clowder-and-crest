@@ -63,7 +63,7 @@ import { showGuildReport, showIntroStory, showTutorial } from './ui/onboarding';
 import { initJobFlow, showAssignOverlay, showResultOverlay, showPracticeResultOverlay, type ResultInfo, SPECIALIZATION_CATEGORIES } from './ui/jobFlow';
 import { initSessionFlow } from './systems/SessionFlow';
 import { isPracticeRun, endPracticeRun } from './systems/PracticeMode';
-import { setPendingTitleDayOfRestReopen } from './systems/Showcase';
+import { setPendingTitleDayOfRestReopen, consumePendingTitleDayOfRestReopen } from './systems/Showcase';
 import { initDayOfRest, showDayOfRestPanel } from './ui/DayOfRestPanel';
 
 // ──── Game State ────
@@ -1401,6 +1401,17 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
           gameState = stub;
           setPendingTitleDayOfRestReopen(true);
           switchScene('TitleScene');
+          // Belt-and-suspenders: if TitleScene.create() didn't
+          // consume the flag (edge case with scene lifecycle),
+          // this timeout picks it up. consumePending is idempotent
+          // (returns false the second time), so the panel can't
+          // open twice. Per user feedback (2026-04-10, fourth
+          // pass): RoofScout still hit the blank-screen path.
+          setTimeout(() => {
+            if (consumePendingTitleDayOfRestReopen()) {
+              showDayOfRestPanel(true);
+            }
+          }, 600);
           return;
         }
         switchScene('GuildhallScene');
@@ -1645,6 +1656,11 @@ eventBus.on('puzzle-quit', ({ jobId, catId }: any = {}) => {
           gameState = stub;
           setPendingTitleDayOfRestReopen(true);
           switchScene('TitleScene');
+          setTimeout(() => {
+            if (consumePendingTitleDayOfRestReopen()) {
+              showDayOfRestPanel(true);
+            }
+          }, 600);
           return;
         }
         switchScene('GuildhallScene');
