@@ -12,16 +12,51 @@
 // Allow markdown files at the root (claude-todo.md, jacob-done.md, etc)
 !/*.md
 !/*.apk
+!/*.png
+!/*.jpg
 
 // Allow the curated subdirectories that actually belong here
 !/archive
+!/archive/*
 !/archive/**
+!/art
+!/art/*
+!/art/**
 !/game
 !/game/*
 !/game/**
+!/history
+!/history/*
+!/history/**
+!/music
+!/music/*
+!/music/**
+!/pixel_art
+!/pixel_art/*
+!/pixel_art/**
+!/screenshots
+!/screenshots/*
+!/screenshots/**
+!/sound_effects
+!/sound_effects/*
+!/sound_effects/**
+!/story
+!/story/*
+!/story/**
+!/tech
+!/tech/*
+!/tech/**
 !/ideas
+!/ideas/*
 !/ideas/**
+!/iOS
+!/iOS/*
+!/iOS/**
+!/philosophy
+!/philosophy/*
+!/philosophy/**
 !/dialogue-full-screen-style-inspiration
+!/dialogue-full-screen-style-inspiration/*
 !/dialogue-full-screen-style-inspiration/**
 
 // Syncthing's own marker is auto-ignored by Syncthing itself, but belt-and-suspenders:
