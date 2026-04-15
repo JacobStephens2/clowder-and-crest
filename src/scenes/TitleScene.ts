@@ -325,9 +325,10 @@ export class TitleScene extends Phaser.Scene {
       if (summary) {
         const label = `Slot ${slot}: ${esc(summary.name)} — Day ${summary.day}, Ch.${summary.chapter}, ${summary.cats} cats`;
         html += `<button class="slot-btn" data-slot="${slot}" style="display:block;width:300px;padding:12px;margin:6px 0;background:#2a2520;border:1px solid #6b5b3e;border-radius:6px;color:#c4956a;font-family:Georgia,serif;font-size:13px;cursor:pointer;text-align:left">${label}</button>`;
-        if (mode === 'new') {
-          html += `<button class="slot-del" data-slot="${slot}" style="display:block;width:300px;padding:4px;margin:0 0 8px 0;background:none;border:none;color:#8b4444;font-family:Georgia,serif;font-size:10px;cursor:pointer;text-align:center">Delete this save</button>`;
-        }
+        // Delete button shows in BOTH modes (load + new). Previously
+        // only showed in "new" mode, so players couldn't delete saves
+        // from the Continue picker. Per user feedback (2026-04-15).
+        html += `<button class="slot-del" data-slot="${slot}" style="display:block;width:300px;padding:4px;margin:0 0 8px 0;background:none;border:none;color:#8b4444;font-family:Georgia,serif;font-size:10px;cursor:pointer;text-align:center">Delete this save</button>`;
       } else {
         if (mode === 'new') {
           html += `<button class="slot-btn" data-slot="${slot}" style="display:block;width:300px;padding:12px;margin:6px 0;background:#1a1614;border:1px dashed #3a3530;border-radius:6px;color:#6b5b3e;font-family:Georgia,serif;font-size:13px;cursor:pointer;text-align:left">Slot ${slot}: Empty</button>`;
