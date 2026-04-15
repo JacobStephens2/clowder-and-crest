@@ -129,7 +129,7 @@ export async function scheduleDailyReturnNotification(catName: string, hoursAhea
         title: 'The guildhall is quiet…',
         body: `${safeName} and the clowder are waiting for you to return.`,
         schedule: { at: fireAt, allowWhileIdle: true },
-        smallIcon: 'ic_stat_icon_config_sample',
+        smallIcon: 'ic_notify',
       }],
     });
     notificationsReady = true;
@@ -150,6 +150,31 @@ export async function cancelReturnNotification(): Promise<void> {
 
 export function notificationsScheduled(): boolean {
   return notificationsReady;
+}
+
+const CHAPTER_NOTIFICATION_ID = 8002;
+
+/**
+ * Fire an immediate local notification celebrating a chapter milestone.
+ * Only fires on native — web has no notification channel.
+ */
+export async function notifyChapterMilestone(chapter: number, title: string): Promise<void> {
+  if (!isNative()) return;
+  const granted = await ensureNotificationPermission();
+  if (!granted) return;
+  try {
+    await LocalNotifications.schedule({
+      notifications: [{
+        id: CHAPTER_NOTIFICATION_ID,
+        title: `Chapter ${chapter} — ${title}`,
+        body: 'Your guild has reached a new era. The clowder grows stronger.',
+        schedule: { at: new Date(Date.now() + 1000) },
+        smallIcon: 'ic_notify',
+      }],
+    });
+  } catch {
+    // Silent
+  }
 }
 
 // ──── App Lifecycle ────

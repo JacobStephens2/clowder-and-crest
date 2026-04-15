@@ -46,7 +46,7 @@ import { startBgm, toggleMute, isMuted, switchToPuzzleMusic, switchToFightMusic,
 import { playSfx } from './systems/SfxManager';
 import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDayEnd, pauseDayTimer, resumeDayTimer, isPaused } from './systems/DayTimer';
 import { startPlaytimeSession, pausePlaytimeSession } from './systems/PlaytimeTracker';
-import { initNative, registerAppLifecycle, scheduleDailyReturnNotification, cancelReturnNotification, haptic, writeAutoSnapshot, readAutoSnapshot, isNative } from './systems/NativeFeatures';
+import { initNative, registerAppLifecycle, scheduleDailyReturnNotification, cancelReturnNotification, notifyChapterMilestone, haptic, writeAutoSnapshot, readAutoSnapshot, isNative } from './systems/NativeFeatures';
 import { applyReputationShift, getReputationLabel, getReputationRecruitModifier, getReputationBonuses } from './systems/ReputationSystem';
 import { getComboMultiplier, updateCombo, getDailyWish, getCurrentFestival, trackEvent } from './systems/GameSystems';
 import { calculateDailyUpkeep, calculateOfflineStationedEarnings, calculateStationedDailyIncome } from './systems/GuildMetrics';
@@ -2189,14 +2189,15 @@ eventBus.on('chapter-advance', (chapter: number) => {
   if (gameState) addJournalEntry(gameState, `Chapter ${chapter}: ${name}`, 'chapter');
   showToast(`Chapter ${chapter}: ${name}`);
 
-  // Announce new minigame unlock
+  // Fire a native notification for the milestone
+  notifyChapterMilestone(chapter, name).catch(() => {});
+
+  // Announce new minigame unlocks (3 per chapter for Ch.1-5, 0 for Ch.6-7)
   const newMinigame: Record<number, string> = {
-    2: 'New approaches: Sprint (courier run) and Navigate (Sokoban)!',
-    3: 'New approaches: Patrol (lanterns) and Fight (brawl)!',
-    4: 'New approaches: Ritual (memory), Scent Trail, and Nonogram!',
-    5: 'New approaches: Slide Blocks and Vigil (fishing)!',
-    6: 'New approaches: Pounce (catapult) and Pick Lock (heist)!',
-    7: 'New approach: Stealth!',
+    2: 'New approaches: Sprint (courier run), Vigil (fishing), and Track (scent trail)!',
+    3: 'New approaches: Patrol (lanterns), Fight (brawl), and Rooftops (roof scout)!',
+    4: 'New approaches: Ritual (memory), Read Signs (nonogram), and Slide Blocks!',
+    5: 'New approaches: Pounce (catapult), Pick Lock (heist), and Stealth!',
   };
   if (newMinigame[chapter]) {
     setTimeout(() => showToast(newMinigame[chapter]), 2000);
