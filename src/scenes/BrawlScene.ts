@@ -32,7 +32,9 @@ const RAT_SIZE = 10;
 // Rat archetype — each type has distinct movement, windup, and attack
 // behavior. Per the doc's "use wave structure to teach rat types one at a
 // time": grunts wave 1, skirmishers introduced wave 2, boss on the final wave.
-type RatType = 'grunt' | 'skirmisher' | 'boss';
+// Per playtest (2026-04-18): "add more enemy types to the fight game."
+// Added 'archer' — a ranged rat that hangs back and throws projectiles.
+type RatType = 'grunt' | 'skirmisher' | 'archer' | 'boss';
 
 interface Rat {
   type: RatType;
@@ -522,8 +524,22 @@ export class BrawlScene extends Phaser.Scene {
         continue;
       }
 
-      // ── Walk toward cat ──
-      if (rdist > RAT_SIZE + CAT_SIZE) {
+      // ── Walk toward cat (or away for archers) ──
+      if (rat.type === 'archer') {
+        // Archers keep distance — flee if too close, approach if too far
+        const idealDist = 90;
+        if (rdist < idealDist - 10 && rdist > 0) {
+          // Too close — back away
+          const rspeed = rat.speed * 60 * dt;
+          rat.x -= (rdx / rdist) * rspeed;
+          rat.y -= (rdy / rdist) * rspeed;
+        } else if (rdist > idealDist + 30) {
+          // Too far — inch closer
+          const rspeed = rat.speed * 60 * dt * 0.5;
+          rat.x += (rdx / rdist) * rspeed;
+          rat.y += (rdy / rdist) * rspeed;
+        }
+      } else if (rdist > RAT_SIZE + CAT_SIZE) {
         const rspeed = rat.speed * 60 * dt;
         rat.x += (rdx / rdist) * rspeed;
         rat.y += (rdy / rdist) * rspeed;
@@ -621,6 +637,29 @@ export class BrawlScene extends Phaser.Scene {
       lunge in the cat's last-known direction. */
   private resolveRatAttack(rat: Rat): void {
     this.clearWindupFlash(rat);
+    // Archers fire a projectile toward the cat instead of lunging
+    if (rat.type === 'archer') {
+      const dx = this.catX - rat.x;
+      const dy = this.catY - rat.y;
+      const len = Math.max(0.001, Math.sqrt(dx * dx + dy * dy));
+      const proj = this.add.circle(rat.x, rat.y, 4, 0x8888cc);
+      const speed = 180;
+      this.tweens.add({
+        targets: proj,
+        x: rat.x + (dx / len) * speed,
+        y: rat.y + (dy / len) * speed,
+        duration: 800,
+        onUpdate: () => {
+          const pdist = Math.sqrt((proj.x - this.catX) ** 2 + (proj.y - this.catY) ** 2);
+          if (pdist < CAT_SIZE + 4 && this.invincibleTimer <= 0) {
+            this.applyHitToCat(1);
+            proj.destroy();
+          }
+        },
+        onComplete: () => proj.destroy(),
+      });
+      return;
+    }
     if (rat.type === 'skirmisher') {
       // Lunge in the direction of the cat at the moment the windup elapsed
       const dx = this.catX - rat.x;
@@ -900,10 +939,17 @@ export class BrawlScene extends Phaser.Scene {
     }
 
     for (let i = 0; i < count; i++) {
-      // Wave 2+ introduces skirmishers — about 1/3 of the spawns
-      const type: RatType = (this.wave >= 2 && i % 3 === 0) ? 'skirmisher' : 'grunt';
-      const hp = type === 'skirmisher' ? 1 : ratHp; // skirmishers always die in 1 hit
-      const sp = type === 'skirmisher' ? ratSpeed * 0.85 : ratSpeed;
+      // Wave 2+ introduces skirmishers (~1/3 of spawns)
+      // Wave 3+ introduces archers (~1/5 of spawns) — they keep
+      // distance from the player and are harder to reach.
+      let type: RatType = 'grunt';
+      if (this.wave >= 3 && i % 5 === 0) {
+        type = 'archer';
+      } else if (this.wave >= 2 && i % 3 === 0) {
+        type = 'skirmisher';
+      }
+      const hp = type === 'skirmisher' ? 1 : type === 'archer' ? 1 : ratHp;
+      const sp = type === 'skirmisher' ? ratSpeed * 0.85 : type === 'archer' ? ratSpeed * 0.5 : ratSpeed;
       this.spawnRat(type, hp, sp);
     }
   }
@@ -924,7 +970,16 @@ export class BrawlScene extends Phaser.Scene {
     // Rat body — use dedicated sprite per type when available, then
     // fall back to the generic rat sprite, then to hand-drawn shapes.
     const skirmisherKey = type === 'skirmisher' ? 'rat_skirmisher' : null;
-    if (skirmisherKey && this.textures.exists(skirmisherKey)) {
+    // Archers get a blue tint + a small "~" indicator (ranged attacker)
+    if (type === 'archer' && this.textures.exists('rat')) {
+      const spr = this.add.sprite(0, 0, 'rat');
+      spr.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      spr.setScale(0.7);
+      spr.setTint(0x8888cc);
+      container.add(spr);
+      const label = this.add.text(0, -14, '\u{1F3AF}', { fontSize: '8px' }).setOrigin(0.5);
+      container.add(label);
+    } else if (skirmisherKey && this.textures.exists(skirmisherKey)) {
       const spr = this.add.sprite(0, 0, skirmisherKey);
       spr.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
       spr.setScale(0.8);
