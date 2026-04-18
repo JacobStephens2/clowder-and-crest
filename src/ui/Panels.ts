@@ -87,7 +87,9 @@ export function showCatPanel(): void {
       : `<div class="cat-avatar" style="background:${color}"></div>`;
     const avatarHtml = `<button class="cat-portrait-btn" data-cat-id="${cat.id}" title="View portrait" style="background:none;border:none;padding:0;cursor:pointer">${avatarInner}</button>`;
 
-    html += `<div class="cat-card">
+    // Per playtest (2026-04-18): "touching anywhere on a cat's card,
+    // except the room assignment, brings up that cat's portrait."
+    html += `<div class="cat-card" data-cat-id="${cat.id}" style="cursor:pointer">
       <div class="cat-card-header">
         ${avatarHtml}
         <div style="flex:1">
@@ -166,13 +168,21 @@ export function showCatPanel(): void {
     });
   });
 
-  panel.querySelectorAll('.cat-portrait-btn').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const catId = btn.getAttribute('data-cat-id')!;
+  // Per playtest (2026-04-18): "touching anywhere on a cat's card
+  // brings up that cat's portrait." Both the portrait button AND the
+  // whole card trigger the popup. Sub-elements (rename, recall, room
+  // select) use stopPropagation so they don't also trigger the card.
+  panel.querySelectorAll('.cat-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      const catId = card.getAttribute('data-cat-id')!;
       const cat = gameState!.cats.find((c) => c.id === catId);
       if (!cat) return;
       showCatPortraitPopup(cat);
+    });
+  });
+  panel.querySelectorAll('.cat-portrait-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
     });
   });
 
