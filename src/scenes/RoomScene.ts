@@ -93,7 +93,12 @@ export class RoomScene extends Phaser.Scene {
       fontSize: '14px',
       color: '#8b7355',
     }).setInteractive({ useHandCursor: true });
-    backBtn.on('pointerdown', () => eventBus.emit('navigate', 'GuildhallScene'));
+    let navigating = false;
+    backBtn.on('pointerdown', () => {
+      if (navigating) return; // double-tap guard
+      navigating = true;
+      eventBus.emit('navigate', 'GuildhallScene');
+    });
     backBtn.on('pointerover', () => backBtn.setColor('#c4956a'));
     backBtn.on('pointerout', () => backBtn.setColor('#8b7355'));
 

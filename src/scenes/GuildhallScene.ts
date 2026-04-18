@@ -49,7 +49,15 @@ export class GuildhallScene extends Phaser.Scene {
     this.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
     const save = getGameState();
-    if (!save) return;
+    if (!save) {
+      // Per playtest (2026-04-18): "I come back to a blank view."
+      // If gameState is somehow null, show a recovery message instead
+      // of silently rendering an empty scene.
+      this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'Loading guild...', {
+        fontFamily: 'Georgia, serif', fontSize: '16px', color: '#8b7355',
+      }).setOrigin(0.5);
+      return;
+    }
 
     // Fade in
     this.cameras.main.fadeIn(300, 10, 9, 8);
