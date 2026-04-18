@@ -431,7 +431,7 @@ export class ChaseScene extends Phaser.Scene {
       // 130ms is just above the 120ms cat-tween duration so a tile
       // step finishes visually before the next one starts. Lower
       // values feel snappier; higher feel laggy.
-      cooldownMs: 130,
+      cooldownMs: 90, // tighter (was 130)
       onMoveTick: (dr, dc) => {
         if (this.caught) return;
         // Pac-man wall-slide: try the input direction first, and if
@@ -615,7 +615,7 @@ export class ChaseScene extends Phaser.Scene {
         this.catSprite.play(walkKey);
       }
       this.tweens.add({
-        targets: this.catSprite, x: dest.x, y: dest.y, duration: 120, ease: 'Sine.easeOut',
+        targets: this.catSprite, x: dest.x, y: dest.y, duration: 85, ease: 'Sine.easeOut',
         onComplete: () => {
           const idleDir = dr < 0 ? 'north' : dr > 0 ? 'south' : dc < 0 ? 'west' : 'east';
           this.catSprite?.setTexture(`${this.catBreed}_idle_${idleDir}`);
@@ -625,7 +625,7 @@ export class ChaseScene extends Phaser.Scene {
       });
     }
     if (this.catFallback) {
-      this.tweens.add({ targets: this.catFallback, x: dest.x, y: dest.y, duration: 120, ease: 'Sine.easeOut' });
+      this.tweens.add({ targets: this.catFallback, x: dest.x, y: dest.y, duration: 85, ease: 'Sine.easeOut' });
     }
 
     // Collect dots — with combo chain for mastery depth
