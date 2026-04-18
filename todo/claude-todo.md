@@ -5,12 +5,12 @@
 [x] play music during the initial tutorial
 [] add personality to the art of the lean to detail view
 [x] in the minigame completion screen, dont display"Perfect clears snowball your economy fastest"
-[] movement in chase could still feel tighter / responsive
+[x] movement in chase could still feel tighter / responsive
 [x] make it so chapter 1 introduces two job types / four mini games, to hook more interest initially
 [x] let the user click their fish total in the top menu to see their net daily fish expense / economy overview
 [x] the behind the grain market header in the guild scene is a bit obscured by the top row on the screen, same with the back button and header on The Lean-To screen
 [x] When I click back from the lean to screen, there I come back to a blank view rather than to seeing the guild rooms
-[] make each cat's intro / recruitment scene unique
+[x] make each cat's intro / recruitment scene unique
 [x] the chapter 2 intro scene got either skipped or obscured by the day end display I think
 [x] I was in the menu and clicked guild journal, but then the Siamese recruit screen appeared. I shouldn't be able to do Town clicks while the Menu display is up
 [x] I don't understand the difference between the red and green squares in the sprint game
@@ -29,13 +29,13 @@
 [x] don't have market festivals during the rat plague, as it thematically doesn't fit
 [] in the town scene, make it so the cat the player moves around is a cat that still hasn't worked that day
 [] when I'm in a room scene and I click another cat, the cats share a moment and I get redirected to the Town scene
-[] limit the buildings jobs can be fulfilled at. for example, if the job is about the docks, make it so that job can only be started at the docks
+[x] limit the buildings jobs can be fulfilled at. for example, if the job is about the docks, make it so that job can only be started at the docks
 [x] replace the different colored squares in the sprint scene with pixel art of different objects
 [x] when a player accepts a job, display the modal that shows afterwards at the bottom of the screen, not the top, so it doesn't obscure the player's town navigation
 [x] sometimes in the fight scene, it seems like an enemy is in my hitbox, but they don't get hit.
 [x] in the game completed screen, don't show the "Keep repeating... specialization" line. Let the player learn that through play
 [x] when a cat's stat increases, make it clear to the player what improved.
-[] add guild scenes that can happen before all the cats are recruited, such as when it is just the wildcat, russian blue, and tuxedo for example
+[x] add guild scenes that can happen before all the cats are recruited, such as when it is just the wildcat, russian blue, and tuxedo for example
 [x] one time i was doing the chase scene and i ran right through the rat without triggering a catch
 [x] add more enemy types to the fight game
 [x] make the strike button bigger in the fight game
@@ -45,10 +45,10 @@
 [x] when there are no more jobs for a given day, ask the player if they want to end the day
 [x] make it so touching anywhere in the cat list view on a cat's card, except the room assignment, brings up that cat's portrait
 [x] add an end day button to the bottom of the town scene
-[] ensure there is a scene for every cat pair relationship improvement, such as siamese and maine coon to acquaintance for example
-[] only show the traveling merchant items when the player clicks on the traveling merchant in the town to talk to him
+[x] ensure there is a scene for every cat pair relationship improvement, such as siamese and maine coon to acquaintance for example
+[x] only show the traveling merchant items when the player clicks on the traveling merchant in the town to talk to him
 [x] in the dialogues, move the art and text up so the player can click at the bottom right or left of the screen to advance the dialogue without physically obscuring the text
-[] in the bengal intro scene, use portrait art to show discussion between wildcat and bengal
+[x] in the bengal intro scene, use portrait art to show discussion between wildcat and bengal
 [x] add some game changing effect to opening each room. I feel like I should get some new option or power or something for getting the operations hall for example
 [x] there should be some more incentive to generally have some cats stationed in each different room in the guild, like they are there to maintain it or work it or something
 [x] when i defeated the rat plague, the chapter didnt advance to 4 as i expected
