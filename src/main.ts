@@ -1124,32 +1124,15 @@ eventBus.on('show-town-overlay', () => {
     ${!canAffordUpkeep ? '<br><strong>Warning: Cannot afford upkeep! A cat may leave the guild.</strong>' : ''}
   </div>`;
 
-  // Traveling merchant (appears every 3rd day, chapter 2+)
+  // Per playtest (2026-04-18): "only show the traveling merchant
+  // items when the player clicks on the traveling merchant in the
+  // town to talk to him." The merchant items were removed from the
+  // auto-displayed town overlay. The player now walks to the merchant
+  // sprite on the map and taps it to open the shop (handled by the
+  // 'show-merchant-overlay' event). A hint is shown if the merchant
+  // is in town today.
   if (gameState.chapter >= 2 && gameState.day % 3 === 0) {
-    const merchantItems = [
-      { name: 'Catnip Elixir', cost: 25, effect: 'All cats mood +1 tier', id: 'elixir' },
-      { name: 'Lucky Fishbone', cost: 15, effect: '+20% reward on next job', id: 'fishbone' },
-      { name: 'Training Scroll', cost: 30, effect: '+1 to a random stat for one cat', id: 'scroll' },
-      { name: 'Saint\'s Blessing', cost: 40, effect: 'Prevents next mood drop', id: 'blessing' },
-    ];
-    // Pick 2 random items
-    const shuffledItems = merchantItems.sort(() => Math.random() - 0.5).slice(0, 2);
-
-    html += `<div class="town-section-divider"></div>`;
-    html += `<div class="town-section-title">\u{1F9D9} Traveling Merchant</div>`;
-    html += `<div style="padding:0 12px 8px;font-size:11px;color:#6b5b3e;font-family:Georgia,serif">A wandering merchant passes through town today.</div>`;
-    shuffledItems.forEach((item) => {
-      const canBuy = gameState!.fish >= item.cost;
-      html += `<div class="town-job-card" style="padding:8px 12px">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div style="color:#c4956a;font-size:13px">${item.name}</div>
-            <div style="color:#6b5b3e;font-size:11px">${item.effect}</div>
-          </div>
-          <button class="town-job-accept merchant-buy ${canBuy ? '' : 'disabled'}" data-merchant-id="${item.id}" ${canBuy ? '' : 'disabled'}>${item.cost} Fish</button>
-        </div>
-      </div>`;
-    });
+    html += `<div style="padding:4px 12px;font-size:11px;color:#dda055;font-style:italic;text-align:center">\u{1F9D9} A traveling merchant is in town today. Find them to browse their wares.</div>`;
   }
 
   // End Day button
@@ -1162,10 +1145,8 @@ eventBus.on('show-town-overlay', () => {
   overlay.innerHTML = html;
   overlayLayer.appendChild(overlay);
 
-  // Play merchant sound if merchant is present
-  if (gameState.chapter >= 2 && gameState.day % 3 === 0) {
-    playSfx('merchant', 0.3);
-  }
+  // Merchant sound now plays when the player clicks the merchant
+  // sprite in the town scene, not when the overlay opens.
 
   // Wire up job accept buttons
   overlay.querySelectorAll('.town-job-accept').forEach((btn) => {
@@ -1372,11 +1353,32 @@ eventBus.on('start-accepted-job', () => {
 // building on the map a place the player can enter to view a new
 // scene that is inside that building."
 eventBus.on('enter-building', (buildingId: string) => {
+  // Per playtest (2026-04-18): "limit the buildings jobs can be
+  // fulfilled at. All jobs should be building locked." Match the
+  // accepted job's puzzleSkin to the entered building. If mismatch,
+  // show the building interior instead.
   if (acceptedJob && gameState) {
-    const job = acceptedJob;
-    acceptedJob = null;
-    showAssignOverlay(job);
-    return;
+    // Map puzzleSkin to building ID. Most match directly; a few need
+    // aliases (granary→mill, bakery→mill, ship→docks, estate→castle).
+    const skinToBuilding: Record<string, string> = {
+      mill: 'mill', granary: 'mill', bakery: 'mill',
+      cathedral: 'cathedral', chapel: 'cathedral',
+      docks: 'docks', ship: 'docks', harbor: 'docks',
+      tavern: 'tavern',
+      castle: 'castle', estate: 'castle', treasury: 'castle', gate: 'castle',
+      market: 'market', town: 'market', herbalist: 'market', caravan: 'market',
+      monastery: 'monastery',
+    };
+    const jobBuilding = skinToBuilding[acceptedJob.puzzleSkin ?? ''] ?? 'market';
+    if (buildingId === jobBuilding || buildingId === 'market') {
+      // Match (or market is the generic fallback)
+      const job = acceptedJob;
+      acceptedJob = null;
+      showAssignOverlay(job);
+      return;
+    }
+    // Wrong building — show a hint
+    showToast(`This job needs to be done at the ${jobBuilding}. Head there to start.`);
   }
   switchScene('BuildingInteriorScene', { buildingId });
 });
