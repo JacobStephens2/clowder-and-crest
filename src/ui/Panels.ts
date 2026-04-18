@@ -340,6 +340,22 @@ export function showMenuPanel(): void {
 
   deps.overlayLayer.querySelectorAll('.panel:not(#panel-overlay)').forEach((el) => el.remove());
 
+  // Pause all active Phaser scenes so their pointer handlers don't
+  // fire on taps that visually land on the menu overlay. Per playtest
+  // (2026-04-18): "I was in the menu and clicked guild journal, but
+  // then the Siamese recruit screen appeared. I shouldn't be able to
+  // do Town clicks while the Menu display is up."
+  const clowderGame = (window as unknown as { __clowderGame?: Phaser.Game }).__clowderGame;
+  const pausedKeys: string[] = [];
+  if (clowderGame) {
+    for (const scene of clowderGame.scene.getScenes(true)) {
+      const key = scene.scene.key;
+      if (key === 'BootScene') continue;
+      clowderGame.scene.pause(key);
+      pausedKeys.push(key);
+    }
+  }
+
   const panel = document.createElement('div');
   panel.className = 'menu-overlay';
 
@@ -401,7 +417,15 @@ export function showMenuPanel(): void {
 
   deps.overlayLayer.appendChild(panel);
 
-  document.getElementById('menu-close')!.addEventListener('click', () => panel.remove());
+  document.getElementById('menu-close')!.addEventListener('click', () => {
+    panel.remove();
+    // Resume the scenes we paused on open
+    if (clowderGame) {
+      for (const key of pausedKeys) {
+        if (clowderGame.scene.isPaused(key)) clowderGame.scene.resume(key);
+      }
+    }
+  });
 
   document.getElementById('menu-achievements')!.addEventListener('click', () => {
     panel.remove();
