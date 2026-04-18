@@ -52,8 +52,12 @@ const FESTIVALS = [
   { name: 'Guild Anniversary', bonus: 'All jobs pay +50%. Celebrate!', category: 'all', multiplier: 1.5 },
 ];
 
-export function getCurrentFestival(day: number): typeof FESTIVALS[number] | null {
+export function getCurrentFestival(day: number, save?: { flags: Record<string, any> }): typeof FESTIVALS[number] | null {
   if (day % 7 !== 0 || day === 0) return null;
+  // Per playtest (2026-04-18): "don't have market festivals during
+  // the rat plague, as it thematically doesn't fit." Suppress
+  // festivals while the plague is active.
+  if (save?.flags?.ratPlagueStarted && !save?.flags?.ratPlagueResolved) return null;
   return FESTIVALS[(day / 7) % FESTIVALS.length];
 }
 
