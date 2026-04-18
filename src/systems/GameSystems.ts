@@ -28,14 +28,21 @@ export function getDailyWish(day: number, cats: { id: string; name: string }[], 
     { wish: 'wants a fish treat', reward: '+5 mood', furniture: 'fish_barrel' },
     { wish: 'wants to explore a room', reward: '+2 bond' },
     { wish: 'wants to scratch something', reward: '+1 agility', furniture: 'scratching_post' },
-    { wish: 'wants to nap in a warm spot', reward: '+3 mood', furniture: 'straw_bed' },
+    // Per playtest (2026-04-18): "this should be able to be fulfilled
+    // by any sleeping furniture." Changed from straw_bed to any of the
+    // three sleeping-room items.
+    { wish: 'wants to nap in a warm spot', reward: '+3 mood', furniture: 'straw_bed', altFurniture: ['woolen_blanket', 'cushioned_basket'] },
     { wish: 'wants to play with a friend', reward: '+3 bond', furniture: 'potted_catnip' },
   ];
   const pick = wishes[(day * 1013) % wishes.length];
 
-  // Check if player has the required furniture
-  if (pick.furniture && ownedFurniture && !ownedFurniture.includes(pick.furniture)) {
-    return { catId: cat.id, catName: cat.name, wish: pick.wish, reward: pick.reward, requiresFurniture: pick.furniture };
+  // Check if player has the required furniture (or an alternative)
+  if (pick.furniture && ownedFurniture) {
+    const allOptions = [pick.furniture, ...(pick.altFurniture ?? [])];
+    const hasFurniture = allOptions.some(f => ownedFurniture.includes(f));
+    if (!hasFurniture) {
+      return { catId: cat.id, catName: cat.name, wish: pick.wish, reward: pick.reward, requiresFurniture: pick.furniture };
+    }
   }
 
   return { catId: cat.id, catName: cat.name, wish: pick.wish, reward: pick.reward };
