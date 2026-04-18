@@ -226,7 +226,16 @@ export function showChoiceOverlay(job: JobDef, catIndex: number): void {
             add('nonogram', '\u{1F4DC} Crack Code', 4);
             break;
         }
-        if (opts.length === 0) add('chase', '\u{1F400} Chase', 1);
+        // Per playtest (2026-04-18): "ensure each job always has at
+        // least two approaches / two game options to fulfill it."
+        if (opts.length === 0) {
+          add('chase', '\u{1F400} Chase', 1);
+          add('hunt', '\u{1F3AF} Hunt', 1);
+        } else if (opts.length === 1) {
+          // Add a second option from the closest available category
+          if (!opts[0].includes('Chase')) add('chase', '\u{1F400} Chase', 1);
+          else add('hunt', '\u{1F3AF} Hunt', 1);
+        }
         return opts.join('\n');
       })()}
     </div>
