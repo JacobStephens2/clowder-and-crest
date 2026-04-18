@@ -179,7 +179,15 @@ export function getNextChapterHint(save: SaveData): string | null {
   if (save.totalJobsCompleted < next.jobs) needs.push(`${next.jobs} jobs done (have ${save.totalJobsCompleted})`);
   if (save.totalFishEarned < next.fish) needs.push(`${next.fish} total fish earned (have ${save.totalFishEarned})`);
   if (next.chapter === 4 && !save.flags.ratPlagueResolved) needs.push('resolve the Rat Plague');
-  if (next.chapter === 5 && !save.flags.longWinterResolved) needs.push('survive the Long Winter');
+  // Per playtest (2026-04-18): "i came to a point in chapter 4
+  // where i felt like i was stuck... i didnt know how to trigger the
+  // long winter." The hint now explains that the Long Winter triggers
+  // automatically after several days in Ch.4.
+  if (next.chapter === 5 && !save.flags.longWinterStarted) {
+    needs.push('wait for the Long Winter (it arrives after a few days in Chapter 4)');
+  } else if (next.chapter === 5 && !save.flags.longWinterResolved) {
+    needs.push('survive the Long Winter (keep the guild fed and warm)');
+  }
   if (next.chapter === 7 && !save.flags.rivalDefeated) needs.push('defeat the Silver Paws');
 
   if (needs.length === 0) return 'Chapter advancing soon...';

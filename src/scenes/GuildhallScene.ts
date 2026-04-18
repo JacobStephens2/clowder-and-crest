@@ -11,7 +11,7 @@ const BREEDS_WITH_SPRITES = new Set(ALL_BREED_IDS as readonly string[]);
 const ROOM_WIDTH = 340;
 const ROOM_HEIGHT = 180;
 const ROOM_GAP = 16;
-const ROOM_START_Y = 100;
+const ROOM_START_Y = 120;
 
 interface RoomDef {
   id: string;
@@ -115,13 +115,16 @@ export class GuildhallScene extends Phaser.Scene {
       crest.setScale(0.25);
       crest.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
     }
-    this.add.text(GAME_WIDTH / 2, 55, hallName, {
+    // Per playtest (2026-04-18): "the behind the grain market header
+    // is a bit obscured by the top row on the screen." Pushed title
+    // from y=55 to y=70 so it clears the status bar.
+    this.add.text(GAME_WIDTH / 2, 70, hallName, {
       fontFamily: 'Georgia, serif',
       fontSize: '22px',
       color: '#c4956a',
     }).setOrigin(0.5);
 
-    this.add.text(GAME_WIDTH / 2, 76, `Chapter ${save.chapter}: ${chapterName}`, {
+    this.add.text(GAME_WIDTH / 2, 91, `Chapter ${save.chapter}: ${chapterName}`, {
       fontFamily: 'Georgia, serif',
       fontSize: '12px',
       color: '#6b5b3e',
@@ -130,7 +133,7 @@ export class GuildhallScene extends Phaser.Scene {
     // Chapter progress hint
     const progressHint = getNextChapterHint(save);
     if (progressHint) {
-      this.add.text(GAME_WIDTH / 2, 90, progressHint, {
+      this.add.text(GAME_WIDTH / 2, 105, progressHint, {
         fontFamily: 'Georgia, serif',
         fontSize: '9px',
         color: '#6b8ea6',
