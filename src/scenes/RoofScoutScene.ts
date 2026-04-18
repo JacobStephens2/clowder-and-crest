@@ -309,6 +309,10 @@ export class RoofScoutScene extends Phaser.Scene {
   private catId = '';
   private catBreed = 'wildcat';
   private difficulty: 'easy' | 'medium' | 'hard' = 'easy';
+  /** Per-difficulty climb height. Hard mode uses a shorter climb per
+   *  playtest (2026-04-18): "decrease the height of the hard rooftop
+   *  levels. They take too long to complete right now." */
+  private targetY = TARGET_Y;
 
   // Player + physics
   private player!: Phaser.Physics.Arcade.Sprite;
@@ -392,6 +396,9 @@ export class RoofScoutScene extends Phaser.Scene {
     this.catId = data?.catId ?? '';
     this.catBreed = data?.catBreed ?? 'wildcat';
     this.difficulty = data?.difficulty ?? 'easy';
+    // Hard mode: shorter climb (TARGET_Y + 400) so it doesn't drag.
+    // Medium: standard. Easy: standard (easy mode already has no-fail).
+    this.targetY = this.difficulty === 'hard' ? TARGET_Y + 500 : TARGET_Y;
     this.fishCollected = 0;
     this.highestY = START_Y;
     this.lastCheckpointY = START_Y;
@@ -689,7 +696,7 @@ export class RoofScoutScene extends Phaser.Scene {
 
     let anchorY = START_Y - 60;
     let chunkIndex = 0;
-    while (anchorY > TARGET_Y + CHUNK_HEIGHT) {
+    while (anchorY > this.targetY + CHUNK_HEIGHT) {
       const tier = this.pickTierForAnchor(anchorY);
       const eligible = CHUNKS.filter((c) => c.difficulty === tier);
       const chunk = eligible[chunkIndex % eligible.length];
@@ -701,7 +708,7 @@ export class RoofScoutScene extends Phaser.Scene {
     // Final summit platform — the win zone. Uses the summit sprite if
     // available; falls back to a gold rectangle.
     if (this.textures.exists('roof_summit')) {
-      const summitVis = this.add.sprite(GAME_WIDTH / 2, TARGET_Y + 20, 'roof_summit');
+      const summitVis = this.add.sprite(GAME_WIDTH / 2, this.targetY + 20, 'roof_summit');
       summitVis.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
       summitVis.setDisplaySize(200, 14);
       this.physics.add.existing(summitVis, true);
@@ -718,9 +725,9 @@ export class RoofScoutScene extends Phaser.Scene {
       summitBody.setOffset((64 - 200) / 2, (32 - 14) / 2);
       this.platforms.add(summitVis);
     } else {
-      this.makePlatform(GAME_WIDTH / 2, TARGET_Y + 20, 200, 14, 0xdda055);
+      this.makePlatform(GAME_WIDTH / 2, this.targetY + 20, 200, 14, 0xdda055);
     }
-    this.add.text(GAME_WIDTH / 2, TARGET_Y - 10, 'WATCHPOINT', {
+    this.add.text(GAME_WIDTH / 2, this.targetY - 10, 'WATCHPOINT', {
       fontFamily: 'Georgia, serif', fontSize: '12px', color: '#dda055',
     }).setOrigin(0.5);
   }
@@ -736,7 +743,7 @@ export class RoofScoutScene extends Phaser.Scene {
       // tutorial climb.
       return 1;
     }
-    const climbProgress = 1 - (anchorY - TARGET_Y) / (START_Y - TARGET_Y);
+    const climbProgress = 1 - (anchorY - this.targetY) / (START_Y - this.targetY);
     // hard runs ramp faster; medium splits roughly thirds
     const offset = this.difficulty === 'hard' ? 0.15 : 0;
     const t = climbProgress + offset;
@@ -1110,7 +1117,7 @@ export class RoofScoutScene extends Phaser.Scene {
 
     // Update HUD
     const climbProgress = Math.max(0, Math.min(1,
-      (START_Y - this.highestY) / (START_Y - TARGET_Y)
+      (START_Y - this.highestY) / (START_Y - this.targetY)
     ));
     this.heightText.setText(`${Math.floor(climbProgress * 100)}%`);
     const barTop = 80;
@@ -1118,7 +1125,7 @@ export class RoofScoutScene extends Phaser.Scene {
     this.heightBar.height = (barBottom - barTop) * climbProgress;
 
     // Win condition — touch the watchpoint Y
-    if (this.player.y <= TARGET_Y + 30 && onGround) {
+    if (this.player.y <= this.targetY + 30 && onGround) {
       this.endRun(true);
     }
   }
@@ -1298,7 +1305,7 @@ export class RoofScoutScene extends Phaser.Scene {
         eventBus.emit('puzzle-complete', {
           puzzleId: `roof_scout_${this.difficulty}`,
           moves: Math.floor(START_Y - this.highestY),
-          minMoves: Math.floor(START_Y - TARGET_Y),
+          minMoves: Math.floor(START_Y - this.targetY),
           stars,
           jobId: this.jobId,
           catId: this.catId,
