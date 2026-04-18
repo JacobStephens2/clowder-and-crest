@@ -30,16 +30,18 @@ export function getJob(id: string): JobDef | undefined {
 export function generateDailyJobs(save: SaveData): JobDef[] {
   let available = [...allJobs];
 
-  // Filter by chapter progression
+  // Filter by chapter progression. Per playtest (2026-04-18): Ch.1
+  // now opens both pest_control + courier (4 minigames on day 1) to
+  // hook the player with variety from the start.
   if (save.chapter < 2) {
-    // Chapter 1: only easy pest control
-    available = available.filter((j) => j.category === 'pest_control' && j.difficulty === 'easy');
+    // Chapter 1: pest control + courier, easy only
+    available = available.filter((j) => ['pest_control', 'courier'].includes(j.category) && j.difficulty === 'easy');
   } else if (save.chapter < 3) {
-    // Chapter 2: pest control + courier, no hard
-    available = available.filter((j) => ['pest_control', 'courier'].includes(j.category) && j.difficulty !== 'hard');
+    // Chapter 2: pest control + courier + detection, no hard
+    available = available.filter((j) => ['pest_control', 'courier', 'detection'].includes(j.category) && j.difficulty !== 'hard');
   } else if (save.chapter < 4) {
     // Chapter 3: all categories unlock, no hard for new ones
-    available = available.filter((j) => j.difficulty !== 'hard' || ['pest_control', 'courier'].includes(j.category));
+    available = available.filter((j) => j.difficulty !== 'hard' || ['pest_control', 'courier', 'detection'].includes(j.category));
   }
   // Chapter 4+: everything available
 
