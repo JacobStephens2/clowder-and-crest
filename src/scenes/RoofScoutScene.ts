@@ -325,6 +325,11 @@ export class RoofScoutScene extends Phaser.Scene {
   private wallJumpCue!: Phaser.GameObjects.Triangle;
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
   private fishGroup!: Phaser.Physics.Arcade.Group;
+  /** Enemies that patrol platforms. Touching one ends the run.
+   *  Only spawn on medium/hard. Per playtest (2026-04-18): "add
+   *  enemies into the rooftop game that if the player touches them
+   *  the player loses the level." */
+  private enemyGroup!: Phaser.Physics.Arcade.Group;
 
   // Game-feel state
   private lastGroundedTime = -Infinity;
@@ -559,6 +564,20 @@ export class RoofScoutScene extends Phaser.Scene {
       this.collectFish(fish as Phaser.GameObjects.Rectangle);
     });
 
+    // Enemies — patrol on platforms, touching one ends the run.
+    // Only on medium/hard per playtest (2026-04-18).
+    this.enemyGroup = this.physics.add.group();
+    if (this.difficulty !== 'easy') {
+      this.spawnEnemies();
+      this.physics.add.overlap(this.player, this.enemyGroup, () => {
+        if (!this.finished) {
+          playSfx('hiss', 0.5);
+          haptic.error();
+          this.endRun(false);
+        }
+      });
+    }
+
     this.cameras.main.startFollow(this.player, true);
     // Y-only smooth follow — instant X (player rarely strays), eased Y
     // so the climb feels grounded instead of jittery on every jump arc.
@@ -659,6 +678,7 @@ export class RoofScoutScene extends Phaser.Scene {
       this.input.off('pointerup');
       this.platforms?.clear(true, true);
       this.fishGroup?.clear(true, true);
+      this.enemyGroup?.clear(true, true);
     });
 
     eventBus.emit('show-ui');
@@ -815,6 +835,53 @@ export class RoofScoutScene extends Phaser.Scene {
       repeat: -1,
       ease: 'Sine.easeInOut',
     });
+  }
+
+  /** Spawn patrolling enemies on random platforms. Each enemy is a
+   *  small red circle that tweens left-right on its platform. Touching
+   *  one calls endRun(false). Only spawns on medium/hard. */
+  private spawnEnemies(): void {
+    const platforms = this.platforms.getChildren();
+    // Pick ~20% of platforms to host an enemy (skip the ground floor
+    // and the summit)
+    const candidates = platforms.filter((p) => {
+      const plat = p as Phaser.GameObjects.Rectangle;
+      const py = plat.y ?? 0;
+      return py < START_Y - 100 && py > this.targetY + 60;
+    });
+    const enemyCount = this.difficulty === 'hard' ? Math.ceil(candidates.length * 0.25) : Math.ceil(candidates.length * 0.15);
+    const shuffled = [...candidates].sort(() => Math.random() - 0.5);
+    for (let i = 0; i < Math.min(enemyCount, shuffled.length); i++) {
+      const plat = shuffled[i] as Phaser.GameObjects.Rectangle;
+      const ex = plat.x;
+      const ey = plat.y - 12;
+      let enemy: Phaser.GameObjects.GameObject;
+      if (this.textures.exists('rat')) {
+        const spr = this.add.sprite(ex, ey, 'rat');
+        spr.setScale(0.6);
+        spr.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        spr.setTint(0xff6666);
+        enemy = spr;
+      } else {
+        enemy = this.add.circle(ex, ey, 6, 0xcc4444);
+      }
+      this.physics.add.existing(enemy);
+      const body = (enemy as any).body as Phaser.Physics.Arcade.Body;
+      body.setAllowGravity(false);
+      body.setImmovable(true);
+      body.setCircle(6);
+      this.enemyGroup.add(enemy);
+      // Patrol tween: left-right on the platform
+      const halfW = (plat.width ?? 40) / 2 - 10;
+      this.tweens.add({
+        targets: enemy,
+        x: { from: ex - halfW, to: ex + halfW },
+        duration: 1500 + Math.random() * 1000,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
   }
 
   // ── Update loop ──
