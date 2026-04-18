@@ -19,8 +19,11 @@ const ARENA_BOTTOM = ARENA_TOP + ARENA_H;
 // ── Cat stats (base values, modified by cat stats in init) ──
 const CAT_SIZE = 16;
 const BASE_SPEED = 2.5;
-const BASE_ATTACK_RANGE = 52;
-const BASE_ATTACK_ARC = Math.PI * 0.8; // 144 degree swing
+// Per playtest (2026-04-18): "sometimes in the fight scene, it seems
+// like an enemy is in my hitbox, but they don't get hit." Bumped range
+// 52→62 and arc from 144°→180° (full semicircle) for more forgiving hits.
+const BASE_ATTACK_RANGE = 62;
+const BASE_ATTACK_ARC = Math.PI; // 180 degree swing
 const BASE_ATTACK_COOLDOWN = 400; // ms
 
 // ── Rat stats ──
