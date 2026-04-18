@@ -651,8 +651,15 @@ export class ChaseScene extends Phaser.Scene {
       this.burstParticles(dest.x, dest.y, 0x6abe3f, 20);
     }
 
-    // Check if caught rat
-    if (nr === this.ratPos.r && nc === this.ratPos.c) {
+    // Check if caught rat. Per playtest (2026-04-18): "one time i was
+    // doing the chase scene and i ran right through the rat without
+    // triggering a catch." The exact-cell check can miss if the cat
+    // and rat are moving toward each other. Added a 1-cell proximity
+    // check as a fallback — if the cat is within 1 tile of the rat
+    // in both axes, count it as a catch.
+    const ratDr = Math.abs(nr - this.ratPos.r);
+    const ratDc = Math.abs(nc - this.ratPos.c);
+    if (ratDr <= 1 && ratDc <= 1 && (ratDr + ratDc) <= 1) {
       this.catCaughtRat();
     }
 
