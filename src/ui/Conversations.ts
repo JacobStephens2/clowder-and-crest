@@ -458,8 +458,10 @@ function showConversation(breedA: string, breedB: string, rank: string, opts: Co
       <img id="portrait-img-right" alt="" style="height:240px;width:auto;max-width:55vw;filter:drop-shadow(2px 4px 6px rgba(0,0,0,0.5))" />
     </div>
 
-    <!-- Text box at bottom — z-index:2 so it sits above the portraits. -->
-    <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(10,9,8,0.95) 20%);padding:20px 20px 30px;min-height:130px;z-index:2">
+    <!-- Text box — raised from bottom:0 to bottom:50px so the player
+         can tap the bottom corners to advance without obscuring the
+         text. Per playtest (2026-04-18). -->
+    <div style="position:absolute;bottom:50px;left:0;right:0;background:linear-gradient(transparent,rgba(10,9,8,0.95) 20%);padding:20px 20px 30px;min-height:130px;z-index:2">
       <div id="conv-speaker" style="color:#c4956a;font-family:Georgia,serif;font-size:15px;margin-bottom:6px;font-weight:bold"></div>
       <div id="conv-expression" style="color:#8b7355;font-family:Georgia,serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;min-height:12px"></div>
       <div id="conv-text" style="color:#d4c5a9;font-family:Georgia,serif;font-size:14px;line-height:1.6"></div>

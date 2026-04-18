@@ -428,18 +428,21 @@ const THEMED_LEVELS: Record<string, SokobanLevel[]> = {
       // crates on the same row as their targets, perfectly aligned for a
       // straight east push. Teaches: "you walk INTO a crate and it slides
       // away from you."
+      // Per playtest (2026-04-18): "make the easy sokoban games a bit
+      // more difficult." Added wall obstacles so the player needs to
+      // route around them instead of straight-line pushing.
       name: 'First Push',
       concept: 'Walk into a crate to push it. You can\'t pull.',
       grid: [
         [1,1,1,1,1,1,1],
         [1,2,2,2,2,2,1],
+        [1,2,2,2,1,2,1],
         [1,2,2,2,2,2,1],
-        [1,2,2,2,2,2,1],
-        [1,2,2,2,2,2,1],
+        [1,2,2,2,1,2,1],
         [1,2,2,2,2,2,1],
         [1,1,1,1,1,1,1],
       ],
-      playerStart: { r: 2, c: 1 },
+      playerStart: { r: 3, c: 1 },
       crates: [{ r: 2, c: 3 }, { r: 4, c: 3 }],
       targets: [{ r: 2, c: 5 }, { r: 4, c: 5 }],
       minMoves: 0, // computed at load
