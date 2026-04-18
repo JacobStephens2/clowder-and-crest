@@ -55,7 +55,12 @@ export function generateDailyJobs(save: SaveData): JobDef[] {
     available = available.filter((j) => j.id !== 'crest_pilgrimage');
   }
 
-  const count = Math.min(3 + Math.floor(save.chapter / 2), available.length);
+  // Per playtest (2026-04-18): "make sure there are always enough
+  // jobs in a day for the number of cats in the guild." The base is
+  // 3 + chapter/2, but never fewer than the roster size so every cat
+  // can work if the player wants.
+  const baseCount = 3 + Math.floor(save.chapter / 2);
+  const count = Math.min(Math.max(baseCount, save.cats.length), available.length);
 
   // Chapter 3 rat plague: guarantee at least one pest control job each
   // day so the plague is always advanceable, but the remaining slots
