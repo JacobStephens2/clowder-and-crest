@@ -1819,6 +1819,24 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
     return { foodCost: 0, stationedEarned: 0, events: [], fishRemaining: 0 };
   }
 
+  // Room unlock passive bonuses. Per playtest (2026-04-18): "add
+  // some game changing effect to opening each room." Operations Hall
+  // shows a job preview toast (intel report); Kitchen adds +1 fish/day.
+  const events: string[] = [];
+  const hasKitchen = gameState.rooms.some((r: any) => r.id === 'kitchen' && r.unlocked);
+  const hasOps = gameState.rooms.some((r: any) => r.id === 'operations' && r.unlocked);
+  if (hasKitchen) {
+    gameState.fish += 1;
+    gameState.totalFishEarned += 1;
+    events.push('Kitchen earned +1 fish.');
+  }
+  if (hasOps) {
+    // Show a preview of tomorrow's best job category
+    const categories = ['pest_control', 'courier', 'guard', 'sacred', 'detection'];
+    const tomorrowCat = categories[gameState.day % categories.length];
+    events.push(`Operations intel: tomorrow favors ${tomorrowCat.replace('_', ' ')} work.`);
+  }
+
   // Plague escalation — daily pressure while plague is active
   if (gameState.flags.ratPlagueStarted && !gameState.flags.ratPlagueResolved) {
     const plagueDays = gameState.day - (numFlag("plagueDayStarted") || gameState.day);
@@ -2176,7 +2194,7 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
     }, 1800);
   }
 
-  const events = stationedResults.filter((r) => r.event).map((r) => r.event!);
+  events.push(...stationedResults.filter((r) => r.event).map((r) => r.event!));
   return { foodCost, stationedEarned: stationedTotal, events, fishRemaining: gameState.fish };
 }
 
