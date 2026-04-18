@@ -67,13 +67,10 @@ function closeToTownIfNeeded(): void {
 }
 
 function getChoiceGuidance(job: JobDef, cat: SaveData['cats'][number]): string[] {
+  // Per playtest (2026-04-18): removed verbose strategic advice lines.
+  // The game should teach through play, not lecture. Keep only the
+  // stat-match score which is functional feedback, not meta-advice.
   const guidance: string[] = [];
-  if (cat.specialization === job.category) guidance.push('Specialization matches this job, so long-term XP here compounds well.');
-  if (!cat.specialization && cat.level >= 4) guidance.push('This cat is close to specialization; repeated work in the same category will define its role.');
-  if (job.category === 'guard' || job.category === 'sacred') guidance.push('This work pushes the guild toward Crest-aligned play and safer civic standing.');
-  if (job.category === 'detection' || job.category === 'shadow') guidance.push('This work strengthens the guild’s shadow side and unlock pressure/reputation tradeoffs.');
-  if (job.category === 'pest_control' && cat.stats.hunting >= 6) guidance.push('Strong hunting cats make this one of the cleanest fish-to-risk conversions in the roster.');
-  if (job.category === 'courier' && hasTrait(cat, 'curious')) guidance.push('Curious cats can turn courier work into unusually efficient income.');
   return guidance.slice(0, 2);
 }
 
@@ -418,11 +415,12 @@ export function showResultOverlay(info: ResultInfo): void {
   overlay.className = 'result-overlay';
   const starsStr = '&#11088;'.repeat(info.stars) + '&#9734;'.repeat(3 - info.stars);
   const movesStr = info.moves != null ? `<br>Moves: ${info.moves} (target: ${info.minMoves})` : '';
+  // Per playtest (2026-04-18): removed the "Perfect clears snowball"
+  // and "Keep repeating... specialization" lecture lines. The game
+  // should teach through play, not text. Keep only the fish balance.
   const strategicReads = [
-    info.stars === 3 ? 'Perfect clears snowball your economy fastest.' : 'A clear still advances bonds, XP, and the day economy.',
-    gameState ? `Guild balance after this job: ${gameState.fish} fish.` : '',
-    info.leveled ? `${info.catName} is pushing deeper into a long-term role.` : 'Keep repeating strong-fit work to shape this cat’s eventual specialization.',
-  ].filter(Boolean).map((line) => `<div style="font-size:11px;color:#6b8ea6;margin-top:4px">${line}</div>`).join('');
+    gameState ? `Guild balance: ${gameState.fish} fish.` : ‘’,
+  ].filter(Boolean).map((line) => `<div style="font-size:11px;color:#6b8ea6;margin-top:4px">${line}</div>`).join(‘’);
   const highlightHtml = (info.highlights ?? []).slice(0, 3).map((line) =>
     `<div style="font-size:10px;color:#c4956a;margin-top:4px">${esc(line)}</div>`
   ).join('');
