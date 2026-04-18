@@ -2307,7 +2307,12 @@ eventBus.on('chapter-advance', (chapter: number) => {
   // here keeps the prose in one place.
   const chapterIntro = buildChapterIntroScene(chapter, { catName, catBreed, reputationLabel: repLabel });
   if (chapterIntro) {
-    setTimeout(() => showNarrativeOverlay(chapterIntro), 1500);
+    // Per playtest (2026-04-18): "the chapter 2 intro scene got
+    // either skipped or obscured by the day end display." The chapter
+    // advance fires during day-end processing, and the day-transition
+    // overlay was still showing when the intro tried to appear 1500ms
+    // later. Bumped to 4000ms so the day-end has time to be dismissed.
+    setTimeout(() => showNarrativeOverlay(chapterIntro), 4000);
   }
 });
 
