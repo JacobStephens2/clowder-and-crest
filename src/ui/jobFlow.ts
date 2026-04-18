@@ -232,7 +232,7 @@ export function showChoiceOverlay(job: JobDef, catIndex: number): void {
     <div style="margin-top:16px;padding-top:12px;border-top:1px solid #3a3530">
       ${cat.level >= 2
         ? `<button class="btn-station" id="btn-do-station">Station Here (~${dailyEarning} fish/day)</button>
-           <div style="font-size:11px;color:#6b5b3e;margin-top:6px;text-align:center">Stationing trades today’s active reward for steadier income. Rotate after 5 days for best returns.</div>`
+           <div style="font-size:11px;color:#6b5b3e;margin-top:6px;text-align:center">Stationing trades today's active reward for steadier income. Rotate after 5 days for best returns.</div>`
         : `<div style="font-size:12px;color:#555;text-align:center;padding:8px 0">Stationing unlocks at level 2</div>`
       }
     </div>
@@ -419,8 +419,8 @@ export function showResultOverlay(info: ResultInfo): void {
   // and "Keep repeating... specialization" lecture lines. The game
   // should teach through play, not text. Keep only the fish balance.
   const strategicReads = [
-    gameState ? `Guild balance: ${gameState.fish} fish.` : ‘’,
-  ].filter(Boolean).map((line) => `<div style="font-size:11px;color:#6b8ea6;margin-top:4px">${line}</div>`).join(‘’);
+    gameState ? `Guild balance: ${gameState.fish} fish.` : '',
+  ].filter(Boolean).map((line) => `<div style="font-size:11px;color:#6b8ea6;margin-top:4px">${line}</div>`).join('');
   const highlightHtml = (info.highlights ?? []).slice(0, 3).map((line) =>
     `<div style="font-size:10px;color:#c4956a;margin-top:4px">${esc(line)}</div>`
   ).join('');
