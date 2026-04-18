@@ -417,7 +417,14 @@ html, body {
   height: 100%;
   background: rgba(20, 18, 16, 0.96);
   z-index: 25;
-  padding: 50px 20px 80px;
+  /* Per playtest (2026-04-18): "display the modal at the bottom of
+     the screen, not the top, so it doesn't obscure navigation."
+     Changed from top-aligned (padding-top:50px) to bottom-aligned
+     using flexbox so the content sits in the lower half. */
+  padding: 20px 20px 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   overflow-y: auto;
   animation: fadeSlideIn 0.3s ease;
 }

@@ -1577,9 +1577,12 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
   let xp = xpMap[job.difficulty] ?? 30;
   const repXpBonus = getReputationBonuses(gameState.reputationScore).xpBonus;
   if (repXpBonus !== 0) xp = Math.max(1, Math.floor(xp * (1 + repXpBonus)));
-  const leveled = addXp(cat, xp);
+  const leveledStat = addXp(cat, xp);
+  const leveled = !!leveledStat;
   if (leveled) {
-    addJournalEntry(gameState, `${esc(cat.name)} reached level ${cat.level}!`, 'level');
+    // Per playtest (2026-04-18): "when a cat's stat increases, make
+    // it clear to the player what improved."
+    addJournalEntry(gameState, `${esc(cat.name)} reached level ${cat.level}! (${leveledStat} +1)`, 'level');
   }
 
   // Bond points (with rank-up celebration + mechanical stat reward).
