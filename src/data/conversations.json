@@ -1534,5 +1534,70 @@
         }
       ]
     }
+  ],
+  "russian_blue_maine_coon": [
+    {
+      "rank": "C",
+      "title": "The Quiet and the Loud",
+      "lines": [
+        { "speaker": "maine_coon", "text": "You're always watching. Don't you ever just... do things?" },
+        { "speaker": "russian_blue", "text": "I watch so I know what to do when it matters." },
+        { "speaker": "maine_coon", "text": "...That's actually clever. Don't tell anyone I said that." },
+        { "speaker": "russian_blue", "text": "I won't need to. I watch, remember?" }
+      ]
+    },
+    {
+      "rank": "B",
+      "title": "Complementary Skills",
+      "lines": [
+        { "speaker": "russian_blue", "text": "You know what I've noticed? When you charge in, people look at you." },
+        { "speaker": "maine_coon", "text": "Obviously. I'm enormous." },
+        { "speaker": "russian_blue", "text": "Which means they're not looking at me. That's useful." },
+        { "speaker": "maine_coon", "text": "Are you saying I'm your distraction?" },
+        { "speaker": "russian_blue", "text": "I'm saying we work well together. Take the compliment." }
+      ]
+    },
+    {
+      "rank": "A",
+      "title": "Trust Without Words",
+      "lines": [
+        { "speaker": "maine_coon", "text": "Remember that night patrol? The one where we didn't speak for three hours?" },
+        { "speaker": "russian_blue", "text": "We didn't need to. You watched the ground. I watched the rooftops." },
+        { "speaker": "maine_coon", "text": "I think that's the closest I've ever felt to another cat." },
+        { "speaker": "russian_blue", "text": "Me too. And we didn't waste a single word on it." }
+      ]
+    }
+  ],
+  "group_first_three": [
+    {
+      "rank": "group",
+      "title": "Three Cats, One Lean-To",
+      "lines": [
+        { "speaker": "wildcat", "text": "So. There are three of us now." },
+        { "speaker": "russian_blue", "text": "I've counted. The lean-to is... snug." },
+        { "speaker": "tuxedo", "text": "I've reorganized the fish stores. You're welcome." },
+        { "speaker": "wildcat", "text": "Did anyone ask you to—" },
+        { "speaker": "tuxedo", "text": "No one needed to. It was obvious." },
+        { "speaker": "russian_blue", "text": "...They're not wrong. The old system was chaos." },
+        { "speaker": "wildcat", "text": "Fine. But next time, ask. This is a guild, not a kingdom." },
+        { "speaker": "tuxedo", "text": "Noted. Though I do look rather regal, don't I?" }
+      ]
+    }
+  ],
+  "group_four_cats": [
+    {
+      "rank": "group",
+      "title": "The Full Table",
+      "lines": [
+        { "speaker": "maine_coon", "text": "There's no room left on the sleeping pile." },
+        { "speaker": "siamese", "text": "That's because you take up half of it." },
+        { "speaker": "maine_coon", "text": "I can't help my magnificence." },
+        { "speaker": "tuxedo", "text": "We need more beds. And a system. I've drafted a rotation." },
+        { "speaker": "russian_blue", "text": "You drafted a rotation for sleeping?" },
+        { "speaker": "tuxedo", "text": "Someone had to." },
+        { "speaker": "wildcat", "text": "Four cats. We actually look like a guild now." },
+        { "speaker": "siamese", "text": "We look like a mess. But we're OUR mess. That counts for something." }
+      ]
+    }
   ]
 }

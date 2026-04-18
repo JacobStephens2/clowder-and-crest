@@ -870,8 +870,48 @@ function showCatArrivalScene(name: string, breedName: string, breedId: string, o
   const playerName = esc(gameState.playerCatName);
   const chapter = gameState.chapter;
 
+  // Per playtest (2026-04-18): "make each cat's intro / recruitment
+  // scene unique." Each breed now has its own arrival narrative that
+  // reflects the cat's personality and circumstances.
+  const breedScenes: Record<string, string[]> = {
+    russian_blue: [
+      `${escName} had been watching the lean-to from across the market for three days.`,
+      `Quiet. Calculating. Not unfriendly — just careful.`,
+      `On the third evening, ${playerName} left a fish at the tarp's edge without looking back.`,
+      `By morning, ${escName} was inside. They never spoke about those three days.`,
+    ],
+    tuxedo: [
+      `${escName} arrived as if for an appointment no one had made.`,
+      `The ${escBreed} surveyed the lean-to with the air of a butler inspecting a new estate.`,
+      `"It needs work," ${escName} said, smoothing a paw. "But I've worked with worse."`,
+      `${playerName} had the sudden feeling that ${escName} was interviewing them, not the other way around.`,
+    ],
+    maine_coon: [
+      `The ground shook — or seemed to. ${escName} the ${escBreed} filled the doorway like a small, furry wall.`,
+      `"Heard you needed muscle," ${escName} rumbled. "Also heard you had fish."`,
+      `${playerName} looked up. And up. And decided this was exactly the kind of help a guild needed.`,
+      `${escName} settled in the largest spot, claimed it instantly, and began grooming as if they'd always been there.`,
+    ],
+    siamese: [
+      `${escName} arrived mid-conversation — with a mouse, apparently. The mouse did not survive the anecdote.`,
+      `"I have opinions," the ${escBreed} announced. "About everything. You'll learn to value them."`,
+      `${playerName} opened their mouth to respond, but ${escName} was already rearranging the furniture.`,
+      `By nightfall, ${escName} had reorganized the fish stores, critiqued the bedding, and somehow made the whole place feel more alive.`,
+    ],
+    bengal: [
+      `The knock came after midnight. ${escName} stood in the rain, breathing hard.`,
+      `"I was with the Silver Paws," the ${escBreed} said. No apology. No excuse. Just fact.`,
+      `${playerName} studied those fierce, honest eyes. Whatever had happened with the rivals, this cat had walked away from it.`,
+      `"We don't ask where cats come from," ${playerName} said. "Only where they're going."`,
+      `${escName} stepped inside. The rain kept falling, but the guildhall held.`,
+    ],
+  };
+
+  // Use breed-specific scenes if available; fall back to chapter-tier generics.
   let scenes: string[];
-  if (chapter <= 2) {
+  if (breedScenes[breedId]) {
+    scenes = breedScenes[breedId];
+  } else if (chapter <= 2) {
     scenes = [
       `${escName} the ${escBreed} stepped through the lean-to's tarp at dusk.`,
       `${playerName} set down a small fish bone — half a meal, but offered with both paws.`,
