@@ -517,15 +517,22 @@ export class CourierRunScene extends Phaser.Scene {
   }
 
   private spawnObstacleAt(lane: number, x: number): void {
+    // Per playtest (2026-04-18): "replace the different colored squares
+    // in the sprint scene with pixel art of different objects" + "I don't
+    // understand the difference between the red and green squares." Using
+    // the existing block sprites (barrel, crate, cart, flour_sack, pew)
+    // loaded in BootScene gives each obstacle a distinct visual identity.
+    const obstacleKeys = ['barrel_sprite', 'block_crate', 'block_cart', 'block_flour_sack', 'block_pew'];
+    const availableKeys = obstacleKeys.filter(k => this.textures.exists(k));
     let gfx: Phaser.GameObjects.Rectangle | Phaser.GameObjects.Sprite;
-    if (this.textures.exists('barrel_sprite') && Math.random() < 0.5) {
-      const barrel = this.add.sprite(x, LANE_Y[lane], 'barrel_sprite');
-      barrel.setScale(0.8);
-      barrel.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
-      gfx = barrel;
+    if (availableKeys.length > 0) {
+      const key = availableKeys[Math.floor(Math.random() * availableKeys.length)];
+      const spr = this.add.sprite(x, LANE_Y[lane], key);
+      spr.setScale(0.8);
+      spr.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      gfx = spr;
     } else {
-      const colors = [0x4a3a28, 0x3a4a28, 0x4a2a2a, 0x2a3a4a];
-      const obs = this.add.rectangle(x, LANE_Y[lane], 30, 30, colors[Math.floor(Math.random() * colors.length)]);
+      const obs = this.add.rectangle(x, LANE_Y[lane], 30, 30, 0x4a3a28);
       obs.setStrokeStyle(1, 0x2a2018);
       gfx = obs;
     }
