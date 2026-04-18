@@ -173,6 +173,7 @@ export function showChoiceOverlay(job: JobDef, catIndex: number): void {
     <button class="panel-close" id="choice-close">&times;</button>
     <h2>${job.name}</h2>
     <div class="job-desc">${esc(cat.name)} the ${BREED_NAMES[cat.breed] ?? cat.breed} is ready.</div>
+    <div style="font-size:12px;color:${job.difficulty === 'hard' ? '#cc6666' : job.difficulty === 'medium' ? '#dda055' : '#4a8a4a'};margin-bottom:4px;text-align:center;text-transform:capitalize">${job.difficulty} difficulty</div>
     <div style="font-size:11px;color:#6b5b3e;margin-bottom:8px;text-align:center">Choose your approach:</div>
     ${guidanceHtml}
     ${momentHtml}
