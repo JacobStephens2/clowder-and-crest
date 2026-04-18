@@ -316,9 +316,11 @@ export class BrawlScene extends Phaser.Scene {
 
     // Attack button (visual only — hit detection in global pointerdown)
     const atkBtnX = GAME_WIDTH - 55;
-    this.add.rectangle(atkBtnX, joyY, 60, 60, 0x5a2a20, 0.8).setStrokeStyle(2, 0xcc6666);
+    // Per playtest (2026-04-18): "make the strike button bigger in
+    // the fight game." Bumped from 60x60 to 80x80.
+    this.add.rectangle(atkBtnX, joyY, 80, 80, 0x5a2a20, 0.8).setStrokeStyle(2, 0xcc6666);
     this.add.text(atkBtnX, joyY, '\u2694\uFE0F', { fontSize: '24px' }).setOrigin(0.5);
-    this.atkBtnBounds = { x: atkBtnX, y: joyY, size: 60 };
+    this.atkBtnBounds = { x: atkBtnX, y: joyY, size: 80 };
 
     // Quit button
     const quitBtn = this.add.rectangle(45, joyY, 60, 34, 0x2a2520);
