@@ -144,11 +144,16 @@ export function isRestDay(save: SaveData): boolean {
 export function checkRatPlagueResolution(save: SaveData): boolean {
   if (!save.flags.ratPlagueStarted || save.flags.ratPlagueResolved) return false;
 
-  // Plague resolves after completing 5 pest control jobs during the plague
-  // Uses a counter that tracks every completion (not just unique job IDs)
-  const plaguePestDone = Number(save.flags.plaguePestDone ?? 0);
+  // Per playtest (2026-04-18): plague resolution was using a
+  // pest_control-only counter (plaguePestDone) while the progress
+  // toast used totalJobsCompleted. The player saw "4/5" on the toast
+  // but the actual counter never moved because they were doing guard
+  // jobs. Now both use the same logic: any 5 jobs done since the
+  // plague started count toward resolution.
+  const baseline = Number(save.flags.prePlaguePestJobs ?? 0);
+  const progress = save.totalJobsCompleted - baseline;
 
-  if (plaguePestDone >= 5) {
+  if (progress >= 5) {
     save.flags.ratPlagueResolved = true;
     eventBus.emit('rat-plague-resolved');
     return true;
