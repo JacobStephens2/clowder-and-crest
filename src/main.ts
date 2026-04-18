@@ -1819,10 +1819,32 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
     return { foodCost: 0, stationedEarned: 0, events: [], fishRemaining: 0 };
   }
 
+  // Day-end events collected for the recap overlay
+  const events: string[] = [];
+
+  // Per playtest (2026-04-18): "cats should lose morale if there
+  // isn't a bed for them." Count sleeping furniture with catCapacity
+  // effect; unbedded cats lose one mood tier per day.
+  const bedCount = gameState.furniture.filter((fp) => {
+    return ['straw_bed', 'woolen_blanket', 'cushioned_basket'].includes(fp.furnitureId);
+  }).length;
+  if (bedCount < gameState.cats.length) {
+    const unbeddedCount = gameState.cats.length - bedCount;
+    // Drop mood for the last N cats (non-player) who don't have beds
+    const nonPlayerCats = gameState.cats.filter((c: any) => !c.isPlayer);
+    for (let i = 0; i < Math.min(unbeddedCount, nonPlayerCats.length); i++) {
+      const cat = nonPlayerCats[nonPlayerCats.length - 1 - i];
+      if (cat.mood === 'happy') cat.mood = 'content';
+      else if (cat.mood === 'content') cat.mood = 'tired';
+    }
+    if (unbeddedCount > 0) {
+      events.push(`${unbeddedCount} cat${unbeddedCount > 1 ? 's' : ''} slept on the floor \u2014 mood dropped.`);
+    }
+  }
+
   // Room unlock passive bonuses. Per playtest (2026-04-18): "add
   // some game changing effect to opening each room." Operations Hall
   // shows a job preview toast (intel report); Kitchen adds +1 fish/day.
-  const events: string[] = [];
   const hasKitchen = gameState.rooms.some((r: any) => r.id === 'kitchen' && r.unlocked);
   const hasOps = gameState.rooms.some((r: any) => r.id === 'operations' && r.unlocked);
   if (hasKitchen) {
