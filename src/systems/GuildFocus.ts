@@ -38,7 +38,7 @@ export function getGuildFocusLines(save: SaveData): FocusLine[] {
   if (wish && !save.flags[`wish_day_${save.day}`]) {
     lines.push({
       color: '#c4956a',
-      text: `${wish.catName}'s wish is still open. Small morale swings stack over long runs.`,
+      text: `${wish.catName}'s wish is still open.`,
     });
   }
 
