@@ -9,7 +9,7 @@
 [x] make it so chapter 1 introduces two job types / four mini games, to hook more interest initially
 [x] let the user click their fish total in the top menu to see their net daily fish expense / economy overview
 [x] the behind the grain market header in the guild scene is a bit obscured by the top row on the screen, same with the back button and header on The Lean-To screen
-[] When I click back from the lean to screen, there I come back to a blank view rather than to seeing the guild rooms
+[x] When I click back from the lean to screen, there I come back to a blank view rather than to seeing the guild rooms
 [] make each cat's intro / recruitment scene unique
 [x] the chapter 2 intro scene got either skipped or obscured by the day end display I think
 [x] I was in the menu and clicked guild journal, but then the Siamese recruit screen appeared. I shouldn't be able to do Town clicks while the Menu display is up
@@ -22,7 +22,7 @@
 [x] make it more clear when the lean to changes into the guildhall
 [] in the town scene, when i click a cat, make the cat i am controlling move to that cat before that cat's response is displayed
 [x] decrease the height of the hard rooftop levels. They take too long to complete right now
-[] add enemies into the rooftop game that if the player touches them the player loses the level
+[x] add enemies into the rooftop game that if the player touches them the player loses the level
 [x] remove the small morale swings stack over time note from the day end summary
 [x] make the easy sokobond games a bit more difficult
 [x] enable the new job type(s) of chapter three to progress the rat plague progress bar
@@ -36,8 +36,8 @@
 [x] in the game completed screen, don't show the "Keep repeating... specialization" line. Let the player learn that through play
 [x] when a cat's stat increases, make it clear to the player what improved.
 [] add guild scenes that can happen before all the cats are recruited, such as when it is just the wildcat, russian blue, and tuxedo for example
-[] one time i was doing the chase scene and i ran right through the rat without triggering a catch
-[] add more enemy types to the fight game
+[x] one time i was doing the chase scene and i ran right through the rat without triggering a catch
+[x] add more enemy types to the fight game
 [x] make the strike button bigger in the fight game
 [] let the player hold down a cat in the room view to switch their control to thay cat, so I could for example make the tuxedo interact with the scratching post
 [] if a cat has a wish, such as wanting catnip, then the player gets catnip, upon viewing the room the object is placed in, that cat should be shown interacting with that object, and at this point either the wish is fulfilled or then the fish cost is presented if that still needs to be paid
@@ -64,4 +64,4 @@
 [x] automatically save the game at the end of each day
 [x] make the do not tap rats in the rat hunt easier to distinguish from the to tap rats
 [x] make it clear to the player how many rats the player should tap in the rat hunt game in order to get a good score / at least two stars
-[] unlock furniture throughout the game, by chapter progression or job completion, and or other ways. let the player know when new furniture has been unlocked
+[x] unlock furniture throughout the game, by chapter progression or job completion, and or other ways. let the player know when new furniture has been unlocked
