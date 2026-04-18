@@ -200,7 +200,7 @@ export function showChoiceOverlay(job: JobDef, catIndex: number): void {
             break;
           case 'courier':
             add('sokoban', '\u{1F4E6} Navigate', 1);
-            add('courier_run', '\u{1F3C3} Sprint', 2);
+            add('courier_run', '\u{1F3C3} Sprint', 1);
             add('roof_scout', '\u{1F3D8}\u{FE0F} Rooftops', 3);
             add('puzzle', '\u{1F9E9} Slide Blocks', 4);
             break;
