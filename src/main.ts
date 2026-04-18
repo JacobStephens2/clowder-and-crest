@@ -328,7 +328,11 @@ document.body.appendChild(guildEndDayBtn);
 
 // Floating wish banner for guild view
 const guildWishBanner = document.createElement('div');
-guildWishBanner.style.cssText = 'display:none;position:fixed;top:38px;left:50%;transform:translateX(-50%);width:340px;padding:8px 12px;background:rgba(42,37,32,0.95);border:1px solid #6b5b3e;border-radius:8px;z-index:500;font-family:Georgia,serif;';
+// Per playtest (2026-04-18): "when showing a wish in the town scene,
+// put it at the bottom of the screen rather than the top." Moved
+// from top:38px to bottom:90px so it doesn't obscure the cat or
+// navigation at the top.
+guildWishBanner.style.cssText = 'display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%);width:340px;padding:8px 12px;background:rgba(42,37,32,0.95);border:1px solid #6b5b3e;border-radius:8px;z-index:500;font-family:Georgia,serif;';
 document.body.appendChild(guildWishBanner);
 
 function updateGuildWishBanner(): void {
