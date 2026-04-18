@@ -230,9 +230,14 @@ export class HuntScene extends Phaser.Scene {
     //
     // Bumped to v3 when the tutorial was cut from 4 explained mechanics
     // down to 1, so returning players see the new shorter version.
-    if (showMinigameTutorial(this, 'clowder_hunt_tutorial_v3', 'Hunt the Rats!',
-      `Tap the rats as they pop from their holes.<br><br>
-      Skip the <strong style="color:#cc6666">red ones</strong> — they bite back.`,
+    // Per playtest (2026-04-18): "make it clear to the player how
+    // many rats the player should tap" + "make the do not tap rats
+    // easier to distinguish." Updated tutorial text.
+    if (showMinigameTutorial(this, 'clowder_hunt_tutorial_v4', 'Hunt the Rats!',
+      `Tap the rats as they pop from their holes. The more you catch, the more stars you earn.<br><br>
+      <strong style="color:#cc6666">Red rats</strong> are poisonous — don't tap them!<br>
+      <strong style="color:#8888aa">Pale, small rats</strong> are decoys — ignore them.<br>
+      <strong style="color:#ffd700">Gold rats</strong> are worth bonus points!`,
       () => { this.tutorialShowing = false; }
     )) {
       this.tutorialShowing = true;
@@ -452,6 +457,14 @@ export class HuntScene extends Phaser.Scene {
       ratSprite.setScale(isGolden ? 1.2 : 1.0);
       if (isGolden) ratSprite.setTint(0xffd700);
       if (isPoison) ratSprite.setTint(0xcc3333);
+      // Per playtest (2026-04-18): "make the do not tap rats in the
+      // rat hunt easier to distinguish from the to tap rats." Fake
+      // rats (peek + doublepop) get a blue-grey tint + smaller scale
+      // so the player can see "something's off" before tapping.
+      if (isPeek || isDoublePop) {
+        ratSprite.setTint(0x8888aa);
+        ratSprite.setScale(0.85);
+      }
       gfx = ratSprite;
     } else {
       const ratGfx = this.add.graphics();
