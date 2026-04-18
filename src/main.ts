@@ -1043,7 +1043,7 @@ eventBus.on('show-town-overlay', () => {
         </div>
         <div class="town-job-desc">${getJobFlavor(job.id, job.category, gameState!.day) || job.description}</div>
         <div class="town-job-bottom">
-          <span class="town-job-reward">${job.baseReward}-${job.maxReward} Fish</span>
+          <span class="town-job-reward">${job.baseReward}-${job.maxReward}+ Fish</span>
           <span class="town-job-stats">${job.keyStats.join(', ')}</span>
           <button class="town-job-accept" data-job-id="${job.id}">Accept</button>
         </div>
