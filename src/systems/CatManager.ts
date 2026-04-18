@@ -79,7 +79,10 @@ export function createCat(breed: string, name: string): CatSaveData {
   };
 }
 
-export function addXp(cat: CatSaveData, amount: number): boolean {
+/** Add XP to a cat. Returns the stat name that improved on level-up,
+ *  or null if no level-up occurred. Per playtest (2026-04-18): "when a
+ *  cat's stat increases, make it clear to the player what improved." */
+export function addXp(cat: CatSaveData, amount: number): string | null {
   cat.xp += amount;
   const threshold = cat.level * 100;
   if (cat.xp >= threshold && cat.level < 5) {
@@ -90,9 +93,9 @@ export function addXp(cat: CatSaveData, amount: number): boolean {
     const pool: StatName[] = [...(def?.statBias ?? []), ...Object.keys(cat.stats) as StatName[]];
     const chosen = pick(pool);
     cat.stats[chosen] = Math.min(10, cat.stats[chosen] + 1);
-    return true;
+    return chosen;
   }
-  return false;
+  return null;
 }
 
 export function getAvailableRecruits(save: SaveData): BreedDef[] {
