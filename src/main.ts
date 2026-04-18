@@ -457,6 +457,25 @@ guildWishBanner.addEventListener('click', (event) => {
 });
 
 // ──── UI Helpers ────
+// Per playtest (2026-04-18): "let the user click their fish total
+// in the top menu to see their net daily fish expense / economy
+// overview." Tap the fish count to show a brief overlay.
+statusFish.style.cursor = 'pointer';
+statusFish.addEventListener('click', () => {
+  if (!gameState) return;
+  const cats = gameState.cats.length;
+  const rooms = gameState.rooms.filter((r: any) => r.unlocked).length;
+  const dailyUpkeep = cats * 2 + rooms;
+  const stationedIncome = gameState.stationedCats?.length ?? 0;
+  const netDaily = stationedIncome * 2 - dailyUpkeep;
+  const sign = netDaily >= 0 ? '+' : '';
+  showToast(
+    `Daily economy: ${cats} cats + ${rooms} rooms = -${dailyUpkeep} fish upkeep. ` +
+    `${stationedIncome} stationed = +${stationedIncome * 2} income. ` +
+    `Net: ${sign}${netDaily} fish/day. Balance: ${gameState.fish} fish.`
+  );
+});
+
 let lastFishCount = -1;
 function updateStatusBar(): void {
   if (!gameState) return;
