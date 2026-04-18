@@ -554,6 +554,10 @@ eventBus.on('game-loaded', (save: SaveData) => {
 setOnDayEnd(() => {
   if (!gameState) return;
   const recap = advanceDay();
+  // Auto-save at end of each day so the player never loses progress.
+  // Per playtest (2026-04-18): "automatically save the game at the
+  // end of each day."
+  saveGame(gameState);
   showDayTransitionOverlay(gameState.day, () => playSfx('day_bell', 0.4), gameState, recap);
   const townOverlay = overlayLayer.querySelector('.town-overlay');
   if (townOverlay) {
