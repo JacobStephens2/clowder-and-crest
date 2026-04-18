@@ -1818,13 +1818,15 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
       gameState.fish = Math.max(0, gameState.fish - plagueUpkeep);
     }
 
-    // Show plague progress
-    const pestControlDone = gameState.completedJobs.filter((id) =>
-      ['mill_mousing', 'granary_patrol', 'cathedral_mousing', 'warehouse_clearing', 'ship_hold',
-       'tavern_cellar', 'dockside_patrol', 'bakery_guard', 'castle_ratcatcher'].includes(id)
-    ).length;
+    // Show plague progress. Per playtest (2026-04-18): "enable the
+    // new job type(s) of chapter three to progress the rat plague
+    // progress bar." Guard + sacred jobs now count alongside pest
+    // control — the town benefits from all guild work, not just
+    // ratcatching. Uses totalJobsCompleted (a simple counter) minus
+    // a baseline snapshot taken when the plague started.
+    const plagueJobs = gameState.totalJobsCompleted;
     const prePlagueCount = numFlag("prePlaguePestJobs");
-    const plagueProgress = Math.min(5, pestControlDone - prePlagueCount);
+    const plagueProgress = Math.min(5, plagueJobs - prePlagueCount);
     if (plagueProgress > 0 && plagueProgress < 5) {
       showToast(`Plague progress: ${plagueProgress}/5 rat nests cleared. The town needs ${5 - plagueProgress} more.`);
     }
