@@ -312,8 +312,8 @@ export class RitualScene extends Phaser.Scene {
     // ramp). Per-candle pentatonic tone is the dual-channel signal,
     // layered with a distinct mp3 SFX so the ear-cue is unmistakable
     // even on speakers that don't reproduce the synth pitch well.
-    candle.glow.setAlpha(0.9);
-    candle.glow.setScale(1.3);
+    candle.glow.setAlpha(1);
+    candle.glow.setScale(1.6);
     this.playTone(this.getCandleFrequency(idx), flashMs / 1000 * 0.85, 0.28);
     playSfx(CANDLE_SFX[idx % CANDLE_SFX.length], 0.18);
     this.time.delayedCall(flashMs, () => {
@@ -332,9 +332,9 @@ export class RitualScene extends Phaser.Scene {
     // so the player sees a consistent response. Per user feedback
     // (2026-04-10): "when a player taps a candle, light up that
     // candle like when they light up in the pattern demonstration."
-    candle.glow.setAlpha(0.9);
-    candle.glow.setScale(1.3);
-    this.time.delayedCall(250, () => {
+    candle.glow.setAlpha(1);
+    candle.glow.setScale(1.6);
+    this.time.delayedCall(450, () => {
       candle.glow.setAlpha(0);
       candle.glow.setScale(1);
     });
