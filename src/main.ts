@@ -2202,6 +2202,12 @@ eventBus.on('chapter-advance', (chapter: number) => {
   // Fire a native notification for the milestone
   notifyChapterMilestone(chapter, name).catch(() => {});
 
+  // Per playtest (2026-04-18): "make it more clear when the lean to
+  // changes into the guildhall." Show a toast at Ch.2 noting the upgrade.
+  if (chapter === 2) {
+    setTimeout(() => showToast('The Lean-To has been upgraded to proper Sleeping Quarters.'), 3000);
+  }
+
   // Announce new minigame unlocks (3 per chapter for Ch.1-5, 0 for Ch.6-7)
   const newMinigame: Record<number, string> = {
     2: 'New approaches: Sprint (courier run), Vigil (fishing), and Track (scent trail)!',
@@ -2245,30 +2251,19 @@ eventBus.on('chapter-advance', (chapter: number) => {
 
 eventBus.on('rat-plague-start', () => {
   if (gameState) {
-    gameState.flags.prePlaguePestJobs = gameState.completedJobs.filter((id) =>
-      ['mill_mousing', 'granary_patrol', 'cathedral_mousing', 'warehouse_clearing', 'ship_hold',
-       'tavern_cellar', 'dockside_patrol', 'bakery_guard', 'castle_ratcatcher'].includes(id)
-    ).length;
+    // Baseline for plague progress = total jobs at plague start.
+    // All job completions after this point count toward resolution.
+    gameState.flags.prePlaguePestJobs = gameState.totalJobsCompleted;
     gameState.flags.plagueDayStarted = gameState.day;
     addJournalEntry(gameState, 'The Rat Plague has begun. The town is under siege.', 'event');
   }
 
-  showNarrativeOverlay({
-    scenes: [
-      // False-summit warmth (story-audit-council.md item 4) — let the player
-      // feel what's about to be threatened before it lands.
-      'The morning before had been quiet. The baker waved as the guild passed. A child had reached up to touch a tail, and the mother had laughed instead of pulling her back.',
-      'It had felt — for the first time — like belonging.',
-      // Reversal begins.
-      'The granary fell first. Rats poured from the walls like dark water, overrunning the flour stores in a single night.',
-      'By morning, the cathedral cellar was lost. The monks fled to the upper floors. The market stalls were abandoned.',
-      'The townsfolk whispered of St. Rosalia — how her bones once drove plague from Palermo. But there were no saints\' bones here. Only cats.',
-      `${esc(gameState?.playerCatName ?? 'The wildcat')} gathered the guild. This was no ordinary job. This was a siege. The town's survival depended on them.`,
-      'Complete 5 pest control jobs to drive the rats from the town. The guild will be tested. Not every day will be easy.',
-    ],
-    image: 'assets/sprites/scenes/town_plague.png',
-    onScene: (i) => { if (i === 2) playSfx('thunder'); },
-  });
+  // Per playtest (2026-04-18): "it seemed like there were two chapter
+  // three intro scenes. There should only be one." The plague narrative
+  // was a second showNarrativeOverlay call that stacked on top of the
+  // chapter-advance intro. Now the plague content is merged INTO the
+  // chapter 3 intro in chapterScenes.ts, and this handler only sets
+  // the game-state flags (prePlaguePestJobs, plagueDayStarted).
 });
 
 eventBus.on('rat-plague-resolved', () => {
