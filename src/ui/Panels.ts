@@ -673,7 +673,12 @@ export function showFurnitureShop(): void {
   if (!gameState) return;
 
   import('../data/furniture.json').then((mod) => {
-    const items = mod.default as Array<{ id: string; name: string; cost: number; room: string; width: number; height: number; effect: string; effectValue: number }>;
+    const allItems = mod.default as Array<{ id: string; name: string; cost: number; room: string; width: number; height: number; effect: string; effectValue: number; minChapter?: number }>;
+    // Per playtest (2026-04-18): "unlock furniture throughout the
+    // game, by chapter progression." Filter by minChapter so the
+    // player discovers new items as they advance.
+    const chapter = gameState!.chapter ?? 1;
+    const items = allItems.filter(it => (it.minChapter ?? 1) <= chapter);
 
     const panel = document.createElement('div');
     panel.className = 'menu-overlay';

@@ -2282,6 +2282,18 @@ eventBus.on('chapter-advance', (chapter: number) => {
     if (gameState) addJournalEntry(gameState, newMinigame[chapter], 'event');
   }
 
+  // Announce new furniture unlocks. Per playtest (2026-04-18): "let
+  // the player know when new furniture has been unlocked."
+  const furnitureUnlockToasts: Record<number, string> = {
+    2: 'New furniture unlocked: Scratching Post, Candle Stand, Potted Catnip!',
+    3: 'New furniture unlocked: Cushioned Basket, Fish Barrel, Herb Rack, Wool Rug!',
+    4: 'New furniture unlocked: Notice Board, Bookshelf, Stone Hearth!',
+    5: 'New furniture unlocked: Saint\'s Icon!',
+  };
+  if (furnitureUnlockToasts[chapter]) {
+    setTimeout(() => showToast(furnitureUnlockToasts[chapter]), 6000);
+  }
+
   // Show next chapter goals after a moment
   if (gameState) {
     const hint = getNextChapterHint(gameState);
