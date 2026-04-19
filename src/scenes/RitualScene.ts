@@ -240,8 +240,14 @@ export class RitualScene extends Phaser.Scene {
       // the pattern or when the player taps it." Both start at alpha 0
       // and are pulsed to full brightness by showNextInSequence and
       // onCandleTap respectively.
-      const glow = this.add.circle(cx, cy, 14, color, 0);
-      const flame = this.add.circle(cx, cy, 6, color, 0);
+      // fillAlpha must be 1 (not 0) — the GAME OBJECT alpha controls
+      // visibility. Phaser multiplies fillAlpha × objectAlpha, so
+      // fillAlpha:0 makes the circle permanently invisible regardless
+      // of setAlpha(). This was the root cause of "i dont see the
+      // candles light up" — the flash code called setAlpha(1) but
+      // 0 × 1 = 0.
+      const glow = this.add.circle(cx, cy, 14, color, 1).setAlpha(0);
+      const flame = this.add.circle(cx, cy, 6, color, 1).setAlpha(0);
 
       const zone = this.add.zone(cx, cy, 50, 60);
       zone.setInteractive({ useHandCursor: true });
