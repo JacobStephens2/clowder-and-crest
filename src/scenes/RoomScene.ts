@@ -134,6 +134,37 @@ export class RoomScene extends Phaser.Scene {
       });
     }
 
+    // Per playtest (2026-04-18): "if a cat has a wish for catnip,
+    // upon viewing the room the object is placed in, that cat should
+    // be shown interacting with that object." Check if today's wish
+    // matches a furniture item in this room and hasn't been fulfilled.
+    const wish = getDailyWish(save.day, save.cats, save.furniture.map(f => f.furnitureId));
+    if (wish && !save.flags[`wish_day_${save.day}`] && wish.requiresFurniture) {
+      // Does this room contain the wished furniture?
+      const hasFurnitureInRoom = save.furniture.some(
+        f => f.furnitureId === wish.requiresFurniture && (f.room === this.roomId || f.room === 'any')
+      );
+      if (hasFurnitureInRoom) {
+        // Show wish prompt
+        const wishCat = save.cats.find(c => c.id === wish.catId);
+        if (wishCat) {
+          const promptDiv = document.createElement('div');
+          promptDiv.className = 'toast';
+          promptDiv.style.cssText += 'cursor:pointer;border:1px solid #dda055;';
+          promptDiv.innerHTML = `${wishCat.name} wants to ${wish.wish}. <strong>Tap to fulfill!</strong>`;
+          promptDiv.addEventListener('click', () => {
+            save.flags[`wish_day_${save.day}`] = true;
+            if (wish.reward.includes('mood')) wishCat.mood = 'happy';
+            saveGame(save);
+            playSfx('purr', 0.4);
+            promptDiv.textContent = `${wishCat.name}'s wish fulfilled! ${wish.reward}`;
+            setTimeout(() => promptDiv.remove(), 2000);
+          });
+          document.getElementById('overlay-layer')?.appendChild(promptDiv);
+        }
+      }
+    }
+
     // Back button
     const backBtn = this.add.text(20, 48, '\u2190 Back', {
       fontFamily: 'Georgia, serif',
