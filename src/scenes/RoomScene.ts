@@ -7,6 +7,7 @@ import { saveGame } from '../systems/SaveManager';
 import { isCatStationed } from '../systems/Economy';
 import { addBondPoints } from '../systems/BondSystem';
 import { getDailyWish } from '../systems/GameSystems';
+import { playSfx } from '../systems/SfxManager';
 
 import { ALL_BREED_IDS } from '../utils/constants';
 import { TouchJoystick } from '../ui/touchJoystick';
@@ -892,7 +893,27 @@ export class RoomScene extends Phaser.Scene {
     // Clickable hitbox — click to interact with this cat
     const hitBox = this.add.rectangle(x, y, TILE_SIZE, TILE_SIZE, 0x000000, 0)
       .setInteractive({ useHandCursor: true });
+    // Per playtest (2026-04-18): "let the player hold down a cat in
+    // the room view to switch their control to that cat." Short tap =
+    // walk to + interact; long press (500ms) = switch controlled cat.
+    let holdTimer: ReturnType<typeof setTimeout> | null = null;
+    let longPressed = false;
     hitBox.on('pointerdown', () => {
+      longPressed = false;
+      holdTimer = setTimeout(() => {
+        longPressed = true;
+        // Switch controlled cat: show a toast indicating the switch
+        playSfx('tap', 0.3);
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = `Now controlling ${cat.name}.`;
+        document.getElementById('overlay-layer')?.appendChild(toast);
+        setTimeout(() => toast.remove(), 1500);
+      }, 500);
+    });
+    hitBox.on('pointerup', () => {
+      if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+      if (longPressed) return; // was a long press, skip the tap action
       if (!this.playerMoveTo) return;
       // Find adjacent open tile to this cat
       const neighbors = [
@@ -948,11 +969,13 @@ export class RoomScene extends Phaser.Scene {
             }
 
             saveGame(save);
-            // Possible rank-up — let main.ts check for newly-available
-            // conversations. The conversation overlay can render on top
-            // of the room scene the same way the puzzle-result overlay
-            // does, so no need to defer until scene exit.
-            eventBus.emit('check-conversation');
+            // Per playtest (2026-04-18): "when I'm in a room scene
+            // and I click another cat, the cats share a moment and I
+            // get redirected to the Town scene." The check-conversation
+            // event fires checkAndShowConversation which navigates to
+            // TownMapScene after the dialogue. Removed the immediate
+            // trigger from the room — conversations will fire naturally
+            // when the player next enters the town or ends a job.
           }
         }
         const actionText = document.createElement('div');
