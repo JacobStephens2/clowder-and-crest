@@ -107,17 +107,22 @@ export class TitleScene extends Phaser.Scene {
       });
     }
 
-    // Title
+    // Title — resolution: DPR so text stays crisp when the camera
+    // zoom scales the canvas up to native device pixels. Without
+    // this, Phaser renders at the internal resolution (e.g. 390px)
+    // and the DPR zoom stretches it, making small text blurry.
     const title1 = this.add.text(cx, 185, 'Clowder', {
       fontFamily: 'Georgia, serif',
       fontSize: '48px',
       color: '#c4956a',
+      resolution: DPR,
     }).setOrigin(0.5).setAlpha(0);
 
     const title2 = this.add.text(cx, 240, '& Crest', {
       fontFamily: 'Georgia, serif',
       fontSize: '32px',
       color: '#8b7355',
+      resolution: DPR,
     }).setOrigin(0.5).setAlpha(0);
 
     // Fade in titles
@@ -133,6 +138,7 @@ export class TitleScene extends Phaser.Scene {
       fontFamily: 'Georgia, serif',
       fontSize: '13px',
       color: '#6b5b3e',
+      resolution: DPR,
     }).setOrigin(0.5);
 
     this.add.text(cx, 315, 'Recruit cats. Take jobs. Solve puzzles.\nBuild your guild from rags to riches.', {
@@ -140,6 +146,7 @@ export class TitleScene extends Phaser.Scene {
       fontSize: '10px',
       color: '#555',
       align: 'center',
+      resolution: DPR,
     }).setOrigin(0.5);
 
     // Stone wall
@@ -280,6 +287,7 @@ export class TitleScene extends Phaser.Scene {
       fontFamily: 'Georgia, serif',
       fontSize: '11px',
       color: '#444',
+      resolution: DPR,
     }).setOrigin(0.5);
 
     // Hide overlays on title
@@ -428,6 +436,7 @@ export class TitleScene extends Phaser.Scene {
       fontFamily: 'Georgia, serif',
       fontSize: '18px',
       color: baseColor,
+      resolution: DPR,
     }).setOrigin(0.5);
 
     bg.on('pointerover', () => {
