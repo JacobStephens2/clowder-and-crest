@@ -88,6 +88,52 @@ export class RoomScene extends Phaser.Scene {
     eventBus.emit('show-ui');
     eventBus.emit('set-active-tab', 'guildhall');
 
+    // Per playtest (2026-04-18): "add personality to the art of the
+    // lean to detail view — add animated details and weather effects."
+    // Ambient dust motes float lazily across the room.
+    for (let i = 0; i < 8; i++) {
+      const mote = this.add.circle(
+        Math.random() * GAME_WIDTH,
+        100 + Math.random() * 400,
+        1, 0xc4956a, 0.12 + Math.random() * 0.08
+      );
+      mote.setDepth(50);
+      this.tweens.add({
+        targets: mote,
+        x: mote.x + 15 + Math.random() * 25,
+        y: mote.y - 8 + Math.random() * 16,
+        alpha: 0,
+        duration: 3000 + Math.random() * 3000,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
+    // Flickering hearth glow if kitchen
+    if (this.roomId === 'kitchen') {
+      const glow = this.add.circle(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 40, 60, 0xdda055, 0.06);
+      glow.setDepth(0);
+      this.tweens.add({
+        targets: glow, alpha: { from: 0.03, to: 0.08 },
+        duration: 800 + Math.random() * 600, yoyo: true, repeat: -1,
+      });
+    }
+    // Rain streaks during the plague
+    if (save.flags.ratPlagueStarted && !save.flags.ratPlagueResolved) {
+      const rainGfx = this.add.graphics().setDepth(60);
+      this.time.addEvent({
+        delay: 50, loop: true, callback: () => {
+          rainGfx.clear();
+          rainGfx.lineStyle(1, 0x4a4a6a, 0.12);
+          for (let r = 0; r < 15; r++) {
+            const rx = Math.random() * GAME_WIDTH;
+            const ry = Math.random() * GAME_HEIGHT;
+            rainGfx.lineBetween(rx, ry, rx - 1, ry + 8);
+          }
+        },
+      });
+    }
+
     // Back button
     const backBtn = this.add.text(20, 48, '\u2190 Back', {
       fontFamily: 'Georgia, serif',
