@@ -47,8 +47,28 @@ export function generateDailyJobs(save: SaveData): JobDef[] {
 
   // Reputation-gated jobs
   // Shadow jobs only appear for Questionable/Shadowed guilds (score < -10)
+  // Per playtest (2026-04-18): "add jobs that are shady / shadow
+  // aligned, but are more lucrative." From Ch.3+, one shadow job
+  // always appears regardless of reputation (the "shady stranger"
+  // temptation), but taking it still costs -3 reputation. The full
+  // shadow pool only opens at score < -10 as before.
+  let shadyStrangerAdded = false;
   if (save.reputationScore >= -10) {
-    available = available.filter((j) => j.category !== 'shadow');
+    // Save one shadow job before filtering if Ch.3+ (shady stranger)
+    if (save.chapter >= 3) {
+      const shadowPool = available.filter((j) => j.category === 'shadow');
+      if (shadowPool.length > 0) {
+        const stranger = shadowPool[Math.floor(Math.random() * shadowPool.length)];
+        // Boost the reward to make it tempting
+        available = available.filter((j) => j.category !== 'shadow');
+        available.push({ ...stranger, baseReward: Math.floor(stranger.baseReward * 1.5), maxReward: Math.floor(stranger.maxReward * 1.5) });
+        shadyStrangerAdded = true;
+      } else {
+        available = available.filter((j) => j.category !== 'shadow');
+      }
+    } else {
+      available = available.filter((j) => j.category !== 'shadow');
+    }
   }
   // Saint's Vigil (crest_pilgrimage) only for Respected/Noble guilds (score >= 10)
   if (save.reputationScore < 10) {
