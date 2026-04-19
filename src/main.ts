@@ -77,6 +77,13 @@ export function getGameState(): SaveData | null {
   return gameState;
 }
 
+/** Per playtest (2026-04-18): "in the town scene, make it so the
+ *  cat the player moves around is a cat that still hasn't worked
+ *  that day." Returns the set of cat IDs that have worked today. */
+export function getWorkedCatIds(): Set<string> {
+  return catsWorkedToday;
+}
+
 /** Read a numeric flag value (flags store mixed types). */
 function numFlag(key: string): number {
   return Number(gameState?.flags[key] ?? 0);
