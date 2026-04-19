@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { eventBus } from '../utils/events';
 import { DPR, GAME_WIDTH, GAME_HEIGHT, ALL_BREED_IDS, BREED_NAMES } from '../utils/constants';
 import { TouchJoystick } from '../ui/touchJoystick';
-import { getGameState, getAcceptedJob } from '../main';
+import { getGameState, getAcceptedJob, getWorkedCatIds } from '../main';
 import { getCurrentPhase } from '../systems/DayTimer';
 
 import { playSfx } from '../systems/SfxManager';
@@ -139,8 +139,13 @@ export class TownMapScene extends Phaser.Scene {
     this.cameras.main.fadeIn(250, 10, 9, 8);
 
     const save = getGameState();
-    const playerCat = save?.cats.find((c) => c.isPlayer);
-    this.catBreed = playerCat?.breed ?? 'wildcat';
+    // Per playtest (2026-04-18): "in the town scene, make it so the
+    // cat the player moves around is a cat that still hasn't worked
+    // that day." Pick the first unworked cat; fall back to the player
+    // cat if all have worked.
+    const worked = getWorkedCatIds();
+    const unworkedCat = save?.cats.find(c => !worked.has(c.id)) ?? save?.cats.find(c => c.isPlayer);
+    this.catBreed = unworkedCat?.breed ?? 'wildcat';
     this.isMoving = false;
     this.activeDoor = null;
     // Defensive resets per user feedback (2026-04-08): "I clicked the
@@ -536,9 +541,18 @@ export class TownMapScene extends Phaser.Scene {
         // Tappable — opens a small interaction popup naming this
         // specific guild cat.
         npc.setInteractive({ useHandCursor: true });
+        // Per playtest (2026-04-18): "when i click a cat, make the
+        // cat i am controlling move to that cat before that cat's
+        // response is displayed."
         npc.on('pointerdown', (_p: Phaser.Input.Pointer, _lx: number, _ly: number, event: Phaser.Types.Input.EventData) => {
           event.stopPropagation();
-          this.showCatInteraction(cat);
+          // Walk to the NPC's tile, then show the interaction
+          const npcTile = { col: Math.round(npc.x / TILE), row: Math.round(npc.y / TILE) };
+          if (this.playerPos.col !== npcTile.col || this.playerPos.row !== npcTile.row) {
+            this.walkToTile(npcTile.col, npcTile.row, () => this.showCatInteraction(cat));
+          } else {
+            this.showCatInteraction(cat);
+          }
         });
         this.npcCats.push({ cat, sprite: npc });
 
@@ -735,6 +749,34 @@ export class TownMapScene extends Phaser.Scene {
 
   /** Walk the cat to the merchant, then open the town overlay. Mirrors
    *  walkPathThenEnter for buildings. */
+
+  /** Walk the player to a target tile, then call the callback. Uses
+   *  BFS pathfinding. Per playtest (2026-04-18): "when i click a cat,
+   *  make the cat i am controlling move to that cat." */
+  private walkToTile(col: number, row: number, onArrival: () => void): void {
+    const path = this.findPath(col, row);
+    if (!path || path.length === 0) {
+      onArrival();
+      return;
+    }
+    this.walkPathAndCallback(path, onArrival);
+  }
+
+  private walkPathAndCallback(path: Array<{ col: number; row: number }>, onArrival: () => void): void {
+    if (path.length === 0) { onArrival(); return; }
+    const next = path[0];
+    const stepDc = next.col - this.playerPos.col;
+    const stepDr = next.row - this.playerPos.row;
+    this.movePlayer(stepDc, stepDr);
+    this.time.delayedCall(220, () => {
+      if (this.playerPos.col === next.col && this.playerPos.row === next.row) {
+        this.walkPathAndCallback(path.slice(1), onArrival);
+      } else {
+        onArrival(); // path blocked, just trigger immediately
+      }
+    });
+  }
+
   private walkPathThenMerchant(
     path: Array<{ col: number; row: number }>,
     _sprite: Phaser.GameObjects.Sprite,
