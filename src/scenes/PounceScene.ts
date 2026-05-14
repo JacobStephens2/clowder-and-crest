@@ -531,8 +531,22 @@ export class PounceScene extends Phaser.Scene {
     // Slingshot release — medium thump pairs with the visible launch impulse.
     haptic.medium();
 
+    // Spawn the projectile slightly along the launch vector so the ball
+    // visibly leaves the slingshot zone on the same frame as mouseup, not
+    // one physics tick later when it's still glued to the cat sprite. Per
+    // playtest (2026-05-14): "release the ball faster after the player
+    // stops holding the mouse down for the pounce game firing." The
+    // pre-launch offset is capped so a tiny drag doesn't yeet the body
+    // past the slingshot apparatus.
+    const mag = Math.sqrt(vx * vx + vy * vy);
+    const offset = Math.min(mag * 0.04, 14);
+    const dirX = mag > 0 ? vx / mag : 0;
+    const dirY = mag > 0 ? vy / mag : 0;
+    const startX = LAUNCH_X + dirX * offset;
+    const startY = LAUNCH_Y + dirY * offset;
+
     // Create physics projectile
-    const proj = this.matter.add.circle(LAUNCH_X, LAUNCH_Y, 8, {
+    const proj = this.matter.add.circle(startX, startY, 8, {
       restitution: 0.4, friction: 0.3, density: 0.01,
       label: 'cat_projectile',
     });
@@ -543,7 +557,7 @@ export class PounceScene extends Phaser.Scene {
     this.abilityAvailable = true;
 
     // Visual for projectile — synced in update()
-    const projVis = this.add.circle(LAUNCH_X, LAUNCH_Y, 8, 0xc4956a);
+    const projVis = this.add.circle(startX, startY, 8, 0xc4956a);
     this.bodySprites.push({ body: proj, sprite: projVis });
 
     // Wait for physics to settle, then check result. Reload time
