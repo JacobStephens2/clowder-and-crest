@@ -103,6 +103,36 @@ let currentSetName: string = '__normal_pool__';
 let bgmTrackIndex = -1;
 let fadeTimer: ReturnType<typeof setInterval> | null = null;
 
+// Pending src queued for retry when the browser's autoplay policy blocks
+// the first play() call (e.g. desktop Chrome on initial page load before
+// any user gesture). The first pointerdown/keydown after that retries
+// playback inside the user activation stack, which the browser allows.
+let pendingAutoplaySrc: string | null = null;
+let autoplayListenersInstalled = false;
+
+function retryPendingAutoplay(): void {
+  const src = pendingAutoplaySrc;
+  pendingAutoplaySrc = null;
+  uninstallAutoplayListeners();
+  if (src) playTrack(src, false);
+}
+
+function installAutoplayListeners(): void {
+  if (autoplayListenersInstalled) return;
+  autoplayListenersInstalled = true;
+  window.addEventListener('pointerdown', retryPendingAutoplay, { once: true, capture: true });
+  window.addEventListener('keydown', retryPendingAutoplay, { once: true, capture: true });
+  window.addEventListener('touchstart', retryPendingAutoplay, { once: true, capture: true });
+}
+
+function uninstallAutoplayListeners(): void {
+  if (!autoplayListenersInstalled) return;
+  autoplayListenersInstalled = false;
+  window.removeEventListener('pointerdown', retryPendingAutoplay, true);
+  window.removeEventListener('keydown', retryPendingAutoplay, true);
+  window.removeEventListener('touchstart', retryPendingAutoplay, true);
+}
+
 function pickNextTrack(): string {
   const tracks = currentTrackList;
   if (tracks.length === 0) return '';
@@ -150,8 +180,16 @@ function playTrack(src: string, fade = true): void {
     bgmAudio.volume = bgmVolume;
     bgmAudio.muted = bgmMuted;
     bgmAudio.addEventListener('ended', onTrackEnded);
-    bgmAudio.play().catch(() => {
+    bgmAudio.play().then(() => {
+      // Successful playback — drop any pending autoplay retry.
+      pendingAutoplaySrc = null;
+      uninstallAutoplayListeners();
+    }).catch(() => {
       bgmAudio = null;
+      // Autoplay blocked. Remember this src and retry on the next user
+      // gesture so the player gets music as soon as they interact.
+      pendingAutoplaySrc = src;
+      installAutoplayListeners();
     });
   };
 
