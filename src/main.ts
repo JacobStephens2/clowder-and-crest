@@ -536,7 +536,15 @@ function switchScene(target: string, data?: object): void {
   const sceneKeys = Object.values(SCENES);
   for (const key of sceneKeys) {
     if (game.scene.isActive(key) || game.scene.isPaused(key)) {
-      game.scene.stop(key);
+      try {
+        game.scene.stop(key);
+      } catch (err) {
+        // A shutdown handler in one scene must not abort the whole
+        // navigation. If Phaser-internal cleanup throws (e.g. a
+        // half-torn-down physics group), log and keep stopping the
+        // remaining scenes so the next scene.start still runs.
+        console.error(`switchScene: failed to stop ${key}`, err);
+      }
     }
   }
   // Clean up any orphaned scene overlays (tutorials, pause screens) but
@@ -1464,25 +1472,15 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
           // Title-screen Day of Rest practice — return to TitleScene
           // and reopen the catalogue. Set the pending-reopen flag
           // BEFORE switchScene so TitleScene's create() picks it up
-          // synchronously when it runs. The previous setTimeout-based
-          // approach raced with TitleScene's setup and could leave
-          // the player on a blank screen — particularly after Pounce
-          // (Matter physics teardown takes longer than Arcade). Per
-          // user feedback (2026-04-10, third pass): "after i finish
-          // pounce in from the title day of rest menu, I click
-          // continue and am brought back to a blank town scene
-          // rather than the day of rest menu."
+          // synchronously when it runs.
           const stub = createDefaultSave('Demo');
           stub.flags.titleDemoState = true;
           gameState = stub;
           setPendingTitleDayOfRestReopen(true);
           switchScene('TitleScene');
-          // Belt-and-suspenders: if TitleScene.create() didn't
-          // consume the flag (edge case with scene lifecycle),
-          // this timeout picks it up. consumePending is idempotent
-          // (returns false the second time), so the panel can't
-          // open twice. Per user feedback (2026-04-10, fourth
-          // pass): RoofScout still hit the blank-screen path.
+          // Belt-and-suspenders: if TitleScene.create() didn't consume
+          // the flag, this timeout picks it up. consumePending is
+          // idempotent.
           setTimeout(() => {
             if (consumePendingTitleDayOfRestReopen()) {
               showDayOfRestPanel(true);
