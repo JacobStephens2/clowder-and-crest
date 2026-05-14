@@ -192,33 +192,52 @@ export function showTutorial(): void {
   counter.style.cssText = 'color:#555;font-family:Georgia,serif;font-size:10px;margin-top:4px;text-align:center;';
   bubble.append(textDiv, hint, counter);
 
+  // Track each highlighted element's ORIGINAL pre-tutorial inline values.
+  // Snapshotting once per element (not once per highlight) is what prevents
+  // a step that re-highlights an already-mutated element from capturing
+  // `relative` as the "previous" value and pinning `#bottom-bar` out of
+  // its fixed position permanently. Step 2 and Step 4 both target
+  // `bottom-bar`; without this Map the bar ends up `position: relative`
+  // and falls into document flow at the top of the screen.
+  const originals = new Map<HTMLElement, { position: string; zIndex: string }>();
+  let currentHighlight: HTMLElement | null = null;
+
+  function restore(el: HTMLElement): void {
+    const orig = originals.get(el);
+    if (!orig) return;
+    el.style.position = orig.position;
+    el.style.zIndex = orig.zIndex;
+  }
+
   function showStep(): void {
+    // Restore the previously highlighted element on every step transition
+    // so we never rely on a setTimeout to put `#bottom-bar` back.
+    if (currentHighlight) {
+      restore(currentHighlight);
+      currentHighlight = null;
+    }
+
     if (stepIndex >= steps.length) {
       backdrop.remove();
       bubble.remove();
+      // Final cleanup — restore every element we touched, in case any
+      // are still mutated.
+      for (const el of originals.keys()) restore(el);
+      originals.clear();
       return;
     }
     const step = steps[stepIndex];
     textDiv.textContent = step.text;
     counter.textContent = `${stepIndex + 1}/${steps.length}`;
     if (step.highlight) {
-      const el = document.getElementById(step.highlight) ?? document.querySelector(step.highlight);
+      const el = (document.getElementById(step.highlight) ?? document.querySelector(step.highlight)) as HTMLElement | null;
       if (el) {
-        // Snapshot the inline position/zIndex BEFORE we touch them so
-        // we can restore exactly what was there. The previous version
-        // forced `position: relative` (so the z-index would take effect)
-        // but only restored `zIndex` afterwards, leaving `#bottom-bar`
-        // permanently `position: relative` instead of `fixed`. After the
-        // tutorial finished, the nav bar fell into document flow at the
-        // top of the overlay layer and required a reload to recover.
-        const prevPosition = (el as HTMLElement).style.position;
-        const prevZIndex = (el as HTMLElement).style.zIndex;
-        (el as HTMLElement).style.position = 'relative';
-        (el as HTMLElement).style.zIndex = '9998';
-        setTimeout(() => {
-          (el as HTMLElement).style.position = prevPosition;
-          (el as HTMLElement).style.zIndex = prevZIndex;
-        }, 5000);
+        if (!originals.has(el)) {
+          originals.set(el, { position: el.style.position, zIndex: el.style.zIndex });
+        }
+        el.style.position = 'relative';
+        el.style.zIndex = '9998';
+        currentHighlight = el;
       }
     }
     stepIndex++;
