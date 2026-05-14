@@ -5,7 +5,6 @@ import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
 import { haptic } from '../systems/NativeFeatures';
-import { isPracticeRun } from '../systems/PracticeMode';
 import { showMinigameTutorial, showSceneOutcomeBanner } from '../ui/sceneHelpers';
 
 // ──── Constants ────
@@ -892,7 +891,6 @@ export class SokobanScene extends Phaser.Scene {
     const btnY = OFFSET_Y + GRID_PX + 50;
     this.createButton(GAME_WIDTH / 2 - 55, btnY, 'Quit', () => {
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      if (!isPracticeRun()) eventBus.emit('navigate', 'TownMapScene');
     });
     this.createButton(GAME_WIDTH / 2 + 55, btnY, 'Restart', () => {
       this.resetPuzzle();

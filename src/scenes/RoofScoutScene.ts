@@ -5,7 +5,6 @@ import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
 import { haptic } from '../systems/NativeFeatures';
-import { isPracticeRun } from '../systems/PracticeMode';
 import { showMinigameTutorial, attachStandardCleanup } from '../ui/sceneHelpers';
 
 // ──────────────────────────────────────────────────────────────────────
@@ -1401,6 +1400,5 @@ export class RoofScoutScene extends Phaser.Scene {
   private quitRun(): void {
     if (!this.finished) this.finished = true;
     eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-    if (!isPracticeRun()) eventBus.emit('navigate', 'TownMapScene');
   }
 }

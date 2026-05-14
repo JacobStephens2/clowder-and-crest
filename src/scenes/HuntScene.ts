@@ -5,7 +5,6 @@ import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
 import { haptic } from '../systems/NativeFeatures';
-import { isPracticeRun } from '../systems/PracticeMode';
 import { createSceneButton, showMinigameTutorial } from '../ui/sceneHelpers';
 
 // ── Layout ──
@@ -311,7 +310,6 @@ export class HuntScene extends Phaser.Scene {
     createSceneButton(this, GAME_WIDTH / 2, FIELD_BOTTOM + 70, 'Quit', () => {
       this.cleanup();
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      if (!isPracticeRun()) eventBus.emit('navigate', 'TownMapScene');
     });
 
     // Countdown
@@ -768,7 +766,6 @@ export class HuntScene extends Phaser.Scene {
 
     this.time.delayedCall(2000, () => {
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      if (!isPracticeRun()) eventBus.emit('navigate', 'TownMapScene');
     });
   }
 
