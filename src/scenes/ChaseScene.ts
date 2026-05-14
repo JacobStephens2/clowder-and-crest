@@ -5,7 +5,6 @@ import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
 import { haptic } from '../systems/NativeFeatures';
-import { isPracticeRun } from '../systems/PracticeMode';
 import { showMinigameTutorial, showSceneOutcomeBanner } from '../ui/sceneHelpers';
 import { TouchJoystick } from '../ui/touchJoystick';
 
@@ -386,7 +385,6 @@ export class ChaseScene extends Phaser.Scene {
     this.createButton(60, MAZE_Y + MAZE_H + 30, 'Quit', () => {
       this.cleanup();
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      if (!isPracticeRun()) eventBus.emit('navigate', 'TownMapScene');
     });
 
     // Input: WASD / Arrow keys with hold-to-repeat
@@ -927,7 +925,6 @@ export class ChaseScene extends Phaser.Scene {
 
     this.time.delayedCall(2000, () => {
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      if (!isPracticeRun()) eventBus.emit('navigate', 'TownMapScene');
     });
   }
 
@@ -1201,7 +1198,6 @@ export class ChaseScene extends Phaser.Scene {
 
     this.time.delayedCall(2000, () => {
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      if (!isPracticeRun()) eventBus.emit('navigate', 'TownMapScene');
     });
   }
 

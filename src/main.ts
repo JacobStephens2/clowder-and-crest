@@ -1704,6 +1704,16 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
 eventBus.on('puzzle-quit', ({ jobId, catId }: any = {}) => {
   // Day of Rest quits never count: no fish penalty, no mood drop, no
   // cat-of-the-day burn. Just route back to the panel.
+  //
+  // Navigation note: scenes no longer emit `navigate` themselves after
+  // `puzzle-quit`. Earlier each scene did `if (!isPracticeRun()) emit
+  // navigate` AFTER the emit, but `isPracticeRun()` was already false by
+  // then (this handler calls `endPracticeRun()` synchronously), so the
+  // navigate fired in practice mode too — wiping the practice result
+  // overlay and dumping the player onto TownMapScene. This handler now
+  // owns the post-quit routing: practice mode shows the result overlay
+  // (which routes itself on continue), campaign mode emits navigate at
+  // the end of the campaign branch below.
   if (isPracticeRun()) {
     const wasTitleDemoMode = gameState?.flags?.titleDemoState === true;
     if (wasTitleDemoMode) {
@@ -1786,6 +1796,10 @@ eventBus.on('puzzle-quit', ({ jobId, catId }: any = {}) => {
   const catName = cat?.name ?? 'A cat';
   const jobName = job?.name ?? 'the job';
   showToast(`${catName} failed ${jobName}. Lost ${penalty} fish and can't work again today.`);
+
+  // Route back to town. Replaces the per-scene `if (!isPracticeRun()) emit
+  // navigate` pattern that mis-fired in practice mode.
+  eventBus.emit('navigate', 'TownMapScene');
 
   setTimeout(() => suggestEndDay(), 1500);
 });

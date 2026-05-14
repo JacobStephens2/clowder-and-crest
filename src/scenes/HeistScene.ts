@@ -5,7 +5,6 @@ import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
 import { haptic, isNative } from '../systems/NativeFeatures';
-import { isPracticeRun } from '../systems/PracticeMode';
 import { showMinigameTutorial } from '../ui/sceneHelpers';
 
 interface Ring {
@@ -182,9 +181,7 @@ export class HeistScene extends Phaser.Scene {
     this.add.text(GAME_WIDTH - 30, 55, 'Quit', {
       fontFamily: 'Georgia, serif', fontSize: '12px', color: '#8b7355',
     }).setOrigin(0.5).setInteractive({ useHandCursor: true }).on('pointerdown', () => {
-      const wasPractice = isPracticeRun();
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      if (!wasPractice) eventBus.emit('navigate', 'TownMapScene');
     });
 
     this.movesText = this.add.text(20, 55, 'Moves: 0', {
@@ -506,9 +503,7 @@ export class HeistScene extends Phaser.Scene {
         fontFamily: 'Georgia, serif', fontSize: '22px', color: '#cc6666',
       }).setOrigin(0.5);
       this.time.delayedCall(1500, () => {
-        const wasPractice = isPracticeRun();
         eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-        if (!wasPractice) eventBus.emit('navigate', 'TownMapScene');
       });
     }
   }

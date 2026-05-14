@@ -5,7 +5,6 @@ import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
 import { haptic } from '../systems/NativeFeatures';
-import { isPracticeRun } from '../systems/PracticeMode';
 import { createDpad, showMinigameTutorial, showSceneOutcomeBanner } from '../ui/sceneHelpers';
 
 // ── Arena layout ──
@@ -334,9 +333,7 @@ export class BrawlScene extends Phaser.Scene {
     this.add.text(45, joyY, 'Quit', { fontFamily: 'Georgia, serif', fontSize: '12px', color: '#c4956a' }).setOrigin(0.5);
     quitBtn.on('pointerdown', () => {
       this.finished = true;
-      const wasPractice = isPracticeRun();
       eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-      if (!wasPractice) eventBus.emit('navigate', 'TownMapScene');
     });
 
     // Pause button
@@ -1185,9 +1182,7 @@ export class BrawlScene extends Phaser.Scene {
       });
 
       this.time.delayedCall(2000, () => {
-        const wasPractice = isPracticeRun();
         eventBus.emit('puzzle-quit', { jobId: this.jobId, catId: this.catId });
-        if (!wasPractice) eventBus.emit('navigate', 'TownMapScene');
       });
     }
   }
