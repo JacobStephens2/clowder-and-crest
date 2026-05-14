@@ -651,9 +651,16 @@ export class RoofScoutScene extends Phaser.Scene {
       else this.rightHeld = false;
     });
 
-    // Keyboard fallback for desktop testing — A/D + Space
+    // Keyboard fallback for desktop testing — A/D + Space.
+    // `e.repeat` filters OS-level key auto-repeat so holding a direction
+    // doesn't auto-spam jumps. Without this, holding ArrowLeft (or A)
+    // pumped attemptJump 30+ times per second and trivially beat the
+    // level. Each jump must be a fresh keypress now. Per playtest
+    // (2026-05-14): "if I just hold an arrow key for the roof scout
+    // game, it beats the level."
     this.input.keyboard?.on('keydown', (e: KeyboardEvent) => {
       if (this.finished || this.tutorialShowing) return;
+      if (e.repeat) return;
       if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') {
         this.leftHeld = true;
         this.attemptJump('left');
