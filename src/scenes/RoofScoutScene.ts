@@ -676,9 +676,12 @@ export class RoofScoutScene extends Phaser.Scene {
     attachStandardCleanup(this, () => {
       this.input.off('pointerdown');
       this.input.off('pointerup');
-      this.platforms?.clear(true, true);
-      this.fishGroup?.clear(true, true);
-      this.enemyGroup?.clear(true, true);
+      // Phaser auto-destroys physics groups on scene shutdown. Calling
+      // .clear(true, true) here used to race with Phaser's own teardown
+      // and throw "Cannot read properties of undefined (reading 'size')",
+      // which bubbled out of game.scene.stop() inside switchScene() and
+      // left the navigation half-done — practice result overlay clicks
+      // ended on a blank screen because no next scene ever started.
     });
 
     eventBus.emit('show-ui');
