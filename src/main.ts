@@ -46,7 +46,8 @@ import { startBgm, toggleMute, isMuted, switchToPuzzleMusic, switchToFightMusic,
 import { playSfx } from './systems/SfxManager';
 import { startDayTimer, stopDayTimer, resetDayTimer, updateTimeDisplay, setOnDayEnd, pauseDayTimer, resumeDayTimer, isPaused } from './systems/DayTimer';
 import { startPlaytimeSession, pausePlaytimeSession } from './systems/PlaytimeTracker';
-import { initNative, registerAppLifecycle, scheduleDailyReturnNotification, cancelReturnNotification, notifyChapterMilestone, haptic, writeAutoSnapshot, readAutoSnapshot, isNative } from './systems/NativeFeatures';
+import { initNative, registerAppLifecycle, scheduleDailyReturnNotification, cancelReturnNotification, notifyChapterMilestone, haptic, hapticPattern, writeAutoSnapshot, readAutoSnapshot, isNative } from './systems/NativeFeatures';
+import { updateWidgetData, guildDisplayName } from './systems/WidgetBridge';
 import { applyReputationShift, getReputationLabel, getReputationRecruitModifier, getReputationBonuses } from './systems/ReputationSystem';
 import { getComboMultiplier, updateCombo, getDailyWish, getCurrentFestival, trackEvent } from './systems/GameSystems';
 import { calculateDailyUpkeep, calculateOfflineStationedEarnings, calculateStationedDailyIncome } from './systems/GuildMetrics';
@@ -324,7 +325,10 @@ guildEndDayBtn.style.cssText = 'display:none;position:fixed;bottom:70px;left:50%
 guildEndDayBtn.addEventListener('click', () => {
   if (!gameState) return;
   playSfx('day_bell', 0.4);
-  haptic.medium(); // day-end is a meaningful beat — heavier than a UI tap
+  // Day-end is a meaningful, contemplative beat — a soft settle rather than a
+  // sharp tap. On iOS this is a light thud with a trailing close; on Android it
+  // degrades to a single light impact.
+  hapticPattern.dayEnd();
   const result = advanceDay();
   showDayTransitionOverlay(gameState.day, () => {}, gameState, result);
   saveGame(gameState);
@@ -1653,6 +1657,7 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
         );
         setTimeout(() => {
           playSfx('chapter');
+          hapticPattern.bondRankUp(); // celebratory double-beat on the bond rank-up
           showToast(`\u2764 ${esc(cat.name)} & ${otherName} reached ${result.newRank}!${rewardText}`);
         }, 2000);
       }
@@ -2155,6 +2160,7 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
     );
     setTimeout(() => {
       playSfx('chapter');
+      hapticPattern.bondRankUp(); // celebratory double-beat on the passive bond rank-up
       showToast(`\u2764 ${esc(ru.catA.name)} & ${esc(ru.catB.name)} reached ${ru.newRank}!${rewardText}`);
     }, 2500);
   }
@@ -2265,6 +2271,15 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
   // filesystem writes are async and we don't want to lag the per-tile
   // save loop. One snapshot per in-game day is plenty.
   writeAutoSnapshot(JSON.stringify(gameState)).catch(() => {});
+
+  // Refresh the iOS Home Screen / Lock Screen widgets with the new day count
+  // and roster size. No-op on Android and web.
+  updateWidgetData({
+    guildName: guildDisplayName(gameState.chapter),
+    dayCount: gameState.day,
+    catCount: gameState.cats.length,
+    lastPlayed: Date.now(),
+  }).catch(() => {});
 
   // Day of Rest cadence — every 7 in-game days the cats observe a rest
   // day. Pause the day timer so the player isn't pressured to End Day
