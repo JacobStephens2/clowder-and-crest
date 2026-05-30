@@ -24,10 +24,20 @@ const HAPTICS_PREF_KEY = 'clowder_haptics_enabled';
 
 let hapticsEnabled = localStorage.getItem(HAPTICS_PREF_KEY) !== '0';
 
-/** Whether we're running inside the Capacitor Android wrapper. */
+/** Whether we're running inside a Capacitor native wrapper (Android or iOS). */
 export function isNative(): boolean {
   try {
     return Capacitor.isNativePlatform();
+  } catch {
+    return false;
+  }
+}
+
+/** True only on the iOS wrapper — used to opt into Taptic-engine patterns
+ *  that feel native on iPhone but would be wasted on Android's coarser motor. */
+export function isIOS(): boolean {
+  try {
+    return Capacitor.getPlatform() === 'ios';
   } catch {
     return false;
   }
@@ -83,6 +93,64 @@ export const haptic = {
   vibrate(ms: number): void {
     if (!hapticsEnabled || !isNative()) return;
     Haptics.vibrate({ duration: ms }).catch(() => {});
+  },
+};
+
+// ──── Composed haptic patterns (iOS-flavoured) ────
+//
+// Capacitor's ImpactStyle only exposes Heavy / Medium / Light — there is no
+// `Rigid` or `Soft` (those live in UIKit but the plugin doesn't bridge them).
+// So instead of pretending those styles exist, the richer iPhone feel comes
+// from *sequencing* the real primitives with short delays, which the Taptic
+// engine renders crisply. On Android each falls back to the single most
+// fitting one-shot impact so nothing feels broken — just less nuanced.
+//
+// These are additive: the existing per-scene `haptic.light()` / `.medium()`
+// calls keep working untouched. Scenes can opt into a pattern at the few
+// genuinely climactic beats (bond rank-up, lock set, day end).
+
+const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+export const hapticPattern = {
+  /** Heist: a single tumbler "sets". A precise tick — on iOS a light tap
+   *  chased by a selection blip reads as a mechanical click; Android just
+   *  gets the light impact. */
+  async lockClick(): Promise<void> {
+    if (!hapticsEnabled || !isNative()) return;
+    safeImpact(ImpactStyle.Light);
+    if (isIOS()) {
+      await delay(28);
+      Haptics.selectionChanged().catch(() => {});
+    }
+  },
+
+  /** Heist: a trap notch — deliberately distinct from a clean set so the
+   *  player feels the mistake. Error-shaped on both platforms. */
+  lockTrap(): void {
+    safeNotification(NotificationType.Error);
+  },
+
+  /** Fire Emblem bond rank-up — a celebratory double beat (heavy → medium). */
+  async bondRankUp(): Promise<void> {
+    if (!hapticsEnabled || !isNative()) return;
+    safeImpact(ImpactStyle.Heavy);
+    await delay(isIOS() ? 90 : 110);
+    safeImpact(ImpactStyle.Medium);
+    if (isIOS()) {
+      await delay(90);
+      safeNotification(NotificationType.Success);
+    }
+  },
+
+  /** Day-end summary — a soft, contemplative settle. Light single thud;
+   *  iOS adds a trailing selection-end for a gentle "close". */
+  async dayEnd(): Promise<void> {
+    if (!hapticsEnabled || !isNative()) return;
+    safeImpact(ImpactStyle.Light);
+    if (isIOS()) {
+      await delay(140);
+      Haptics.selectionStart().then(() => Haptics.selectionEnd()).catch(() => {});
+    }
   },
 };
 
