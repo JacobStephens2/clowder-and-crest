@@ -83,7 +83,7 @@ mv "$SRC_IPA" "$FINAL_IPA"
 echo "✓ Built $FINAL_IPA ($(du -h "$FINAL_IPA" | cut -f1))"
 
 if [ -n "$RELEASE_TAG" ]; then
-  echo "▸ Uploading to GitHub release $RELEASE_TAG…"
+  echo "▸ Uploading to GitHub release ${RELEASE_TAG}..."
   if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
     gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --notes "iOS development build. See README for install instructions (AltStore/Sideloadly or registered-device direct install)."
   fi
