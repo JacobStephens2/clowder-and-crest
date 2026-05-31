@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Development export: the resulting .ipa installs directly only on
+	     devices whose UDID is registered in the team's provisioning profile.
+	     Anyone else installs it by re-signing with their own Apple ID via a
+	     sideloading tool (AltStore / SideStore / Sideloadly). See
+	     scripts/build-ios-ipa.sh and the GitHub release notes. -->
+	<key>method</key>
+	<string>debugging</string>
+	<key>teamID</key>
+	<string>G38J85UN6P</string>
+	<key>signingStyle</key>
+	<string>automatic</string>
+	<key>compileBitcode</key>
+	<false/>
+	<key>stripSwiftSymbols</key>
+	<true/>
+	<key>destination</key>
+	<string>export</string>
+</dict>
+</plist>
