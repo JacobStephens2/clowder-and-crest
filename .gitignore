@@ -29,3 +29,6 @@ test/screenshots/
 
 # Syncthing folder marker
 .stfolder/
+
+# iOS build output (archives + exported .ipa from scripts/build-ios-ipa.sh)
+build/
