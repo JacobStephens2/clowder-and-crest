@@ -64,8 +64,18 @@ Plus the **Dungeon Run** roguelike meta-loop (Ch.5+) that chains random minigame
 - **Phaser 3** + TypeScript (canvas game scenes)
 - **HTML/CSS overlays** (UI chrome — bottom nav, panels, dialogues)
 - **Vite** (dev server + production build)
-- **Capacitor** (Android packaging)
+- **Capacitor** (Android + iOS packaging)
 - **Apache** + Let's Encrypt (web deploy)
+
+## Installing on iOS
+
+Unlike the Android `.apk`, iOS has no "download and tap to install" — every app is code-signed and gated. Three ways to run it, easiest first:
+
+1. **TestFlight** — the frictionless path. No tools, no UDID; tap the invite link, install, done.
+2. **Sideload the `.ipa`** (attached to GitHub releases as `ClowderAndCrest-<version>.ipa`) — install it with a re-signing tool like **[AltStore](https://altstore.io) / SideStore** or **[Sideloadly](https://sideloadly.io)**, which signs it with *your own* free Apple ID. Enable **Developer Mode** first (Settings ▸ Privacy & Security ▸ Developer Mode). Apps signed with a free Apple ID expire after 7 days and need re-signing.
+3. **Direct install** — the same `.ipa` installs directly via Apple Configurator / Xcode only on devices whose UDID is registered in the developer account's provisioning profile.
+
+The `.ipa` is built with `scripts/build-ios-ipa.sh` (archive → development-signed export). Run `scripts/build-ios-ipa.sh --release <tag>` to also attach it to a GitHub release.
 
 **Built with**
 
