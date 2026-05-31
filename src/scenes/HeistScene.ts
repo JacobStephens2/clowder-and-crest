@@ -4,7 +4,7 @@ import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { getGameState } from '../main';
 import { getJob } from '../systems/JobBoard';
 import { playSfx } from '../systems/SfxManager';
-import { haptic, isNative } from '../systems/NativeFeatures';
+import { haptic, hapticPattern, isNative } from '../systems/NativeFeatures';
 import { showMinigameTutorial } from '../ui/sceneHelpers';
 
 interface Ring {
@@ -298,7 +298,7 @@ export class HeistScene extends Phaser.Scene {
       ring.rotation = ring.startRotation;
       ring.isSet = ((ring.gapPos + ring.rotation) % ring.notches) === 0;
       playSfx('fail', 0.6);
-      haptic.error();
+      hapticPattern.lockTrap(); // trap notch — error-shaped, distinct from a clean set
       // Stronger feedback per user feedback (2026-04-08): "I didn't
       // notice a penalty in the heist scene when I moved a ring over
       // a red spot." A 120ms flash and a quiet hiss were too subtle —
@@ -342,9 +342,10 @@ export class HeistScene extends Phaser.Scene {
         playSfx('lock_click', 0.6);
         haptic.warning();
       } else {
-        // Normal nudge — standard click
+        // Normal nudge — standard per-notch click. On iOS this gets a precise
+        // mechanical tick (light tap + selection blip); Android stays a light tap.
         playSfx('lock_click', 0.35);
-        haptic.light();
+        hapticPattern.lockClick();
       }
     }
 
