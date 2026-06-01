@@ -13,7 +13,7 @@ export interface SessionFlowDeps {
   deleteSave: () => void;
   deleteSlot: (slot: number) => void;
   switchScene: (target: string, data?: object) => void;
-  playIntroStory: (catName: string, onComplete: () => void) => void;
+  playIntroStory: (catName: string, gender: 'male' | 'female', onComplete: () => void) => void;
   showTutorial: () => void;
   showGuildReport: (save: SaveData) => void;
   showToast: (message: string) => void;
@@ -122,7 +122,7 @@ export function initSessionFlow(deps: SessionFlowDeps): SessionFlowApi {
       save.playerCatGender = chosenGender;
       deps.setGameState(save);
       saveGame(save);
-      deps.playIntroStory(name, () => {
+      deps.playIntroStory(name, chosenGender, () => {
         eventBus.emit('game-loaded', save);
         deps.switchScene('GuildhallScene');
         setTimeout(() => deps.showTutorial(), 1500);

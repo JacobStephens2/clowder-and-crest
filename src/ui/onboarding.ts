@@ -15,7 +15,12 @@ interface IntroDeps {
   playSfx: (key: string, volume?: number) => void;
 }
 
-export function showIntroStory(catName: string, onComplete: () => void, deps: IntroDeps): void {
+export function showIntroStory(catName: string, gender: 'male' | 'female', onComplete: () => void, deps: IntroDeps): void {
+  // The wildcat portrait set ships in two genders: the tomcat art is
+  // `wildcat_<expression>.png`, the queen art is `wildcat_female_<expression>.png`.
+  // Pick the prefix once so every panel renders the cat the player chose at
+  // the name prompt (previously the intro always showed the tomcat art).
+  const portraitPrefix = gender === 'female' ? 'wildcat_female_' : 'wildcat_';
   const panels: IntroPanel[] = [
     { text: 'The storm came without warning. Rain hammered the cobblestones as lightning split the sky over the sleeping town.', scene: 'town' },
     { text: `${catName} — thin, soaked, and hungry — stumbled through the market square, seeking shelter from the downpour.`, scene: 'town' },
@@ -137,7 +142,7 @@ export function showIntroStory(catName: string, onComplete: () => void, deps: In
       catImg.style.height = '180px';
       catImg.style.imageRendering = '';
       catImg.style.filter = 'drop-shadow(2px 4px 6px rgba(0,0,0,0.5))';
-      catImg.src = `assets/sprites/portraits/wildcat_${expression}.png`;
+      catImg.src = `assets/sprites/portraits/${portraitPrefix}${expression}.png`;
     } else {
       catImg.style.display = 'none';
     }
