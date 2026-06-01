@@ -698,7 +698,7 @@ const sessionFlow = initSessionFlow({
   deleteSave,
   deleteSlot,
   switchScene,
-  playIntroStory: (catName, onComplete) => showIntroStory(catName, onComplete, { playSfx }),
+  playIntroStory: (catName, gender, onComplete) => showIntroStory(catName, gender, onComplete, { playSfx }),
   showTutorial,
   showGuildReport,
   showToast,
