@@ -390,6 +390,40 @@ export async function deleteCloudSlot(slot: number): Promise<boolean> {
   return false;
 }
 
+// ──── Debounced background push (day-end) ────
+//
+// Day-end is the game's natural checkpoint, but End Day can fire in bursts, so
+// coalesce to one push. A background conflict is NOT auto-resolved: it leaves
+// local untouched and stops, so the player resolves it via the Cloud menu's
+// chooser next time. A network failure marks the slot pending for flushPending.
+
+const PUSH_DEBOUNCE_MS = 8000;
+let pushTimer: ReturnType<typeof setTimeout> | null = null;
+let pushSlotPending: number | null = null;
+let pushGetSave: (() => SaveData | null) | null = null;
+
+export function schedulePush(slot: number, getSave: () => SaveData | null): void {
+  if (authState.status !== 'signed-in') return;
+  pushSlotPending = slot;
+  pushGetSave = getSave;
+  if (pushTimer) clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => { runScheduledPush().catch(() => {}); }, PUSH_DEBOUNCE_MS);
+}
+
+async function runScheduledPush(): Promise<void> {
+  pushTimer = null;
+  const slot = pushSlotPending;
+  const getSave = pushGetSave;
+  pushSlotPending = null;
+  pushGetSave = null;
+  if (slot == null || !getSave) return;
+  const save = getSave();
+  if (!save) return;
+  // pushSlot marks pending on network failure; a conflict result is left
+  // alone (no silent overwrite) for the user to resolve in the Cloud menu.
+  await pushSlot(slot, save, { reason: 'day-end' });
+}
+
 // ──── Pending flush ────
 
 /** Retry any slot marked pending (e.g. a push that failed while offline).
