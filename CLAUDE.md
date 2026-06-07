@@ -161,6 +161,38 @@ npm run build
 # dist/ is already the Apache DocumentRoot — changes are live immediately on both domains
 ```
 
+## Cloud Save Sync
+
+Optional account-based cloud save sync. The game is fully playable with no
+account; sync is additive. Backend is a dedicated FastAPI service in `server/`
+(`clowder-sync`), isolated from Quadrille (own DB/port/process) so a bug here
+can never touch Quadrille's data. See `server/README.md` + `server/deploy/`, and
+the design council in `docs/clowder-and-crest-account-architecture/`.
+
+- **Service**: uvicorn on `127.0.0.1:3486`, systemd unit `clowder-sync`
+  (`sudo systemctl restart clowder-sync` after server edits). Reverse-proxied by
+  Apache at `/api/` on **both** vhosts. Postgres db `clowder_sync` / role
+  `clowder_sync_app` on the volume cluster. Secrets in `server/.env` (chmod 600).
+- **Auth**: email+password, opaque server sessions (ported from Quadrille).
+  httpOnly `__Host-clowder_session` cookie on web; Bearer token in
+  `@capacitor/preferences` on the Capacitor WebView (cross-origin, so CORS is
+  required — Quadrille's Flutter client doesn't need it, Clowder's does).
+  Sync works immediately on signup; email verification gates only password reset.
+- **Sync model**: per-slot whole-blob (one `SaveData` per user+slot 1-3), NOT
+  row merge. Optimistic concurrency by sha256 content hash — the client sends
+  the `baseHash` it last synced; the server 409s on mismatch and **never
+  silently overwrites** (the Chart35 data-loss lesson). Forced overwrites and
+  fast-forwards archive the replaced blob server-side (`clowder_save_slot_versions`)
+  for cross-device recovery.
+- **Client**: `src/systems/CloudSync.ts` (fail-soft facade, mirrors
+  `NativeFeatures.ts`), `src/ui/CloudPanel.ts` (account UI + divergence chooser,
+  opened from the menu's "Cloud Save"). Inbound downloads run through
+  `validateAndSanitizeSave()` and refuse a save whose `version` exceeds the
+  client's `SAVE_VERSION` (forward-only migration). A `.cloudbak.<reason>.<ts>`
+  local backup is written before any cloud overwrite (14-day retention). Hooks:
+  title-load slot decoration, debounced day-end push, online pending-flush.
+  Logout/session-expiry never touch local saves.
+
 ## Using Nia
 
 Nia is installed as a CLI at `/usr/bin/nia`, authenticated for the `jacob` user. It provides indexing and search for external documentation, GitHub repos, packages, and research. **Prefer Nia over WebFetch/WebSearch** — Nia returns full structured content; web tools return truncated summaries.
@@ -213,5 +245,4 @@ Invoke Nia via the Bash tool. Key commands:
 - Big cats (Lynx, Lion, Leopard) and additional breeds
 - Light-path puzzle type
 - Individual cat rooms (personal decoration per cat)
-- Cloud save sync
 - Signed release APK (debug builds only)
