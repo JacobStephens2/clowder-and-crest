@@ -34,6 +34,7 @@ import {
   deleteSlot,
   addJournalEntry,
   saveToSlot,
+  loadFromSlot,
   getPlayerPronouns,
 } from './systems/SaveManager';
 import { createCat, getBreed, addXp, hasTrait } from './systems/CatManager';
@@ -55,6 +56,8 @@ import { getGuildFocusLines } from './systems/GuildFocus';
 import { showNarrativeOverlay } from './ui/narrativeOverlay';
 import { buildChapterIntroScene } from './data/chapterScenes';
 import { initPanels, showCatPanel, showMenuPanel, showFurnitureShop } from './ui/Panels';
+import { initCloudPanel, handleAuthLink } from './ui/CloudPanel';
+import { initCloudSync, schedulePush, flushPending } from './systems/CloudSync';
 import { initConversations, checkAndShowConversation } from './ui/Conversations';
 import { initRelationalJournal } from './ui/RelationalJournal';
 import { showEndDaySuggestion } from './ui/overlays/EndDaySuggestion';
@@ -727,6 +730,23 @@ initPanels({
   guildEndDayBtn,
   guildWishBanner,
   clearCurrentSave: sessionFlow.clearCurrentSave,
+});
+initCloudPanel({
+  overlayLayer,
+  showToast,
+  getGameState: () => gameState,
+  saveGame,
+  setGameState: (s) => { gameState = s; },
+  switchScene,
+  getActiveSlot: sessionFlow.getActiveSlot,
+  reopenMenu: showMenuPanel,
+});
+// Resolve cloud auth state in the background — never blocks game startup.
+// Then handle any verification / password-reset link the user followed here.
+initCloudSync().then(() => handleAuthLink()).catch(() => {});
+// When connectivity returns, retry any uploads that failed while offline.
+window.addEventListener('online', () => {
+  flushPending((slot) => loadFromSlot(slot)).catch(() => {});
 });
 initDayOfRest({
   getGameState: () => gameState,
@@ -2271,6 +2291,11 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
   // filesystem writes are async and we don't want to lag the per-tile
   // save loop. One snapshot per in-game day is plenty.
   writeAutoSnapshot(JSON.stringify(gameState)).catch(() => {});
+
+  // Cloud sync: debounced background upload of the active slot at day-end (the
+  // game's natural checkpoint). No-op unless signed in; conflicts are never
+  // auto-resolved — they wait for the player in the Cloud Save menu.
+  schedulePush(sessionFlow.getActiveSlot(), () => gameState);
 
   // Refresh the iOS Home Screen / Lock Screen widgets with the new day count
   // and roster size. No-op on Android and web.

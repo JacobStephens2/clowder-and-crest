@@ -288,7 +288,12 @@ export async function setupStatusBar(): Promise<void> {
   try {
     await StatusBar.setStyle({ style: Style.Dark });
     await StatusBar.setBackgroundColor({ color: '#1c1b19' });
-    await StatusBar.setOverlaysWebView({ overlay: false });
+    // On Android, MainActivity's WindowInsets listener owns the safe-area
+    // padding (edge-to-edge is enforced on SDK 35+), so the WebView should
+    // overlay the status bar and let that listener inset it — otherwise the
+    // plugin's own inset handling would double the top gap. iOS keeps
+    // overlay:false; there WKWebView + contentInset + env(safe-area) handle it.
+    await StatusBar.setOverlaysWebView({ overlay: !isIOS() });
   } catch {
     // No-op
   }
