@@ -53,6 +53,13 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
 
   const url = new URL(req.url);
+
+  // Never cache the cloud-sync API. /api/* is same-origin, so without this
+  // bypass the cache-first handler below would serve stale slot summaries
+  // and conflict state — e.g. "still out of sync" right after a successful
+  // upload. Let these always hit the network.
+  if (url.pathname.startsWith('/api/')) return;
+
   // Only cache same-origin requests; let cross-origin (analytics, fonts)
   // hit the network as normal.
   if (url.origin !== self.location.origin) return;
