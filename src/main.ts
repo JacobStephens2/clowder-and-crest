@@ -55,6 +55,8 @@ import { getGuildFocusLines } from './systems/GuildFocus';
 import { showNarrativeOverlay } from './ui/narrativeOverlay';
 import { buildChapterIntroScene } from './data/chapterScenes';
 import { initPanels, showCatPanel, showMenuPanel, showFurnitureShop } from './ui/Panels';
+import { initCloudPanel } from './ui/CloudPanel';
+import { initCloudSync } from './systems/CloudSync';
 import { initConversations, checkAndShowConversation } from './ui/Conversations';
 import { initRelationalJournal } from './ui/RelationalJournal';
 import { showEndDaySuggestion } from './ui/overlays/EndDaySuggestion';
@@ -728,6 +730,18 @@ initPanels({
   guildWishBanner,
   clearCurrentSave: sessionFlow.clearCurrentSave,
 });
+initCloudPanel({
+  overlayLayer,
+  showToast,
+  getGameState: () => gameState,
+  saveGame,
+  setGameState: (s) => { gameState = s; },
+  switchScene,
+  getActiveSlot: sessionFlow.getActiveSlot,
+  reopenMenu: showMenuPanel,
+});
+// Resolve cloud auth state in the background — never blocks game startup.
+initCloudSync().catch(() => {});
 initDayOfRest({
   getGameState: () => gameState,
   overlayLayer,

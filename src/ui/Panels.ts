@@ -19,6 +19,7 @@ import { getDailyWish } from '../systems/GameSystems';
 import { showDayOfRestPanel, hasAnyDayOfRestUnlock } from './DayOfRestPanel';
 import { showRelationalJournalPanel, hasAnyRelationalJournalEntries } from './RelationalJournal';
 import { isRestDay } from '../systems/ProgressionManager';
+import { showCloudPanel } from './CloudPanel';
 
 const SPECIALIZATION_CATEGORIES: Record<string, { name: string; desc: string; icon: string }> = {
   pest_control: { name: 'Ratcatcher', desc: '+20% pest control, -5% others', icon: '\uD83D\uDC00' },
@@ -418,6 +419,7 @@ export function showMenuPanel(): void {
       <span style="font-size:11px;color:#8b7355;white-space:nowrap">SFX Vol</span>
       <input type="range" id="menu-vol-sfx" min="0" max="100" value="${Math.round(getSfxVolume() * 100)}" style="flex:1;accent-color:#c4956a;height:6px;touch-action:pan-y">
     </div>
+    <button class="menu-btn" id="menu-cloud">Cloud Save</button>
     <button class="menu-btn" id="menu-export">Export Save</button>
     <button class="menu-btn" id="menu-import">Import Save</button>
     <button class="menu-btn" id="menu-quit-title">Quit to Title Screen</button>
@@ -554,6 +556,11 @@ export function showMenuPanel(): void {
 
   document.getElementById('menu-vol-sfx')!.addEventListener('input', (e) => {
     setSfxVolume(parseInt((e.target as HTMLInputElement).value) / 100);
+  });
+
+  document.getElementById('menu-cloud')!.addEventListener('click', () => {
+    panel.remove();
+    showCloudPanel();
   });
 
   document.getElementById('menu-export')!.addEventListener('click', () => {
