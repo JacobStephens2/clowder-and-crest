@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { hasSave, loadGame, saveGame, getSlotSummary, loadFromSlot, saveToSlot, deleteSlot, pruneExpiredBackups, getRecentBackup, restoreBackup, validateAndSanitizeSave } from '../systems/SaveManager';
 import { switchToTrackset } from '../systems/MusicManager';
 import { eventBus } from '../utils/events';
+import * as Cloud from '../systems/CloudSync';
 import { DPR, GAME_WIDTH, GAME_HEIGHT } from '../utils/constants';
 import { esc } from '../utils/helpers';
 import { isNative, readAutoSnapshot } from '../systems/NativeFeatures';
@@ -354,6 +355,9 @@ export class TitleScene extends Phaser.Scene {
           html += `<button class="slot-recover" data-slot="${slot}" data-bak="${esc(backup.key)}" style="display:block;width:300px;padding:6px;margin:0 0 8px 0;background:#1a2018;border:1px solid #4a8a4a;border-radius:4px;color:#88dd88;font-family:Georgia,serif;font-size:11px;cursor:pointer;text-align:center">${recoverLabel}</button>`;
         }
       }
+      // Cloud status for this slot is filled in asynchronously by
+      // decorateSlotsWithCloud once cloud summaries load (signed-in only).
+      html += `<div class="cloud-slot-line" data-slot="${slot}" style="width:300px;margin:-2px 0 10px;font-size:11px;color:#6b8ea6;text-align:left"></div>`;
     }
 
     html += `<button id="slot-cancel" style="margin-top:16px;padding:8px 24px;background:none;border:1px solid #3a3530;border-radius:4px;color:#6b5b3e;font-family:Georgia,serif;font-size:13px;cursor:pointer">Cancel</button>`;
@@ -412,6 +416,54 @@ export class TitleScene extends Phaser.Scene {
     });
 
     document.getElementById('slot-cancel')!.addEventListener('click', () => overlay.remove());
+
+    // Decorate slots with cloud status (and a safe cloud-only download)
+    // once summaries load. Fire-and-forget; the picker is fully usable
+    // offline / signed-out without it.
+    this.decorateSlotsWithCloud(overlay, mode);
+  }
+
+  /** Fill each slot's `.cloud-slot-line` with its cloud sync state. For a
+   *  cloud-only slot (nothing local to lose) offer a one-tap download; for a
+   *  divergence, point the player at the in-game Cloud Save menu to resolve.
+   *  Signed-in only; silent no-op otherwise. */
+  private decorateSlotsWithCloud(overlay: HTMLElement, mode: 'load' | 'new'): void {
+    if (!Cloud.isSignedIn()) return;
+    Cloud.fetchCloudSlots().then((slots) => {
+      if (!slots || !document.body.contains(overlay)) return;
+      for (let slot = 1; slot <= 3; slot++) {
+        const line = overlay.querySelector<HTMLElement>(`.cloud-slot-line[data-slot="${slot}"]`);
+        if (!line) continue;
+        const cloud = slots.find((s) => s.slot === slot);
+        const status = Cloud.compareSlot(slot, cloud);
+        switch (status.state) {
+          case 'in-sync': line.textContent = '☁ Cloud: in sync'; break;
+          case 'local-newer': line.textContent = '☁ Cloud: local changes not uploaded'; break;
+          case 'cloud-newer': line.textContent = '☁ Cloud: newer copy available'; break;
+          case 'diverged':
+            line.textContent = '☁ Cloud: differs — resolve in the in-game Cloud Save menu';
+            line.style.color = '#c8a06a';
+            break;
+          case 'cloud-only': {
+            line.innerHTML = '';
+            const btn = document.createElement('button');
+            btn.textContent = '☁ Download cloud save into this slot';
+            btn.style.cssText = 'display:block;width:300px;padding:6px;background:#16201c;border:1px solid #4a8a6a;border-radius:4px;color:#88ddbb;font-family:Georgia,serif;font-size:11px;cursor:pointer;text-align:center';
+            btn.addEventListener('click', async () => {
+              btn.disabled = true;
+              btn.textContent = 'Downloading…';
+              const r = await Cloud.pullSlot(slot, { reason: 'download' });
+              if (r.ok) { overlay.remove(); this.showSlotPicker(mode); }
+              else if (r.error === 'version-skew') btn.textContent = 'Newer game version — update first';
+              else btn.textContent = 'Download failed';
+            });
+            line.appendChild(btn);
+            break;
+          }
+          default: line.textContent = '';
+        }
+      }
+    }).catch(() => { /* offline / transient — leave slots undecorated */ });
   }
 
   private createButton(

@@ -1,0 +1,14 @@
+[Unit]
+Description=Clowder & Crest cloud-sync service (FastAPI)
+After=network.target postgresql.service
+
+[Service]
+User=jacob
+WorkingDirectory=/var/www/clowder.stephens.page/server
+EnvironmentFile=/var/www/clowder.stephens.page/server/.env
+ExecStart=/mnt/volume_nyc3_01/jacob/clowder-sync-venv/bin/uvicorn clowder_sync_app:app --host 127.0.0.1 --port 3486
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
