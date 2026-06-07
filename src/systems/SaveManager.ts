@@ -469,13 +469,90 @@ export function pruneExpiredBackups(): void {
     const k = localStorage.key(i);
     if (!k) continue;
     const m = k.match(BACKUP_PATTERN);
-    if (!m) continue;
-    const ts = parseInt(m[2], 10);
-    if (Number.isFinite(ts) && now - ts > BACKUP_RETENTION_MS) {
-      toRemove.push(k);
+    if (m) {
+      const ts = parseInt(m[2], 10);
+      if (Number.isFinite(ts) && now - ts > BACKUP_RETENTION_MS) toRemove.push(k);
+      continue;
+    }
+    // Cloud-overwrite backups live longer (data-loss protection, not the
+    // accidental-delete safety net) — prune them on a 14-day window.
+    const cm = k.match(CLOUD_BACKUP_PATTERN);
+    if (cm) {
+      const ts = parseInt(cm[3], 10);
+      if (Number.isFinite(ts) && now - ts > CLOUD_BACKUP_RETENTION_MS) toRemove.push(k);
     }
   }
   for (const k of toRemove) localStorage.removeItem(k);
+}
+
+// ── Cloud-overwrite backups ──
+//
+// Before cloud sync replaces a slot's local save (a download that overwrites
+// local, or a divergence-chooser "use cloud copy"), we snapshot the current
+// local save to a `.cloudbak.<reason>.<ts>` key. Unlike the 48h delete backups
+// above, these are explicit data-loss protection against a bad sync decision,
+// so they're retained for 14 days. This is the client half of the
+// anti-Chart35 guarantee: no sync path overwrites a save without leaving a
+// recoverable copy on the device.
+const CLOUD_BACKUP_RETENTION_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
+const CLOUD_BACKUP_PATTERN = new RegExp(`^${SLOT_PREFIX}(\\d+)\\.cloudbak\\.([a-z-]+)\\.(\\d+)$`);
+
+/** Snapshot a slot's current save before a cloud overwrite. No-op if the slot
+ *  is empty. `reason` is a short kebab tag (e.g. 'download', 'conflict') used
+ *  in the backup key. Best-effort: a storage-full failure is logged, not
+ *  thrown, so it never blocks the sync the user asked for. */
+export function backupSlotBeforeCloudOverwrite(slot: number, reason: string): void {
+  const key = `${SLOT_PREFIX}${slot}`;
+  const existing = localStorage.getItem(key);
+  if (!existing) return;
+  const safeReason = /^[a-z-]+$/.test(reason) ? reason : 'cloud';
+  try {
+    localStorage.setItem(`${key}.cloudbak.${safeReason}.${Date.now()}`, existing);
+  } catch (e) {
+    console.warn('Cloud-overwrite backup failed (storage full?):', e);
+  }
+}
+
+/** Most recent cloud-overwrite backup for a slot within the 14-day window, or
+ *  null. Mirrors getRecentBackup so a recovery affordance can be offered after
+ *  a regretted sync. */
+export function getRecentCloudBackup(slot: number): { key: string; ageMs: number; reason: string; summary: { name: string; day: number; chapter: number; cats: number } } | null {
+  const now = Date.now();
+  let bestKey: string | null = null;
+  let bestTs = 0;
+  let bestReason = 'cloud';
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k) continue;
+    const m = k.match(CLOUD_BACKUP_PATTERN);
+    if (!m) continue;
+    if (parseInt(m[1], 10) !== slot) continue;
+    const ts = parseInt(m[3], 10);
+    if (!Number.isFinite(ts) || now - ts > CLOUD_BACKUP_RETENTION_MS) continue;
+    if (ts > bestTs) {
+      bestTs = ts;
+      bestKey = k;
+      bestReason = m[2];
+    }
+  }
+  if (!bestKey) return null;
+  try {
+    const data = JSON.parse(localStorage.getItem(bestKey) || 'null');
+    if (!data) return null;
+    return {
+      key: bestKey,
+      ageMs: now - bestTs,
+      reason: bestReason,
+      summary: {
+        name: typeof data.playerCatName === 'string' ? data.playerCatName : 'Unknown',
+        day: typeof data.day === 'number' ? data.day : 1,
+        chapter: typeof data.chapter === 'number' ? data.chapter : 1,
+        cats: Array.isArray(data.cats) ? data.cats.length : 1,
+      },
+    };
+  } catch {
+    return null;
+  }
 }
 
 /** List the most recent backup for a given slot, or null if none exist
