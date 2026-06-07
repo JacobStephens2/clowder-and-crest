@@ -130,6 +130,43 @@ export function showCloudPanel(): void {
   });
 }
 
+/** Handle a verification / password-reset link the user followed from email.
+ *  Runs at startup (in whatever context opened the link — usually the mobile
+ *  browser). No-op when there's no such link in the URL. */
+export async function handleAuthLink(): Promise<void> {
+  const link = Cloud.readAuthLink();
+  if (!link) return;
+  if (link.kind === 'verify') {
+    const ok = await Cloud.verifyEmail(link.token);
+    Cloud.clearAuthLink();
+    deps.showToast(ok ? 'Email verified — account recovery is on' : 'That verification link is invalid or expired');
+  } else {
+    showResetPasswordPanel(link.token);
+  }
+}
+
+function showResetPasswordPanel(token: string): void {
+  removeCloudPanels();
+  const panel = document.createElement('div');
+  panel.className = 'menu-overlay cloud-overlay';
+  panel.innerHTML = `
+    <button class="panel-close" id="reset-close">&times;</button>
+    <h2>Set a new password</h2>
+    <input type="password" id="reset-pw" placeholder="New password (8+ characters)" autocomplete="new-password" style="${INPUT_STYLE}" />
+    <div id="reset-error" style="color:#cc6666;font-size:11px;min-height:14px;margin:2px 0"></div>
+    <button class="menu-btn" id="reset-submit">Save new password</button>
+  `;
+  deps.overlayLayer.appendChild(panel);
+  const close = () => { Cloud.clearAuthLink(); removeCloudPanels(); };
+  document.getElementById('reset-close')!.addEventListener('click', close);
+  document.getElementById('reset-submit')!.addEventListener('click', async () => {
+    const pw = (document.getElementById('reset-pw') as HTMLInputElement).value;
+    const r = await Cloud.resetPassword(token, pw);
+    if (r.ok) { Cloud.clearAuthLink(); removeCloudPanels(); deps.showToast('Password updated — sign in with it'); showCloudPanel(); }
+    else { const e = document.getElementById('reset-error'); if (e) e.textContent = r.error || 'Reset failed'; }
+  });
+}
+
 // ──── Per-slot upload / download / compare ────
 
 function relTime(t: number | string | null | undefined): string {

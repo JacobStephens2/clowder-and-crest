@@ -56,7 +56,7 @@ import { getGuildFocusLines } from './systems/GuildFocus';
 import { showNarrativeOverlay } from './ui/narrativeOverlay';
 import { buildChapterIntroScene } from './data/chapterScenes';
 import { initPanels, showCatPanel, showMenuPanel, showFurnitureShop } from './ui/Panels';
-import { initCloudPanel } from './ui/CloudPanel';
+import { initCloudPanel, handleAuthLink } from './ui/CloudPanel';
 import { initCloudSync, schedulePush, flushPending } from './systems/CloudSync';
 import { initConversations, checkAndShowConversation } from './ui/Conversations';
 import { initRelationalJournal } from './ui/RelationalJournal';
@@ -742,7 +742,8 @@ initCloudPanel({
   reopenMenu: showMenuPanel,
 });
 // Resolve cloud auth state in the background — never blocks game startup.
-initCloudSync().catch(() => {});
+// Then handle any verification / password-reset link the user followed here.
+initCloudSync().then(() => handleAuthLink()).catch(() => {});
 // When connectivity returns, retry any uploads that failed while offline.
 window.addEventListener('online', () => {
   flushPending((slot) => loadFromSlot(slot)).catch(() => {});

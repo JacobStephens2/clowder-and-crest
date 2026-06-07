@@ -273,6 +273,31 @@ export async function requestPasswordReset(email: string): Promise<void> {
   await api('POST', '/api/auth/forgot-password', { email });
 }
 
+export async function verifyEmail(token: string): Promise<boolean> {
+  const res = await api('POST', '/api/auth/verify-email', { token });
+  if (res.status === 200) { await refreshAuth(); return true; }
+  return false;
+}
+
+export async function resetPassword(token: string, password: string): Promise<{ ok: boolean; error?: string }> {
+  const res = await api('POST', '/api/auth/reset-password', { token, password });
+  if (res.status === 200) return { ok: true };
+  return { ok: false, error: typeof res.data?.detail === 'string' ? res.data.detail : 'Reset failed' };
+}
+
+/** Parse a verification / reset link the user followed from email. The mailer
+ *  builds `{BASE_URL}/#/verify-email?token=...` and `/#/reset-password?token=...`. */
+export function readAuthLink(): { kind: 'verify' | 'reset'; token: string } | null {
+  const m = (window.location.hash || '').match(/^#\/(verify-email|reset-password)\?token=([^&]+)/);
+  if (!m) return null;
+  return { kind: m[1] === 'verify-email' ? 'verify' : 'reset', token: decodeURIComponent(m[2]) };
+}
+
+/** Strip the token out of the URL so a refresh doesn't re-trigger it. */
+export function clearAuthLink(): void {
+  try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch { /* ignore */ }
+}
+
 // ──── Slot metadata ────
 
 function getCloudBaseHash(slot: number): string | null { return localStorage.getItem(kCloudHash(slot)); }
