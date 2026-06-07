@@ -92,7 +92,10 @@ export interface SaveData {
 }
 
 const SAVE_KEY = 'clowder_and_crest_save';
-const SAVE_VERSION = 2;
+/** Current save schema version. Exported so CloudSync can refuse to load a
+ *  downloaded save whose version is newer than this client understands
+ *  (migrateSaveData only migrates forward). */
+export const SAVE_VERSION = 2;
 
 // ──── Untrusted-save sanitization ────
 //
