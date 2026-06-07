@@ -38,5 +38,14 @@ export default defineConfig({
   server: {
     port: 3200,
     host: true,
+    // Proxy the cloud-sync API to the local clowder-sync service in dev so
+    // requests are same-origin (no CORS) and cookie auth works, matching the
+    // production Apache /api/ proxy.
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:3486',
+        changeOrigin: false,
+      },
+    },
   },
 });
