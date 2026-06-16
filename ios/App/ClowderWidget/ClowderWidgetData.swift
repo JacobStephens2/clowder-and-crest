@@ -13,7 +13,7 @@ struct ClowderWidgetData: Codable {
     var catCount: Int
     var lastPlayed: Double   // epoch milliseconds (matches JS Date.now())
 
-    static let appGroupID = "group.page.stephens.clowder"
+    static let appGroupID = "group.page.stephens.clowder.crest"
     static let storageKey = "clowderWidgetData"
 
     /// A friendly placeholder used before the player has ever ended a day
