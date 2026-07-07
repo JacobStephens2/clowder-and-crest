@@ -32,3 +32,6 @@ test/screenshots/
 
 # iOS build output (archives + exported .ipa from scripts/build-ios-ipa.sh)
 build/
+
+# Local Obsidian working vault (personal notes, not app content — tracked notes live under todo/)
+ClowderToDo/
