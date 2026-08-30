@@ -15,7 +15,7 @@ public class ClowderBridgePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "updateWidgetData", returnType: CAPPluginReturnPromise)
     ]
 
-    private let appGroupID = "group.page.stephens.clowder"
+    private let appGroupID = "group.page.stephens.clowder.crest"
     private let storageKey = "clowderWidgetData"
 
     @objc func updateWidgetData(_ call: CAPPluginCall) {

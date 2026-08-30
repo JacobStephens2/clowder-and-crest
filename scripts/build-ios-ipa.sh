@@ -53,6 +53,16 @@ fi
 rm -rf "$ARCHIVE" "$EXPORT_DIR"
 mkdir -p "$BUILD_DIR"
 
+# On a dev machine, -allowProvisioningUpdates works because Xcode is signed into
+# the Apple account. In CI there is no logged-in account, so pass an App Store
+# Connect API key when these env vars are set. The `${ARR[@]+...}` guard keeps
+# the empty-array expansion safe under `set -u` on macOS's bash 3.2.
+AUTH_ARGS=()
+if [ -n "${ASC_KEY_ID:-}" ] && [ -n "${ASC_ISSUER_ID:-}" ] && [ -n "${ASC_KEY_PATH:-}" ]; then
+  echo "▸ Using App Store Connect API key ${ASC_KEY_ID} for provisioning"
+  AUTH_ARGS=(-authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" -authenticationKeyPath "$ASC_KEY_PATH")
+fi
+
 echo "▸ Archiving (Release, generic iOS device)…"
 xcodebuild archive \
   -project "$PROJECT" \
@@ -61,6 +71,7 @@ xcodebuild archive \
   -destination 'generic/platform=iOS' \
   -archivePath "$ARCHIVE" \
   -allowProvisioningUpdates \
+  ${AUTH_ARGS[@]+"${AUTH_ARGS[@]}"} \
   | tail -2
 
 echo "▸ Exporting development-signed .ipa…"
@@ -69,6 +80,7 @@ xcodebuild -exportArchive \
   -exportOptionsPlist "$EXPORT_OPTS" \
   -exportPath "$EXPORT_DIR" \
   -allowProvisioningUpdates \
+  ${AUTH_ARGS[@]+"${AUTH_ARGS[@]}"} \
   | tail -2
 
 # Xcode names the export "App.ipa" (after the product); rename to a versioned file.

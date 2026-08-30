@@ -6,7 +6,7 @@
 	     extension can read/write the same widget snapshot. -->
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.page.stephens.clowder</string>
+		<string>group.page.stephens.clowder.crest</string>
 	</array>
 </dict>
 </plist>
