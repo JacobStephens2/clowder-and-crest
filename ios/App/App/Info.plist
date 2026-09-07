@@ -4,6 +4,11 @@
 <dict>
     <key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
+	<!-- The game only uses standard HTTPS/TLS, which is exempt from US export
+	     encryption rules. Declaring this up front skips the per-build "Missing
+	     Compliance" gate in TestFlight so builds are testable immediately. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
@@ -41,6 +46,12 @@
 		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
+	<!-- This is a portrait-locked game. Opting out of iPad multitasking
+	     (Split View / Slide Over) lets the restricted orientation set above
+	     pass App Store validation (error 90474), which otherwise demands all
+	     four orientations for any iPad-capable app that supports multitasking. -->
+	<key>UIRequiresFullScreen</key>
+	<true/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>UIStatusBarStyle</key>

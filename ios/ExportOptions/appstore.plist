@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- App Store export: produces a distribution-signed .ipa suitable for
+	     upload to App Store Connect / TestFlight via `xcrun altool`. Unlike the
+	     sibling development.plist (sideload-only), this is the path real testers
+	     install through TestFlight. Team LHY8W725A8 = Stephens Page LLC, the org
+	     team that hosts the App Store Connect record. -->
+	<key>method</key>
+	<string>app-store-connect</string>
+	<key>teamID</key>
+	<string>LHY8W725A8</string>
+	<key>signingStyle</key>
+	<string>automatic</string>
+	<key>uploadSymbols</key>
+	<true/>
+	<key>stripSwiftSymbols</key>
+	<true/>
+	<key>destination</key>
+	<string>export</string>
+</dict>
+</plist>
