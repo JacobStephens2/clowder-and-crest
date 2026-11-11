@@ -277,6 +277,19 @@ test('capture and pending-marker failures return errors without sending invalid 
   assert.equal(requests.length, 0);
 });
 
+test('older success preserves pending work recorded for a newer failed scheduled capture', async () => {
+  const save = createDefaultSave('Capture failure guild');
+  saveToSlot(1, save);
+  const first = Cloud.pushSlot(1, save, { reason: 'manual-upload' });
+  const newer = { ...save, day: 2 };
+  Object.defineProperty(newer, 'cycle', { value: newer, enumerable: true });
+  Cloud.schedulePush(1, newer);
+  assert.equal(Cloud.hasPending(1), true);
+  requests[0].reply.resolve(success('day-1'));
+  assert.equal((await first).ok, true);
+  assert.equal(Cloud.hasPending(1), true, 'older success cannot clear pending for a failed newer capture');
+});
+
 test('baseline persistence failure never reports a successful sync', async () => {
   const save = createDefaultSave('Storage failure');
   saveToSlot(1, save);

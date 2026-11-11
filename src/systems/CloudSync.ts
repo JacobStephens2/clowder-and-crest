@@ -416,11 +416,14 @@ function laneFor(slot: number): UploadLane {
 }
 
 function acceptUpload(slot: number, save: SaveData, opts: { force?: boolean; reason: string }): Upload {
+  const lane = laneFor(slot);
+  cancelDebounce(lane);
+  // A failed capture is still newer requested work, owned by its pending marker.
+  const sequence = ++lane.requested;
+  if (!markPending(slot)) throw new Error('Could not record pending upload');
   const snapshot = captureSave(save);
   const fingerprint = localHash(snapshot);
-  if (!markPending(slot)) throw new Error('Could not record pending upload');
-  const lane = laneFor(slot);
-  return { slot, snapshot, fingerprint, sequence: ++lane.requested,
+  return { slot, snapshot, fingerprint, sequence,
     identity: identityGeneration, generation: lane.generation,
     force: !!opts.force, reason: opts.reason, resolve: () => {} };
 }
@@ -476,7 +479,6 @@ export async function pushSlot(slot: number, save: SaveData, opts: { force?: boo
   if (authState.status !== 'signed-in') return { ok: false, error: 'Not signed in' };
   try {
     const upload = acceptUpload(slot, save, opts);
-    cancelDebounce(laneFor(slot));
     return new Promise((resolve) => {
       upload.resolve = resolve;
       enqueueUpload(upload);
@@ -584,7 +586,6 @@ export function schedulePush(slot: number, save: SaveData): void {
   try {
     const upload = acceptUpload(slot, save, { reason: 'day-end' });
     const lane = laneFor(slot);
-    cancelDebounce(lane);
     lane.scheduled = { upload, timer: setTimeout(() => {
       lane.scheduled = undefined;
       enqueueUpload(upload);
