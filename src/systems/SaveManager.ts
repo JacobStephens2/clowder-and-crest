@@ -431,14 +431,23 @@ export function saveToSlot(slot: number, data: SaveData): void {
   }
 }
 
-export function loadFromSlot(slot: number): SaveData | null {
+export type SlotReadResult =
+  | { status: 'loaded'; save: SaveData }
+  | { status: 'empty' | 'unavailable'; save: null };
+
+/** Read once, keeping emptiness distinct from a failed read for retry callers. */
+export function readSlot(slot: number): SlotReadResult {
   try {
     const raw = localStorage.getItem(`${SLOT_PREFIX}${slot}`);
-    if (!raw) return null;
-    return migrateSaveData(JSON.parse(raw) as SaveData);
+    if (!raw) return { status: 'empty', save: null };
+    return { status: 'loaded', save: migrateSaveData(JSON.parse(raw) as SaveData) };
   } catch {
-    return null;
+    return { status: 'unavailable', save: null };
   }
+}
+
+export function loadFromSlot(slot: number): SaveData | null {
+  return readSlot(slot).save;
 }
 
 export function deleteSlot(slot: number): void {

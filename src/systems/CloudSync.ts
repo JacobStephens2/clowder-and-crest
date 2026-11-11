@@ -19,6 +19,7 @@ import { Preferences } from '@capacitor/preferences';
 import { isNative } from './NativeFeatures';
 import {
   loadFromSlot,
+  readSlot,
   saveToSlot,
   validateAndSanitizeSave,
   backupSlotBeforeCloudOverwrite,
@@ -603,18 +604,12 @@ export async function flushPending(): Promise<number[]> {
   for (const slot of [1, 2, 3]) {
     if (identity !== identityGeneration) break;
     if (!hasPending(slot)) continue;
-    // Distinguish an empty slot from a failed read; only emptiness clears work.
-    try {
-      if (localStorage.getItem(`clowder_save_slot_${slot}`) === null) {
-        localStorage.removeItem(kPending(slot));
-        continue;
-      }
-    } catch { continue; }
-    const save = loadFromSlot(slot);
-    if (!save) {
-      continue;
+    const local = readSlot(slot);
+    if (local.status === 'empty') {
+      try { localStorage.removeItem(kPending(slot)); } catch { /* retain pending on storage failure */ }
     }
-    const r = await pushSlot(slot, save, { reason: 'day-end' });
+    if (!local.save) continue;
+    const r = await pushSlot(slot, local.save, { reason: 'day-end' });
     if (r.conflict) conflicts.push(slot);
   }
   return conflicts;
