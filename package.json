@@ -8,10 +8,11 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "check": "npm run check:static && npm run test:logic",
+    "check": "npm run check:static && npm run test:logic && npm run test:cloud",
     "check:static": "node scripts/static-check.mjs",
     "clean:test": "rm -rf test/screenshots && mkdir -p test/screenshots",
     "test:logic": "tsx test/logic-regressions.ts",
+    "test:cloud": "node --import tsx --test test/cloud-sync-regressions.ts test/cloud-panel-regressions.mjs",
     "test:smoke": "node test/smoke.mjs",
     "test:explore": "node test/explore.mjs"
   },

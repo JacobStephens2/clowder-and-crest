@@ -32,6 +32,7 @@ export type AuthStatus = 'unknown' | 'signed-out' | 'signed-in' | 'offline';
 
 export interface CloudAuthState {
   status: AuthStatus;
+  userId?: string;
   email?: string;
   emailVerified?: boolean;
   lastError?: string;
@@ -59,6 +60,7 @@ export interface SlotSyncStatus {
 
 export interface PushResult {
   ok: boolean;
+  cancelled?: boolean;
   status?: 'created' | 'unchanged' | 'fast-forward' | 'forced';
   conflict?: CloudSlotSummary;
   error?: string;
@@ -83,6 +85,7 @@ const kPending = (slot: number) => `clowder_cloud_slot_${slot}_pending`;
 
 let authState: CloudAuthState = { status: 'unknown' };
 let nativeToken: string | null = null;
+let identityGeneration = 0;
 const listeners = new Set<(s: CloudAuthState) => void>();
 
 function setState(next: Partial<CloudAuthState>): void {
@@ -200,6 +203,12 @@ function localHash(save: SaveData): string {
   return (h >>> 0).toString(16);
 }
 
+function captureSave(save: SaveData): SaveData {
+  const snapshot = JSON.parse(JSON.stringify(save));
+  if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) throw new Error('Invalid save');
+  return snapshot;
+}
+
 // ──── Init ────
 
 /** One-shot init: load any native token, then resolve auth state via /me.
@@ -215,16 +224,20 @@ export async function initCloudSync(): Promise<void> {
  *  "changes are local only" rather than "signed out", per the Chart35 banner
  *  lesson — a dropped network must never read as a logout). */
 export async function refreshAuth(): Promise<CloudAuthState> {
+  const generation = identityGeneration;
   const res = await api('GET', '/api/auth/me');
+  if (generation !== identityGeneration) return authState;
   if (res.networkError) {
     // Keep the last-known identity but mark transport down.
     setState({ status: authState.email ? 'offline' : 'signed-out' });
     return authState;
   }
   if (res.status === 200 && res.data?.user) {
+    adoptIdentity(res.data.user.id);
     localStorage.setItem(K_EMAIL, res.data.user.email);
     setState({ status: 'signed-in', email: res.data.user.email, emailVerified: !!res.data.user.emailVerified, lastError: undefined });
   } else {
+    adoptIdentity(undefined);
     setState({ status: 'signed-out', emailVerified: undefined });
   }
   return authState;
@@ -239,6 +252,7 @@ async function adoptSession(res: ApiResult): Promise<{ ok: boolean; error?: stri
     setState({ lastError: msg });
     return { ok: false, error: msg };
   }
+  if (res.data?.user) adoptIdentity(res.data.user.id);
   if (res.data?.token) await saveNativeToken(res.data.token);
   if (res.data?.user) {
     localStorage.setItem(K_EMAIL, res.data.user.email);
@@ -256,6 +270,10 @@ export async function login(email: string, password: string): Promise<{ ok: bool
 }
 
 export async function logout(): Promise<void> {
+  // Cancel at entry, before the logout request can yield to another upload.
+  identityGeneration++;
+  for (const slot of uploadLanes.keys()) invalidateUploads(slot);
+  setState({ status: 'signed-out', userId: undefined });
   await api('POST', '/api/auth/logout');
   await clearNativeToken();
   localStorage.removeItem(K_EMAIL);
@@ -301,13 +319,29 @@ export function clearAuthLink(): void {
 // ──── Slot metadata ────
 
 function getCloudBaseHash(slot: number): string | null { return localStorage.getItem(kCloudHash(slot)); }
-function setSyncedMeta(slot: number, cloudHash: string, save: SaveData): void {
-  localStorage.setItem(kCloudHash(slot), cloudHash);
-  localStorage.setItem(kLocalHash(slot), localHash(save));
-  localStorage.removeItem(kPending(slot));
+function setSyncedMeta(slot: number, cloudHash: string, fingerprint: string): void {
+  const previousCloud = getCloudBaseHash(slot);
+  const previousLocal = localStorage.getItem(kLocalHash(slot));
+  try {
+    localStorage.setItem(kCloudHash(slot), cloudHash);
+    localStorage.setItem(kLocalHash(slot), fingerprint);
+  } catch (error) {
+    // Best effort: a partial pair must not masquerade as a completed sync.
+    try {
+      if (previousCloud === null) localStorage.removeItem(kCloudHash(slot));
+      else localStorage.setItem(kCloudHash(slot), previousCloud);
+      if (previousLocal === null) localStorage.removeItem(kLocalHash(slot));
+      else localStorage.setItem(kLocalHash(slot), previousLocal);
+    } catch { /* storage remains unavailable; pending was recorded at entry */ }
+    throw error;
+  }
 }
-export function markPending(slot: number): void { localStorage.setItem(kPending(slot), '1'); }
-export function hasPending(slot: number): boolean { return localStorage.getItem(kPending(slot)) === '1'; }
+export function markPending(slot: number): boolean {
+  try { localStorage.setItem(kPending(slot), '1'); return true; } catch { return false; }
+}
+export function hasPending(slot: number): boolean {
+  try { return localStorage.getItem(kPending(slot)) === '1'; } catch { return true; }
+}
 
 // ──── Cloud reads ────
 
@@ -348,28 +382,140 @@ export function compareSlot(slot: number, cloud: CloudSlotSummary | undefined): 
 
 // ──── Push ────
 
+interface Upload {
+  slot: number;
+  snapshot: SaveData;
+  fingerprint: string;
+  sequence: number;
+  identity: number;
+  generation: number;
+  force: boolean;
+  reason: string;
+  resolve: (result: PushResult) => void;
+}
+
+interface UploadLane {
+  generation: number;
+  requested: number;
+  running: boolean;
+  queue: Upload[];
+  scheduled?: { upload: Upload; timer: ReturnType<typeof setTimeout> };
+}
+
+const uploadLanes = new Map<number, UploadLane>();
+const PUSH_DEBOUNCE_MS = 8000;
+
+function laneFor(slot: number): UploadLane {
+  let lane = uploadLanes.get(slot);
+  if (!lane) {
+    lane = { generation: 0, requested: 0, running: false, queue: [] };
+    uploadLanes.set(slot, lane);
+  }
+  return lane;
+}
+
+function acceptUpload(slot: number, save: SaveData, opts: { force?: boolean; reason: string }): Upload {
+  const snapshot = captureSave(save);
+  const fingerprint = localHash(snapshot);
+  if (!markPending(slot)) throw new Error('Could not record pending upload');
+  const lane = laneFor(slot);
+  return { slot, snapshot, fingerprint, sequence: ++lane.requested,
+    identity: identityGeneration, generation: lane.generation,
+    force: !!opts.force, reason: opts.reason, resolve: () => {} };
+}
+
+function cancelDebounce(lane: UploadLane): void {
+  if (lane.scheduled) clearTimeout(lane.scheduled.timer);
+  lane.scheduled = undefined;
+}
+
+function cancelledUpload(): PushResult {
+  return { ok: false, cancelled: true, error: 'Upload cancelled' };
+}
+
+function invalidateUploads(slot: number): void {
+  const lane = laneFor(slot);
+  lane.generation++;
+  cancelDebounce(lane);
+  for (const upload of lane.queue.splice(0)) upload.resolve(cancelledUpload());
+}
+
+function adoptIdentity(userId: string | undefined): void {
+  if (authState.userId === userId) return;
+  identityGeneration++;
+  for (const slot of uploadLanes.keys()) invalidateUploads(slot);
+  authState = { ...authState, userId };
+}
+
+function isCurrentUpload(upload: Upload): boolean {
+  return upload.identity === identityGeneration && upload.generation === laneFor(upload.slot).generation;
+}
+
+async function runLane(lane: UploadLane): Promise<void> {
+  if (lane.running) return;
+  lane.running = true;
+  try {
+    while (lane.queue.length) {
+      const upload = lane.queue.shift()!;
+      upload.resolve(await sendUpload(upload, lane));
+    }
+  } finally { lane.running = false; }
+}
+
+function enqueueUpload(upload: Upload): void {
+  const lane = laneFor(upload.slot);
+  lane.queue.push(upload);
+  void runLane(lane);
+}
+
 /** Upload a slot's save. baseHash is the last cloud hash we synced to, so the
  *  server can 409 on divergence. `force` is ONLY passed after an explicit user
  *  choice in the divergence chooser. Never silently overwrites. */
 export async function pushSlot(slot: number, save: SaveData, opts: { force?: boolean; reason: string }): Promise<PushResult> {
   if (authState.status !== 'signed-in') return { ok: false, error: 'Not signed in' };
-  const res = await api('PUT', `/api/saves/slots/${slot}`, {
-    save,
-    baseHash: opts.force ? (getCloudBaseHash(slot) ?? undefined) : getCloudBaseHash(slot),
-    force: !!opts.force,
-    deviceId: deviceId(),
-    reason: opts.reason,
-  });
-  if (res.networkError) { markPending(slot); return { ok: false, error: 'Network unavailable' }; }
-  if (res.status === 409) {
-    const d = res.data?.detail || {};
-    return { ok: false, conflict: { slot, exists: true, hash: d.remoteHash, serverUpdatedAt: d.serverUpdatedAt, deviceId: d.deviceId, summary: d.remoteSummary } };
+  try {
+    const upload = acceptUpload(slot, save, opts);
+    cancelDebounce(laneFor(slot));
+    return new Promise((resolve) => {
+      upload.resolve = resolve;
+      enqueueUpload(upload);
+    });
+  } catch {
+    return { ok: false, error: 'Could not prepare upload' };
   }
-  if (res.status !== 200 || !res.data?.ok) {
-    return { ok: false, error: typeof res.data?.detail === 'string' ? res.data.detail : 'Upload failed' };
+}
+
+async function sendUpload(upload: Upload, lane: UploadLane): Promise<PushResult> {
+  const { slot } = upload;
+  try {
+    if (!isCurrentUpload(upload)) return cancelledUpload();
+    if (authState.status !== 'signed-in') return { ok: false, error: 'Not signed in' };
+    const res = await api('PUT', `/api/saves/slots/${slot}`, {
+      save: upload.snapshot,
+      baseHash: upload.force ? (getCloudBaseHash(slot) ?? undefined) : getCloudBaseHash(slot),
+      force: upload.force,
+      deviceId: deviceId(),
+      reason: upload.reason,
+    });
+    if (!isCurrentUpload(upload)) return cancelledUpload();
+    if (res.networkError) return { ok: false, error: 'Network unavailable' };
+    if (res.status === 409) {
+      invalidateUploads(slot);
+      const d = res.data?.detail || {};
+      return { ok: false, conflict: { slot, exists: true, hash: d.remoteHash, serverUpdatedAt: d.serverUpdatedAt, deviceId: d.deviceId, summary: d.remoteSummary } };
+    }
+    if (res.status !== 200 || !res.data?.ok || typeof res.data.hash !== 'string') {
+      return { ok: false, error: typeof res.data?.detail === 'string' ? res.data.detail : 'Upload failed' };
+    }
+    setSyncedMeta(slot, res.data.hash, upload.fingerprint);
+    const persisted = loadFromSlot(slot);
+    if (lane.requested === upload.sequence && persisted && localHash(captureSave(persisted)) === upload.fingerprint) {
+      localStorage.removeItem(kPending(slot));
+    }
+    return { ok: true, status: res.data.status };
+  } catch {
+    return { ok: false, error: 'Could not store or send upload' };
   }
-  setSyncedMeta(slot, res.data.hash, save);
-  return { ok: true, status: res.data.status };
 }
 
 // ──── Pull ────
@@ -381,7 +527,10 @@ export async function pushSlot(slot: number, save: SaveData, opts: { force?: boo
  *  decides that. */
 export async function pullSlot(slot: number, opts: { reason: string }): Promise<PullResult> {
   if (authState.status !== 'signed-in') return { ok: false, error: 'auth' };
+  const identity = identityGeneration;
+  const generation = laneFor(slot).generation;
   const res = await api('GET', `/api/saves/slots/${slot}`);
+  if (identity !== identityGeneration || generation !== laneFor(slot).generation) return { ok: false, error: 'auth' };
   if (res.networkError) return { ok: false, error: 'network' };
   if (res.status === 401) return { ok: false, error: 'auth' };
   if (res.status !== 200 || !res.data?.exists || !res.data?.save) return { ok: false, error: 'absent' };
@@ -398,7 +547,9 @@ export async function pullSlot(slot: number, opts: { reason: string }): Promise<
   // Back up the local slot BEFORE overwriting it, then write.
   backupSlotBeforeCloudOverwrite(slot, opts.reason);
   saveToSlot(slot, clean);
-  setSyncedMeta(slot, res.data.hash, clean);
+  invalidateUploads(slot);
+  setSyncedMeta(slot, res.data.hash, localHash(clean));
+  localStorage.removeItem(kPending(slot));
   return { ok: true, save: clean };
 }
 
@@ -406,10 +557,15 @@ export async function pullSlot(slot: number, opts: { reason: string }): Promise<
 
 export async function deleteCloudSlot(slot: number): Promise<boolean> {
   if (authState.status !== 'signed-in') return false;
+  const identity = identityGeneration;
+  const generation = laneFor(slot).generation;
   const res = await api('DELETE', `/api/saves/slots/${slot}`);
+  if (identity !== identityGeneration || generation !== laneFor(slot).generation) return false;
   if (res.status === 200) {
+    invalidateUploads(slot);
     localStorage.removeItem(kCloudHash(slot));
     localStorage.removeItem(kLocalHash(slot));
+    localStorage.removeItem(kPending(slot));
     return true;
   }
   return false;
@@ -422,31 +578,17 @@ export async function deleteCloudSlot(slot: number): Promise<boolean> {
 // local untouched and stops, so the player resolves it via the Cloud menu's
 // chooser next time. A network failure marks the slot pending for flushPending.
 
-const PUSH_DEBOUNCE_MS = 8000;
-let pushTimer: ReturnType<typeof setTimeout> | null = null;
-let pushSlotPending: number | null = null;
-let pushGetSave: (() => SaveData | null) | null = null;
-
-export function schedulePush(slot: number, getSave: () => SaveData | null): void {
+export function schedulePush(slot: number, save: SaveData): void {
   if (authState.status !== 'signed-in') return;
-  pushSlotPending = slot;
-  pushGetSave = getSave;
-  if (pushTimer) clearTimeout(pushTimer);
-  pushTimer = setTimeout(() => { runScheduledPush().catch(() => {}); }, PUSH_DEBOUNCE_MS);
-}
-
-async function runScheduledPush(): Promise<void> {
-  pushTimer = null;
-  const slot = pushSlotPending;
-  const getSave = pushGetSave;
-  pushSlotPending = null;
-  pushGetSave = null;
-  if (slot == null || !getSave) return;
-  const save = getSave();
-  if (!save) return;
-  // pushSlot marks pending on network failure; a conflict result is left
-  // alone (no silent overwrite) for the user to resolve in the Cloud menu.
-  await pushSlot(slot, save, { reason: 'day-end' });
+  try {
+    const upload = acceptUpload(slot, save, { reason: 'day-end' });
+    const lane = laneFor(slot);
+    cancelDebounce(lane);
+    lane.scheduled = { upload, timer: setTimeout(() => {
+      lane.scheduled = undefined;
+      enqueueUpload(upload);
+    }, PUSH_DEBOUNCE_MS) };
+  } catch { markPending(slot); }
 }
 
 // ──── Pending flush ────
@@ -454,13 +596,24 @@ async function runScheduledPush(): Promise<void> {
 /** Retry any slot marked pending (e.g. a push that failed while offline).
  *  Returns the slots that hit a conflict so the caller can prompt. Safe to
  *  call on an 'online' event or app resume. */
-export async function flushPending(getLocalSave: (slot: number) => SaveData | null): Promise<number[]> {
+export async function flushPending(): Promise<number[]> {
   if (authState.status !== 'signed-in') return [];
+  const identity = identityGeneration;
   const conflicts: number[] = [];
   for (const slot of [1, 2, 3]) {
+    if (identity !== identityGeneration) break;
     if (!hasPending(slot)) continue;
-    const save = getLocalSave(slot);
-    if (!save) { localStorage.removeItem(kPending(slot)); continue; }
+    // Distinguish an empty slot from a failed read; only emptiness clears work.
+    try {
+      if (localStorage.getItem(`clowder_save_slot_${slot}`) === null) {
+        localStorage.removeItem(kPending(slot));
+        continue;
+      }
+    } catch { continue; }
+    const save = loadFromSlot(slot);
+    if (!save) {
+      continue;
+    }
     const r = await pushSlot(slot, save, { reason: 'day-end' });
     if (r.conflict) conflicts.push(slot);
   }
