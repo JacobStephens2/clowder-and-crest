@@ -337,11 +337,29 @@ function setSyncedMeta(slot: number, cloudHash: string, fingerprint: string): vo
     throw error;
   }
 }
+// `1` is the marker written before retries were bound to an account.
+const LEGACY_PENDING = '1';
+
+function pendingMarker(): string | null {
+  return authState.userId ? `user:${authState.userId}` : null;
+}
+
 export function markPending(slot: number): boolean {
-  try { localStorage.setItem(kPending(slot), '1'); return true; } catch { return false; }
+  try {
+    const marker = pendingMarker();
+    // Refuse an unscoped marker: a later sign-in must not retry this upload.
+    if (!marker) return false;
+    localStorage.setItem(kPending(slot), marker);
+    return true;
+  } catch { return false; }
 }
 export function hasPending(slot: number): boolean {
-  try { return localStorage.getItem(kPending(slot)) === '1'; } catch { return true; }
+  try {
+    const value = localStorage.getItem(kPending(slot));
+    if (value === null) return false;
+    if (value === LEGACY_PENDING) return true;
+    return value === pendingMarker();
+  } catch { return true; }
 }
 
 // ──── Cloud reads ────

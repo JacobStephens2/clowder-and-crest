@@ -228,6 +228,30 @@ test('retry after reload reads the latest persisted checkpoint and supersedes an
   assert.equal(requests.length, 2);
 });
 
+test('a replacement account does not retry a pending upload from the previous account', async () => {
+  const save = createDefaultSave('Private guild');
+  saveToSlot(1, save);
+  Cloud.schedulePush(1, save);
+  assert.equal(Cloud.hasPending(1), true);
+  await Cloud.logout();
+  identity = 'player-2';
+  await Cloud.refreshAuth();
+  assert.equal(Cloud.getAuthState().status, 'signed-in');
+  assert.equal(Cloud.getAuthState().userId, 'player-2');
+  const flushed = Cloud.flushPending();
+  await setImmediate();
+  assert.equal(requests.filter((request) => request.body?.save).length, 0);
+  assert.deepEqual(await flushed, []);
+  identity = 'player-1';
+  await Cloud.refreshAuth();
+  const retry = Cloud.flushPending();
+  assert.equal(requests[0].body.save.playerCatName, 'Private guild');
+  assert.equal(requests[0].body.force, false);
+  requests[0].reply.resolve(success('returned'));
+  assert.deepEqual(await retry, []);
+  assert.equal(Cloud.hasPending(1), false);
+});
+
 test('network failure and offline refresh retain the identity, pending request and baseline', async () => {
   const save = createDefaultSave('Offline guild');
   saveToSlot(1, save);
