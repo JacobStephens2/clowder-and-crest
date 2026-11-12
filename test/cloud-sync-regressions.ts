@@ -157,6 +157,22 @@ test('a conflict stops automatic work already waiting and preserves the baseline
   assert.equal(Cloud.hasPending(1), true);
 });
 
+test('a background conflict preserves the queued explicit resolution', async () => {
+  const save = createDefaultSave('Explicit resolution guild');
+  saveToSlot(1, save);
+  Cloud.schedulePush(1, save);
+  mock.timers.tick(8000);
+  assert.equal(requests.length, 1);
+  const forced = Cloud.pushSlot(1, save, { reason: 'conflict-resolution', force: true });
+  requests[0].reply.resolve(response({ detail: { remoteHash: 'other-device' } }, 409));
+  await setImmediate();
+  assert.equal(requests.length, 2, 'a background conflict must preserve the queued explicit resolution');
+  assert.equal(requests[1].body.force, true);
+  requests[1].reply.resolve(response({ ok: true, hash: 'resolved', status: 'forced' }));
+  assert.deepEqual(await forced, { ok: true, status: 'forced' });
+  assert.equal(Cloud.hasPending(1), false);
+});
+
 for (const cancellation of ['logout', 'identity', 'pull', 'delete'] as const) {
   test(`${cancellation} cancels unsent work and ignores obsolete upload responses`, async () => {
     const save = createDefaultSave('Cancelled guild');

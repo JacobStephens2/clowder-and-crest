@@ -462,6 +462,15 @@ function invalidateUploads(slot: number): void {
   for (const upload of lane.queue.splice(0)) upload.resolve(cancelledUpload());
 }
 
+function stopAutomaticUploads(lane: UploadLane): void {
+  cancelDebounce(lane);
+  // A conflict pauses background retries; explicit player choices stay queued.
+  for (const upload of lane.queue.splice(0)) {
+    if (upload.reason === 'day-end' && !upload.force) upload.resolve(cancelledUpload());
+    else lane.queue.push(upload);
+  }
+}
+
 function adoptIdentity(userId: string | undefined): void {
   if (authState.userId === userId) return;
   identityGeneration++;
@@ -521,7 +530,7 @@ async function sendUpload(upload: Upload, lane: UploadLane): Promise<PushResult>
     if (!isCurrentUpload(upload)) return cancelledUpload();
     if (res.networkError) return { ok: false, error: 'Network unavailable' };
     if (res.status === 409) {
-      invalidateUploads(slot);
+      stopAutomaticUploads(lane);
       const d = res.data?.detail || {};
       return { ok: false, conflict: { slot, exists: true, hash: d.remoteHash, serverUpdatedAt: d.serverUpdatedAt, deviceId: d.deviceId, summary: d.remoteSummary } };
     }
