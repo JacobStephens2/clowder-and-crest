@@ -1,19 +1,5 @@
 import assert from 'node:assert/strict';
-
-class MemoryStorage {
-  store = new Map<string, string>();
-  getItem(key: string) { return this.store.has(key) ? this.store.get(key) ?? null : null; }
-  setItem(key: string, value: string) { this.store.set(key, value); }
-  removeItem(key: string) { this.store.delete(key); }
-  clear() { this.store.clear(); }
-  // Implementing the full Storage interface so iterators (length + key(i))
-  // work — some SaveManager helpers use them to walk for .bak.* keys.
-  get length() { return this.store.size; }
-  key(index: number): string | null {
-    const keys = Array.from(this.store.keys());
-    return index >= 0 && index < keys.length ? keys[index] : null;
-  }
-}
+import { MemoryStorage } from './helpers/MemoryStorage';
 
 const localStorageMock = new MemoryStorage();
 Object.assign(globalThis, {

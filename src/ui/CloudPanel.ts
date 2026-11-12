@@ -24,6 +24,7 @@ export interface CloudPanelDeps {
 }
 
 let deps: CloudPanelDeps;
+let panelRevision = 0;
 
 export function initCloudPanel(d: CloudPanelDeps): void {
   deps = d;
@@ -34,7 +35,12 @@ const INPUT_STYLE =
   'border:1px solid #3a3530;border-radius:4px;color:#c4956a;font-family:Georgia,serif;font-size:13px';
 
 function removeCloudPanels(): void {
+  panelRevision++;
   deps.overlayLayer.querySelectorAll('.cloud-overlay').forEach((el) => el.remove());
+}
+
+function isActiveSession(slot: number, save: SaveData | null): boolean {
+  return deps.getActiveSlot() === slot && deps.getGameState() === save;
 }
 
 /** Render the cloud account panel for the current auth state. Re-call to
@@ -210,11 +216,13 @@ async function renderSlotControls(): Promise<void> {
   if (!container) return;
   const slot = deps.getActiveSlot();
   const gs = deps.getGameState();
+  const userId = Cloud.getAuthState().userId;
   container.innerHTML = `<div style="color:#8b7355;font-size:12px;margin:6px 0">Checking cloud…</div>`;
 
   const slots = await Cloud.fetchCloudSlots();
   // The panel may have been closed/re-rendered while we awaited.
-  if (!document.getElementById('cloud-slot-controls')) return;
+  if (document.getElementById('cloud-slot-controls') !== container ||
+      !isActiveSession(slot, gs) || Cloud.getAuthState().userId !== userId) return;
   if (slots === null) {
     container.innerHTML = `<div style="color:#c8a06a;font-size:12px;margin:6px 0">Couldn't reach the cloud. Try again shortly.</div>`;
     return;
@@ -235,13 +243,22 @@ async function renderSlotControls(): Promise<void> {
   `;
 
   document.getElementById('cloud-upload')?.addEventListener('click', () => { if (gs) doUpload(slot, gs); });
-  document.getElementById('cloud-download')?.addEventListener('click', () => { if (cloud) doDownload(slot, cloud); });
+  document.getElementById('cloud-download')?.addEventListener('click', () => {
+    if (cloud && isActiveSession(slot, gs)) doDownload(slot, cloud);
+  });
   document.getElementById('cloud-refresh')?.addEventListener('click', () => { renderSlotControls().catch(() => {}); });
 }
 
-async function doUpload(slot: number, gs: SaveData, force = false): Promise<void> {
-  deps.saveGame(gs); // persist the live state to the slot before uploading
+async function doUpload(slot: number, expectedSave: SaveData, force = false): Promise<void> {
+  // Resolve at action time, then checkpoint only the still-active session.
+  const gs = deps.getGameState();
+  if (!gs || gs !== expectedSave || !isActiveSession(slot, gs)) return;
+  const revision = panelRevision;
+  const userId = Cloud.getAuthState().userId;
+  deps.saveGame(gs);
+  if (!isActiveSession(slot, gs)) return;
   const r = await Cloud.pushSlot(slot, gs, { reason: force ? 'conflict-resolution' : 'manual-upload', force });
+  if (r.cancelled || revision !== panelRevision || !isActiveSession(slot, gs) || Cloud.getAuthState().userId !== userId) return;
   if (r.ok) {
     deps.showToast(r.status === 'unchanged' ? 'Already up to date' : 'Uploaded to the cloud');
     renderSlotControls().catch(() => {});
@@ -265,7 +282,10 @@ async function doDownload(slot: number, cloud: CloudSlotSummary): Promise<void> 
 /** Pull the cloud save (backing up local first), then load it into the running
  *  game. Surfaces the version-skew and invalid-save refusals as toasts. */
 async function applyCloudDownload(slot: number, reason: string): Promise<void> {
+  const session = deps.getGameState();
+  if (!isActiveSession(slot, session)) return;
   const r = await Cloud.pullSlot(slot, { reason });
+  if (!isActiveSession(slot, session)) return;
   if (r.ok && r.save) {
     deps.setGameState(r.save);
     eventBus.emit('active-slot', slot);
@@ -285,6 +305,9 @@ async function applyCloudDownload(slot: number, reason: string): Promise<void> {
  *  and a local .cloudbak backup is written before any overwrite. Per the
  *  Chart35 lesson, "keep this device" is the protective default. */
 function showDivergenceChooser(slot: number, localSave: SaveData, cloud: CloudSlotSummary): void {
+  const session = deps.getGameState();
+  if (!isActiveSession(slot, session)) return;
+  const userId = Cloud.getAuthState().userId;
   removeCloudPanels();
   const modal = document.createElement('div');
   modal.className = 'menu-overlay cloud-overlay';
@@ -303,16 +326,20 @@ function showDivergenceChooser(slot: number, localSave: SaveData, cloud: CloudSl
     <button class="menu-btn" id="conflict-cancel" style="border:none;color:#8b7355;font-size:11px">Cancel — keep playing on this device</button>
   `;
   deps.overlayLayer.appendChild(modal);
+  const isCurrentChoice = () => modal.isConnected && isActiveSession(slot, session) && Cloud.getAuthState().userId === userId;
 
   document.getElementById('conflict-keep-local')!.addEventListener('click', () => {
+    if (!isCurrentChoice() || !session) return;
     modal.remove();
-    doUpload(slot, localSave, true);
+    doUpload(slot, session, true);
   });
   document.getElementById('conflict-use-cloud')!.addEventListener('click', () => {
+    if (!isCurrentChoice()) return;
     modal.remove();
     applyCloudDownload(slot, 'conflict');
   });
   document.getElementById('conflict-export')!.addEventListener('click', () => {
+    if (!isCurrentChoice()) return;
     exportLocalBackup(localSave);
   });
   document.getElementById('conflict-cancel')!.addEventListener('click', () => {

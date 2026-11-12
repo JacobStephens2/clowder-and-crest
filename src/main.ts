@@ -746,7 +746,7 @@ initCloudPanel({
 initCloudSync().then(() => handleAuthLink()).catch(() => {});
 // When connectivity returns, retry any uploads that failed while offline.
 window.addEventListener('online', () => {
-  flushPending((slot) => loadFromSlot(slot)).catch(() => {});
+  flushPending().catch(() => {});
 });
 initDayOfRest({
   getGameState: () => gameState,
@@ -2295,7 +2295,7 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
   // Cloud sync: debounced background upload of the active slot at day-end (the
   // game's natural checkpoint). No-op unless signed in; conflicts are never
   // auto-resolved — they wait for the player in the Cloud Save menu.
-  schedulePush(sessionFlow.getActiveSlot(), () => gameState);
+  schedulePush(sessionFlow.getActiveSlot(), gameState);
 
   // Refresh the iOS Home Screen / Lock Screen widgets with the new day count
   // and roster size. No-op on Android and web.

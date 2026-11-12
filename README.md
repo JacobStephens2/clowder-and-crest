@@ -92,7 +92,15 @@ The `.ipa` is built with `scripts/build-ios-ipa.sh` (archive → development-sig
 ```bash
 npm run dev          # Dev server on port 3200
 npm run build        # Type-check + production build to dist/
+npm run check        # Static checks, logic regressions, Cloud Save regressions
+npx tsc --noEmit     # Type-check without writing the deployed dist/
 ```
+
+Cloud Save checks include a headless panel test using browser Storage. After
+`npm ci`, install Chromium once with `npx playwright install chromium`.
+`npm run test:cloud` runs just the Cloud Save regressions; the remaining checks
+need no browser. The panel test serves a local fixture with mocked account
+responses and does not contact a live account.
 
 Each minigame has a Playwright-based playtest:
 
