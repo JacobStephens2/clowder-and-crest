@@ -6,7 +6,7 @@ export function clamp(value: number, min: number, max: number): number {
  *  Always wrap any user-controlled value (cat names, item names, achievement
  *  text, etc.) in this before interpolating into innerHTML or HTML attributes. */
 export function esc(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 export function randomInt(min: number, max: number): number {

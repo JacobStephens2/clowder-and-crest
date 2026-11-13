@@ -1,4 +1,5 @@
 import { ALL_BREED_IDS, BREED_COLORS, BREED_NAMES } from '../utils/constants';
+import { esc } from '../utils/helpers';
 import type { SaveData } from '../systems/SaveManager';
 import type { JobDef } from '../systems/JobBoard';
 import { getStatMatchScore } from '../systems/JobBoard';
@@ -56,10 +57,6 @@ let deps: JobFlowDeps;
 
 export function initJobFlow(d: JobFlowDeps): void {
   deps = d;
-}
-
-function esc(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function closeToTownIfNeeded(): void {

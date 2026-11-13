@@ -1021,7 +1021,7 @@ eventBus.on('show-town-overlay', () => {
   const netDaily = stationedIncome - totalUpkeep;
   const netColor = netDaily >= 0 ? '#4a8a4a' : '#cc6666';
   const focusHtml = getGuildFocusLines(gameState).map((line) =>
-    `<div style="font-size:10px;color:${line.color};margin-top:4px">${line.text}</div>`
+    `<div style="font-size:10px;color:${line.color};margin-top:4px">${esc(line.text)}</div>`
   ).join('');
 
   let html = `
