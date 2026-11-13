@@ -58,7 +58,7 @@ export function showExileChoice(deps: ExileChoiceDeps): void {
       if (!currentState) { overlay.remove(); return; }
       const cat = currentState.cats.find((c) => c.id === catId);
       if (cat) {
-        addJournalEntry(currentState, `${esc(cat.name)} was exiled by the Inquisitor's decree.`, 'event');
+        addJournalEntry(currentState, `${cat.name} was exiled by the Inquisitor's decree.`, 'event');
         currentState.cats = currentState.cats.filter((c) => c.id !== catId);
         currentState.stationedCats = currentState.stationedCats.filter((s) => s.catId !== catId);
         deps.saveGame(currentState);

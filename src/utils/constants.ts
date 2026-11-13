@@ -9,6 +9,11 @@ export const PUZZLE_OFFSET_Y = 90;
 // Single source of truth for breed IDs — used for sprite loading, art checks, etc.
 export const ALL_BREED_IDS = ['wildcat', 'russian_blue', 'tuxedo', 'maine_coon', 'siamese', 'bengal'] as const;
 
+/** Job categories a cat can specialize in. Save acceptance and both
+ *  specialization menus use this list, so a new category has to be added here. */
+export const SPECIALIZATION_IDS = ['pest_control', 'courier', 'guard', 'sacred', 'detection', 'shadow'] as const;
+export type SpecializationId = (typeof SPECIALIZATION_IDS)[number];
+
 export const BREED_COLORS: Record<string, string> = {
   wildcat: '#8B7355',
   russian_blue: '#6B8EA6',

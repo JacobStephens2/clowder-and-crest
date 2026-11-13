@@ -1,4 +1,4 @@
-import { ALL_BREED_IDS, type StatName } from '../utils/constants';
+import { ALL_BREED_IDS, SPECIALIZATION_IDS, STAT_NAMES, type StatName } from '../utils/constants';
 import { normalizeTraitId } from './CatManager';
 import { commitSessionToSave } from './PlaytimeTracker';
 
@@ -124,7 +124,7 @@ const MAX_JOURNAL_TEXT_LEN = 200;
 const MAX_JOURNAL_ENTRIES = 200;
 const MAX_CATS = 20;
 const KNOWN_BREEDS = new Set<string>(ALL_BREED_IDS);
-const KNOWN_SPECIALIZATIONS = new Set(['pest_control', 'courier', 'guard', 'sacred', 'detection', 'shadow']);
+const KNOWN_SPECIALIZATIONS = new Set<string>(SPECIALIZATION_IDS);
 const CAT_ID_PATTERN = /^[A-Za-z0-9_]+$/;
 
 /** Strip control characters and clamp length. Defense in depth — the
@@ -153,6 +153,20 @@ function acceptCatId(value: unknown, index: number, used: Set<string>): string {
   }
   used.add(id);
   return id;
+}
+
+/** A stat is a number. Markup or any other non-number is replaced so it
+ *  cannot be written into the cat card. */
+function sanitizeStat(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 1;
+  return Math.max(0, Math.min(999, Math.floor(value)));
+}
+
+function sanitizeStats(value: unknown): Record<StatName, number> {
+  const raw = (value && typeof value === 'object') ? value as Record<string, unknown> : {};
+  const stats = {} as Record<StatName, number>;
+  for (const name of STAT_NAMES) stats[name] = sanitizeStat(raw[name]);
+  return stats;
 }
 
 /** Validate + sanitize a JSON-parsed object that claims to be a SaveData.
@@ -192,7 +206,7 @@ export function validateAndSanitizeSave(data: unknown): SaveData | null {
       xp: typeof c.xp === 'number' ? Math.max(0, Math.floor(c.xp)) : 0,
       mood: ['happy', 'content', 'tired', 'unhappy'].includes(c.mood as string) ? c.mood : 'content',
       traits: Array.isArray(c.traits) ? c.traits.filter((t) => typeof t === 'string').slice(0, 8) : [],
-      stats: (c.stats && typeof c.stats === 'object') ? c.stats : {},
+      stats: sanitizeStats(c.stats),
       isPlayer: c.isPlayer === true,
       assignedRoom: typeof c.assignedRoom === 'string' ? sanitizeString(c.assignedRoom, 32) : undefined,
       specialization: KNOWN_SPECIALIZATIONS.has(specialization) ? specialization : undefined,

@@ -1,5 +1,5 @@
 import type { SaveData } from '../systems/SaveManager';
-import { BREED_COLORS, BREED_NAMES, STAT_NAMES, ALL_BREED_IDS } from '../utils/constants';
+import { BREED_COLORS, BREED_NAMES, STAT_NAMES, ALL_BREED_IDS, SPECIALIZATION_IDS, type SpecializationId } from '../utils/constants';
 import { esc } from '../utils/helpers';
 import { getJob } from '../systems/JobBoard';
 import { getBondPairs, getBondRank } from '../systems/BondSystem';
@@ -21,7 +21,7 @@ import { showRelationalJournalPanel, hasAnyRelationalJournalEntries } from './Re
 import { isRestDay } from '../systems/ProgressionManager';
 import { showCloudPanel } from './CloudPanel';
 
-const SPECIALIZATION_CATEGORIES: Record<string, { name: string; desc: string; icon: string }> = {
+const SPECIALIZATION_CATEGORIES: Record<SpecializationId, { name: string; desc: string; icon: string }> = {
   pest_control: { name: 'Ratcatcher', desc: '+20% pest control, -5% others', icon: '\uD83D\uDC00' },
   courier: { name: 'Courier', desc: '+20% courier jobs, -5% others', icon: '\uD83D\uDCE8' },
   guard: { name: 'Sentinel', desc: '+20% guard duty, -5% others', icon: '\uD83D\uDEE1\uFE0F' },
@@ -80,7 +80,9 @@ export function showCatPanel(): void {
 
     const spriteExists = (ALL_BREED_IDS as readonly string[]).includes(cat.breed);
     const catId = esc(cat.id);
-    const spec = cat.specialization ? SPECIALIZATION_CATEGORIES[cat.specialization] : undefined;
+    const spec = cat.specialization && (SPECIALIZATION_IDS as readonly string[]).includes(cat.specialization)
+      ? SPECIALIZATION_CATEGORIES[cat.specialization as SpecializationId]
+      : undefined;
     const specHtml = cat.specialization
       ? ` | ${spec?.icon ?? ''} ${esc(spec?.name ?? cat.specialization)}`
       : '';
@@ -125,7 +127,11 @@ export function showCatPanel(): void {
         return eff ? `<span title="${eff}" style="cursor:help;border-bottom:1px dotted #6b5b3e">${esc(t)}</span>` : esc(t);
       }).join(', ')}</div>
       <div class="cat-stats">
-        ${STAT_NAMES.map((s) => `<div class="cat-stat"><span>${s}</span><span class="cat-stat-value">${cat.stats[s]}</span></div>`).join('')}
+        ${STAT_NAMES.map((s) => {
+          const value = cat.stats[s];
+          const shown = typeof value === 'number' && Number.isFinite(value) ? String(Math.trunc(value)) : '';
+          return `<div class="cat-stat"><span>${s}</span><span class="cat-stat-value">${shown}</span></div>`;
+        }).join('')}
       </div>
     </div>`;
   });

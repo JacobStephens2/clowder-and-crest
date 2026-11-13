@@ -1581,7 +1581,7 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
   const comboMult = getComboMultiplier(cat.id, job.category, gameState.day);
   if (comboMult > 1) {
     baseReward = Math.floor(baseReward * comboMult);
-    rewardHighlights.push(`${esc(cat.name)} extended a ${job.category} streak to x${comboMult.toFixed(2)} reward.`);
+    rewardHighlights.push(`${cat.name} extended a ${job.category} streak to x${comboMult.toFixed(2)} reward.`);
   }
   const comboCount = updateCombo(cat.id, job.category, gameState.day);
   if (comboCount >= 3) {
@@ -1653,7 +1653,7 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
   if (leveled) {
     // Per playtest (2026-04-18): "when a cat's stat increases, make
     // it clear to the player what improved."
-    addJournalEntry(gameState, `${esc(cat.name)} reached level ${cat.level}! (${leveledStat} +1)`, 'level');
+    addJournalEntry(gameState, `${cat.name} reached level ${cat.level}! (${leveledStat} +1)`, 'level');
   }
 
   // Bond points (with rank-up celebration + mechanical stat reward).
@@ -1672,7 +1672,7 @@ eventBus.on('puzzle-complete', ({ puzzleId, moves, minMoves, stars, jobId, catId
           : '';
         addJournalEntry(
           gameState,
-          `${esc(cat.name)} & ${otherName} reached ${result.newRank} rank${rewardText}.`,
+          `${cat.name} & ${otherName} reached ${result.newRank} rank${rewardText}.`,
           'bond',
         );
         setTimeout(() => {
@@ -2175,7 +2175,7 @@ function advanceDay(): { foodCost: number; stationedEarned: number; events: stri
       : '';
     addJournalEntry(
       gameState,
-      `${esc(ru.catA.name)} & ${esc(ru.catB.name)} reached ${ru.newRank} rank${rewardText}.`,
+      `${ru.catA.name} & ${ru.catB.name} reached ${ru.newRank} rank${rewardText}.`,
       'bond',
     );
     setTimeout(() => {

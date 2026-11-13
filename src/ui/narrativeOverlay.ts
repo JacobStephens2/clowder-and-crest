@@ -4,6 +4,8 @@
  * and tone-aware styling. Player taps to advance.
  */
 
+import { textFromEsc } from '../utils/helpers';
+
 export interface NarrativeConfig {
   scenes: string[];
   image?: string;
@@ -120,7 +122,7 @@ export function showNarrativeOverlay(config: NarrativeConfig): void {
     const isShort = text.length < 30;
 
     textDiv.style.opacity = '0';
-    textDiv.textContent = text;
+    textDiv.textContent = textFromEsc(text);
     textDiv.style.fontSize = isShort ? '20px' : '15px';
     textDiv.style.fontStyle = isShort ? 'italic' : 'normal';
 

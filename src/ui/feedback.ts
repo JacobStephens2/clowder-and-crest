@@ -3,12 +3,12 @@ import { generateDailyJobs } from '../systems/JobBoard';
 import { getAvailableConversation, getBondPairs, getBondRank } from '../systems/BondSystem';
 import { getGuildFocusLines } from '../systems/GuildFocus';
 import type { SaveData } from '../systems/SaveManager';
-import { esc } from '../utils/helpers';
+import { esc, textFromEsc } from '../utils/helpers';
 
 export function showToast(overlayLayer: HTMLElement, message: string, durationMs = 2500): void {
   const toast = document.createElement('div');
   toast.className = 'toast';
-  toast.textContent = message;
+  toast.textContent = textFromEsc(message);
   overlayLayer.appendChild(toast);
   setTimeout(() => toast.remove(), durationMs);
 }

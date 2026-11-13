@@ -226,6 +226,7 @@ class FakeEl {
   html = '';
   cards: FakeEl[] = [];
   listeners: Record<string, Array<() => void>> = {};
+  textContent = '';
   constructor(tag: string) { this.tagName = tag; }
   set innerHTML(value: string) {
     this.html = value;
@@ -347,6 +348,100 @@ async function testCatCardAndPortraitEscapeCatTextIncludingApostrophes() {
     assert.ok(portraitHtml.includes('assets/sprites/portraits/wildcat_neutral.png'), portraitHtml);
     assert.equal(portraitHtml.includes('onerror'), false, portraitHtml);
     assert.equal(portraitHtml.includes("x'<b>"), false, portraitHtml);
+  } finally {
+    dom.restore();
+  }
+}
+
+async function testSanitizerReplacesNonNumericCatStats() {
+  const save = createDefaultSave('Tester');
+  (save.cats[0].stats as { hunting: unknown }).hunting = '<img src=x onerror=alert(1)>';
+  const cleaned = validateAndSanitizeSave(save);
+  assert.ok(cleaned);
+  assert.equal(typeof cleaned!.cats[0].stats.hunting, 'number');
+
+  const { initPanels, showCatPanel } = await import('../src/ui/Panels.ts');
+  const dom = installCaptureDom();
+  try {
+    const layer = new FakeEl('div');
+    initPanels({
+      getGameState: () => cleaned,
+      setGameState: () => {},
+      overlayLayer: layer as unknown as HTMLElement,
+      saveGame: () => {},
+      showToast: () => {},
+      updateStatusBar: () => {},
+      switchScene: () => {},
+      stopDayTimer: () => {},
+      guildEndDayBtn: new FakeEl('button') as unknown as HTMLElement,
+      guildWishBanner: new FakeEl('div') as unknown as HTMLElement,
+      clearCurrentSave: () => {},
+    });
+    showCatPanel();
+    const html = layer.children[0]?.innerHTML ?? '';
+    assert.equal(html.includes('onerror=alert(1)'), false, html);
+  } finally {
+    dom.restore();
+  }
+}
+
+async function testResultOverlayEscapesCatName() {
+  const { initJobFlow, showResultOverlay } = await import('../src/ui/jobFlow.ts');
+  const dom = installCaptureDom();
+  try {
+    const layer = new FakeEl('div');
+    initJobFlow({
+      overlayLayer: layer as unknown as HTMLElement,
+      getGameState: () => null,
+      saveGame: () => {},
+      showToast: () => {},
+      switchScene: () => {},
+      refreshTownOverlay: () => {},
+      pauseDayTimer: () => {},
+      switchToFightMusic: () => {},
+      switchToPuzzleMusic: () => {},
+      switchToNormalMusic: () => {},
+      switchToTrackset: () => {},
+      playSfx: () => {},
+      trackEvent: () => {},
+      addJournalEntry: () => {},
+      onAfterResult: () => {},
+      onSpecializationChosen: () => {},
+      catsWorkedToday: new Set(),
+    });
+    showResultOverlay({
+      jobName: 'Nest',
+      catName: "O'<b>",
+      catId: 'player_wildcat',
+      reward: 1,
+      stars: 1,
+      moves: 1,
+      minMoves: 1,
+      xp: 1,
+      leveled: false,
+      highlights: [],
+    });
+    const html = layer.children[0]?.innerHTML ?? '';
+    assert.equal(html.includes("O'<b>"), false, html);
+    assert.ok(html.includes('O&#39;&lt;b&gt;'), html);
+  } finally {
+    dom.restore();
+  }
+}
+
+async function testTextSinksShowApostrophesInsteadOfEntities() {
+  const { showToast } = await import('../src/ui/feedback.ts');
+  const { showNarrativeOverlay } = await import('../src/ui/narrativeOverlay.ts');
+  const dom = installCaptureDom();
+  try {
+    const layer = new FakeEl('div');
+    showToast(layer as unknown as HTMLElement, `${esc("O'Malley")} is delighted!`);
+    assert.equal(layer.children[0]?.textContent, "O'Malley is delighted!");
+
+    showNarrativeOverlay({ scenes: [`${esc("O'Malley")} kept watch.`] });
+    const shown = dom.body.children.at(-1)?.children.map((child) => child.textContent).join('\n') ?? '';
+    assert.ok(shown.includes("O'Malley kept watch."), shown);
+    assert.equal(shown.includes('&#39;'), false, shown);
   } finally {
     dom.restore();
   }
@@ -638,5 +733,8 @@ await testSaveGameCommitsPlaytimeViaIntegration();
 testMigrationBackfillsTotalPlaytimeMs();
 await testDayEndScreenEscapesCatTextIncludingApostrophes();
 await testCatCardAndPortraitEscapeCatTextIncludingApostrophes();
+await testSanitizerReplacesNonNumericCatStats();
+await testResultOverlayEscapesCatName();
+await testTextSinksShowApostrophesInsteadOfEntities();
 
 console.log('Logic regression tests passed.');
