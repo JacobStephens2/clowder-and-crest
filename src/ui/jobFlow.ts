@@ -1,4 +1,5 @@
-import { ALL_BREED_IDS, BREED_COLORS, BREED_NAMES } from '../utils/constants';
+import { ALL_BREED_IDS, BREED_COLORS, BREED_NAMES, SPECIALIZATION_IDS, type SpecializationId } from '../utils/constants';
+import { esc } from '../utils/helpers';
 import type { SaveData } from '../systems/SaveManager';
 import type { JobDef } from '../systems/JobBoard';
 import { getStatMatchScore } from '../systems/JobBoard';
@@ -20,7 +21,7 @@ export interface ResultInfo {
   highlights?: string[];
 }
 
-export const SPECIALIZATION_CATEGORIES: Record<string, { name: string; desc: string; icon: string }> = {
+export const SPECIALIZATION_CATEGORIES: Record<SpecializationId, { name: string; desc: string; icon: string }> = {
   pest_control: { name: 'Ratcatcher', desc: '+20% pest control, -5% others', icon: '\uD83D\uDC00' },
   courier: { name: 'Courier', desc: '+20% courier jobs, -5% others', icon: '\uD83D\uDCE8' },
   guard: { name: 'Sentinel', desc: '+20% guard duty, -5% others', icon: '\uD83D\uDEE1\uFE0F' },
@@ -56,10 +57,6 @@ let deps: JobFlowDeps;
 
 export function initJobFlow(d: JobFlowDeps): void {
   deps = d;
-}
-
-function esc(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function closeToTownIfNeeded(): void {
@@ -124,7 +121,7 @@ export function showAssignOverlay(job: JobDef): void {
       <button class="assign-cat-btn" data-cat-index="${catIndex}">
         ${spriteImg}
         <div style="flex:1">
-          <div style="color:#c4956a">${esc(cat.name)} <span style="font-size:11px;color:#6b5b3e">${BREED_NAMES[cat.breed] ?? cat.breed}</span>${cat.specialization ? ` <span style="font-size:10px;color:${cat.specialization === job.category ? '#6b8ea6' : '#6b5b3e'}">${SPECIALIZATION_CATEGORIES[cat.specialization]?.icon ?? ''} ${SPECIALIZATION_CATEGORIES[cat.specialization]?.name ?? ''}</span>` : ''}</div>
+          <div style="color:#c4956a">${esc(cat.name)} <span style="font-size:11px;color:#6b5b3e">${esc(BREED_NAMES[cat.breed] ?? cat.breed)}</span>${cat.specialization && (SPECIALIZATION_IDS as readonly string[]).includes(cat.specialization) ? ` <span style="font-size:10px;color:${cat.specialization === job.category ? '#6b8ea6' : '#6b5b3e'}">${SPECIALIZATION_CATEGORIES[cat.specialization as SpecializationId].icon} ${esc(SPECIALIZATION_CATEGORIES[cat.specialization as SpecializationId].name)}</span>` : ''}</div>
           <div style="font-size:12px">${statBadges}</div>
           ${traitEffects.length > 0 ? `<div style="font-size:10px;color:#8b7355">${traitEffects.join(' | ')}</div>` : ''}
           ${guidance.length > 0 ? `<div style="font-size:10px;color:#6b8ea6;margin-top:3px">${guidance.join(' ')}</div>` : ''}
@@ -165,14 +162,14 @@ export function showChoiceOverlay(job: JobDef, catIndex: number): void {
   const momentHtml = momentLines.length > 0
     ? `<div style="margin-top:10px;padding:8px 10px;border:1px solid #3a3530;border-radius:6px;background:rgba(24,22,19,0.55)">
         <div style="font-size:10px;color:#c4956a;text-align:center;margin-bottom:4px">Why This Matters Today</div>
-        ${momentLines.map((line) => `<div style="font-size:10px;color:#8b7355;margin-top:3px;text-align:center">${line}</div>`).join('')}
+        ${momentLines.map((line) => `<div style="font-size:10px;color:#8b7355;margin-top:3px;text-align:center">${esc(line)}</div>`).join('')}
       </div>`
     : '';
 
   overlay.innerHTML = `
     <button class="panel-close" id="choice-close">&times;</button>
     <h2>${job.name}</h2>
-    <div class="job-desc">${esc(cat.name)} the ${BREED_NAMES[cat.breed] ?? cat.breed} is ready.</div>
+    <div class="job-desc">${esc(cat.name)} the ${esc(BREED_NAMES[cat.breed] ?? cat.breed)} is ready.</div>
     <div style="font-size:12px;color:${job.difficulty === 'hard' ? '#cc6666' : job.difficulty === 'medium' ? '#dda055' : '#4a8a4a'};margin-bottom:4px;text-align:center;text-transform:capitalize">${job.difficulty} difficulty</div>
     <div style="font-size:11px;color:#6b5b3e;margin-bottom:8px;text-align:center">Choose your approach:</div>
     ${guidanceHtml}
@@ -347,7 +344,7 @@ export function showSpecializationChoice(catId: string, catName: string): void {
 
   overlay.innerHTML = `
     <h2 style="color:#dda055">Specialization!</h2>
-    <div style="color:#c4956a;font-size:14px;margin-bottom:8px;text-align:center">${catName} has reached maximum level.</div>
+    <div style="color:#c4956a;font-size:14px;margin-bottom:8px;text-align:center">${esc(catName)} has reached maximum level.</div>
     <div style="color:#8b7355;font-size:12px;margin-bottom:16px;text-align:center">
       Choose a permanent specialization. This locks in a role, gives +20% in one category, and slightly weakens the others.
     </div>
@@ -361,7 +358,7 @@ export function showSpecializationChoice(catId: string, catName: string): void {
       const cat = gameState.cats.find((entry) => entry.id === catId);
       if (cat) {
         cat.specialization = spec;
-        const specName = SPECIALIZATION_CATEGORIES[spec].name;
+        const specName = SPECIALIZATION_CATEGORIES[spec as SpecializationId].name;
         deps.addJournalEntry(gameState, `${catName} specialized as a ${specName}.`, 'specialization');
         deps.saveGame(gameState);
         deps.playSfx('chapter');
@@ -443,12 +440,12 @@ export function showResultOverlay(info: ResultInfo): void {
     <h2>${info.stars === 3 ? '\u2728 Perfect! \u2728' : 'Puzzle Solved!'}</h2>
     ${starsStr ? `<div class="result-stars">${starsStr}</div>` : ''}
     <div class="result-details">
-      <strong>${info.jobName}</strong><br>
-      ${info.catName} earned <span class="fish-earned">+${info.reward} Fish</span>
+      <strong>${esc(info.jobName)}</strong><br>
+      ${esc(info.catName)} earned <span class="fish-earned">+${info.reward} Fish</span>
       ${movesStr}
       <br>+${info.xp} XP
     </div>
-    ${info.leveled ? `<div style="color:#dda055;font-size:18px;margin-bottom:12px;animation:fadeSlideIn 0.5s ease">\u2B50 LEVEL UP! \u2B50<br><span style="font-size:13px">${info.catName} is now stronger.</span></div>` : ''}
+    ${info.leveled ? `<div style="color:#dda055;font-size:18px;margin-bottom:12px;animation:fadeSlideIn 0.5s ease">\u2B50 LEVEL UP! \u2B50<br><span style="font-size:13px">${esc(info.catName)} is now stronger.</span></div>` : ''}
     ${highlightHtml ? `<div style="margin:10px 0 4px;padding:8px 10px;border:1px solid #3a3530;border-radius:6px;background:rgba(24,22,19,0.55)">${highlightHtml}</div>` : ''}
     ${strategicReads}
     <div style="font-size:12px;color:#6b5b3e;margin:16px 0">Balance: ${gameState?.fish ?? 0} fish</div>

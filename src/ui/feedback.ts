@@ -3,15 +3,12 @@ import { generateDailyJobs } from '../systems/JobBoard';
 import { getAvailableConversation, getBondPairs, getBondRank } from '../systems/BondSystem';
 import { getGuildFocusLines } from '../systems/GuildFocus';
 import type { SaveData } from '../systems/SaveManager';
-
-function esc(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+import { esc, textFromEsc } from '../utils/helpers';
 
 export function showToast(overlayLayer: HTMLElement, message: string, durationMs = 2500): void {
   const toast = document.createElement('div');
   toast.className = 'toast';
-  toast.textContent = message;
+  toast.textContent = textFromEsc(message);
   overlayLayer.appendChild(toast);
   setTimeout(() => toast.remove(), durationMs);
 }
@@ -132,14 +129,14 @@ export function showDayTransitionOverlay(
     if (recap.foodCost > 0) lines.push(`Upkeep: -${recap.foodCost} fish`);
     if (recap.stationedEarned > 0) lines.push(`Stationed: +${recap.stationedEarned} fish`);
     if (recap.fishRemaining !== undefined) lines.push(`Fish remaining: ${recap.fishRemaining}`);
-    for (const event of recap.events) lines.push(event);
+    for (const event of recap.events) lines.push(esc(event));
     if (lines.length > 0) {
       recapHtml = `<div style="color:#8b7355;font-family:Georgia,serif;font-size:11px;margin-top:12px;text-align:center;max-width:280px">${lines.join('<br>')}</div>`;
     }
   }
 
   const prioritiesHtml = (save ? getGuildFocusLines(save) : []).map((line) =>
-    `<div style="color:${line.color};font-family:Georgia,serif;font-size:10px;margin-top:6px">${line.text}</div>`
+    `<div style="color:${line.color};font-family:Georgia,serif;font-size:10px;margin-top:6px">${esc(line.text)}</div>`
   ).join('');
 
   const teaserHtml = buildDayTeasers(save, day).map((teaser) =>

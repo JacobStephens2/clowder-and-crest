@@ -1,5 +1,5 @@
 import type { SaveData } from '../systems/SaveManager';
-import { BREED_COLORS, BREED_NAMES, STAT_NAMES, ALL_BREED_IDS } from '../utils/constants';
+import { BREED_COLORS, BREED_NAMES, STAT_NAMES, ALL_BREED_IDS, SPECIALIZATION_IDS, type SpecializationId } from '../utils/constants';
 import { esc } from '../utils/helpers';
 import { getJob } from '../systems/JobBoard';
 import { getBondPairs, getBondRank } from '../systems/BondSystem';
@@ -21,7 +21,7 @@ import { showRelationalJournalPanel, hasAnyRelationalJournalEntries } from './Re
 import { isRestDay } from '../systems/ProgressionManager';
 import { showCloudPanel } from './CloudPanel';
 
-const SPECIALIZATION_CATEGORIES: Record<string, { name: string; desc: string; icon: string }> = {
+const SPECIALIZATION_CATEGORIES: Record<SpecializationId, { name: string; desc: string; icon: string }> = {
   pest_control: { name: 'Ratcatcher', desc: '+20% pest control, -5% others', icon: '\uD83D\uDC00' },
   courier: { name: 'Courier', desc: '+20% courier jobs, -5% others', icon: '\uD83D\uDCE8' },
   guard: { name: 'Sentinel', desc: '+20% guard duty, -5% others', icon: '\uD83D\uDEE1\uFE0F' },
@@ -79,6 +79,13 @@ export function showCatPanel(): void {
     const stationedJob = stationed ? getJob(stationed.jobId) : undefined;
 
     const spriteExists = (ALL_BREED_IDS as readonly string[]).includes(cat.breed);
+    const catId = esc(cat.id);
+    const spec = cat.specialization && (SPECIALIZATION_IDS as readonly string[]).includes(cat.specialization)
+      ? SPECIALIZATION_CATEGORIES[cat.specialization as SpecializationId]
+      : undefined;
+    const specHtml = cat.specialization
+      ? ` | ${spec?.icon ?? ''} ${esc(spec?.name ?? cat.specialization)}`
+      : '';
     // Wrap the avatar in a tappable button so the player can pull up
     // the high-res neutral portrait. Per user feedback (2026-04-08):
     // "in the cat menu, if a player clicks a cat, show the neutral
@@ -86,23 +93,23 @@ export function showCatPanel(): void {
     const avatarInner = spriteExists
       ? `<img src="assets/sprites/${cat.breed}/south.png" style="width:40px;height:40px;image-rendering:pixelated;border-radius:50%;background:${color};display:block" />`
       : `<div class="cat-avatar" style="background:${color}"></div>`;
-    const avatarHtml = `<button class="cat-portrait-btn" data-cat-id="${cat.id}" title="View portrait" style="background:none;border:none;padding:0;cursor:pointer">${avatarInner}</button>`;
+    const avatarHtml = `<button class="cat-portrait-btn" data-cat-id="${catId}" title="View portrait" style="background:none;border:none;padding:0;cursor:pointer">${avatarInner}</button>`;
 
     // Per playtest (2026-04-18): "touching anywhere on a cat's card,
     // except the room assignment, brings up that cat's portrait."
-    html += `<div class="cat-card" data-cat-id="${cat.id}" style="cursor:pointer">
+    html += `<div class="cat-card" data-cat-id="${catId}" style="cursor:pointer">
       <div class="cat-card-header">
         ${avatarHtml}
         <div style="flex:1">
-          <div class="cat-card-name">${esc(cat.name)}${cat.isPlayer ? ' (You)' : ''} <button class="rename-btn" data-cat-id="${cat.id}">Rename</button></div>
-          <div class="cat-card-breed">${breedName} | Lv.${cat.level}${cat.specialization ? ` | ${SPECIALIZATION_CATEGORIES[cat.specialization]?.icon ?? ''} ${SPECIALIZATION_CATEGORIES[cat.specialization]?.name ?? cat.specialization}` : ''} | ${cat.mood}</div>
+          <div class="cat-card-name">${esc(cat.name)}${cat.isPlayer ? ' (You)' : ''} <button class="rename-btn" data-cat-id="${catId}">Rename</button></div>
+          <div class="cat-card-breed">${esc(breedName)} | Lv.${cat.level}${specHtml} | ${esc(cat.mood)}</div>
         </div>
       </div>
-      ${stationedJob ? `<div class="stationed-badge">Stationed: ${stationedJob.name} (since day ${stationed!.dayStarted})<button class="recall-btn" data-cat-id="${cat.id}">Recall</button></div>` : ''}
+      ${stationedJob ? `<div class="stationed-badge">Stationed: ${stationedJob.name} (since day ${stationed!.dayStarted})<button class="recall-btn" data-cat-id="${catId}">Recall</button></div>` : ''}
       ${wishCatId === cat.id && dailyWish ? `<div style="margin:6px 0;padding:6px 10px;background:rgba(221,160,85,0.12);border-left:3px solid #dda055;border-radius:3px;font-size:11px;color:#dda055">\u{1F4AD} Wish: <span style="color:#c4956a;font-style:italic">&quot;${esc(dailyWish.wish)}&quot;</span></div>` : ''}
       <div style="font-size:11px;margin-bottom:4px">
         <label style="color:#6b5b3e">Room: </label>
-        <select class="room-select" data-cat-id="${cat.id}" style="background:#2a2520;color:#c4956a;border:1px solid #3a3530;padding:2px 4px;font-size:11px;font-family:Georgia,serif">
+        <select class="room-select" data-cat-id="${catId}" style="background:#2a2520;color:#c4956a;border:1px solid #3a3530;padding:2px 4px;font-size:11px;font-family:Georgia,serif">
           ${gameState!.rooms.filter(r => r.unlocked).map(r => {
             const roomLabel = r.id === 'sleeping' ? 'Sleeping Quarters' : r.id === 'kitchen' ? 'Kitchen' : 'Operations';
             return `<option value="${r.id}" ${cat.assignedRoom === r.id ? 'selected' : ''}>${roomLabel}</option>`;
@@ -117,10 +124,14 @@ export function showCatPanel(): void {
           Loyal: '+3% all', Mischievous: 'random ±', Grumpy: '', Playful: '',
         };
         const eff = effects[t];
-        return eff ? `<span title="${eff}" style="cursor:help;border-bottom:1px dotted #6b5b3e">${t}</span>` : t;
+        return eff ? `<span title="${eff}" style="cursor:help;border-bottom:1px dotted #6b5b3e">${esc(t)}</span>` : esc(t);
       }).join(', ')}</div>
       <div class="cat-stats">
-        ${STAT_NAMES.map((s) => `<div class="cat-stat"><span>${s}</span><span class="cat-stat-value">${cat.stats[s]}</span></div>`).join('')}
+        ${STAT_NAMES.map((s) => {
+          const value = cat.stats[s];
+          const shown = typeof value === 'number' && Number.isFinite(value) ? String(Math.trunc(value)) : '';
+          return `<div class="cat-stat"><span>${s}</span><span class="cat-stat-value">${shown}</span></div>`;
+        }).join('')}
       </div>
     </div>`;
   });
@@ -247,11 +258,16 @@ export function showCatPanel(): void {
 
 function showCatPortraitPopup(cat: SaveData['cats'][number]): void {
   const gameState = deps.getGameState();
-  // Pick the gendered wildcat portrait when applicable
-  let portraitFile = `${cat.breed}_neutral.png`;
-  if (cat.breed === 'wildcat' && gameState?.playerCatGender === 'female') {
-    portraitFile = 'wildcat_female_neutral.png';
+  // Only a known breed goes into the image path. Anything else is the
+  // wildcat portrait, so a tampered breed cannot break the markup.
+  const knownBreed = (ALL_BREED_IDS as readonly string[]).includes(cat.breed);
+  let portraitFile = 'wildcat_neutral.png';
+  if (knownBreed) {
+    portraitFile = cat.breed === 'wildcat' && gameState?.playerCatGender === 'female'
+      ? 'wildcat_female_neutral.png'
+      : `${cat.breed}_neutral.png`;
   }
+  const fallbackBreed = knownBreed ? cat.breed : 'wildcat';
   const breedName = BREED_NAMES[cat.breed] ?? cat.breed;
 
   const overlay = document.createElement('div');
@@ -261,11 +277,21 @@ function showCatPortraitPopup(cat: SaveData['cats'][number]): void {
   overlay.innerHTML = `
     <div style="position:relative;max-width:320px;background:#1a1612;border:2px solid #6b5b3e;border-radius:8px;padding:14px;display:flex;flex-direction:column;align-items:center">
       <button id="cat-portrait-close" style="position:absolute;top:6px;right:8px;background:none;border:none;color:#8b7355;font-size:20px;line-height:1;cursor:pointer;font-family:Georgia,serif">&times;</button>
-      <img src="assets/sprites/portraits/${portraitFile}" alt="" style="width:100%;max-width:280px;height:auto;border-radius:4px;display:block" onerror="this.onerror=null;this.src='assets/sprites/${cat.breed}/south.png';this.style.imageRendering='pixelated';this.style.width='160px';this.style.height='160px'" />
+      <img id="cat-portrait-img" src="assets/sprites/portraits/${esc(portraitFile)}" alt="" style="width:100%;max-width:280px;height:auto;border-radius:4px;display:block" />
       <div style="margin-top:10px;color:#c4956a;font-family:Georgia,serif;font-size:18px;text-align:center">${esc(cat.name)}</div>
       <div style="color:#8b7355;font-family:Georgia,serif;font-size:12px;text-align:center">${esc(breedName)} \u2022 Lv.${cat.level} \u2022 ${esc(cat.mood)}</div>
     </div>
   `;
+  const portraitImg = overlay.querySelector('#cat-portrait-img') as HTMLImageElement | null;
+  if (portraitImg) {
+    portraitImg.addEventListener('error', () => {
+      portraitImg.onerror = null;
+      portraitImg.src = `assets/sprites/${fallbackBreed}/south.png`;
+      portraitImg.style.imageRendering = 'pixelated';
+      portraitImg.style.width = '160px';
+      portraitImg.style.height = '160px';
+    });
+  }
   document.body.appendChild(overlay);
   const close = () => overlay.remove();
   overlay.addEventListener('click', close);

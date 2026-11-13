@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { esc } from '../src/utils/helpers.ts';
 
 class MemoryStorage {
   store = new Map<string, string>();
@@ -148,6 +149,302 @@ function testSanitizerClampsDangerousNumericFields() {
   assert.equal(result!.fish, 999_999, 'fish should clamp to 999_999');
   assert.equal(result!.reputationScore, -100, 'reputationScore should clamp to -100');
   assert.equal(result!.totalFishEarned, 0, 'negative totalFishEarned should clamp to 0');
+}
+
+function testEscEncodesApostrophesWithTheOtherHtmlCharacters() {
+  assert.equal(esc("O'Malley"), 'O&#39;Malley');
+  assert.equal(
+    esc(`<img src="x" onerror='alert(1)'>`),
+    '&lt;img src=&quot;x&quot; onerror=&#39;alert(1)&#39;&gt;',
+  );
+  assert.equal(esc('a&b'), 'a&amp;b');
+}
+
+function testSanitizerReplacesCatBreedSpecializationAndIdThatDoNotFit() {
+  const raw = {
+    ...createDefaultSave('Tester'),
+    cats: [
+      {
+        id: 'cat_1',
+        name: "O'Malley",
+        breed: 'siamese',
+        level: 2,
+        xp: 0,
+        mood: 'content',
+        traits: [],
+        stats: {},
+        isPlayer: false,
+        specialization: 'courier',
+      },
+      {
+        id: 'bad id',
+        name: 'Pew',
+        breed: '<img>',
+        level: 1,
+        xp: 0,
+        mood: 'content',
+        traits: [],
+        stats: {},
+        isPlayer: false,
+        specialization: '<script>',
+      },
+      {
+        id: null,
+        name: 'Nope',
+        breed: 12,
+        level: 1,
+        xp: 0,
+        mood: 'content',
+        traits: [],
+        stats: {},
+        isPlayer: false,
+        specialization: '',
+      },
+    ],
+  };
+  const result = validateAndSanitizeSave(raw);
+  assert.ok(result, 'a save with a bad breed, specialization, or id is still accepted');
+  assert.equal(result!.cats.length, 3);
+  assert.equal(result!.cats[0].breed, 'siamese');
+  assert.equal(result!.cats[0].specialization, 'courier');
+  assert.equal(result!.cats[0].id, 'cat_1');
+  assert.equal(result!.cats[0].name, "O'Malley");
+  assert.equal(result!.cats[1].breed, 'wildcat');
+  assert.equal(result!.cats[1].specialization, undefined);
+  assert.equal(result!.cats[1].id, 'cat_1_2');
+  assert.equal(result!.cats[2].breed, 'wildcat');
+  assert.equal(result!.cats[2].specialization, undefined);
+  assert.equal(result!.cats[2].id, 'cat_2');
+}
+
+class FakeEl {
+  tagName: string;
+  className = '';
+  id = '';
+  style: { cssText?: string; display?: string } = {};
+  children: FakeEl[] = [];
+  html = '';
+  cards: FakeEl[] = [];
+  listeners: Record<string, Array<() => void>> = {};
+  textContent = '';
+  constructor(tag: string) { this.tagName = tag; }
+  set innerHTML(value: string) {
+    this.html = value;
+    this.cards = [];
+    if (value.includes('class="cat-card"')) {
+      const card = new FakeEl('div');
+      card.html = value;
+      this.cards = [card];
+    }
+  }
+  get innerHTML() { return this.html; }
+  appendChild(child: FakeEl) { this.children.push(child); return child; }
+  addEventListener(type: string, fn: () => void) {
+    (this.listeners[type] ??= []).push(fn);
+  }
+  getAttribute(name: string): string | null {
+    if (name !== 'data-cat-id') return null;
+    const match = this.html.match(/class="cat-card" data-cat-id="([^"]*)"/);
+    if (!match) return null;
+    return match[1]
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&');
+  }
+  querySelectorAll(sel: string): FakeEl[] {
+    if (sel === '.cat-card') return this.cards;
+    return [];
+  }
+  querySelector() { return new FakeEl('img'); }
+  remove() {}
+}
+
+function installCaptureDom() {
+  const previousGet = document.getElementById;
+  const body = new FakeEl('body');
+  document.createElement = ((tag: string) => new FakeEl(tag)) as typeof document.createElement;
+  document.body = body as unknown as HTMLElement;
+  document.getElementById = (() => new FakeEl('div')) as typeof document.getElementById;
+  globalThis.requestAnimationFrame = (() => 0) as typeof requestAnimationFrame;
+  return {
+    body,
+    restore() {
+      document.getElementById = previousGet;
+    },
+  };
+}
+
+async function testDayEndScreenEscapesCatTextIncludingApostrophes() {
+  const { showDayTransitionOverlay } = await import('../src/ui/feedback.ts');
+  const dom = installCaptureDom();
+  try {
+    const save = createDefaultSave('Tester');
+    save.cats[0].name = "O'<b>";
+    save.cats[0].level = 4;
+    delete save.cats[0].specialization;
+    save.flags[`wish_day_${save.day}`] = true;
+    showDayTransitionOverlay(save.day, () => {}, save, {
+      foodCost: 1,
+      stationedEarned: 0,
+      events: ["O'<b> found a stash"],
+      fishRemaining: 4,
+    });
+    const html = dom.body.children.at(-1)?.innerHTML ?? '';
+    assert.ok(html.includes('O&#39;&lt;b&gt; is close to specialization'), html);
+    assert.ok(html.includes('O&#39;&lt;b&gt; found a stash'), html);
+    assert.equal(html.includes("O'<b>"), false);
+  } finally {
+    dom.restore();
+  }
+}
+
+async function testCatCardAndPortraitEscapeCatTextIncludingApostrophes() {
+  const { initPanels, showCatPanel } = await import('../src/ui/Panels.ts');
+  const dom = installCaptureDom();
+  try {
+    const save = createDefaultSave('Tester');
+    const cat = save.cats[0];
+    cat.id = `a"b'c`;
+    cat.name = "O'Malley";
+    cat.breed = "x'<b>";
+    cat.specialization = "bad'<spec>";
+    (cat as { mood: string }).mood = "glad'<i>";
+    cat.traits = ['<b>'];
+    const layer = new FakeEl('div');
+    initPanels({
+      getGameState: () => save,
+      setGameState: () => {},
+      overlayLayer: layer as unknown as HTMLElement,
+      saveGame: () => {},
+      showToast: () => {},
+      updateStatusBar: () => {},
+      switchScene: () => {},
+      stopDayTimer: () => {},
+      guildEndDayBtn: new FakeEl('button') as unknown as HTMLElement,
+      guildWishBanner: new FakeEl('div') as unknown as HTMLElement,
+      clearCurrentSave: () => {},
+    });
+    showCatPanel();
+    const panel = layer.children[0];
+    assert.ok(panel, 'cat panel should be shown');
+    const cardHtml = panel.innerHTML;
+    assert.ok(cardHtml.includes('O&#39;Malley'), cardHtml);
+    assert.ok(cardHtml.includes('x&#39;&lt;b&gt;'), cardHtml);
+    assert.ok(cardHtml.includes('bad&#39;&lt;spec&gt;'), cardHtml);
+    assert.ok(cardHtml.includes('glad&#39;&lt;i&gt;'), cardHtml);
+    assert.ok(cardHtml.includes('&lt;b&gt;'), cardHtml);
+    assert.ok(cardHtml.includes('data-cat-id="a&quot;b&#39;c"'), cardHtml);
+    assert.equal(cardHtml.includes("x'<b>"), false);
+    assert.equal(cardHtml.includes("bad'<spec>"), false);
+
+    const card = panel.querySelectorAll('.cat-card')[0];
+    card.listeners.click[0]();
+    const portraitHtml = dom.body.children.at(-1)?.innerHTML ?? '';
+    assert.ok(portraitHtml.includes('O&#39;Malley'), portraitHtml);
+    assert.ok(portraitHtml.includes('x&#39;&lt;b&gt;'), portraitHtml);
+    assert.ok(portraitHtml.includes('glad&#39;&lt;i&gt;'), portraitHtml);
+    assert.ok(portraitHtml.includes('assets/sprites/portraits/wildcat_neutral.png'), portraitHtml);
+    assert.equal(portraitHtml.includes('onerror'), false, portraitHtml);
+    assert.equal(portraitHtml.includes("x'<b>"), false, portraitHtml);
+  } finally {
+    dom.restore();
+  }
+}
+
+async function testSanitizerReplacesNonNumericCatStats() {
+  const save = createDefaultSave('Tester');
+  (save.cats[0].stats as { hunting: unknown }).hunting = '<img src=x onerror=alert(1)>';
+  const cleaned = validateAndSanitizeSave(save);
+  assert.ok(cleaned);
+  assert.equal(typeof cleaned!.cats[0].stats.hunting, 'number');
+
+  const { initPanels, showCatPanel } = await import('../src/ui/Panels.ts');
+  const dom = installCaptureDom();
+  try {
+    const layer = new FakeEl('div');
+    initPanels({
+      getGameState: () => cleaned,
+      setGameState: () => {},
+      overlayLayer: layer as unknown as HTMLElement,
+      saveGame: () => {},
+      showToast: () => {},
+      updateStatusBar: () => {},
+      switchScene: () => {},
+      stopDayTimer: () => {},
+      guildEndDayBtn: new FakeEl('button') as unknown as HTMLElement,
+      guildWishBanner: new FakeEl('div') as unknown as HTMLElement,
+      clearCurrentSave: () => {},
+    });
+    showCatPanel();
+    const html = layer.children[0]?.innerHTML ?? '';
+    assert.equal(html.includes('onerror=alert(1)'), false, html);
+  } finally {
+    dom.restore();
+  }
+}
+
+async function testResultOverlayEscapesCatName() {
+  const { initJobFlow, showResultOverlay } = await import('../src/ui/jobFlow.ts');
+  const dom = installCaptureDom();
+  try {
+    const layer = new FakeEl('div');
+    initJobFlow({
+      overlayLayer: layer as unknown as HTMLElement,
+      getGameState: () => null,
+      saveGame: () => {},
+      showToast: () => {},
+      switchScene: () => {},
+      refreshTownOverlay: () => {},
+      pauseDayTimer: () => {},
+      switchToFightMusic: () => {},
+      switchToPuzzleMusic: () => {},
+      switchToNormalMusic: () => {},
+      switchToTrackset: () => {},
+      playSfx: () => {},
+      trackEvent: () => {},
+      addJournalEntry: () => {},
+      onAfterResult: () => {},
+      onSpecializationChosen: () => {},
+      catsWorkedToday: new Set(),
+    });
+    showResultOverlay({
+      jobName: 'Nest',
+      catName: "O'<b>",
+      catId: 'player_wildcat',
+      reward: 1,
+      stars: 1,
+      moves: 1,
+      minMoves: 1,
+      xp: 1,
+      leveled: false,
+      highlights: [],
+    });
+    const html = layer.children[0]?.innerHTML ?? '';
+    assert.equal(html.includes("O'<b>"), false, html);
+    assert.ok(html.includes('O&#39;&lt;b&gt;'), html);
+  } finally {
+    dom.restore();
+  }
+}
+
+async function testTextSinksShowApostrophesInsteadOfEntities() {
+  const { showToast } = await import('../src/ui/feedback.ts');
+  const { showNarrativeOverlay } = await import('../src/ui/narrativeOverlay.ts');
+  const dom = installCaptureDom();
+  try {
+    const layer = new FakeEl('div');
+    showToast(layer as unknown as HTMLElement, `${esc("O'Malley")} is delighted!`);
+    assert.equal(layer.children[0]?.textContent, "O'Malley is delighted!");
+
+    showNarrativeOverlay({ scenes: [`${esc("O'Malley")} kept watch.`] });
+    const shown = dom.body.children.at(-1)?.children.map((child) => child.textContent).join('\n') ?? '';
+    assert.ok(shown.includes("O'Malley kept watch."), shown);
+    assert.equal(shown.includes('&#39;'), false, shown);
+  } finally {
+    dom.restore();
+  }
 }
 
 function testSanitizerLimitsCatArrayLength() {
@@ -413,6 +710,8 @@ testChapterAdvanceStillRespectsSpecialFlags();
 testSanitizerClampsLongNames();
 testSanitizerStripsControlCharacters();
 testSanitizerKeepsHtmlEntitiesAsLiteralText();
+testEscEncodesApostrophesWithTheOtherHtmlCharacters();
+testSanitizerReplacesCatBreedSpecializationAndIdThatDoNotFit();
 testSanitizerRejectsInvalidStructure();
 testSanitizerClampsDangerousNumericFields();
 testSanitizerLimitsCatArrayLength();
@@ -432,5 +731,10 @@ testCommitOnPausedTrackerIsNoop();
 testCommitInitializesUndefinedTotal();
 await testSaveGameCommitsPlaytimeViaIntegration();
 testMigrationBackfillsTotalPlaytimeMs();
+await testDayEndScreenEscapesCatTextIncludingApostrophes();
+await testCatCardAndPortraitEscapeCatTextIncludingApostrophes();
+await testSanitizerReplacesNonNumericCatStats();
+await testResultOverlayEscapesCatName();
+await testTextSinksShowApostrophesInsteadOfEntities();
 
 console.log('Logic regression tests passed.');
