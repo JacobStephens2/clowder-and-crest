@@ -611,6 +611,24 @@ async function testMovePickerEscapesTheRoomId() {
   }
 }
 
+async function testMovePickerEscapesTheFurnitureName() {
+  const { showMoveFurniturePicker } = await import('../src/ui/overlays/MoveFurniturePicker.ts');
+  const dom = installCaptureDom();
+  try {
+    showMoveFurniturePicker({
+      furnitureId: '<img src=x onerror=alert(1)>',
+      rooms: [{ id: 'kitchen', unlocked: true }],
+      onMove: () => {},
+      onClose: () => {},
+    });
+    const html = dom.overlayLayer.children[0]?.innerHTML ?? '';
+    assert.ok(html.includes('<h2>Move &lt;Img Src=X Onerror=Alert(1)&gt;</h2>'), html);
+    assert.equal(/<img/i.test(html), false, html);
+  } finally {
+    dom.restore();
+  }
+}
+
 function testSanitizerLimitsCatArrayLength() {
   const oneCat = { id: 'a', name: 'A', breed: 'wildcat', level: 1, xp: 0, mood: 'content', traits: [], stats: {}, isPlayer: false };
   const cats = Array.from({ length: 50 }, (_, i) => ({ ...oneCat, id: `cat_${i}` }));
@@ -905,5 +923,6 @@ await testMovePickerHandsThePickedRoomToTheRoomScene();
 await testCatCardRoomSelectEscapesTheRoomId();
 await testShopRoomPickerEscapesTheRoomId();
 await testMovePickerEscapesTheRoomId();
+await testMovePickerEscapesTheFurnitureName();
 
 console.log('Logic regression tests passed.');

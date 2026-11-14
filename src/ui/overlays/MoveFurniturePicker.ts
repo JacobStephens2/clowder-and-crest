@@ -25,7 +25,7 @@ export function showMoveFurniturePicker(options: MoveFurniturePickerOptions): vo
   const fLabel = options.furnitureId.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   picker.innerHTML = `
     <button class="panel-close" id="move-furn-close">&times;</button>
-    <h2>Move ${fLabel}</h2>
+    <h2>Move ${esc(fLabel)}</h2>
     <div style="color:#8b7355;margin-bottom:12px">Move to another room?</div>
     ${options.rooms.map((r) => {
       const rLabel = r.id === 'sleeping' ? 'Sleeping Quarters' : r.id === 'kitchen' ? 'Kitchen' : 'Operations';
