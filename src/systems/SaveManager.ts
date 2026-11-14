@@ -125,6 +125,8 @@ const MAX_JOURNAL_ENTRIES = 200;
 const MAX_CATS = 20;
 const KNOWN_BREEDS = new Set<string>(ALL_BREED_IDS);
 const KNOWN_SPECIALIZATIONS = new Set<string>(SPECIALIZATION_IDS);
+/** The guildhall's three rooms (GuildhallScene getRooms). */
+const KNOWN_ROOMS = new Set(['sleeping', 'kitchen', 'operations']);
 const CAT_ID_PATTERN = /^[A-Za-z0-9_]+$/;
 
 /** Strip control characters and clamp length. Defense in depth — the
@@ -167,6 +169,17 @@ function sanitizeStats(value: unknown): Record<StatName, number> {
   const stats = {} as Record<StatName, number>;
   for (const name of STAT_NAMES) stats[name] = sanitizeStat(raw[name]);
   return stats;
+}
+
+/** Keep a room entry only when its id is one of the known rooms. Every
+ *  other entry is dropped, so a room id written into a picker is one of
+ *  three fixed words. */
+function acceptRooms(value: unknown): RoomSaveData[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((r): r is Record<string, unknown> => !!r && typeof r === 'object')
+    .filter((r) => typeof r.id === 'string' && KNOWN_ROOMS.has(r.id))
+    .map((r) => ({ id: r.id as string, unlocked: Boolean(r.unlocked) }));
 }
 
 /** Validate + sanitize a JSON-parsed object that claims to be a SaveData.
@@ -252,7 +265,7 @@ export function validateAndSanitizeSave(data: unknown): SaveData | null {
     totalFishEarned: typeof d.totalFishEarned === 'number' ? Math.max(0, Math.floor(d.totalFishEarned)) : 0,
     totalJobsCompleted: typeof d.totalJobsCompleted === 'number' ? Math.max(0, Math.floor(d.totalJobsCompleted)) : 0,
     cats: cats as SaveData['cats'],
-    rooms: Array.isArray(d.rooms) ? (d.rooms as SaveData['rooms']) : [],
+    rooms: acceptRooms(d.rooms),
     furniture: Array.isArray(d.furniture) ? (d.furniture as SaveData['furniture']) : [],
     completedJobs: Array.isArray(d.completedJobs) ? (d.completedJobs as string[]).filter((s) => typeof s === 'string').slice(0, 1000) : [],
     bonds: Array.isArray(d.bonds) ? (d.bonds as SaveData['bonds']) : [],

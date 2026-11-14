@@ -217,6 +217,29 @@ function testSanitizerReplacesCatBreedSpecializationAndIdThatDoNotFit() {
   assert.equal(result!.cats[2].id, 'cat_2');
 }
 
+function testSanitizerKeepsOnlyTheThreeKnownRooms() {
+  const raw = {
+    ...createDefaultSave('Tester'),
+    rooms: [
+      { id: 'sleeping', unlocked: true },
+      { id: '"><img src=x onerror=alert(1)>', unlocked: true },
+      { id: 'kitchen', unlocked: false },
+      { id: 'attic', unlocked: true },
+      { id: 7, unlocked: true },
+      null,
+      'operations',
+      { id: 'operations', unlocked: true },
+    ],
+  };
+  const result = validateAndSanitizeSave(raw);
+  assert.ok(result, 'a save with an unknown room is still accepted');
+  assert.deepEqual(result!.rooms, [
+    { id: 'sleeping', unlocked: true },
+    { id: 'kitchen', unlocked: false },
+    { id: 'operations', unlocked: true },
+  ]);
+}
+
 class FakeEl {
   tagName: string;
   className = '';
@@ -712,6 +735,7 @@ testSanitizerStripsControlCharacters();
 testSanitizerKeepsHtmlEntitiesAsLiteralText();
 testEscEncodesApostrophesWithTheOtherHtmlCharacters();
 testSanitizerReplacesCatBreedSpecializationAndIdThatDoNotFit();
+testSanitizerKeepsOnlyTheThreeKnownRooms();
 testSanitizerRejectsInvalidStructure();
 testSanitizerClampsDangerousNumericFields();
 testSanitizerLimitsCatArrayLength();
