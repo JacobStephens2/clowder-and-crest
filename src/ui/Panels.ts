@@ -112,7 +112,7 @@ export function showCatPanel(): void {
         <select class="room-select" data-cat-id="${catId}" style="background:#2a2520;color:#c4956a;border:1px solid #3a3530;padding:2px 4px;font-size:11px;font-family:Georgia,serif">
           ${gameState!.rooms.filter(r => r.unlocked).map(r => {
             const roomLabel = r.id === 'sleeping' ? 'Sleeping Quarters' : r.id === 'kitchen' ? 'Kitchen' : 'Operations';
-            return `<option value="${r.id}" ${cat.assignedRoom === r.id ? 'selected' : ''}>${roomLabel}</option>`;
+            return `<option value="${esc(r.id)}" ${cat.assignedRoom === r.id ? 'selected' : ''}>${roomLabel}</option>`;
           }).join('')}
         </select>
       </div>
@@ -787,7 +787,7 @@ export function showFurnitureShop(): void {
               <div style="color:#8b7355;margin-bottom:12px">Choose a room:</div>
               ${unlockedRooms.map((r) => {
                 const label = r.id === 'sleeping' ? 'Sleeping Quarters' : r.id === 'kitchen' ? 'Kitchen' : 'Operations';
-                return `<button class="menu-btn room-pick-btn" data-room="${r.id}">${label}</button>`;
+                return `<button class="menu-btn room-pick-btn" data-room="${esc(r.id)}">${label}</button>`;
               }).join('')}
             `;
             deps.overlayLayer.appendChild(roomPicker);

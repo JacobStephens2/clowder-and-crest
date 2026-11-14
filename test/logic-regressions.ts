@@ -500,6 +500,74 @@ async function testTextSinksShowApostrophesInsteadOfEntities() {
   }
 }
 
+// A room id that breaks out of the attribute it is written into unless
+// it is escaped, and the same id escaped.
+const MARKUP_ROOM_ID = 'x"><img src=x onerror=alert(1)>';
+const MARKUP_ROOM_ID_ESCAPED = 'x&quot;&gt;&lt;img src=x onerror=alert(1)&gt;';
+
+async function initPanelsWith(save: ReturnType<typeof createDefaultSave>, layer: FakeEl) {
+  const panels = await import('../src/ui/Panels.ts');
+  panels.initPanels({
+    getGameState: () => save,
+    setGameState: () => {},
+    overlayLayer: layer as unknown as HTMLElement,
+    saveGame: () => {},
+    showToast: () => {},
+    updateStatusBar: () => {},
+    switchScene: () => {},
+    stopDayTimer: () => {},
+    guildEndDayBtn: new FakeEl('button') as unknown as HTMLElement,
+    guildWishBanner: new FakeEl('div') as unknown as HTMLElement,
+    clearCurrentSave: () => {},
+  });
+  return panels;
+}
+
+async function testCatCardRoomSelectEscapesTheRoomId() {
+  const dom = installCaptureDom();
+  try {
+    const save = createDefaultSave('Tester');
+    save.rooms = [{ id: MARKUP_ROOM_ID, unlocked: true }];
+    const layer = new FakeEl('div');
+    const { showCatPanel } = await initPanelsWith(save, layer);
+    showCatPanel();
+    const html = layer.children[0]?.innerHTML ?? '';
+    assert.ok(html.includes(`<option value="${MARKUP_ROOM_ID_ESCAPED}"`), html);
+    assert.equal(html.includes('<img src=x'), false, html);
+  } finally {
+    dom.restore();
+  }
+}
+
+async function waitFor<T>(get: () => T | undefined): Promise<T> {
+  for (let i = 0; i < 200; i++) {
+    const value = get();
+    if (value !== undefined) return value;
+    await sleep(10);
+  }
+  throw new Error('timed out waiting for the overlay');
+}
+
+async function testShopRoomPickerEscapesTheRoomId() {
+  const dom = installCaptureDom();
+  try {
+    const save = createDefaultSave('Tester');
+    save.rooms = [{ id: 'sleeping', unlocked: true }, { id: MARKUP_ROOM_ID, unlocked: true }];
+    const layer = new FakeEl('div');
+    const { showFurnitureShop } = await initPanelsWith(save, layer);
+    showFurnitureShop();
+    const shop = await waitFor(() => layer.children[0]);
+    const lantern = shop.querySelectorAll('.shop-item:not(.disabled)').find((el) => el.getAttribute('data-item-id') === 'lantern');
+    assert.ok(lantern, shop.innerHTML);
+    lantern.listeners.click[0]();
+    const html = layer.children[1]?.innerHTML ?? '';
+    assert.ok(html.includes(`data-room="${MARKUP_ROOM_ID_ESCAPED}"`), html);
+    assert.equal(html.includes('<img src=x'), false, html);
+  } finally {
+    dom.restore();
+  }
+}
+
 async function testMovePickerHandsThePickedRoomToTheRoomScene() {
   const { showMoveFurniturePicker } = await import('../src/ui/overlays/MoveFurniturePicker.ts');
   const dom = installCaptureDom();
@@ -517,6 +585,27 @@ async function testMovePickerHandsThePickedRoomToTheRoomScene() {
     assert.deepEqual(buttons.map((b) => b.getAttribute('data-room')), ['kitchen', 'operations']);
     buttons[1].listeners.click[0]();
     assert.deepEqual(picked, ['operations']);
+  } finally {
+    dom.restore();
+  }
+}
+
+async function testMovePickerEscapesTheRoomId() {
+  const { showMoveFurniturePicker } = await import('../src/ui/overlays/MoveFurniturePicker.ts');
+  const dom = installCaptureDom();
+  try {
+    const picked: string[] = [];
+    showMoveFurniturePicker({
+      furnitureId: 'straw_bed',
+      rooms: [{ id: MARKUP_ROOM_ID, unlocked: true }],
+      onMove: (roomId) => picked.push(roomId),
+      onClose: () => {},
+    });
+    const picker = dom.overlayLayer.children[0];
+    assert.ok(picker?.innerHTML.includes(`data-room="${MARKUP_ROOM_ID_ESCAPED}"`), picker?.innerHTML);
+    assert.equal(picker.innerHTML.includes('<img src=x'), false, picker.innerHTML);
+    picker.querySelectorAll('.move-furn-btn')[0].listeners.click[0]();
+    assert.deepEqual(picked, [MARKUP_ROOM_ID], 'the picked id reaches the room scene as text');
   } finally {
     dom.restore();
   }
@@ -813,5 +902,8 @@ await testSanitizerReplacesNonNumericCatStats();
 await testResultOverlayEscapesCatName();
 await testTextSinksShowApostrophesInsteadOfEntities();
 await testMovePickerHandsThePickedRoomToTheRoomScene();
+await testCatCardRoomSelectEscapesTheRoomId();
+await testShopRoomPickerEscapesTheRoomId();
+await testMovePickerEscapesTheRoomId();
 
 console.log('Logic regression tests passed.');

@@ -5,6 +5,7 @@
 // the same reasons as ExileChoice: put the overlay's HTML in one focused
 // file, one that loads without Phaser so the logic tests can render it.
 
+import { esc } from '../../utils/helpers';
 import type { RoomSaveData } from '../../systems/SaveManager';
 
 export interface MoveFurniturePickerOptions {
@@ -28,7 +29,7 @@ export function showMoveFurniturePicker(options: MoveFurniturePickerOptions): vo
     <div style="color:#8b7355;margin-bottom:12px">Move to another room?</div>
     ${options.rooms.map((r) => {
       const rLabel = r.id === 'sleeping' ? 'Sleeping Quarters' : r.id === 'kitchen' ? 'Kitchen' : 'Operations';
-      return `<button class="menu-btn move-furn-btn" data-room="${r.id}">${rLabel}</button>`;
+      return `<button class="menu-btn move-furn-btn" data-room="${esc(r.id)}">${rLabel}</button>`;
     }).join('')}
     <button class="menu-btn" id="move-furn-cancel" style="margin-top:12px">Cancel</button>
   `;
