@@ -250,10 +250,13 @@ class FakeEl {
   cards: FakeEl[] = [];
   listeners: Record<string, Array<() => void>> = {};
   textContent = '';
+  attrs: Record<string, string> = {};
+  found = new Map<string, FakeEl[]>();
   constructor(tag: string) { this.tagName = tag; }
   set innerHTML(value: string) {
     this.html = value;
     this.cards = [];
+    this.found.clear();
     if (value.includes('class="cat-card"')) {
       const card = new FakeEl('div');
       card.html = value;
@@ -266,33 +269,60 @@ class FakeEl {
     (this.listeners[type] ??= []).push(fn);
   }
   getAttribute(name: string): string | null {
+    if (name in this.attrs) return this.attrs[name];
     if (name !== 'data-cat-id') return null;
     const match = this.html.match(/class="cat-card" data-cat-id="([^"]*)"/);
     if (!match) return null;
-    return match[1]
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&amp;/g, '&');
+    return decodeAttribute(match[1]);
   }
   querySelectorAll(sel: string): FakeEl[] {
     if (sel === '.cat-card') return this.cards;
-    return [];
+    const match = sel.match(/^\.([\w-]+)(?::not\(\.([\w-]+)\))?$/);
+    if (!match) return [];
+    if (!this.found.has(sel)) this.found.set(sel, elementsWithClass(this.html, match[1], match[2]));
+    return this.found.get(sel)!;
   }
   querySelector() { return new FakeEl('img'); }
   remove() {}
 }
 
+function decodeAttribute(value: string): string {
+  return value
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
+}
+
+/** The start tags in `html` whose class list has `cls` and not `without`.
+ *  Like a browser, a tag ends at the first `>` outside a quoted value, so
+ *  an attribute that was not escaped is cut short here too. */
+function elementsWithClass(html: string, cls: string, without?: string): FakeEl[] {
+  const found: FakeEl[] = [];
+  for (const [, tag, attrText] of html.matchAll(/<([a-z]+)((?:[^>"]|"[^"]*")*)>/gi)) {
+    const attrs: Record<string, string> = {};
+    for (const [, name, value] of attrText.matchAll(/([\w-]+)="([^"]*)"/g)) attrs[name] = decodeAttribute(value);
+    const classes = (attrs.class ?? '').split(/\s+/);
+    if (!classes.includes(cls) || (without !== undefined && classes.includes(without))) continue;
+    const el = new FakeEl(tag);
+    el.attrs = attrs;
+    found.push(el);
+  }
+  return found;
+}
+
 function installCaptureDom() {
   const previousGet = document.getElementById;
   const body = new FakeEl('body');
+  const overlayLayer = new FakeEl('div');
   document.createElement = ((tag: string) => new FakeEl(tag)) as typeof document.createElement;
   document.body = body as unknown as HTMLElement;
-  document.getElementById = (() => new FakeEl('div')) as typeof document.getElementById;
+  document.getElementById = ((id: string) => (id === 'overlay-layer' ? overlayLayer : new FakeEl('div'))) as typeof document.getElementById;
   globalThis.requestAnimationFrame = (() => 0) as typeof requestAnimationFrame;
   return {
     body,
+    overlayLayer,
     restore() {
       document.getElementById = previousGet;
     },
@@ -465,6 +495,28 @@ async function testTextSinksShowApostrophesInsteadOfEntities() {
     const shown = dom.body.children.at(-1)?.children.map((child) => child.textContent).join('\n') ?? '';
     assert.ok(shown.includes("O'Malley kept watch."), shown);
     assert.equal(shown.includes('&#39;'), false, shown);
+  } finally {
+    dom.restore();
+  }
+}
+
+async function testMovePickerHandsThePickedRoomToTheRoomScene() {
+  const { showMoveFurniturePicker } = await import('../src/ui/overlays/MoveFurniturePicker.ts');
+  const dom = installCaptureDom();
+  try {
+    const picked: string[] = [];
+    showMoveFurniturePicker({
+      furnitureId: 'straw_bed',
+      rooms: [{ id: 'kitchen', unlocked: true }, { id: 'operations', unlocked: true }],
+      onMove: (roomId) => picked.push(roomId),
+      onClose: () => {},
+    });
+    const picker = dom.overlayLayer.children[0];
+    assert.ok(picker?.innerHTML.includes('<h2>Move Straw Bed</h2>'), picker?.innerHTML);
+    const buttons = picker.querySelectorAll('.move-furn-btn');
+    assert.deepEqual(buttons.map((b) => b.getAttribute('data-room')), ['kitchen', 'operations']);
+    buttons[1].listeners.click[0]();
+    assert.deepEqual(picked, ['operations']);
   } finally {
     dom.restore();
   }
@@ -760,5 +812,6 @@ await testCatCardAndPortraitEscapeCatTextIncludingApostrophes();
 await testSanitizerReplacesNonNumericCatStats();
 await testResultOverlayEscapesCatName();
 await testTextSinksShowApostrophesInsteadOfEntities();
+await testMovePickerHandsThePickedRoomToTheRoomScene();
 
 console.log('Logic regression tests passed.');

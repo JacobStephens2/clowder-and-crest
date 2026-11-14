@@ -11,6 +11,7 @@ import { playSfx } from '../systems/SfxManager';
 
 import { ALL_BREED_IDS } from '../utils/constants';
 import { TouchJoystick } from '../ui/touchJoystick';
+import { showMoveFurniturePicker } from '../ui/overlays/MoveFurniturePicker';
 const BREEDS_WITH_SPRITES = new Set(ALL_BREED_IDS as readonly string[]);
 
 // Top-down grid
@@ -578,38 +579,17 @@ export class RoomScene extends Phaser.Scene {
           const otherRooms = save.rooms.filter((r) => r.unlocked && r.id !== this.roomId);
           if (otherRooms.length === 0) { this.scene.restart({ roomId: this.roomId }); return; }
 
-          const picker = document.createElement('div');
-          picker.className = 'assign-overlay';
-          const fLabel = f.furnitureId.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-          picker.innerHTML = `
-            <button class="panel-close" id="move-furn-close">&times;</button>
-            <h2>Move ${fLabel}</h2>
-            <div style="color:#8b7355;margin-bottom:12px">Move to another room?</div>
-            ${otherRooms.map((r) => {
-              const rLabel = r.id === 'sleeping' ? 'Sleeping Quarters' : r.id === 'kitchen' ? 'Kitchen' : 'Operations';
-              return `<button class="menu-btn move-furn-btn" data-room="${r.id}">${rLabel}</button>`;
-            }).join('')}
-            <button class="menu-btn" id="move-furn-cancel" style="margin-top:12px">Cancel</button>
-          `;
-          document.getElementById('overlay-layer')?.appendChild(picker);
-          document.getElementById('move-furn-close')!.addEventListener('click', () => {
-            picker.remove();
-            this.scene.restart({ roomId: this.roomId });
-          });
-          document.getElementById('move-furn-cancel')!.addEventListener('click', () => {
-            picker.remove();
-            this.scene.restart({ roomId: this.roomId });
-          });
-          picker.querySelectorAll('.move-furn-btn').forEach((btn) => {
-            btn.addEventListener('click', () => {
-              const newRoom = btn.getAttribute('data-room')!;
+          showMoveFurniturePicker({
+            furnitureId: f.furnitureId,
+            rooms: otherRooms,
+            onMove: (newRoom) => {
               f.room = newRoom;
               f.gridX = save.furniture.filter((ff) => ff.room === newRoom).length % 5;
               f.gridY = Math.floor(save.furniture.filter((ff) => ff.room === newRoom).length / 5);
               saveGame(save);
-              picker.remove();
               this.scene.restart({ roomId: this.roomId });
-            });
+            },
+            onClose: () => this.scene.restart({ roomId: this.roomId }),
           });
         }
       });
